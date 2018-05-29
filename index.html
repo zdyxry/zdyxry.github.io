@@ -1,5 +1,953 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yiran"><title>Yiran</title><meta name="description" content="A Blog Powered By Hexo"><meta name="keywords" content="Linux,KVM,Ops"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">Yiran</a></h3></div></div><ul class="social-links"><li><a href="https://twitter.com/zhouyiran1994"><i class="fa fa-twitter"></i></a></li><li><a href="http://instagram.com/zdyxry"><i class="fa fa-instagram"></i></a></li><li><a href="http://github.com/zdyxry"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/" class="current">首页</a></li><li><a href="/about">关于</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" style="display:none;" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2018/05/29/CentOS-多网卡多网关配置/">CentOS 多网卡多网关配置</a></h3></div><div class="post-content"><p>背景日常使用中，开发机通常只配置一块网卡，通常配置为 DHCP 自动获取 IP，这样就可以自动从 DHCP Server 获取 IP，网关，DNS Server 等配置，不用手动配置。
-最近在工作中存在一种场景，一台服务器，多块网卡，需要对不同的网卡配置各自网关，查找了一些资料，也踩了一些坑，记录一下过程。
-配置...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2018-05-29</span><i class="fa fa-tag"></i><a href="/tags/Linux/" title="Linux" class="tag">Linux </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2017/11/16/I-O-bursts-with-QEMU-2-6/">I/O bursts with QEMU 2.6</a></h3></div><div class="post-content"><p>I/O bursts with QEMU 2.6
-近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了  QEMU 中的实现方式, 找来相关资料学习一下.
-QEMU 2.6 was released a few days ago. One new feature that I have be...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2017-11-16</span><i class="fa fa-tag"></i><a href="/tags/qemu/" title="qemu" class="tag">qemu </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2017/10/26/hello-world/">Hello World</a></h3></div><div class="post-content"><p>Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in trouble...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2017-10-26</span><i class="fa fa-tag"></i></div></div></div></div><div class="pagination"><ul class="clearfix"></ul></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="keywords" content="Linux,KVM,Ops">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Yiran">
+<meta property="og:url" content="http://zdyxry.com/index.html">
+<meta property="og:site_name" content="Yiran">
+<meta property="og:locale" content="zh-Hans">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Yiran">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://zdyxry.com/"/>
+
+
+
+
+
+  <title>Yiran</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left 
+  page-home">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+  <section id="posts" class="posts-expand">
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/05/29/CentOS-多网卡多网关配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/favicon.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/05/29/CentOS-多网卡多网关配置/" itemprop="url">CentOS 多网卡多网关配置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-29T19:21:36+08:00">
+                2018-05-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>日常使用中，开发机通常只配置一块网卡，通常配置为 DHCP 自动获取 IP，这样就可以自动从 DHCP Server 获取 IP，网关，DNS Server 等配置，不用手动配置。</p>
+<p>最近在工作中存在一种场景，一台服务器，多块网卡，需要对不同的网卡配置各自网关，查找了一些资料，也踩了一些坑，记录一下过程。</p>
+<h3 id="配置过程"><a href="#配置过程" class="headerlink" title="配置过程"></a>配置过程</h3><ol>
+<li><p>官方配置<br>尝试在 <code>/etc/sysconfig/network-scripts/ifcfg-&lt;device&gt;</code> 中增加 GATEWAY 自动使之生效，实际上来看，多张网卡都配置 GATEWAY 字段会产生冲突，只能放弃通过网卡配置文件方式，尝试通过给网卡配置静态路由方式添加。<br>在 CentOS <a href="https://www.centos.org/docs/5/html/5.2/Deployment_Guide/s1-networkscripts-static-routes.html" target="_blank" rel="external">官方网站</a>查找配置静态路由方法，文档中提到通过编写网卡路由配置文件<code>/etc/sysconfig/network-scripts/route-_&lt;interface&gt;</code>  ，配置完成后重启网络可以自动生效。<br>官方这种方式我尝试了两种文件编写方式，一种为<code>192.168.64.0/20 via &lt;gateway&gt; dev &lt;device&gt;</code>，一种为 <code>ADDRESS0=xxxxx; NETMASK0=xxxxx; GATEWAY0=xxxxx</code>。两种配置方式均没有生效，只能放弃。</p>
+</li>
+<li><p>手动配置<br>可以通过 <code>route add</code> 命令临时给第二章网卡配置网关，通过 <code>route -n</code> 查看是可以生效。但是因为最终目标是让路由随着网络服务（公司内部未使用 NetworkManager）Network 启动而配置，因此在 /etc/rc.local 中假如 <code>route add</code> 类似命令无法走通。   </p>
+</li>
+<li><p>上述方法要么无法生效，要么存在无法持久化问题，均无法完成需求。 只能通过查看 网卡服务启动脚本来查找，查看 <code>/etc/init.d/network</code> （systemd 服务控制也是执行该文件），该文件是一个 Shell 脚本，找到路由配置相关：  </p>
+</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">  2     # Add non interface-specific static-routes.</div><div class="line">  1     if [ -f /etc/sysconfig/static-routes ]; then</div><div class="line">141        if [ -x /sbin/route ]; then</div><div class="line">  1            grep "^any" /etc/sysconfig/static-routes | while read ignore args ; do</div><div class="line">  2                    /sbin/route add -$args</div><div class="line">  3            done</div><div class="line">  4        else</div><div class="line">  5            net_log $"Legacy static-route support not available: /sbin/route not found"</div><div class="line">  6        fi</div><div class="line">  7     fi</div></pre></td></tr></table></figure>
+<p>可以看到，在网络服务 network 启动过程中，会判断 <code>/etc/sysconfig/static-routes</code> 文件是否存在，如果存在则会通过 <code>route</code> 命令对该文件中记录以 <code>any</code> 开头的路由进行添加，添加命令为 <code>/sbin/route add -$args</code>。<br>根据上述脚本，尝试编写 static-routes 文件：  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">any net 192.168.64.0/20 gw 192.168.64.1</div><div class="line">any net 10.0.10.0/24 gw 10.0.10.222</div></pre></td></tr></table></figure>
+<p>编写完成后，重启网络服务 <code>systemctl restart network</code> ，执行 <code>route -n</code> 查看是否生效：  </p>
+<pre><code class="bash">[root@scvm9 19:49:55 ~]<span class="variable">$route</span> -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         192.168.64.1    0.0.0.0         UG    0      0        0 eth0
+10.0.10.0       0.0.0.0         255.255.255.0   U     0      0        0 eth2
+10.0.10.0       10.0.10.222     255.255.255.0   UG    0      0        0 eth2
+169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
+</code></pre>
+<p>看上去已经生效，因为实际环境中没有第二块网卡网关设备，临时指定一个不存在的 IP。<br>本以为已经搞定，结果在实际验证的时候，发现第二块网卡无法连接其他节点，哪怕其他节点与它二层联通；尝试将网关指定可以正常工作的 IP 节点，可以与其他节点联通，且 traceroute 也没有经过网关而是直接连接。</p>
+<h3 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h3><ol>
+<li>尝试将网关配置成可以正常工作的节点<ul>
+<li>各个节点可以正确联通</li>
+<li>traceroute 到其他节点未经过网关</li>
+</ul>
+</li>
+<li>尝试将网关配置成不存在节点<ul>
+<li>各个节点无法正确联通</li>
+</ul>
+</li>
+<li>尝试将网关掩码配置为网卡掩码的超集<ul>
+<li>各个节点可以正确联通</li>
+<li>traceroute 到其他节点未经过网关</li>
+</ul>
+</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>红帽系列发行版本配置静态路由可通过 /etc/sysconfig/static-routes 配置生效，但要注意在 static-routes 文件中的路由添加要添加网关节点对应的掩码而不是本地节点网卡掩码，网关掩码为本地网卡掩码的超集。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/favicon.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/11/16/I-O-bursts-with-QEMU-2-6/" itemprop="url">I/O bursts with QEMU 2.6</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-11-16T22:34:48+08:00">
+                2017-11-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>I/O bursts with QEMU 2.6</p>
+<p>近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下.</p>
+<h3 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h3><p>首先,我将总结 QEMU 早期版本中已有的基本配置.<br>磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写进行单独限制. 下面列举了总共 6 个不同的参数.<br>I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 blocks_set_io_throttle 命令. 下面是两种情况下的参数列举:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">-DRIVE               	BLOCK_SET_IO_THROTTLE</div><div class="line">throttling.iops-total	iops                 </div><div class="line">throttling.iops-read 	iops_rd              </div><div class="line">throttling.iops-write	iops_wr              </div><div class="line">throttling.bps-total 	bps                  </div><div class="line">throttling.bps-read  	bps_rd               </div><div class="line">throttling.bps-write 	bps_wr               </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>可以同时配置 IOPS 和 bps ,针对不同的场景我们可以选择是否配置读写限制,但是如果设置了 iops-total 参数, 那么不能配置 iops-read 和 iops-write. 这个规则同样适用于 bps-total 和 bps-read/write.<br>这些参数的默认值都是 0 , 表示没有任何限制.  <code>-drive file=hd0.qcow2,throttling.iops-total=100</code><br>最基本的用法,用户可以为 QEMU 添加一个驱动用于限制 100 IOPS : <code>-drive filehd0.qcow2,throttling.iops-total=100</code> </p>
+<p>我们可以使用 QMP 达到相同的配置. 在这种情况下,所有的参数都是必须配置的, 所有我们必须给无关参数配置为 0 ,参考配置:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&#123; &quot;execute&quot;: &quot;block_set_io_throttle&quot;,</div><div class="line">  &quot;arguments&quot;: &#123;</div><div class="line">     &quot;device&quot;: &quot;virtio0&quot;,</div><div class="line">     &quot;iops&quot;: 100,</div><div class="line">     &quot;iops_rd&quot;: 0,</div><div class="line">     &quot;iops_wr&quot;: 0,</div><div class="line">     &quot;bps&quot;: 0,</div><div class="line">     &quot;bps_rd&quot;: 0,</div><div class="line">     &quot;bps_wr&quot;: 0</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h3 id="突发I-O"><a href="#突发I-O" class="headerlink" title="突发I/O"></a>突发I/O</h3><p>在刚刚的基本配置中, 我们已经能够预防虚拟机抢占过多 I/O 资源, 偶尔允许用户超出参数限制范围可能会更有用. 通过这种方式, 我们能够拥有一个响应更快的虚拟机,用于应对更多的波峰情况,同时保持其他时间的平均限制.<br>从 QEMU 2.6 开始, 可以允许用户在可配置的时间区间内进行突发 I/O. 突发 I/O 可以超过基本配置, 有两个参数可以限制他们: 突发 I/O 长度和最大允许 I/O 数量. 这两个参数可以作用于上述基本配置中的每一个参数, 这里使用 iops-total  进行举例.<br>突发 I/O 限制使用 iops-total-max 进行配置, 最大长度(单位: s) 通过 iops-total-max-length 进行配置. 如果我们想要配置一个驱动器基本配置 IOPS 为 100, 同时允许在 60s 时间区间内发生突发 I/O IOPS 为2000. 可以使用如下配置:   </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">-drive file=hd0.qcow2,</div><div class="line">throttling.iops-total=100,</div><div class="line">throttling.iops-total-max=2000,</div><div class="line">throttling.iops-total-max-length=60</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>或者通过 QMP 进行配置:   </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;execute&quot;:&quot;block_set_io_throttle&quot;,</div><div class="line"> &quot;arguments&quot;:&#123;</div><div class="line">   &quot;device&quot;:&quot;virtio0&quot;,</div><div class="line">   &quot;iops&quot;:100,</div><div class="line">   &quot;iops_rd&quot;:0,</div><div class="line">   &quot;iops_wr&quot;:0,</div><div class="line">   &quot;bps&quot;:0</div><div class="line">   &quot;bps_rd&quot;:0</div><div class="line">   &quot;bps_wr&quot;:0</div><div class="line">   &quot;iops_max&quot;:2000,</div><div class="line">   &quot;iops_max_length&quot;:60,</div><div class="line"> &#125;&#125;</div></pre></td></tr></table></figure>
+<p>通过这种方式, 用户可以控制 hd0.qcow2 以 2000 IOPS 持续 1分钟运行, 然后被限制在基本配置的 100 IOPS 状态.<br>如果有有足够的时间没有使用 I/O, 用户可以再次进行突发 I/O.<br>iops-total-max 默认值为 0 ,表示不允许突发 I/O.  iops-total-max-length 只能在配置 iops-total-max的前提下进行配置, 默认值为 1秒.</p>
+<h3 id="控制-I-O-块大小"><a href="#控制-I-O-块大小" class="headerlink" title="控制 I/O 块大小"></a>控制 I/O 块大小</h3><p>当配置 IOPS 限制时, 所有的 I/O 操作都会被平等对待,不论 I/O 块大小. 这意味着用户可以利用这点来规避 I/O 限制,将一些小 I/O 替换为一个大块 I/O.<br>QEMU 提供了 throttling.iops-size  配置用来防止这种情况发生. 这个设置指定请求的每个 I/O 大小.过大的请求将会进行相应的统计.<br>比如, 如果 iops-size 设置为 4096, 那么 8KB 的 I/O 请求将会被记为 2 ,6KB 请求记为1.5. 该配置只作用于大于 iops-size 配置的 I/O 请求, 如果 I/O 请求小于该数值,则不论大小均记为 1.<br>iops-size默认值为 0 ,表示这个默认的 IOPS 限制不考虑每次 I/O 请求的块大小. </p>
+<h3 id="I-O-限制在磁盘组的应用"><a href="#I-O-限制在磁盘组的应用" class="headerlink" title="I/O 限制在磁盘组的应用"></a>I/O 限制在磁盘组的应用</h3><p>在刚刚的例子中我们已经看到如何去限制 I/O 在各个驱动器上, 但是 QEMU 同时允许将驱动器进行分组, 这样驱动器组具有相同的 I/O 限制.<br>这个功能在 QEMU 2.4 版本已经生效, 更多信息可以参考其他文档. </p>
+<h3 id="Leaky-Bucket-算法"><a href="#Leaky-Bucket-算法" class="headerlink" title="Leaky Bucket 算法"></a>Leaky Bucket 算法</h3><p>QEMU 中的 I/O 限制使用 Leaky Bucket 算法实现.</p>
+<p>该算法使用不断漏水的桶进行类比. 入水口比作在进行的 I/O, 当桶处于满状态时, 不再允许 I/O 下发.<br>想要查看 QEMU 中的 I/O 限制对应方式,可以参考如下数值:   </p>
+<pre><code>iops-total=100
+iops-total-max=2000
+iops-total-max-length=60
+
+- 水以 100 IOPS 的速度从桶中漏出
+- 水可以以 2000 IOPS 的速度添加到桶中
+- 桶的大小为 2000 * 60 = 120000
+- 如果 iops-total-max 没有配置, 那么桶的大小是 100
+</code></pre><p>最初, 桶状态为空, 可以向桶中添加水直到 2000 IOPS 速率满为止. 当桶满了后, 我们只能添加更可能多的水,因为桶在加水的同时也在漏水. 此时 I/O 速率下降至 100 IOPS. 如果我们添加的水少于泄露的水,那么我们可以再次进行突发 I/O.<br>注意, 在突发 I/O 期间,水从桶中泄露, 也需要超过 60s 的时间以 2000 IOPS 的速率填满. 当 60s 过后, 桶将泄露 100*60=6000 的水, 能够允许突发 I/O 再运行 3s.<br>而且, 由于算法的工作方式, 长时间的突发 I/O 也可以通过较低的 I/O 速率完成,比如 120s 内以 1000 IOPS 完成.</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2017/10/26/hello-world/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/favicon.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/26/hello-world/" itemprop="url">Hello World</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-26T21:13:39+08:00">
+                2017-10-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="external">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo new <span class="string">"My New Post"</span></div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="external">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo server</div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="external">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo generate</div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="external">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo deploy</div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="external">Deployment</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+  </section>
+
+  
+
+
+          </div>
+          
+
+
+          
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/favicon.png"
+                alt="yiran" />
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

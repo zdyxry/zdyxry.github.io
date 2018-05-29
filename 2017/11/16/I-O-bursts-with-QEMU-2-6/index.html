@@ -1,228 +1,723 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yiran"><title>I/O bursts with QEMU 2.6 · Yiran</title><meta name="description" content="I/O bursts with QEMU 2.6
-近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了  QEMU 中的实现方式, 找来相关资料学习一下.
-QEMU 2.6 was released a few days ago. One new feature that I "><meta name="keywords" content="Linux,KVM,Ops"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">Yiran</a></h3></div></div><ul class="social-links"><li><a href="https://twitter.com/zhouyiran1994"><i class="fa fa-twitter"></i></a></li><li><a href="http://instagram.com/zdyxry"><i class="fa fa-instagram"></i></a></li><li><a href="http://github.com/zdyxry"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/about">关于</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>I/O bursts with QEMU 2.6</a></h3></div><div class="post-content"><p>I/O bursts with QEMU 2.6</p>
-<p>近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了  QEMU 中的实现方式, 找来相关资料学习一下.</p>
-<p>QEMU 2.6 was released a few days ago. One new feature that I have been working on is the new way to configure I/O limits in disk drives to allow bursts and increase the responsiveness of the virtual machine. In this post I’ll try to explain how it works.</p>
-<p>QEMU 2.6 版本已经发布一阵了. 我一直研究的一个新功能是配置虚拟磁盘驱动中的 I/O 限制用来允许突发 I/O 同时提升虚拟机的相应速度. 我将尝试这项功能如何工作的.</p>
-<p>The basic settings</p>
-<p>基本配置</p>
-<p>First I will summarize the basic settings that were already available in earlier versions of QEMU.</p>
-<p>首先,我将总结 QEMU 早期版本中已有的基本配置.</p>
-<p>Two aspects of the disk I/O can be limited: the number of bytes per second and the number of operations per second (IOPS). For each one of them the user can set a global limit or separate limits for read and write operations. This gives us a total of six different parameters.</p>
-<p>磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写进行单独限制. 下面列举了总共 6 个不同的参数.</p>
-<p>I/O limits can be set using the throttling.* parameters of -drive, or using the QMP block_set_io_throttle command. These are the names of the parameters for both cases:</p>
-<p>I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 blocks_set_io_throttle 命令. 下面是两种情况下的参数列举:  </p>
-<p>  -DRIVE                   BLOCK_SET_IO_THROTTLE<br>  throttling.iops-total    iops<br>  throttling.iops-read     iops_rd<br>  throttling.iops-write    iops_wr<br>  throttling.bps-total     bps<br>  throttling.bps-read      bps_rd<br>  throttling.bps-write     bps_wr               </p>
-<p>It is possible to set limits for both IOPS and bps at the same time, and for each case we can decide whether to have separate read and write limits or not, but if iops-total is set then neither iops-read nor iops-write can be set. The same applies to bps-total and bps-read/write.</p>
-<p>可以同时配置 IOPS 和 bps ,针对不同的场景我们可以选择是否配置读写限制,但是如果设置了 iops-total 参数, 那么不能配置 iops-read 和 iops-write. 这个规则同样适用于 bps-total 和 bps-read/write.      </p>
-<p>The default value of these parameters is 0, and it means unlimited.</p>
-<p>这些参数的默认值都是 0 , 表示没有任何限制. </p>
-<p>In its most basic usage, the user can add a drive to QEMU with a limit of, say, 100 IOPS with the following -drive line:</p>
-<pre><code>-drive file=hd0.qcow2,throttling.iops-total=100
-</code></pre><p>最基本的用法,用户可以为 QEMU 添加一个驱动用于限制 100 IOPS :   </p>
-<p>-drive filehd0.qcow2,throttling.iops-total=100  </p>
-<p>We can do the same using QMP. In this case all these parameters are mandatory, so we must set to 0 the ones that we don’t want to limit:</p>
-<pre><code>{ &quot;execute&quot;: &quot;block_set_io_throttle&quot;,
+<!DOCTYPE html>
 
-  &quot;arguments&quot;: {
 
-     &quot;device&quot;: &quot;virtio0&quot;,
 
-     &quot;iops&quot;: 100,
+  
 
-     &quot;iops_rd&quot;: 0,
 
-     &quot;iops_wr&quot;: 0,
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
 
-     &quot;bps&quot;: 0,
 
-     &quot;bps_rd&quot;: 0,
 
-     &quot;bps_wr&quot;: 0
 
-  }
 
-}
-</code></pre><p> 我们可以使用 QMP 达到相同的配置. 在这种情况下,所有的参数都是必须配置的, 所有我们必须给无关参数配置为 0 ,参考配置:   </p>
-<pre><code>{ &quot;execute&quot;: &quot;block_set_io_throttle&quot;,
 
-  &quot;arguments&quot;: {
 
-     &quot;device&quot;: &quot;virtio0&quot;,
 
-     &quot;iops&quot;: 100,
 
-     &quot;iops_rd&quot;: 0,
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
 
-     &quot;iops_wr&quot;: 0,
 
-     &quot;bps&quot;: 0,
 
-     &quot;bps_rd&quot;: 0,
 
-     &quot;bps_wr&quot;: 0
 
-  }
 
-}
-</code></pre><p>I/O bursts</p>
-<p>突发I/O</p>
-<p> While the settings that we have just seen are enough to prevent the virtual machine from performing too much I/O, it can be useful to allow the user to exceed those limits occasionally. This way we can have a more responsive VM that is able to cope better with peaks of activity while keeping the average limits lower the rest of the time.</p>
-<p>在刚刚的基本配置中, 我们已经能够预防虚拟机抢占过多 I/O 资源, 偶尔允许用户超出参数限制范围可能会更有用. 通过这种方式, 我们能够拥有一个响应更快的虚拟机,用于应对更多的波峰情况,同时保持其他时间的平均限制.</p>
-<p>Starting from QEMU 2.6, it is possible to allow the user to do bursts of I/O for a configurable amount of time. A burst is an amount of I/O that can exceed the basic limit, and there are two parameters that control them: their length and the maximum amount of I/O they allow. These two can be configured separately for each one of the six basic parameters described in the previous section, but here we’ll use ‘iops-total’ as an example.</p>
-<p>从 QEMU 2.6 开始, 可以允许用户在可配置的时间区间内进行突发 I/O. 突发 I/O 可以超过基本配置, 有两个参数可以限制他们: 突发 I/O 长度和最大允许 I/O 数量. 这两个参数可以作用于上述基本配置中的每一个参数, 这里使用 iops-total  进行举例.    </p>
-<p>The I/O limit during bursts is set using ‘iops-total-max’, and the maximum length (in seconds) is set with ‘iops-total-max-length’. So if we want to configure a drive with a basic limit of 100 IOPS and allow bursts of 2000 IOPS for 60 seconds, we would do it like this (the line is split for clarity):</p>
-<pre><code>-drive file=hd0.qcow2,
 
-       throttling.iops-total=100,
 
-       throttling.iops-total-max=2000,
 
-       throttling.iops-total-max-length=60
-</code></pre><p>突发 I/O 限制使用 iops-total-max 进行配置, 最大长度(单位: s) 通过 iops-total-max-length 进行配置. 如果我们想要配置一个驱动器基本配置 IOPS 为 100, 同时允许在 60s 时间区间内发生突发 I/O IOPS 为2000. 可以使用如下配置:   </p>
-<pre><code>-drive file=hd0.qcow2,
 
 
-       throttling.iops-total=100,
 
 
-       throttling.iops-total-max=2000,
 
 
-       throttling.iops-total-max-length=60
-</code></pre><p>Or with QMP:</p>
-<pre><code>{ &quot;execute&quot;: &quot;block_set_io_throttle&quot;,
 
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
 
-  &quot;arguments&quot;: {
 
 
-     &quot;device&quot;: &quot;virtio0&quot;,
 
 
-     &quot;iops&quot;: 100,
 
 
-     &quot;iops_rd&quot;: 0,
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
 
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
 
-     &quot;iops_wr&quot;: 0,
 
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
 
-     &quot;bps&quot;: 0,
 
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
 
-     &quot;bps_rd&quot;: 0,
 
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
 
-     &quot;bps_wr&quot;: 0,
 
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
 
-     &quot;iops_max&quot;: 2000,
 
 
-     &quot;iops_max_length&quot;: 60,
 
 
-  }
+  <meta name="keywords" content="qemu," />
 
 
-}
-</code></pre><p>或者通过 QMP 进行配置:   </p>
-<pre><code>{&quot;execute&quot;:&quot;block_set_io_throttle&quot;,
 
 
- &quot;arguments&quot;:{
 
 
-   &quot;device&quot;:&quot;virtio0&quot;,
 
 
-   &quot;iops&quot;:100,
 
 
-   &quot;iops_rd&quot;:0,
+<meta name="description" content="I/O bursts with QEMU 2.6 近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下. 基本配置首先,我将总结 QEMU 早期版本中已有的基本配置.磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写">
+<meta name="keywords" content="qemu">
+<meta property="og:type" content="article">
+<meta property="og:title" content="I&#x2F;O bursts with QEMU 2.6">
+<meta property="og:url" content="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/index.html">
+<meta property="og:site_name" content="Yiran">
+<meta property="og:description" content="I/O bursts with QEMU 2.6 近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下. 基本配置首先,我将总结 QEMU 早期版本中已有的基本配置.磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-05-29T13:16:15.370Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="I&#x2F;O bursts with QEMU 2.6">
+<meta name="twitter:description" content="I/O bursts with QEMU 2.6 近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下. 基本配置首先,我将总结 QEMU 早期版本中已有的基本配置.磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写">
+<meta name="twitter:creator" content="@zhouyiran1994">
 
 
-   &quot;iops_wr&quot;:0,
 
-
-   &quot;bps&quot;:0
-
-
-   &quot;bps_rd&quot;:0
-
-
-   &quot;bps_wr&quot;:0
-
-
-   &quot;iops_max&quot;:2000,
-
-
-   &quot;iops_max_length&quot;:60,
-
-
- }}
-</code></pre><p>With this, the user can perform I/O on hd0.qcow2 at a rate of 2000 IOPS for 1 minute before it’s throttled down to 100 IOPS.</p>
-<p>The user will be able to do bursts again if there’s a sufficiently long period of time with unused I/O (see below for details).</p>
-<p>The default value for ‘iops-total-max’ is 0 and it means that bursts are not allowed. ‘iops-total-max-length’ can only be set if ‘iops-total-max’ is set as well, and its default value is 1 second.</p>
-<p>通过这种方式, 用户可以控制 hd0.qcow2 以 2000 IOPS 持续 1分钟运行, 然后被限制在基本配置的 100 IOPS 状态.</p>
-<p>如果有有足够的时间没有使用 I/O, 用户可以再次进行突发 I/O.   </p>
-<p>iops-total-max 默认值为 0 ,表示不允许突发 I/O.  iops-total-max-length 只能在配置 iops-total-max的前提下进行配置, 默认值为 1秒.</p>
-<p>Controlling the size of I/O operations</p>
-<p>控制 I/O 块大小</p>
-<p>When applying IOPS limits all I/O operations are treated equally regardless of their size. This means that the user can take advantage of this in order to circumvent the limits and submit one huge I/O request instead of several smaller ones.</p>
-<p>当配置 IOPS 限制时, 所有的 I/O 操作都会被平等对待,不论 I/O 块大小. 这意味着用户可以利用这点来规避 I/O 限制,将一些小 I/O 替换为一个大块 I/O.</p>
-<p>QEMU provides a setting called throttling.iops-size to prevent this from happening. This setting specifies the size (in bytes) of an I/O request for accounting purposes. Larger requests will be counted proportionally to this size.</p>
-<p>QEMU 提供了 throttling.iops-size  配置用来防止这种情况发生. 这个设置指定请求的每个 I/O 大小.过大的请求将会进行相应的统计. </p>
-<p>For example, if iops-size is set to 4096 then an 8KB request will be counted as two, and a 6KB request will be counted as one and a half. This only applies to requests larger than iops-size: smaller requests will be always counted as one, no matter their size.</p>
-<p>比如, 如果 iops-size 设置为 4096, 那么 8KB 的 I/O 请求将会被记为 2 ,6KB 请求记为1.5. 该配置只作用于大于 iops-size 配置的 I/O 请求, 如果 I/O 请求小于该数值,则不论大小均记为 1. </p>
-<p>The default value of iops-size is 0 and it means that the size of the requests is never taken into account when applying IOPS limits.</p>
-<p>iops-size默认值为 0 ,表示这个默认的 IOPS 限制不考虑每次 I/O 请求的块大小. </p>
-<p>Applying I/O limits to groups of disks</p>
-<p>I/O 限制在磁盘组的应用</p>
-<p>In all the examples so far we have seen how to apply limits to the I/O performed on individual drives, but QEMU allows grouping drives so they all share the same limits.</p>
-<p>This feature is available since QEMU 2.4. Please refer to the post I wrote when it was published for more details.</p>
-<p>在刚刚的例子中我们已经看到如何去限制 I/O 在各个驱动器上, 但是 QEMU 同时允许将驱动器进行分组, 这样驱动器组具有相同的 I/O 限制. </p>
-<p>这个功能在 QEMU 2.4 版本已经生效, 更多信息可以参考其他文档. </p>
-<p>The Leaky Bucket algorithm</p>
-<p>Leaky Bucket 算法</p>
-<p>I/O limits in QEMU are implemented using the leaky bucket algorithm (specifically the “Leaky bucket as a meter” variant).</p>
-<p>This algorithm uses the analogy of a bucket that leaks water constantly. The water that gets into the bucket represents the I/O that has been performed, and no more I/O is allowed once the bucket is full.</p>
-<p>QEMU 中的 I/O 限制使用 Leaky Bucket 算法实现.</p>
-<p>该算法使用不断漏水的桶进行类比. 入水口比作在进行的 I/O, 当桶处于满状态时, 不再允许 I/O 下发. </p>
-<p>To see the way this corresponds to the throttling parameters in QEMU, consider the following values:</p>
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/"/>
+
+
+
+
+
+  <title>I/O bursts with QEMU 2.6 | Yiran</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/favicon.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">I/O bursts with QEMU 2.6</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-11-16T22:34:48+08:00">
+                2017-11-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>I/O bursts with QEMU 2.6</p>
+<p>近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下.</p>
+<h3 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h3><p>首先,我将总结 QEMU 早期版本中已有的基本配置.<br>磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写进行单独限制. 下面列举了总共 6 个不同的参数.<br>I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 blocks_set_io_throttle 命令. 下面是两种情况下的参数列举:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">-DRIVE               	BLOCK_SET_IO_THROTTLE</div><div class="line">throttling.iops-total	iops                 </div><div class="line">throttling.iops-read 	iops_rd              </div><div class="line">throttling.iops-write	iops_wr              </div><div class="line">throttling.bps-total 	bps                  </div><div class="line">throttling.bps-read  	bps_rd               </div><div class="line">throttling.bps-write 	bps_wr               </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>可以同时配置 IOPS 和 bps ,针对不同的场景我们可以选择是否配置读写限制,但是如果设置了 iops-total 参数, 那么不能配置 iops-read 和 iops-write. 这个规则同样适用于 bps-total 和 bps-read/write.<br>这些参数的默认值都是 0 , 表示没有任何限制.  <code>-drive file=hd0.qcow2,throttling.iops-total=100</code><br>最基本的用法,用户可以为 QEMU 添加一个驱动用于限制 100 IOPS : <code>-drive filehd0.qcow2,throttling.iops-total=100</code> </p>
+<p>我们可以使用 QMP 达到相同的配置. 在这种情况下,所有的参数都是必须配置的, 所有我们必须给无关参数配置为 0 ,参考配置:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&#123; &quot;execute&quot;: &quot;block_set_io_throttle&quot;,</div><div class="line">  &quot;arguments&quot;: &#123;</div><div class="line">     &quot;device&quot;: &quot;virtio0&quot;,</div><div class="line">     &quot;iops&quot;: 100,</div><div class="line">     &quot;iops_rd&quot;: 0,</div><div class="line">     &quot;iops_wr&quot;: 0,</div><div class="line">     &quot;bps&quot;: 0,</div><div class="line">     &quot;bps_rd&quot;: 0,</div><div class="line">     &quot;bps_wr&quot;: 0</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h3 id="突发I-O"><a href="#突发I-O" class="headerlink" title="突发I/O"></a>突发I/O</h3><p>在刚刚的基本配置中, 我们已经能够预防虚拟机抢占过多 I/O 资源, 偶尔允许用户超出参数限制范围可能会更有用. 通过这种方式, 我们能够拥有一个响应更快的虚拟机,用于应对更多的波峰情况,同时保持其他时间的平均限制.<br>从 QEMU 2.6 开始, 可以允许用户在可配置的时间区间内进行突发 I/O. 突发 I/O 可以超过基本配置, 有两个参数可以限制他们: 突发 I/O 长度和最大允许 I/O 数量. 这两个参数可以作用于上述基本配置中的每一个参数, 这里使用 iops-total  进行举例.<br>突发 I/O 限制使用 iops-total-max 进行配置, 最大长度(单位: s) 通过 iops-total-max-length 进行配置. 如果我们想要配置一个驱动器基本配置 IOPS 为 100, 同时允许在 60s 时间区间内发生突发 I/O IOPS 为2000. 可以使用如下配置:   </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">-drive file=hd0.qcow2,</div><div class="line">throttling.iops-total=100,</div><div class="line">throttling.iops-total-max=2000,</div><div class="line">throttling.iops-total-max-length=60</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>或者通过 QMP 进行配置:   </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;execute&quot;:&quot;block_set_io_throttle&quot;,</div><div class="line"> &quot;arguments&quot;:&#123;</div><div class="line">   &quot;device&quot;:&quot;virtio0&quot;,</div><div class="line">   &quot;iops&quot;:100,</div><div class="line">   &quot;iops_rd&quot;:0,</div><div class="line">   &quot;iops_wr&quot;:0,</div><div class="line">   &quot;bps&quot;:0</div><div class="line">   &quot;bps_rd&quot;:0</div><div class="line">   &quot;bps_wr&quot;:0</div><div class="line">   &quot;iops_max&quot;:2000,</div><div class="line">   &quot;iops_max_length&quot;:60,</div><div class="line"> &#125;&#125;</div></pre></td></tr></table></figure>
+<p>通过这种方式, 用户可以控制 hd0.qcow2 以 2000 IOPS 持续 1分钟运行, 然后被限制在基本配置的 100 IOPS 状态.<br>如果有有足够的时间没有使用 I/O, 用户可以再次进行突发 I/O.<br>iops-total-max 默认值为 0 ,表示不允许突发 I/O.  iops-total-max-length 只能在配置 iops-total-max的前提下进行配置, 默认值为 1秒.</p>
+<h3 id="控制-I-O-块大小"><a href="#控制-I-O-块大小" class="headerlink" title="控制 I/O 块大小"></a>控制 I/O 块大小</h3><p>当配置 IOPS 限制时, 所有的 I/O 操作都会被平等对待,不论 I/O 块大小. 这意味着用户可以利用这点来规避 I/O 限制,将一些小 I/O 替换为一个大块 I/O.<br>QEMU 提供了 throttling.iops-size  配置用来防止这种情况发生. 这个设置指定请求的每个 I/O 大小.过大的请求将会进行相应的统计.<br>比如, 如果 iops-size 设置为 4096, 那么 8KB 的 I/O 请求将会被记为 2 ,6KB 请求记为1.5. 该配置只作用于大于 iops-size 配置的 I/O 请求, 如果 I/O 请求小于该数值,则不论大小均记为 1.<br>iops-size默认值为 0 ,表示这个默认的 IOPS 限制不考虑每次 I/O 请求的块大小. </p>
+<h3 id="I-O-限制在磁盘组的应用"><a href="#I-O-限制在磁盘组的应用" class="headerlink" title="I/O 限制在磁盘组的应用"></a>I/O 限制在磁盘组的应用</h3><p>在刚刚的例子中我们已经看到如何去限制 I/O 在各个驱动器上, 但是 QEMU 同时允许将驱动器进行分组, 这样驱动器组具有相同的 I/O 限制.<br>这个功能在 QEMU 2.4 版本已经生效, 更多信息可以参考其他文档. </p>
+<h3 id="Leaky-Bucket-算法"><a href="#Leaky-Bucket-算法" class="headerlink" title="Leaky Bucket 算法"></a>Leaky Bucket 算法</h3><p>QEMU 中的 I/O 限制使用 Leaky Bucket 算法实现.</p>
+<p>该算法使用不断漏水的桶进行类比. 入水口比作在进行的 I/O, 当桶处于满状态时, 不再允许 I/O 下发.<br>想要查看 QEMU 中的 I/O 限制对应方式,可以参考如下数值:   </p>
 <pre><code>iops-total=100
-
-
 iops-total-max=2000
-
-
 iops-total-max-length=60
-</code></pre><ul>
-<li>Water leaks from the bucket at a rate of 100 IOPS.</li>
-<li>Water can be added to the bucket at a rate of 2000 IOPS.</li>
-<li>The size of the bucket is 2000 x 60 = 120000.</li>
-<li>If iops-total-max is unset then the bucket size is 100.</li>
-</ul>
-<p>想要查看 QEMU 中的 I/O 限制对应方式,可以参考如下数值:   </p>
-<pre><code>iops-total=100
+
+- 水以 100 IOPS 的速度从桶中漏出
+- 水可以以 2000 IOPS 的速度添加到桶中
+- 桶的大小为 2000 * 60 = 120000
+- 如果 iops-total-max 没有配置, 那么桶的大小是 100
+</code></pre><p>最初, 桶状态为空, 可以向桶中添加水直到 2000 IOPS 速率满为止. 当桶满了后, 我们只能添加更可能多的水,因为桶在加水的同时也在漏水. 此时 I/O 速率下降至 100 IOPS. 如果我们添加的水少于泄露的水,那么我们可以再次进行突发 I/O.<br>注意, 在突发 I/O 期间,水从桶中泄露, 也需要超过 60s 的时间以 2000 IOPS 的速率填满. 当 60s 过后, 桶将泄露 100*60=6000 的水, 能够允许突发 I/O 再运行 3s.<br>而且, 由于算法的工作方式, 长时间的突发 I/O 也可以通过较低的 I/O 速率完成,比如 120s 内以 1000 IOPS 完成.</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/qemu/" rel="tag"># qemu</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/26/hello-world/" rel="next" title="Hello World">
+                <i class="fa fa-chevron-left"></i> Hello World
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/05/29/CentOS-多网卡多网关配置/" rel="prev" title="CentOS 多网卡多网关配置">
+                CentOS 多网卡多网关配置 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
 
 
-iops-total-max=2000
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
-iops-total-max-length=60
-</code></pre><ul>
-<li>水以 100 IOPS 的速度从桶中漏出</li>
-<li>水可以以 2000 IOPS 的速度添加到桶中</li>
-<li>桶的大小为 2000 * 60 = 120000</li>
-<li>如果 iops-total-max 没有配置, 那么桶的大小是 100</li>
-</ul>
-<p>The bucket is initially empty, therefore water can be added until it’s full at a rate of 2000 IOPS (the burst rate). Once the bucket is full we can only add as much water as it leaks, therefore the I/O rate is reduced to 100 IOPS. If we add less water than it leaks then the bucket will start to empty, allowing for bursts again.</p>
-<p>Note that since water is leaking from the bucket even during bursts, it will take a bit more than 60 seconds at 2000 IOPS to fill it up. After those 60 seconds the bucket will have leaked 60 x 100 = 6000, allowing for 3 more seconds of I/O at 2000 IOPS.</p>
-<p>Also, due to the way the algorithm works, longer burst can be done at a lower I/O rate, e.g. 1000 IOPS during 120 seconds.</p>
-<p>最初, 桶状态为空, 可以向桶中添加水直到 2000 IOPS 速率满为止. 当桶满了后, 我们只能添加更可能多的水,因为桶在加水的同时也在漏水. 此时 I/O 速率下降至 100 IOPS. 如果我们添加的水少于泄露的水,那么我们可以再次进行突发 I/O.  </p>
-<p>注意, 在突发 I/O 期间,水从桶中泄露, 也需要超过 60s 的时间以 2000 IOPS 的速率填满. 当 60s 过后, 桶将泄露 100*60=6000 的水, 能够允许突发 I/O 再运行 3s.</p>
-<p>而且, 由于算法的工作方式, 长时间的突发 I/O 也可以通过较低的 I/O 速率完成,比如 120s 内以 1000 IOPS 完成.</p>
-</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2017-11-16</span><i class="fa fa-tag"></i><a href="/tags/qemu/" title="qemu" class="tag">qemu </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/,Yiran,I/O bursts with QEMU 2.6,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2018/05/29/CentOS-多网卡多网关配置/" title="CentOS 多网卡多网关配置" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2017/10/26/hello-world/" title="Hello World" class="btn">下一篇</a></li></ul></div></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/favicon.png"
+                alt="yiran" />
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#基本配置"><span class="nav-number">1.</span> <span class="nav-text">基本配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#突发I-O"><span class="nav-number">2.</span> <span class="nav-text">突发I/O</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#控制-I-O-块大小"><span class="nav-number">3.</span> <span class="nav-text">控制 I/O 块大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#I-O-限制在磁盘组的应用"><span class="nav-number">4.</span> <span class="nav-text">I/O 限制在磁盘组的应用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leaky-Bucket-算法"><span class="nav-number">5.</span> <span class="nav-text">Leaky Bucket 算法</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
