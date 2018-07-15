@@ -251,6 +251,143 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/07/08/Flask-流式响应/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/favicon.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/08/Flask-流式响应/" itemprop="url">Flask 流式响应</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-08T09:44:24+08:00">
+                2018-07-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在 web 场景下，经常会碰到下载文件的需求，通常小文件我们会采用 Flask <code>send_file</code> 或者 <code>send_from_directory</code>的方式，下载，但是当下载的文件是一个大压缩文件（&gt;1GiB）时，这种方式就显得不友好了，我们需要采用流式下载的方式返回给客户端。</p>
+<h2 id="流式下载"><a href="#流式下载" class="headerlink" title="流式下载"></a>流式下载</h2><p>简单实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Response</div><div class="line"></div><div class="line"><span class="meta">@app.route("/download/&lt;file_path&gt;", methods=["GET"])</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">download</span><span class="params">(file_path)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">()</span>:</span></div><div class="line">        <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(file_path):</div><div class="line">            <span class="keyword">raise</span> <span class="string">"File not found."</span></div><div class="line">        <span class="keyword">with</span> open(file_path, <span class="string">"rb"</span>) <span class="keyword">as</span> f:</div><div class="line">            <span class="keyword">while</span> <span class="keyword">True</span>:</div><div class="line">                chunk = f.read(chunk_size=<span class="number">10</span> * <span class="number">1024</span> * <span class="number">1024</span>)</div><div class="line">                <span class="keyword">if</span> <span class="keyword">not</span> chunk:</div><div class="line">                    <span class="keyword">break</span></div><div class="line">                <span class="keyword">yield</span> chunk</div><div class="line"></div><div class="line">    <span class="keyword">return</span> Response(generate(), content_type=<span class="string">"application/octet-stream"</span>)</div><div class="line">```   </div><div class="line"></div><div class="line">运行 Flask app，可以正确下载文件，但是下载只有实时速度，没有文件总大小，导致无法知道下载进度，也没有文件类型，这些我们都可以通过增加 header 字段实现：</div><div class="line">```python</div><div class="line">response = Response(generate(), mimetype=<span class="string">'application/gzip'</span>)</div><div class="line">response.headers[<span class="string">'Content-Disposition'</span>] = <span class="string">'attachment; filename=&#123;&#125;.tar.gz'</span>.format(<span class="string">"download_file"</span>)</div><div class="line">response.headers[<span class="string">'content-length'</span>] = os.stat(str(file_path)).st_size</div><div class="line"><span class="keyword">return</span> response</div></pre></td></tr></table></figure></p>
+<p>这样，我们下载文件就可以看到文件类型、文件总大小及已下载大小了，其中 <code>mimetype</code> 根据实际压缩文件类型修改匹配即可。</p>
+<hr>
+<h2 id="转发流式下载"><a href="#转发流式下载" class="headerlink" title="转发流式下载"></a>转发流式下载</h2><p>当我们下载本地节点文件，可以通过上述方法实现，但是如果我们的产品是集群形式的，要求在集群中的任一节点均可下载集群中所有节点的指定文件，我们就需要支持将流式下载转发并实时下载，避免访问节点占用太多内存。</p>
+<p>如果是单节点转发流式请求，我们可以通过 flask 的 <code>stream_with_context</code> 实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> (</div><div class="line">    Flask,</div><div class="line">    Response,</div><div class="line">    stream_with_context</div><div class="line">    )</div><div class="line"><span class="keyword">import</span> requests</div><div class="line"></div><div class="line">app = Flask(__name__)</div><div class="line"></div><div class="line"><span class="meta">@app.route("/download/&lt;file_path&gt;", method=["GET"])</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">download</span><span class="params">(file_path)</span>:</span></div><div class="line">    url_prefix = <span class="string">"http://1.1.1.1/"</span></div><div class="line">    remote_url = url_prefix + file_path</div><div class="line">    req = requests.get(remote_url, stream = <span class="keyword">True</span>)</div><div class="line">    <span class="keyword">return</span> Response(stream_with_context(req.iter_content()), </div><div class="line">                    content_type = req.headers[<span class="string">'content-type'</span>])</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</div><div class="line">    app.run(host=<span class="string">"0.0.0.0"</span>, debug=<span class="keyword">True</span>)</div></pre></td></tr></table></figure></p>
+<p>在我们访问 <code>http://localhost:5000/download/file_name</code>  时，通过 requests 访问远端节点 1.1.1.1 的地址，并将请求通过流式的方式转发至客户端，实现下载。</p>
+<p>如果是转发多节点流式请求，我们该如何保证多个请求最终 merge 后是一个正确的文件呢？<br>通过查询资料，排除了标准库中的 tarfile 和 zipfile 打包压缩方式，最终采用 zipstream（<a href="https://github.com/allanlei/python-zipstream）" target="_blank" rel="external">https://github.com/allanlei/python-zipstream）</a> 第三方库实现。</p>
+<hr>
+<p>zipstream 支持通过迭代器的方式写入文件，并可实时压缩读取，官方示例如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">iterable</span><span class="params">()</span>:</span></div><div class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> xrange(<span class="number">10</span>):</div><div class="line">        <span class="keyword">yield</span> <span class="string">b'this is a byte string\x01\n'</span></div><div class="line"></div><div class="line">z = zipstream.ZipFile()</div><div class="line">z.write_iter(<span class="string">'my_archive_iter'</span>, iterable())</div><div class="line"></div><div class="line"><span class="keyword">with</span> open(<span class="string">'zipfile.zip'</span>, <span class="string">'wb'</span>) <span class="keyword">as</span> f:</div><div class="line">    <span class="keyword">for</span> data <span class="keyword">in</span> z:</div><div class="line">        f.write(data)</div></pre></td></tr></table></figure></p>
+<hr>
+<p>根据上述特性，我们结合转发单节点请求，实现同时请求多节点并实时压缩下载：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@app.route("/cluster_download/&lt;file_path&gt;", method=["GET"])</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">cluster_download</span><span class="params">(reqs)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">(req)</span>:</span></div><div class="line">        z = zipstream.ZipFile(mode=<span class="string">"w"</span>, compression=zipstream.ZIP_DEFLATED)</div><div class="line">        <span class="keyword">for</span> req <span class="keyword">in</span> reqs:</div><div class="line">            host = req.raw._fp.fp._sock.getpeername()[<span class="number">0</span>]</div><div class="line">            z.write_iter(<span class="string">"%s.tar.gz"</span> % host, req.iter_content(chunk_size=<span class="number">10</span> * <span class="number">1024</span> * <span class="number">1024</span>)</div><div class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> z:</div><div class="line">            <span class="keyword">yield</span> chunk</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_file_size</span><span class="params">(reqs)</span>:</span></div><div class="line">        size = <span class="number">0</span></div><div class="line">        <span class="keyword">for</span> req <span class="keyword">in</span> reqs:</div><div class="line">            size += int(req.headers.get(<span class="string">"content-length"</span>))</div><div class="line">        <span class="keyword">return</span> size</div><div class="line"></div><div class="line">    remote_hosts = [<span class="string">"1.1.1.1"</span>, <span class="string">"2.2.2.2"</span>]</div><div class="line">    reqs = []</div><div class="line">    <span class="keyword">for</span> host <span class="keyword">in</span> remote_hosts:</div><div class="line">        req = requests.get(<span class="string">"http://%s/%s"</span> % (host, file_path), timeout=<span class="number">5</span>, stream=<span class="keyword">True</span>)</div><div class="line">        <span class="keyword">if</span> req.status_code == <span class="number">200</span>:</div><div class="line">            reqs.append(req)</div><div class="line">    response = Response(generate(reqs))</div><div class="line">    response.headers[<span class="string">'mimetype'</span>] = <span class="string">'application/zip'</span></div><div class="line">    response.headers[<span class="string">'Content-Disposition'</span>] = <span class="string">'attachment; filename=cluster_logs.zip)</span></div><div class="line"><span class="string">    response.hreads['</span>content-length<span class="string">'] = get_file_size(reqs)</span></div></pre></td></tr></table></figure>
+<p>当我们访问 <code>http://localhost/cluster_download/file_name</code> 时，会先去 remote_hosts 中各个节点下载该文件，并通过 <code>write_iter</code> 的方式写入到 zip 文件中，Flask Response 返回的是 zip 文件中的数据块。</p>
+<hr>
+<p>如果我们要在 zip 文件中增加某些运行过程中产生的数据，我们可以通过再定义一个生成器的方式：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_file</span><span class="params">(content)</span>:</span></div><div class="line">    <span class="keyword">yield</span> content</div><div class="line"></div><div class="line">z.write_iter(<span class="string">"running_status"</span>, generate_file)</div></pre></td></tr></table></figure></p>
+<p>这样我们就可以在最终的 zip 文件中，包含一个名为 <code>running_status</code> 的文件，文件内容为 content 的内容。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个需求在日常使用中是很常见的，跟下载类似，上传文件的话我们也可以采用类似的方式实现。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/07/07/将-CSV-文件转换为嵌套-Json-文件/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1135,7 +1272,7 @@
 <p>/public</p>
 </blockquote>
 <p>（3）依次执行以下指令，同步源文件至github</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>  git init</div><div class="line"><span class="meta">$</span>  git add .</div><div class="line"><span class="meta">$</span>  git commit -m "xxxxx"</div><div class="line"><span class="meta">$</span>  git remote add origin git@github.com:/blog_bak.git</div><div class="line"><span class="meta">$</span>  git push -u origin master</div></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  git init</span></div><div class="line"><span class="meta">$</span><span class="bash">  git add .</span></div><div class="line"><span class="meta">$</span><span class="bash">  git commit -m <span class="string">"xxxxx"</span></span></div><div class="line"><span class="meta">$</span><span class="bash">  git remote add origin git@github.com:/blog_bak.git</span></div><div class="line"><span class="meta">$</span><span class="bash">  git push -u origin master</span></div></pre></td></tr></table></figure>
 <h2 id="二、对B电脑的操作如下："><a href="#二、对B电脑的操作如下：" class="headerlink" title="二、对B电脑的操作如下："></a>二、对B电脑的操作如下：</h2><p>1.安装Git，并配置github账号下的B电脑的.ssh<br>2.安装Node.js<br>3.使用npm指令安装Hexo</p>
 <blockquote>
 <p>$  npm install -g hexo-cli</p>
@@ -1148,11 +1285,11 @@
 <h2 id="三、关于日常的改动流程（A，B两台电脑均使用的情况下）："><a href="#三、关于日常的改动流程（A，B两台电脑均使用的情况下）：" class="headerlink" title="三、关于日常的改动流程（A，B两台电脑均使用的情况下）："></a>三、关于日常的改动流程（A，B两台电脑均使用的情况下）：</h2><p>1.建议先检查更新git pull，将本地博客源文件更新至最新版本</p>
 <p><code>$  git pull</code></p>
 <p>2.然后可以新建或修改博客内容，进行预览等操作</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>  hexo new "新的博客名称"</div><div class="line"></div><div class="line"><span class="meta">$</span>  hexo server</div></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  hexo new <span class="string">"新的博客名称"</span></span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  hexo server</span></div></pre></td></tr></table></figure>
 <p>3.新建博客后，先同步Hexo源文件，将修改后的源文件同步至github:</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>  git add .</div><div class="line"></div><div class="line"><span class="meta">$</span>  git commit -m "更新描述"</div><div class="line"></div><div class="line"><span class="meta">$</span>  git push origin master</div></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  git add .</span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  git commit -m <span class="string">"更新描述"</span></span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  git push origin master</span></div></pre></td></tr></table></figure>
 <p>4.然后再执行Hexo的生成文件和部署指令</p>
- <figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>  hexo generate</div><div class="line"></div><div class="line"><span class="meta">$</span>  hexo deploy</div></pre></td></tr></table></figure>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  hexo generate</span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  hexo deploy</span></div></pre></td></tr></table></figure>
 
           
         
@@ -1467,152 +1604,13 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/favicon.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/11/16/I-O-bursts-with-QEMU-2-6/" itemprop="url">I/O bursts with QEMU 2.6</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-11-16T22:34:48+08:00">
-                2017-11-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>I/O bursts with QEMU 2.6</p>
-<p>近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下.</p>
-<h3 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h3><p>首先,我将总结 QEMU 早期版本中已有的基本配置.<br>磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写进行单独限制. 下面列举了总共 6 个不同的参数.<br>I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 blocks_set_io_throttle 命令. 下面是两种情况下的参数列举:  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">-DRIVE               	BLOCK_SET_IO_THROTTLE</div><div class="line">throttling.iops-total	iops                 </div><div class="line">throttling.iops-read 	iops_rd              </div><div class="line">throttling.iops-write	iops_wr              </div><div class="line">throttling.bps-total 	bps                  </div><div class="line">throttling.bps-read  	bps_rd               </div><div class="line">throttling.bps-write 	bps_wr               </div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>可以同时配置 IOPS 和 bps ,针对不同的场景我们可以选择是否配置读写限制,但是如果设置了 iops-total 参数, 那么不能配置 iops-read 和 iops-write. 这个规则同样适用于 bps-total 和 bps-read/write.<br>这些参数的默认值都是 0 , 表示没有任何限制.  <code>-drive file=hd0.qcow2,throttling.iops-total=100</code><br>最基本的用法,用户可以为 QEMU 添加一个驱动用于限制 100 IOPS : <code>-drive filehd0.qcow2,throttling.iops-total=100</code> </p>
-<p>我们可以使用 QMP 达到相同的配置. 在这种情况下,所有的参数都是必须配置的, 所有我们必须给无关参数配置为 0 ,参考配置:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&#123; &quot;execute&quot;: &quot;block_set_io_throttle&quot;,</div><div class="line">  &quot;arguments&quot;: &#123;</div><div class="line">     &quot;device&quot;: &quot;virtio0&quot;,</div><div class="line">     &quot;iops&quot;: 100,</div><div class="line">     &quot;iops_rd&quot;: 0,</div><div class="line">     &quot;iops_wr&quot;: 0,</div><div class="line">     &quot;bps&quot;: 0,</div><div class="line">     &quot;bps_rd&quot;: 0,</div><div class="line">     &quot;bps_wr&quot;: 0</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<h3 id="突发I-O"><a href="#突发I-O" class="headerlink" title="突发I/O"></a>突发I/O</h3><p>在刚刚的基本配置中, 我们已经能够预防虚拟机抢占过多 I/O 资源, 偶尔允许用户超出参数限制范围可能会更有用. 通过这种方式, 我们能够拥有一个响应更快的虚拟机,用于应对更多的波峰情况,同时保持其他时间的平均限制.<br>从 QEMU 2.6 开始, 可以允许用户在可配置的时间区间内进行突发 I/O. 突发 I/O 可以超过基本配置, 有两个参数可以限制他们: 突发 I/O 长度和最大允许 I/O 数量. 这两个参数可以作用于上述基本配置中的每一个参数, 这里使用 iops-total  进行举例.<br>突发 I/O 限制使用 iops-total-max 进行配置, 最大长度(单位: s) 通过 iops-total-max-length 进行配置. 如果我们想要配置一个驱动器基本配置 IOPS 为 100, 同时允许在 60s 时间区间内发生突发 I/O IOPS 为2000. 可以使用如下配置:   </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">-drive file=hd0.qcow2,</div><div class="line">throttling.iops-total=100,</div><div class="line">throttling.iops-total-max=2000,</div><div class="line">throttling.iops-total-max-length=60</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>或者通过 QMP 进行配置:   </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;execute&quot;:&quot;block_set_io_throttle&quot;,</div><div class="line"> &quot;arguments&quot;:&#123;</div><div class="line">   &quot;device&quot;:&quot;virtio0&quot;,</div><div class="line">   &quot;iops&quot;:100,</div><div class="line">   &quot;iops_rd&quot;:0,</div><div class="line">   &quot;iops_wr&quot;:0,</div><div class="line">   &quot;bps&quot;:0</div><div class="line">   &quot;bps_rd&quot;:0</div><div class="line">   &quot;bps_wr&quot;:0</div><div class="line">   &quot;iops_max&quot;:2000,</div><div class="line">   &quot;iops_max_length&quot;:60,</div><div class="line"> &#125;&#125;</div></pre></td></tr></table></figure>
-<p>通过这种方式, 用户可以控制 hd0.qcow2 以 2000 IOPS 持续 1分钟运行, 然后被限制在基本配置的 100 IOPS 状态.<br>如果有有足够的时间没有使用 I/O, 用户可以再次进行突发 I/O.<br>iops-total-max 默认值为 0 ,表示不允许突发 I/O.  iops-total-max-length 只能在配置 iops-total-max的前提下进行配置, 默认值为 1秒.</p>
-<h3 id="控制-I-O-块大小"><a href="#控制-I-O-块大小" class="headerlink" title="控制 I/O 块大小"></a>控制 I/O 块大小</h3><p>当配置 IOPS 限制时, 所有的 I/O 操作都会被平等对待,不论 I/O 块大小. 这意味着用户可以利用这点来规避 I/O 限制,将一些小 I/O 替换为一个大块 I/O.<br>QEMU 提供了 throttling.iops-size  配置用来防止这种情况发生. 这个设置指定请求的每个 I/O 大小.过大的请求将会进行相应的统计.<br>比如, 如果 iops-size 设置为 4096, 那么 8KB 的 I/O 请求将会被记为 2 ,6KB 请求记为1.5. 该配置只作用于大于 iops-size 配置的 I/O 请求, 如果 I/O 请求小于该数值,则不论大小均记为 1.<br>iops-size默认值为 0 ,表示这个默认的 IOPS 限制不考虑每次 I/O 请求的块大小. </p>
-<h3 id="I-O-限制在磁盘组的应用"><a href="#I-O-限制在磁盘组的应用" class="headerlink" title="I/O 限制在磁盘组的应用"></a>I/O 限制在磁盘组的应用</h3><p>在刚刚的例子中我们已经看到如何去限制 I/O 在各个驱动器上, 但是 QEMU 同时允许将驱动器进行分组, 这样驱动器组具有相同的 I/O 限制.<br>这个功能在 QEMU 2.4 版本已经生效, 更多信息可以参考其他文档. </p>
-<h3 id="Leaky-Bucket-算法"><a href="#Leaky-Bucket-算法" class="headerlink" title="Leaky Bucket 算法"></a>Leaky Bucket 算法</h3><p>QEMU 中的 I/O 限制使用 Leaky Bucket 算法实现.</p>
-<p>该算法使用不断漏水的桶进行类比. 入水口比作在进行的 I/O, 当桶处于满状态时, 不再允许 I/O 下发.<br>想要查看 QEMU 中的 I/O 限制对应方式,可以参考如下数值:   </p>
-<pre><code>iops-total=100
-iops-total-max=2000
-iops-total-max-length=60
-
-- 水以 100 IOPS 的速度从桶中漏出
-- 水可以以 2000 IOPS 的速度添加到桶中
-- 桶的大小为 2000 * 60 = 120000
-- 如果 iops-total-max 没有配置, 那么桶的大小是 100
-</code></pre><p>最初, 桶状态为空, 可以向桶中添加水直到 2000 IOPS 速率满为止. 当桶满了后, 我们只能添加更可能多的水,因为桶在加水的同时也在漏水. 此时 I/O 速率下降至 100 IOPS. 如果我们添加的水少于泄露的水,那么我们可以再次进行突发 I/O.<br>注意, 在突发 I/O 期间,水从桶中泄露, 也需要超过 60s 的时间以 2000 IOPS 的速率填满. 当 60s 过后, 桶将泄露 100*60=6000 的水, 能够允许突发 I/O 再运行 3s.<br>而且, 由于算法的工作方式, 长时间的突发 I/O 也可以通过较低的 I/O 速率完成,比如 120s 内以 1000 IOPS 完成.</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
+  <nav class="pagination">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+  </nav>
+
 
 
           </div>
@@ -1660,7 +1658,7 @@ iops-total-max-length=60
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1673,7 +1671,7 @@ iops-total-max-length=60
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
