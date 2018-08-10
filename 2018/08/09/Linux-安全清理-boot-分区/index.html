@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 /boot 分区被占满的情况，特此查找资料记录。 升级方式在之前的博客中提到过多次，CentOS 发行版升级一般采用 yum update ，Kernel 因为没有相关">
+<meta name="keywords" content="Linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 安全清理 &#x2F;boot 分区">
+<meta property="og:url" content="http://zdyxry.com/2018/08/09/Linux-安全清理-boot-分区/index.html">
+<meta property="og:site_name" content="Yiran">
+<meta property="og:description" content="背景众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 /boot 分区被占满的情况，特此查找资料记录。 升级方式在之前的博客中提到过多次，CentOS 发行版升级一般采用 yum update ，Kernel 因为没有相关">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-08-10T11:20:37.565Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux 安全清理 &#x2F;boot 分区">
+<meta name="twitter:description" content="背景众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 /boot 分区被占满的情况，特此查找资料记录。 升级方式在之前的博客中提到过多次，CentOS 发行版升级一般采用 yum update ，Kernel 因为没有相关">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://zdyxry.com/2018/08/09/Linux-安全清理-boot-分区/"/>
+
+
+
+
+
+  <title>Linux 安全清理 /boot 分区 | Yiran</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/08/09/Linux-安全清理-boot-分区/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Linux 安全清理 /boot 分区</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-09T15:00:25+08:00">
+                2018-08-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/08/09/Linux-安全清理-boot-分区/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/08/09/Linux-安全清理-boot-分区/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。<br>在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 <code>/boot</code> 分区被占满的情况，特此查找资料记录。</p>
+<h2 id="升级方式"><a href="#升级方式" class="headerlink" title="升级方式"></a>升级方式</h2><p>在之前的博客中提到过多次，CentOS 发行版升级一般采用 <code>yum update</code> ，<code>Kernel</code> 因为没有相关依赖，也可以直接 <code>rpm -Uvh</code> 的方式升级。</p>
+<h3 id="yum-update"><a href="#yum-update" class="headerlink" title="yum update"></a>yum update</h3><p>举个例子，比如这台 Linux，目前情况如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">[root@node111 14:25:10 ~]<span class="variable">$uname</span> -a</div><div class="line">Linux node111 3.10.0-693.11.6.el7.smartx.1.x86_64 <span class="comment">#1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux</span></div><div class="line">[root@node111 14:25:12 ~]<span class="variable">$ll</span> /boot/</div><div class="line">total 124929</div><div class="line">-rw-r--r--. 1 root root   140924 Jan 16  2018 config-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">drwxr-xr-x. 3 root root     1024 Jul  2 07:23 efi</div><div class="line">drwxr-xr-x. 2 root root     1024 Jul  2 07:24 grub</div><div class="line">drwx------. 5 root root     1024 Jul  2 07:31 grub2</div><div class="line">-rw-------. 1 root root 57031976 Jul  2 07:29 initramfs-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892.img</div><div class="line">-rw-------. 1 root root 17270634 Jul  2 07:30 initramfs-3.10.0-229.el7.x86_64.img</div><div class="line">-rw-------. 1 root root 20958312 Jul  2 07:31 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img</div><div class="line">-rw-------  1 root root 16575028 Jul  2 07:32 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img</div><div class="line">-rw-r--r--. 1 root root   610559 Jul  2 07:28 initrd-plymouth.img</div><div class="line">drwx------. 2 root root    12288 Jul  2 07:23 lost+found</div><div class="line">-rw-r--r--. 1 root root   293110 Jan 16  2018 symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz</div><div class="line">-rw-------. 1 root root  3232490 Jan 16  2018 System.map-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rwxr-xr-x. 1 root root  5889744 Jul  2 07:29 vmlinuz-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892</div><div class="line">-rwxr-xr-x. 1 root root  5889744 Jan 16  2018 vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64</div></pre></td></tr></table></figure></p>
+<p>我们要对它进行升级 Kernel 操作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div></pre></td><td class="code"><pre><div class="line">[root@node111 14:36:19 ~]<span class="variable">$uname</span> -a</div><div class="line">Linux node111 3.10.0-693.11.6.el7.smartx.1.x86_64 <span class="comment">#1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux</span></div><div class="line">[root@node111 14:36:22 ~]<span class="variable">$yum</span> update kernel</div><div class="line">Loaded plugins: fastestmirror, langpacks</div><div class="line">Loading mirror speeds from cached hostfile</div><div class="line">Resolving Dependencies</div><div class="line">--&gt; Running transaction check</div><div class="line">---&gt; Package kernel.x86_64 0:4.4.26-201.el7.centos will be installed</div><div class="line">--&gt; Processing Dependency: kernel-core-uname-r = 4.4.26-201.el7.centos.x86_64 <span class="keyword">for</span> package: kernel-4.4.26-201.el7.centos.x86_64</div><div class="line">--&gt; Processing Dependency: kernel-modules-uname-r = 4.4.26-201.el7.centos.x86_64 <span class="keyword">for</span> package: kernel-4.4.26-201.el7.centos.x86_64</div><div class="line">--&gt; Processing Dependency: xorg-x11-drv-vmmouse &gt;= 14.0.0 <span class="keyword">for</span> package: kernel-4.4.26-201.el7.centos.x86_64</div><div class="line">--&gt; Running transaction check</div><div class="line">---&gt; Package kernel-core.x86_64 0:4.4.26-201.el7.centos will be installed</div><div class="line">---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be obsoleted</div><div class="line">---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be updated</div><div class="line">---&gt; Package kernel-headers.x86_64 0:4.4.26-201.el7.centos will be obsoleting</div><div class="line">---&gt; Package kernel-modules.x86_64 0:4.4.26-201.el7.centos will be installed</div><div class="line">--&gt; Finished Dependency Resolution</div><div class="line"></div><div class="line">Dependencies Resolved</div><div class="line"></div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line"> Package                                                          Arch                                                     Version                                                                    Repository                                                Size</div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line">Installing:</div><div class="line"> kernel                                                           x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    79 k</div><div class="line"> kernel-headers                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                   1.0 M</div><div class="line">     replacing  kernel-headers.x86_64 3.10.0-862.3.3.el7</div><div class="line">Installing <span class="keyword">for</span> dependencies:</div><div class="line"> kernel-core                                                      x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    20 M</div><div class="line"> kernel-modules                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    18 M</div><div class="line"></div><div class="line">Transaction Summary</div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line">Install  2 Packages (+2 Dependent packages)</div><div class="line"></div><div class="line">Total download size: 40 M</div><div class="line">Is this ok [y/d/N]: y</div><div class="line">Downloading packages:</div><div class="line">Delta RPMs disabled because /usr/bin/applydeltarpm not installed.</div><div class="line">(1/4): kernel-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                                |  79 kB  00:00:00     </div><div class="line">(2/4): kernel-headers-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        | 1.0 MB  00:00:00     </div><div class="line">(3/4): kernel-core-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                           |  20 MB  00:00:00     </div><div class="line">(4/4): kernel-modules-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        |  18 MB  00:00:00     </div><div class="line">---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------</div><div class="line">Total                                                                                                                                                                                                                                 50 MB/s |  40 MB  00:00:00     </div><div class="line">Running transaction check</div><div class="line">Running transaction <span class="built_in">test</span></div><div class="line">Transaction <span class="built_in">test</span> succeeded</div><div class="line">Running transaction</div><div class="line">Warning: RPMDB altered outside of yum.</div><div class="line">  Installing : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 </div><div class="line">  Installing : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 </div><div class="line">  Installing : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       3/5 </div><div class="line">  Installing : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               4/5 </div><div class="line">  Cleanup    : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 </div><div class="line">  Verifying  : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 </div><div class="line">  Verifying  : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 </div><div class="line">  Verifying  : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               3/5 </div><div class="line">  Verifying  : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       4/5 </div><div class="line">  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 </div><div class="line">  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          6/5 </div><div class="line"></div><div class="line">Installed:</div><div class="line">  kernel.x86_64 0:4.4.26-201.el7.centos                                                                                         kernel-headers.x86_64 0:4.4.26-201.el7.centos                                                                                        </div><div class="line"></div><div class="line">Dependency Installed:</div><div class="line">  kernel-core.x86_64 0:4.4.26-201.el7.centos                                                                                      kernel-modules.x86_64 0:4.4.26-201.el7.centos                                                                                     </div><div class="line"></div><div class="line">Replaced:</div><div class="line">  kernel-headers.x86_64 0:3.10.0-862.3.3.el7                                                                                                                                                                                                                         </div><div class="line"></div><div class="line">Complete!</div></pre></td></tr></table></figure>
+<p>可以看到，在升级之后 <code>/boot/</code> 分区下的老版本 Kernel 内核文件 <code>vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64</code> 还在：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">[root@node111 14:37:47 ~]<span class="variable">$ll</span> /boot/</div><div class="line">total 151927</div><div class="line">-rw-r--r--. 1 root root   140924 Jan 16  2018 config-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rw-r--r--  1 root root   169326 Oct 21  2016 config-4.4.26-201.el7.centos.x86_64</div><div class="line">drwxr-xr-x. 3 root root     1024 Jul  2 07:23 efi</div><div class="line">drwxr-xr-x. 2 root root     1024 Jul  2 07:24 grub</div><div class="line">drwx------. 5 root root     1024 Aug  9 14:37 grub2</div><div class="line">-rw-------. 1 root root 57031976 Jul  2 07:29 initramfs-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892.img</div><div class="line">-rw-------. 1 root root 17270634 Jul  2 07:30 initramfs-3.10.0-229.el7.x86_64.img</div><div class="line">-rw-------. 1 root root 20958312 Jul  2 07:31 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img</div><div class="line">-rw-------  1 root root 16575028 Jul  2 07:32 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img</div><div class="line">-rw-------  1 root root 18060511 Aug  9 14:37 initramfs-4.4.26-201.el7.centos.x86_64.img</div><div class="line">-rw-r--r--. 1 root root   610559 Jul  2 07:28 initrd-plymouth.img</div><div class="line">drwx------. 2 root root    12288 Jul  2 07:23 lost+found</div><div class="line">-rw-r--r--. 1 root root   293110 Jan 16  2018 symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz</div><div class="line">-rw-------. 1 root root  3232490 Jan 16  2018 System.map-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rw-------  1 root root  3265893 Oct 21  2016 System.map-4.4.26-201.el7.centos.x86_64</div><div class="line">-rwxr-xr-x. 1 root root  5889744 Jul  2 07:29 vmlinuz-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892</div><div class="line">-rwxr-xr-x. 1 root root  5889744 Jan 16  2018 vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rwxr-xr-x  1 root root  6148096 Oct 21  2016 vmlinuz-4.4.26-201.el7.centos.x86_64</div></pre></td></tr></table></figure>
+<h3 id="yum-upgrade"><a href="#yum-upgrade" class="headerlink" title="yum upgrade"></a>yum upgrade</h3><p>刚刚我们用了 <code>yum update</code> 方式升级，发现没有自动清理掉旧的 Kernel ，在 Stack Overflow 上看到有人说可以使用 <code>upgrade</code> 方式，会自动清理，<br>现在我们换 <code>yum upgrade</code> 升级看看有何不同。</p>
+<p>首先查看我们的环境状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">[root@node112 14:41:11 ~]<span class="variable">$ll</span> /boot/</div><div class="line">total 124884</div><div class="line">-rw-r--r--. 1 root root   140924 Jan 16  2018 config-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">drwxr-xr-x. 3 root root     1024 May 31 10:55 efi</div><div class="line">drwxr-xr-x. 2 root root     1024 May 31 10:56 grub</div><div class="line">drwx------. 5 root root     1024 May 31 11:02 grub2</div><div class="line">-rw-------. 1 root root 57008277 May 31 11:01 initramfs-0-rescue-00bf5adc700644d685733d8e76c21d42.img</div><div class="line">-rw-------. 1 root root 17249662 May 31 11:01 initramfs-3.10.0-229.el7.x86_64.img</div><div class="line">-rw-------. 1 root root 20945698 May 31 11:02 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img</div><div class="line">-rw-------  1 root root 16586061 Jul  4 11:49 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img</div><div class="line">-rw-r--r--. 1 root root   610343 May 31 11:00 initrd-plymouth.img</div><div class="line">drwx------. 2 root root    12288 May 31 10:55 lost+found</div><div class="line">-rw-r--r--. 1 root root   293110 Jan 16  2018 symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz</div><div class="line">-rw-------. 1 root root  3232490 Jan 16  2018 System.map-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rwxr-xr-x. 1 root root  5889744 May 31 11:01 vmlinuz-0-rescue-00bf5adc700644d685733d8e76c21d42</div><div class="line">-rwxr-xr-x. 1 root root  5889744 Jan 16  2018 vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">[root@node112 14:41:13 ~]<span class="variable">$uname</span> -a</div><div class="line">Linux node112 3.10.0-693.11.6.el7.smartx.1.x86_64 <span class="comment">#1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux</span></div></pre></td></tr></table></figure></p>
+<p>进行升级：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div></pre></td><td class="code"><pre><div class="line">[root@node112 14:42:34 ~]<span class="variable">$yum</span> upgrade kernel</div><div class="line">Loaded plugins: fastestmirror, langpacks</div><div class="line">Loading mirror speeds from cached hostfile</div><div class="line">Resolving Dependencies</div><div class="line">--&gt; Running transaction check</div><div class="line">---&gt; Package kernel.x86_64 0:4.4.26-201.el7.centos will be installed</div><div class="line">--&gt; Processing Dependency: kernel-core-uname-r = 4.4.26-201.el7.centos.x86_64 <span class="keyword">for</span> package: kernel-4.4.26-201.el7.centos.x86_64</div><div class="line">--&gt; Processing Dependency: kernel-modules-uname-r = 4.4.26-201.el7.centos.x86_64 <span class="keyword">for</span> package: kernel-4.4.26-201.el7.centos.x86_64</div><div class="line">--&gt; Processing Dependency: xorg-x11-drv-vmmouse &gt;= 14.0.0 <span class="keyword">for</span> package: kernel-4.4.26-201.el7.centos.x86_64</div><div class="line">--&gt; Running transaction check</div><div class="line">---&gt; Package kernel-core.x86_64 0:4.4.26-201.el7.centos will be installed</div><div class="line">---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be updated</div><div class="line">---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be obsoleted</div><div class="line">---&gt; Package kernel-headers.x86_64 0:4.4.26-201.el7.centos will be obsoleting</div><div class="line">---&gt; Package kernel-modules.x86_64 0:4.4.26-201.el7.centos will be installed</div><div class="line">--&gt; Finished Dependency Resolution</div><div class="line"></div><div class="line">Dependencies Resolved</div><div class="line"></div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line"> Package                                                          Arch                                                     Version                                                                    Repository                                                Size</div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line">Installing:</div><div class="line"> kernel                                                           x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    79 k</div><div class="line"> kernel-headers                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                   1.0 M</div><div class="line">     replacing  kernel-headers.x86_64 3.10.0-862.3.3.el7</div><div class="line">Installing <span class="keyword">for</span> dependencies:</div><div class="line"> kernel-core                                                      x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    20 M</div><div class="line"> kernel-modules                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    18 M</div><div class="line"></div><div class="line">Transaction Summary</div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line">Install  2 Packages (+2 Dependent packages)</div><div class="line"></div><div class="line">Total download size: 40 M</div><div class="line">Is this ok [y/d/N]: y</div><div class="line">Downloading packages:</div><div class="line">Delta RPMs disabled because /usr/bin/applydeltarpm not installed.</div><div class="line">(1/4): kernel-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                                |  79 kB  00:00:00     </div><div class="line">(2/4): kernel-headers-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        | 1.0 MB  00:00:00     </div><div class="line">(3/4): kernel-modules-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        |  18 MB  00:00:00     </div><div class="line">(4/4): kernel-core-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                           |  20 MB  00:00:00     </div><div class="line">---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------</div><div class="line">Total                                                                                                                                                                                                                                 58 MB/s |  40 MB  00:00:00     </div><div class="line">Running transaction check</div><div class="line">Running transaction <span class="built_in">test</span></div><div class="line">Transaction <span class="built_in">test</span> succeeded</div><div class="line">Running transaction</div><div class="line">Warning: RPMDB altered outside of yum.</div><div class="line">  Installing : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 </div><div class="line">  Installing : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 </div><div class="line">  Installing : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       3/5 </div><div class="line">  Installing : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               4/5 </div><div class="line">  Cleanup    : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 </div><div class="line">  Verifying  : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 </div><div class="line">  Verifying  : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 </div><div class="line">  Verifying  : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               3/5 </div><div class="line">  Verifying  : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       4/5 </div><div class="line">  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 </div><div class="line">  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          6/5 </div><div class="line"></div><div class="line">Installed:</div><div class="line">  kernel.x86_64 0:4.4.26-201.el7.centos                                                                                         kernel-headers.x86_64 0:4.4.26-201.el7.centos                                                                                        </div><div class="line"></div><div class="line">Dependency Installed:</div><div class="line">  kernel-core.x86_64 0:4.4.26-201.el7.centos                                                                                      kernel-modules.x86_64 0:4.4.26-201.el7.centos                                                                                     </div><div class="line"></div><div class="line">Replaced:</div><div class="line">  kernel-headers.x86_64 0:3.10.0-862.3.3.el7                                                                                                                                                                                                                         </div><div class="line"></div><div class="line">Complete!</div></pre></td></tr></table></figure></p>
+<hr>
+<p>可以看到，仍然没有自动清理掉旧的 Kernel， <code>/boot</code> 分区的空间还是被占用了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">[root@node112 14:43:49 ~]<span class="variable">$ll</span> /boot/</div><div class="line">total 151870</div><div class="line">-rw-r--r--. 1 root root   140924 Jan 16  2018 config-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rw-r--r--  1 root root   169326 Oct 21  2016 config-4.4.26-201.el7.centos.x86_64</div><div class="line">drwxr-xr-x. 3 root root     1024 May 31 10:55 efi</div><div class="line">drwxr-xr-x. 2 root root     1024 May 31 10:56 grub</div><div class="line">drwx------. 5 root root     1024 Aug  9 14:43 grub2</div><div class="line">-rw-------. 1 root root 57008277 May 31 11:01 initramfs-0-rescue-00bf5adc700644d685733d8e76c21d42.img</div><div class="line">-rw-------. 1 root root 17249662 May 31 11:01 initramfs-3.10.0-229.el7.x86_64.img</div><div class="line">-rw-------. 1 root root 20945698 May 31 11:02 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img</div><div class="line">-rw-------  1 root root 16586061 Jul  4 11:49 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img</div><div class="line">-rw-------  1 root root 18048069 Aug  9 14:43 initramfs-4.4.26-201.el7.centos.x86_64.img</div><div class="line">-rw-r--r--. 1 root root   610343 May 31 11:00 initrd-plymouth.img</div><div class="line">drwx------. 2 root root    12288 May 31 10:55 lost+found</div><div class="line">-rw-r--r--. 1 root root   293110 Jan 16  2018 symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz</div><div class="line">-rw-------. 1 root root  3232490 Jan 16  2018 System.map-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rw-------  1 root root  3265893 Oct 21  2016 System.map-4.4.26-201.el7.centos.x86_64</div><div class="line">-rwxr-xr-x. 1 root root  5889744 May 31 11:01 vmlinuz-0-rescue-00bf5adc700644d685733d8e76c21d42</div><div class="line">-rwxr-xr-x. 1 root root  5889744 Jan 16  2018 vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">-rwxr-xr-x  1 root root  6148096 Oct 21  2016 vmlinuz-4.4.26-201.el7.centos.x86_64</div></pre></td></tr></table></figure>
+<h2 id="正确清理方式"><a href="#正确清理方式" class="headerlink" title="正确清理方式"></a>正确清理方式</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">[root@node112 14:44:11 ~]<span class="variable">$rpm</span> -q kernel</div><div class="line">kernel-3.10.0-693.11.6.el7.smartx.1.x86_64</div><div class="line">kernel-4.4.26-201.el7.centos.x86_64</div></pre></td></tr></table></figure>
+<p>使用 <code>yum-utils</code> 中提供的 <code>package-cleanup</code> 工具：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">[root@node112 14:48:02 ~]<span class="variable">$rpm</span> -qf `<span class="built_in">which</span> package-cleanup`</div><div class="line">yum-utils-1.1.31-42.el7.noarch</div></pre></td></tr></table></figure>
+<p>在我们重启过 OS，并确保已经使用升级后的 Kernel 后，进行如下操作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div></pre></td><td class="code"><pre><div class="line">[root@node112 14:53:44 ~]<span class="variable">$uname</span> -a</div><div class="line">Linux node112 4.4.26-201.el7.centos.x86_64 <span class="comment">#1 SMP Thu Oct 20 17:49:17 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux</span></div><div class="line">[root@node112 14:53:46 ~]<span class="variable">$package</span>-cleanup --oldkernels --count=1</div><div class="line">Loaded plugins: fastestmirror, langpacks</div><div class="line">--&gt; Running transaction check</div><div class="line">---&gt; Package kernel.x86_64 0:3.10.0-693.11.6.el7.smartx.1 will be erased</div><div class="line">--&gt; Processing Dependency: kernel(__alloc_workqueue_key) = 0x43a53735 <span class="keyword">for</span> package: kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64</div><div class="line">--&gt; Processing Dependency: kernel(__bitmap_or) = 0x9f2bdaac <span class="keyword">for</span> package: kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64</div><div class="line">--&gt; Processing Dependency: kernel(__bitmap_weight) = 0x4cbbd171 <span class="keyword">for</span> package: kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64</div><div class="line">--&gt; Running transaction check</div><div class="line">---&gt; Package kmod-mpt3sas.x86_64 0:24.125.01.00_el7.4-1 will be erased</div><div class="line">--&gt; Finished Dependency Resolution</div><div class="line"></div><div class="line">Dependencies Resolved</div><div class="line"></div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line"> Package                                                      Arch                                                   Version                                                                         Repository                                                 Size</div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line">Removing:</div><div class="line"> kernel                                                       x86_64                                                 3.10.0-693.11.6.el7.smartx.1                                                    @anaconda                                                  60 M</div><div class="line">Removing <span class="keyword">for</span> dependencies:</div><div class="line"> kmod-mpt3sas                                                 x86_64                                                 24.125.01.00_el7.4-1                                                            @anaconda                                                 5.3 M</div><div class="line"></div><div class="line">Transaction Summary</div><div class="line">=====================================================================================================================================================================================================================================================================</div><div class="line">Remove  1 Package (+1 Dependent package)</div><div class="line"></div><div class="line">Installed size: 65 M</div><div class="line">Is this ok [y/N]: y</div><div class="line">Downloading packages:</div><div class="line">Running transaction check</div><div class="line">Running transaction <span class="built_in">test</span></div><div class="line">Transaction <span class="built_in">test</span> succeeded</div><div class="line">Running transaction</div><div class="line">  Erasing    : kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64                                                                                                                                                                                                          1/2 </div><div class="line">  Erasing    : kernel-3.10.0-693.11.6.el7.smartx.1.x86_64                                                                                                                                                                                                        2/2 </div><div class="line">  Verifying  : kernel-3.10.0-693.11.6.el7.smartx.1.x86_64                                                                                                                                                                                                        1/2 </div><div class="line">  Verifying  : kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64                                                                                                                                                                                                          2/2 </div><div class="line"></div><div class="line">Removed:</div><div class="line">  kernel.x86_64 0:3.10.0-693.11.6.el7.smartx.1                                                                                                                                                                                                                       </div><div class="line"></div><div class="line">Dependency Removed:</div><div class="line">  kmod-mpt3sas.x86_64 0:24.125.01.00_el7.4-1                                                                                                                                                                                                                         </div><div class="line"></div><div class="line">Complete!</div></pre></td></tr></table></figure>
+<p>现在我们来看下 <code>/boot</code> 分区情况：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">[root@node112 14:54:41 ~]<span class="variable">$ll</span> /boot/</div><div class="line">total 105878</div><div class="line">-rw-r--r--  1 root root   169326 Oct 21  2016 config-4.4.26-201.el7.centos.x86_64</div><div class="line">drwxr-xr-x. 3 root root     1024 May 31 10:55 efi</div><div class="line">drwxr-xr-x. 2 root root     1024 May 31 10:56 grub</div><div class="line">drwx------. 5 root root     1024 Aug  9 14:54 grub2</div><div class="line">-rw-------. 1 root root 57008277 May 31 11:01 initramfs-0-rescue-00bf5adc700644d685733d8e76c21d42.img</div><div class="line">-rw-------. 1 root root 17249662 May 31 11:01 initramfs-3.10.0-229.el7.x86_64.img</div><div class="line">-rw-------  1 root root 18048069 Aug  9 14:43 initramfs-4.4.26-201.el7.centos.x86_64.img</div><div class="line">-rw-r--r--. 1 root root   610343 May 31 11:00 initrd-plymouth.img</div><div class="line">drwx------. 2 root root    12288 May 31 10:55 lost+found</div><div class="line">-rw-------  1 root root  3265893 Oct 21  2016 System.map-4.4.26-201.el7.centos.x86_64</div><div class="line">-rwxr-xr-x. 1 root root  5889744 May 31 11:01 vmlinuz-0-rescue-00bf5adc700644d685733d8e76c21d42</div><div class="line">-rwxr-xr-x  1 root root  6148096 Oct 21  2016 vmlinuz-4.4.26-201.el7.centos.x86_64</div></pre></td></tr></table></figure></p>
+<p>可以旧的 Kernel 内核文件已经被清除了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在进行软件包卸载的时候，尤其是像 Kernel 这种会影响到服务器运行的软件包，我们操作一定要谨慎，不要轻易的执行 <code>rpm -e --nodeps</code> 或者 <code>yum -y remove</code> 等操作。尽量保证服务器安全性。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/08/04/CentOS-LiveCD-构建及修改方式/" rel="next" title="CentOS LiveCD 构建及修改方式">
+                <i class="fa fa-chevron-left"></i> CentOS LiveCD 构建及修改方式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/yiran.png"
+                alt="yiran" />
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">yiran's blog</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#升级方式"><span class="nav-number">2.</span> <span class="nav-text">升级方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#yum-update"><span class="nav-number">2.1.</span> <span class="nav-text">yum update</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yum-upgrade"><span class="nav-number">2.2.</span> <span class="nav-text">yum upgrade</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正确清理方式"><span class="nav-number">3.</span> <span class="nav-text">正确清理方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://zdyxry.com/2018/08/09/Linux-安全清理-boot-分区/';
+          this.page.identifier = '2018/08/09/Linux-安全清理-boot-分区/';
+          this.page.title = 'Linux 安全清理 /boot 分区';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
