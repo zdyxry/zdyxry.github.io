@@ -254,6 +254,346 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/05/29/CentOS-多网卡多网关配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/05/29/CentOS-多网卡多网关配置/" itemprop="url">CentOS 多网卡多网关配置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-29T19:21:36+08:00">
+                2018-05-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/05/29/CentOS-多网卡多网关配置/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/05/29/CentOS-多网卡多网关配置/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>日常使用中，开发机通常只配置一块网卡，通常配置为 DHCP 自动获取 IP，这样就可以自动从 DHCP Server 获取 IP，网关，DNS Server 等配置，不用手动配置。</p>
+<p>最近在工作中存在一种场景，一台服务器，多块网卡，需要对不同的网卡配置各自网关，查找了一些资料，也踩了一些坑，记录一下过程。</p>
+<h3 id="配置过程"><a href="#配置过程" class="headerlink" title="配置过程"></a>配置过程</h3><ol>
+<li><p>官方配置<br>尝试在 <code>/etc/sysconfig/network-scripts/ifcfg-&lt;device&gt;</code> 中增加 GATEWAY 自动使之生效，实际上来看，多张网卡都配置 GATEWAY 字段会产生冲突，只能放弃通过网卡配置文件方式，尝试通过给网卡配置静态路由方式添加。<br>在 CentOS <a href="https://www.centos.org/docs/5/html/5.2/Deployment_Guide/s1-networkscripts-static-routes.html" target="_blank" rel="external">官方网站</a>查找配置静态路由方法，文档中提到通过编写网卡路由配置文件<code>/etc/sysconfig/network-scripts/route-_&lt;interface&gt;</code>  ，配置完成后重启网络可以自动生效。<br>官方这种方式我尝试了两种文件编写方式，一种为<code>192.168.64.0/20 via &lt;gateway&gt; dev &lt;device&gt;</code>，一种为 <code>ADDRESS0=xxxxx; NETMASK0=xxxxx; GATEWAY0=xxxxx</code>。两种配置方式均没有生效，只能放弃。</p>
+</li>
+<li><p>手动配置<br>可以通过 <code>route add</code> 命令临时给第二章网卡配置网关，通过 <code>route -n</code> 查看是可以生效。但是因为最终目标是让路由随着网络服务（公司内部未使用 NetworkManager）Network 启动而配置，因此在 /etc/rc.local 中假如 <code>route add</code> 类似命令无法走通。   </p>
+</li>
+<li><p>上述方法要么无法生效，要么存在无法持久化问题，均无法完成需求。 只能通过查看 网卡服务启动脚本来查找，查看 <code>/etc/init.d/network</code> （systemd 服务控制也是执行该文件），该文件是一个 Shell 脚本，找到路由配置相关：  </p>
+</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">  2     # Add non interface-specific static-routes.</div><div class="line">  1     if [ -f /etc/sysconfig/static-routes ]; then</div><div class="line">141        if [ -x /sbin/route ]; then</div><div class="line">  1            grep "^any" /etc/sysconfig/static-routes | while read ignore args ; do</div><div class="line">  2                    /sbin/route add -$args</div><div class="line">  3            done</div><div class="line">  4        else</div><div class="line">  5            net_log $"Legacy static-route support not available: /sbin/route not found"</div><div class="line">  6        fi</div><div class="line">  7     fi</div></pre></td></tr></table></figure>
+<p>可以看到，在网络服务 network 启动过程中，会判断 <code>/etc/sysconfig/static-routes</code> 文件是否存在，如果存在则会通过 <code>route</code> 命令对该文件中记录以 <code>any</code> 开头的路由进行添加，添加命令为 <code>/sbin/route add -$args</code>。<br>根据上述脚本，尝试编写 static-routes 文件：  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">any net 192.168.64.0/20 gw 192.168.64.1</div><div class="line">any net 10.0.10.0/24 gw 10.0.10.222</div></pre></td></tr></table></figure>
+<p>编写完成后，重启网络服务 <code>systemctl restart network</code> ，执行 <code>route -n</code> 查看是否生效：  </p>
+<pre><code class="bash">[root@scvm9 19:49:55 ~]<span class="variable">$route</span> -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         192.168.64.1    0.0.0.0         UG    0      0        0 eth0
+10.0.10.0       0.0.0.0         255.255.255.0   U     0      0        0 eth2
+10.0.10.0       10.0.10.222     255.255.255.0   UG    0      0        0 eth2
+169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
+</code></pre>
+<p>看上去已经生效，因为实际环境中没有第二块网卡网关设备，临时指定一个不存在的 IP。<br>本以为已经搞定，结果在实际验证的时候，发现第二块网卡无法连接其他节点，哪怕其他节点与它二层联通；尝试将网关指定可以正常工作的 IP 节点，可以与其他节点联通，且 traceroute 也没有经过网关而是直接连接。</p>
+<h3 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h3><ol>
+<li>尝试将网关配置成可以正常工作的节点<ul>
+<li>各个节点可以正确联通</li>
+<li>traceroute 到其他节点未经过网关</li>
+</ul>
+</li>
+<li>尝试将网关配置成不存在节点<ul>
+<li>各个节点无法正确联通</li>
+</ul>
+</li>
+<li>尝试将网关掩码配置为网卡掩码的超集<ul>
+<li>各个节点可以正确联通</li>
+<li>traceroute 到其他节点未经过网关</li>
+</ul>
+</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>红帽系列发行版本配置静态路由可通过 /etc/sysconfig/static-routes 配置生效，但要注意在 static-routes 文件中的路由添加要添加网关节点对应的掩码而不是本地节点网卡掩码，网关掩码为本地网卡掩码的超集。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2017/12/31/2017年读书记录/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/12/31/2017年读书记录/" itemprop="url">2017年读书记录</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-31T09:35:40+08:00">
+                2017-12-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/12/31/2017年读书记录/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/12/31/2017年读书记录/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="年终总结"><a href="#年终总结" class="headerlink" title="年终总结"></a>年终总结</h2><p>计划 32 本，实际读完 23 本。</p>
+<h2 id="已读"><a href="#已读" class="headerlink" title="已读"></a>已读</h2><ul>
+<li>《软技能*代码之外的生存指南》  </li>
+<li>《SRE：Google 运维解密》  </li>
+<li>《Vim 实用技巧》  </li>
+<li>《谈判力》  </li>
+<li>《黑客与画家》  </li>
+<li>《大话存储ⅰ》  </li>
+<li>《跟老齐学 Python》  </li>
+<li>《Python编程快速上手 让繁琐工作自动化》  </li>
+<li>《Think Python》  </li>
+<li>《奔跑吧 Ansible》  </li>
+<li>《Python核心编程（第二版）》  </li>
+<li>《Python 学习手册》  </li>
+<li>《嫌疑人X的献身》  </li>
+<li>《图解 HTTP》  </li>
+<li>《你是那人间的四月天》</li>
+<li>《失乐园》</li>
+<li>《活出生命的意义》</li>
+<li>《Python核心编程（第三版）》</li>
+<li>《深度工作》</li>
+<li>《深度实践 KVM》</li>
+<li>《Shell 脚本学习指南》</li>
+<li>《浪潮之巅》</li>
+<li>《人间失格》</li>
+</ul>
+<h2 id="在读"><a href="#在读" class="headerlink" title="在读"></a>在读</h2><ul>
+<li>《Flask Web开发：基于Python的Web应用开发实战》</li>
+<li>《哲学家们都干了些什么》</li>
+<li>《二手时间》</li>
+<li>《Python 算法教程》   </li>
+</ul>
+<h2 id="想读"><a href="#想读" class="headerlink" title="想读"></a>想读</h2><ul>
+<li>《Python Web开发实战》</li>
+<li>《problem solving with algorithms and data structure using python 中文版》</li>
+<li>《Fluent Python》</li>
+<li>《大话数据结构》</li>
+<li>《构建高性能WEB站点》</li>
+<li>《C和指针》</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -599,7 +939,7 @@ iops-total-max-length=60
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">24</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -612,7 +952,7 @@ iops-total-max-length=60
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-count">20</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
