@@ -256,6 +256,158 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/08/04/CentOS-LiveCD-构建及修改方式/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/08/04/CentOS-LiveCD-构建及修改方式/" itemprop="url">CentOS LiveCD 构建及修改方式</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-04T06:39:28+08:00">
+                2018-08-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/08/04/CentOS-LiveCD-构建及修改方式/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/08/04/CentOS-LiveCD-构建及修改方式/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Linux 作为目前服务器占比超过 60% 的操作系统，日常使用过程中，都是采用官方发布的 DVD ISO 安装，可以选择安装桌面版本还是 Minimal 版本。但是如果我们想要验证服务器硬件是否满足产品需求，就需要通过 Live CD 的方式先在内存中运行操作系统，然后进行硬件检测。通过这种方式可以在最小成本（无需安装操作系统到磁盘中）下完成硬件检测。目前 OpenStack 厂商 Mirantis 及云计算厂商 Nutanix 均采用该种方式进行产品安装前校验。要进行校验的第一步，就是构建属于我们自己的 Live CD ISO，下面以 CentOS 为例介绍如何构建和定制 Live CD ISO。</p>
+<h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><ol>
+<li>准备构建工具</li>
+<li>编写 KickStart 脚本</li>
+<li>准备软件源</li>
+<li>构建</li>
+</ol>
+<h3 id="构建工具"><a href="#构建工具" class="headerlink" title="构建工具"></a>构建工具</h3><p>核心工具 <a href="https://github.com/livecd-tools/livecd-tools" target="_blank" rel="external">livecd-creator</a>。<br>构建环境为 CentOS 7。指定官方 yum repo：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">root@yiran-30-250:/etc/yum.repos.d</div><div class="line"> $ ll</div><div class="line">总用量 56K</div><div class="line">-rw-r--r--  1 root root 1.7K 1月  15 2018 CentOS-Base.repo</div><div class="line">-rw-r--r--. 1 root root 1.3K 12月  9 2015 CentOS-CR.repo</div><div class="line">-rw-r--r--. 1 root root  649 12月  9 2015 CentOS-Debuginfo.repo</div><div class="line">-rw-r--r--. 1 root root  290 12月  9 2015 CentOS-fasttrack.repo</div><div class="line">-rw-r--r--. 1 root root  630 12月  9 2015 CentOS-Media.repo</div><div class="line">-rw-r--r--  1 root root  916 5月  23 2016 CentOS-SCLo-scl.repo</div><div class="line">-rw-r--r--  1 root root  892 5月  23 2016 CentOS-SCLo-scl-rh.repo</div><div class="line">-rw-r--r--. 1 root root 1.3K 12月  9 2015 CentOS-Sources.repo</div><div class="line">-rw-r--r--. 1 root root 2.0K 12月  9 2015 CentOS-Vault.repo</div><div class="line">-rw-r--r--  1 root root  951 10月  3 2017 epel.repo</div><div class="line">-rw-r--r--  1 root root 1.1K 10月  3 2017 epel-testing.repo</div><div class="line">-rw-r--r--  1 root root  306 7月   2 13:58 mcepl-vim8-epel-7.repo</div><div class="line">-rw-r--r--  1 root root 3.2K 6月  23 19:00 smartx-idc.repo</div></pre></td></tr></table></figure></p>
+<p>通过 Yum 安装，会自动安装相应依赖软件包：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">yum install -y livecd-tools</div></pre></td></tr></table></figure></p>
+<h3 id="KickStart-脚本"><a href="#KickStart-脚本" class="headerlink" title="KickStart 脚本"></a>KickStart 脚本</h3><p>什么是 KickStart？许多系统管理员更愿意使用自动安装方法在其服务器上安装 Red Hat Enterprise Linux。为了满足这一需求，Red Hat 创建了 KickStart 安装方法。具体 KickStart 编写语法查看 <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-kickstart-syntax" target="_blank" rel="external">RedHat 官方</a>查看<br>这里我们可以先参考<a href="https://github.com/CentOS/sig-core-livemedia/blob/master/kickstarts/centos-7-livecd.cfg" target="_blank" rel="external">官方样例</a>，先确保通过官方样例可以构建成功，我们再来进行自己的定制操作。<br>将官方样例下载到本地，接下来看下面一节，不着急定制。</p>
+<p>如果按照官方样例已经正确构建了自己的 ISO，那么我们下面来看如何进行简单的定制，如配置网络。<br>打开 KickStart.cfg 文件，我们可以看到除了特定的语法外，其他的都是 Shell 脚本，可见 KickStart 是兼容 Shell 语法的，那么我们就可以直接在 KickStart 内指定要进行的事情。<br>如启动之后配置网卡信息：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># config eth0</span></div><div class="line">cat &gt; /etc/sysconfig/network-scripts/ifcfg-eth0 &lt;&lt; EOF</div><div class="line">DEVICE=eth0</div><div class="line">IPADDR=192.168.30.253</div><div class="line">NETMASK=255.255.240.0</div><div class="line">GATEWAY=192.168.16.1</div><div class="line">ONBOOT=yes</div><div class="line">NAME=eth0</div><div class="line">EOF</div><div class="line"></div><div class="line">ifup eth0</div></pre></td></tr></table></figure></p>
+<p>或者安装某指定软件并自动启动：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># install &amp; start &amp; enable dhcpd</span></div><div class="line">yum install -y dhcpd</div><div class="line">systemctl <span class="built_in">enable</span> dhcpd</div><div class="line">systemctl start dhcpd</div><div class="line">tail -n 10 /var/lib/dhcpd/dhcpd.leases</div></pre></td></tr></table></figure></p>
+<h3 id="准备软件源"><a href="#准备软件源" class="headerlink" title="准备软件源"></a>准备软件源</h3><p>在之前的博客中我们介绍过 RPM 及 Yum 等工具的概念及使用。<br>我们现在需要构建一个本地的 Yum Repo。通用做法为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$cd</span> /data/</div><div class="line"><span class="variable">$mkdir</span> packages</div><div class="line"><span class="variable">$cp</span> <span class="variable">$some_packages</span> packages</div><div class="line"><span class="variable">$createrepo</span> .</div></pre></td></tr></table></figure></p>
+<p>这样我们就创建好了一个本地的 Yum repo，如何让本地 Yum 生效呢？<br>我们可以通过 http 或者 ftp 的方式配置，只需要将 /data/packages 这个路径允许通过文件方式访问。</p>
+<p>上面这种方式通常用于定制化使用，我们此处为了简化操作，可以直接拷贝一个官方 ISO，挂载到本地的方式作为本地 Yum Repo。具体操作如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$cd</span> /data/</div><div class="line"><span class="variable">$mkdir</span> /data/centos7</div><div class="line"><span class="variable">$mount</span> CentOS-7.4-x86_64-DVD-1708.iso /data/centos7</div><div class="line"><span class="variable">$mkdir</span> /etc/yum.repos.d/bk</div><div class="line"><span class="variable">$mv</span> /etc/yum.repos.d/*.repo /etc/yum.repos.d/bk/</div><div class="line"><span class="variable">$cat</span> &gt; /etc/yum.repos.d/local.repo &lt;&lt; EOF</div><div class="line">[<span class="built_in">local</span>]</div><div class="line">name=<span class="built_in">local</span></div><div class="line">baseurl=file:///data/centos7</div><div class="line">enabled=1</div><div class="line">gpgcheck=0</div><div class="line">EOF</div><div class="line">$</div></pre></td></tr></table></figure></p>
+<p>我们就可以通过 yum 的方式安装软件包了。</p>
+<h3 id="构建-Live-CD-ISO"><a href="#构建-Live-CD-ISO" class="headerlink" title="构建 Live CD ISO"></a>构建 Live CD ISO</h3><p>在一切准备好之后，我们开始构建 ISO。<br>编辑官方样例，将 17 &amp; 18 行替换为如下文件，指定我们刚刚指定的本地 Yum repo：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">repo --name=base --baseurl=file:///data/packages</div></pre></td></tr></table></figure></p>
+<p>使用 livecd-tools 构建名为 yiran-live.iso：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">livecd-creator -v --config centos-7-livecd.cfg --cache /var/cache/livecd --name yiran-livecd</div></pre></td></tr></table></figure></p>
+<p>构建过程大概需要 5 ~ 10 分钟，构建完成后我们可以再当前路径下看到 yiran-livecd.iso，我们来看下 ISO 中的目录结构：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$mkdir</span> /tmp/yiran-livecd</div><div class="line"><span class="variable">$mount</span> yiran-livecd.iso /tmp/yiran-livecd</div><div class="line"><span class="variable">$tree</span> /tmp/yiran-livecd</div><div class="line">/tmp/yiran-livecd</div><div class="line">├── isolinux</div><div class="line">│   ├── boot.cat</div><div class="line">│   ├── initrd0.img</div><div class="line">│   ├── isolinux.bin</div><div class="line">│   ├── isolinux.cfg</div><div class="line">│   ├── vesamenu.c32</div><div class="line">│   └── vmlinuz0</div><div class="line">└── LiveOS</div><div class="line">    ├── osmin.img</div><div class="line">    └── squashfs.img</div></pre></td></tr></table></figure></p>
+<p>可以看到，用于启动引导的文件均在 isolinux 路径下，而设计到文件系统相关的文件均被打包压缩到 <code>squashfs.img</code> 中，如果想要更多的定制方式，我们就需要解压这个 img 文件并修改对应路径下的内容，然后再压缩重新制作 ISO，这里不深入介绍。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>构建属于自己的 ISO 可以很方便的在日常工作中开展工作，我们可以直接挂载 LiveCD 并直接查看磁盘内容，可以把我们常用的内置软件放到 ISO 中，减少重复的安装操作。</p>
+<p>LiveCD 工作中用处不多，硬件检查是一项很符合 LiveCD 本职功能的需求，无论是时间成本还是实现成本都是很低的，推荐使用。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/07/28/RPM-常用构建方式/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1634,164 +1786,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/05/29/Hexo-Git-管理/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/05/29/Hexo-Git-管理/" itemprop="url">Hexo Git 管理</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-29T21:50:20+08:00">
-                2018-05-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/05/29/Hexo-Git-管理/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/05/29/Hexo-Git-管理/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><strong>以A电脑的Hexo博客源文件迁移到B电脑为例：</strong></p>
-<h2 id="一、对A电脑的操作如下："><a href="#一、对A电脑的操作如下：" class="headerlink" title="一、对A电脑的操作如下："></a><strong>一、对A电脑的操作如下：</strong></h2><p>1.在github新建仓库名为blog</p>
-<p>2.上传A电脑本地Hexo博客的源文件夹至github的blog仓库，流程如下：</p>
-<p>（1）删除根目录和主题目录下的.git文件夹</p>
-<p>（2）修改根目录下的.gitignore文件为：</p>
-<blockquote>
-<p>/.deploy_git</p>
-<p>/public</p>
-</blockquote>
-<p>（3）依次执行以下指令，同步源文件至github</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  git init</span></div><div class="line"><span class="meta">$</span><span class="bash">  git add .</span></div><div class="line"><span class="meta">$</span><span class="bash">  git commit -m <span class="string">"xxxxx"</span></span></div><div class="line"><span class="meta">$</span><span class="bash">  git remote add origin git@github.com:/blog_bak.git</span></div><div class="line"><span class="meta">$</span><span class="bash">  git push -u origin master</span></div></pre></td></tr></table></figure>
-<h2 id="二、对B电脑的操作如下："><a href="#二、对B电脑的操作如下：" class="headerlink" title="二、对B电脑的操作如下："></a>二、对B电脑的操作如下：</h2><p>1.安装Git，并配置github账号下的B电脑的.ssh<br>2.安装Node.js<br>3.使用npm指令安装Hexo</p>
-<blockquote>
-<p>$  npm install -g hexo-cli</p>
-<p>$ npm install hexo-asset-image –save 用于创建保存图片的文件夹</p>
-</blockquote>
-<p>4.使用Git bash随便选择一个文件夹,执行git clone</p>
-<blockquote>
-<p>$  git clone git@github.com:/blog.git</p>
-</blockquote>
-<h2 id="三、关于日常的改动流程（A，B两台电脑均使用的情况下）："><a href="#三、关于日常的改动流程（A，B两台电脑均使用的情况下）：" class="headerlink" title="三、关于日常的改动流程（A，B两台电脑均使用的情况下）："></a>三、关于日常的改动流程（A，B两台电脑均使用的情况下）：</h2><p>1.建议先检查更新git pull，将本地博客源文件更新至最新版本</p>
-<p><code>$  git pull</code></p>
-<p>2.然后可以新建或修改博客内容，进行预览等操作</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  hexo new <span class="string">"新的博客名称"</span></span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  hexo server</span></div></pre></td></tr></table></figure>
-<p>3.新建博客后，先同步Hexo源文件，将修改后的源文件同步至github:</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  git add .</span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  git commit -m <span class="string">"更新描述"</span></span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  git push origin master</span></div></pre></td></tr></table></figure>
-<p>4.然后再执行Hexo的生成文件和部署指令</p>
- <figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span><span class="bash">  hexo generate</span></div><div class="line"></div><div class="line"><span class="meta">$</span><span class="bash">  hexo deploy</span></div></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1846,7 +1840,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-count">26</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
