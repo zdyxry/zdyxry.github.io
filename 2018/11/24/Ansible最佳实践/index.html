@@ -89,7 +89,7 @@
 <meta property="og:site_name" content="Yiran">
 <meta property="og:description" content="背景说起来我真正负责过大批量服务器线上管理的时间，还是在16年负责运维的时候，那时候还都是通过 Shell 脚本来完成一些自动化的工作，当时觉得还不错，至少我觉得可定制化上还是很好的。   目前负责公司产品中一部分功能目前是通过 Shell 来完成的，但是 Shell 脚本在使用中存在一些弊端，最近在用 Ansible 来重写这部分功能，在重写过程中感受负责，又爱又恨，也有一些疑惑，特此记录。 A">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-11-24T13:18:58.398Z">
+<meta property="og:updated_time" content="2018-11-24T13:33:33.225Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Ansible最佳实践">
 <meta name="twitter:description" content="背景说起来我真正负责过大批量服务器线上管理的时间，还是在16年负责运维的时候，那时候还都是通过 Shell 脚本来完成一些自动化的工作，当时觉得还不错，至少我觉得可定制化上还是很好的。   目前负责公司产品中一部分功能目前是通过 Shell 来完成的，但是 Shell 脚本在使用中存在一些弊端，最近在用 Ansible 来重写这部分功能，在重写过程中感受负责，又爱又恨，也有一些疑惑，特此记录。 A">
@@ -348,7 +348,53 @@
 <h3 id="重复性操作"><a href="#重复性操作" class="headerlink" title="重复性操作"></a>重复性操作</h3><p>如果我们经常要查看某些集群（无监控）情况下的性能，我们可以编写一个 playbook，这个 playbook 专门用来收集集群的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"> $ cat cluster_status.yml</div><div class="line"><span class="comment">#!/usr/bin/env ansible-playbook</span></div><div class="line">---</div><div class="line">- name: cluster status</div><div class="line">  hosts: yiran-cluster</div><div class="line">  max_fail_percentage: 0</div><div class="line">  gather_facts: <span class="literal">false</span></div><div class="line">  tasks:</div><div class="line">     - name: uptime</div><div class="line">       raw: uptime</div><div class="line">       register: out</div><div class="line">     - debug: var=out.stdout_lines</div><div class="line"></div><div class="line">     - name: check services status</div><div class="line">       shell: /usr/share/tuna/script/control_all_services.sh --action=status --group=role</div><div class="line">       register: out</div><div class="line">       async: 300</div><div class="line">       poll: 2</div><div class="line">     - debug: var=out.stdout_lines</div><div class="line"></div><div class="line">     - name: memory status</div><div class="line">       raw: free -h</div><div class="line">       register: out</div><div class="line">     - debug: var=out.stdout_lines</div></pre></td></tr></table></figure></p>
 <h2 id="Shell-Script-vs-Ansible"><a href="#Shell-Script-vs-Ansible" class="headerlink" title="Shell Script vs Ansible"></a>Shell Script vs Ansible</h2><p>通过上述的简单示例，可以体会到 Ansible 的强大，但是 Ansible 真的有那么好么？</p>
 <p>明明几行  Shell 就可以搞定的事情，为什么一定要使用 Ansible 来做呢？<br>明明一个 Shell 脚本就可以完成的环境监察，为什么一定要使用 Ansible Playbook 来做呢？要知道 Playbook 编写语法虽然是 YAML，但是使用起来并不简单，有很多特殊的语法需要去注意，完全没有必要花费精力去学习一个新的工具去完成。</p>
-<p>前两天看到 <a href="https://www.kawabangga.com/" target="_blank" rel="external">卡瓦邦噶</a> 介绍 Ansible的一篇博客中，提到了一篇 <a href="https://hvops.com/articles/ansible-vs-shell-scripts/" target="_blank" rel="external">Shell Script vs Ansible: Fight</a> 的文章（远古版真香），其中有一段总结，用来描述 Ansible 的优势，我加上了 Shell Script 的对比如下：<br> | Ansible | Shell Script | 优胜者 |<br> | ——– | ——– | ——– |<br> | 可以进行源码管理 | Shell 也可以 | - |<br> | 幂等性 |  Shell 中需要额外做条件判断| Ansible |<br> | 同时在多台服务器运行 | Shell 可以通过 sshpass 编写脚本同时在多台运行| Ansible |<br> | 验证服务器正确性| Shell 需要编写脚本收集更多信息 | Ansible |<br> | 定位部分服务器组 | Shell 需要编写脚本对配置文件进行过滤筛选| Ansible |<br> | 支持模板 | - | Ansible |<br> | 技术栈支持| - | Ansible | </p>
+<p>前两天看到 <a href="https://www.kawabangga.com/" target="_blank" rel="external">卡瓦邦噶</a> 介绍 Ansible的一篇博客中，提到了一篇 <a href="https://hvops.com/articles/ansible-vs-shell-scripts/" target="_blank" rel="external">Shell Script vs Ansible: Fight</a> 的文章（远古版真香），其中有一段总结，用来描述 Ansible 的优势，我加上了 Shell Script 的对比如下：   </p>
+<table>
+<thead>
+<tr>
+<th>Ansible</th>
+<th>Shell Script</th>
+<th>优胜者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可以进行源码管理</td>
+<td>Shell 也可以</td>
+<td>-</td>
+</tr>
+<tr>
+<td>幂等性</td>
+<td>Shell 中需要额外做条件判断</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>同时在多台服务器运行</td>
+<td>Shell 可以通过 sshpass 编写脚本同时在多台运行</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>验证服务器正确性</td>
+<td>Shell 需要编写脚本收集更多信息</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>定位部分服务器组</td>
+<td>Shell 需要编写脚本对配置文件进行过滤筛选</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>支持模板</td>
+<td>-</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>技术栈支持</td>
+<td>-</td>
+<td>Ansible</td>
+</tr>
+</tbody>
+</table>
 <p> 综合看上去，感觉 Ansible 太好了，上述情况下如果可以选择的话，我们都应该选择 Ansible 来做管理，事实上真的是这样么？ </p>
 <p> 我也以为是这样，直到我通过 Ansible 重写 Shell 脚本。</p>
 <h2 id="噩梦开始"><a href="#噩梦开始" class="headerlink" title="噩梦开始"></a>噩梦开始</h2><p> 由于产品功能需要处理多平台的、多场景的情况，该功能的 Shell 脚本大概有 4800 行左右。<br> <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"> --------------------------------------------------------------------------------</div><div class="line">Language                      files          blank        comment           code</div><div class="line">--------------------------------------------------------------------------------</div><div class="line">Bourne Shell                     57            990            154           4847</div><div class="line">Python                            2             48              0            201</div><div class="line">Bourne Again Shell                1              4              5             28</div></pre></td></tr></table></figure></p>
