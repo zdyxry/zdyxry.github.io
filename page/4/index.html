@@ -256,6 +256,355 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/07/22/译-python-logging-最佳实践/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/22/译-python-logging-最佳实践/" itemprop="url">Python logging 最佳实践-译</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-22T09:50:47+08:00">
+                2018-07-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/07/22/译-python-logging-最佳实践/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/07/22/译-python-logging-最佳实践/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Python Logging 最佳实践</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有<br>了解过最佳实践， google 到了 fangpenlin 写的一篇博客（<a href="https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/），" target="_blank" rel="external">https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/），</a><br>很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~</p>
+<h2 id="Good-Logging-practice-in-Python"><a href="#Good-Logging-practice-in-Python" class="headerlink" title="Good Logging practice in Python"></a>Good Logging practice in Python</h2><p>在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。<br>如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查<br>和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现<br>错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你<br>客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远<br>不知道在不同的电脑环境中会发生什么奇怪的问题.</p>
+<h2 id="Print-不是个好主意"><a href="#Print-不是个好主意" class="headerlink" title="Print 不是个好主意"></a>Print 不是个好主意</h2><p>尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入<br>一些 print ，在开发结束时删除这些 print。向下面这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">print</span> <span class="string">'Start reading database'</span></div><div class="line">records = model.read_recrods()</div><div class="line"><span class="keyword">print</span> <span class="string">'# records'</span>, records</div><div class="line"><span class="keyword">print</span> <span class="string">'Updating record ...'</span></div><div class="line">model.update_records(records)</div><div class="line"><span class="keyword">print</span> <span class="string">'done'</span></div></pre></td></tr></table></figure>
+<p>当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。<br>第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。<br>你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。<br>所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是<br>这仍不是记录日志的最佳实践。</p>
+<h2 id="使用-Python-标准库-Logging"><a href="#使用-Python-标准库-Logging" class="headerlink" title="使用 Python 标准库 Logging"></a>使用 Python 标准库 Logging</h2><p>所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging<br>在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> logging</div><div class="line">logging.basicConfig(level=logging.INFO)</div><div class="line">logger = logging.getLogger(__name__)</div><div class="line"></div><div class="line">logger.info(<span class="string">'Start reading database'</span>)</div><div class="line"><span class="comment"># read database here</span></div><div class="line">records = &#123;<span class="string">'john'</span>: <span class="number">55</span>, <span class="string">'tom'</span>: <span class="number">66</span>&#125;</div><div class="line">logger.debug(<span class="string">'Records: %s'</span>, records)</div><div class="line">logger.info(<span class="string">'Updating records ...'</span>)</div><div class="line"><span class="comment"># update records here</span></div><div class="line">logger.info(<span class="string">'Finish updating records'</span>)</div></pre></td></tr></table></figure>
+<p>你可以运行得到下面输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">INFO:__main__:Start reading database</div><div class="line">INFO:__main__:Updating records ...</div><div class="line">INFO:__main__:Finish updating records</div></pre></td></tr></table></figure>
+<p>你可能会问这与 print 有什么区别。这样做当然是有好处的：</p>
+<ul>
+<li>你可以控制信息级别，过滤掉不重要的信息</li>
+<li>你可以决定之后输出的位置和方式</li>
+</ul>
+<p>有不同的日志级别你可以使用：debug，info，warning，error 和 critical。<br>通过设置不同的日志级别，你可以只输出错误信息到指定的日志文件中，或者在 debug<br>时输出调试的详细信息。尝试改变日志级别为 debug 再观察下输出结果：</p>
+<p><code>logging.basicConfig(level=logging.DEBUG)</code></p>
+<p>输出结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">INFO:__main__:Start reading database</div><div class="line">DEBUG:__main__:Records: &#123;<span class="string">'john'</span>: <span class="number">55</span>, <span class="string">'tom'</span>: <span class="number">66</span>&#125;</div><div class="line">INFO:__main__:Updating records ...</div><div class="line">INFO:__main__:Finish updating records</div></pre></td></tr></table></figure>
+<p>像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定<br>如何处理这些信息.举个例子你可以使用 FileHandler 让日志输出到一个文件中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> logging</div><div class="line"></div><div class="line">logger = logging.getLogger(__name__)</div><div class="line">logger.setLevel(logging.INFO)</div><div class="line"></div><div class="line"><span class="comment"># create a file handler</span></div><div class="line">handler = logging.FileHandler(<span class="string">'hello.log'</span>)</div><div class="line">handler.setLevel(logging.INFO)</div><div class="line"></div><div class="line"><span class="comment"># create a logging format</span></div><div class="line">formatter = logging.Formatter(<span class="string">'%(asctime)s - %(name)s - %(levelname)s - %(message)s'</span>)</div><div class="line">handler.setFormatter(formatter)</div><div class="line"></div><div class="line"><span class="comment"># add the handlers to the logger</span></div><div class="line">logger.addHandler(handler)</div><div class="line"></div><div class="line">logger.info(<span class="string">'Hello baby'</span>)</div></pre></td></tr></table></figure>
+<p>有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。<br>你也可以自定义日志处理方式，更多信息可以参考： Basic Tutorial, Advanced Tutorial and Logging Cookbook.</p>
+<h2 id="设置正确的日志级别"><a href="#设置正确的日志级别" class="headerlink" title="设置正确的日志级别"></a>设置正确的日志级别</h2><p>由于 logging 的灵活性，你可以在任何地方配置适当的日志级别去记录日志，可以再之后配置他们。<br>你可能会问，什么是正确的日志级别，这里我将分享我的经验。</p>
+<p>在大多数场景下，在日志中不希望去看到大量的详细信息。因此，debug 级别只是在你<br>调试过程中开启。我只使用调试级别来获取详细的调试信息，特别是当数据量很大或者频率<br>很高的时候，比如在一个 for 循环中记录某些内部的状态变化。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">complex_algorithm</span><span class="params">(items)</span>:</span></div><div class="line">    <span class="keyword">for</span> i, item <span class="keyword">in</span> enumerate(items):</div><div class="line">        <span class="comment"># do some complex algorithm computation</span></div><div class="line">        logger.debug(<span class="string">'%s iteration, item=%s'</span>, i, item)</div></pre></td></tr></table></figure>
+<p>对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">handle_request</span><span class="params">(request)</span>:</span></div><div class="line">    logger.info(<span class="string">'Handling request %s'</span>, request)</div><div class="line">    <span class="comment"># handle request here</span></div><div class="line">    result = <span class="string">'result'</span></div><div class="line">    logger.info(<span class="string">'Return result: %s'</span>, result)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">start_service</span><span class="params">()</span>:</span></div><div class="line">    logger.info(<span class="string">'Starting service at port %s ...'</span>, port)</div><div class="line">    service.start()</div><div class="line">    logger.info(<span class="string">'Service is started'</span>)</div></pre></td></tr></table></figure>
+<p>当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如<br>当一个用户登录时使用了错误的密码或者连接很慢时：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">authenticate</span><span class="params">(user_name, password, ip_address)</span>:</span></div><div class="line">    <span class="keyword">if</span> user_name != USER_NAME <span class="keyword">and</span> password != PASSWORD:</div><div class="line">        logger.warn(<span class="string">'Login attempt to %s from IP %s'</span>, user_name, ip_address)</div><div class="line">        <span class="keyword">return</span> <span class="keyword">False</span></div><div class="line">    <span class="comment"># do authentication here</span></div></pre></td></tr></table></figure>
+<p>当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_user_by_id</span><span class="params">(user_id)</span>:</span></div><div class="line">    user = db.read_user(user_id)</div><div class="line">    <span class="keyword">if</span> user <span class="keyword">is</span> <span class="keyword">None</span>:</div><div class="line">        logger.error(<span class="string">'Cannot find user with user_id=%s'</span>, user_id)</div><div class="line">        <span class="keyword">return</span> user</div><div class="line">    <span class="keyword">return</span> user</div></pre></td></tr></table></figure>
+<p>我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,<br>磁盘空间不足.</p>
+<h2 id="使用-name-作为-logger-名称"><a href="#使用-name-作为-logger-名称" class="headerlink" title="使用 name 作为 logger 名称"></a>使用 <strong>name</strong> 作为 logger 名称</h2><p>你不需要讲 logger 名称设置为 <strong>name</strong> ，但是如果这样做，会带来一些好处。<br><strong>name</strong> 变量在 Python 中是当前模块名称。举个例子，你可以调用<br>logger.getLogger(<strong>name</strong>) 在模块 “foo.bar.my_module”中，这相当于<br>logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配置为 “foo”，<br>这样所有在 foo 包中的模块都共享同样的配置。你可以在阅读日志的时候了解模块信息。</p>
+<h2 id="捕获异常并使用-traceback-记录"><a href="#捕获异常并使用-traceback-记录" class="headerlink" title="捕获异常并使用 traceback 记录"></a>捕获异常并使用 traceback 记录</h2><p>记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获<br>异常并与 traceback 一起记录他们。像这个例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">try</span>:</div><div class="line">    open(<span class="string">'/path/to/does/not/exist'</span>, <span class="string">'rb'</span>)</div><div class="line"><span class="keyword">except</span> (SystemExit, KeyboardInterrupt):</div><div class="line">    <span class="keyword">raise</span></div><div class="line"><span class="keyword">except</span> Exception, e:</div><div class="line">    logger.error(<span class="string">'Failed to open file'</span>, exc_info=<span class="keyword">True</span>)</div></pre></td></tr></table></figure>
+<p>通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以<br>看到这样的结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">ERROR:__main__:Failed to open file</div><div class="line">Traceback (most recent call last):</div><div class="line">  File <span class="string">"example.py"</span>, line <span class="number">6</span>, <span class="keyword">in</span> &lt;module&gt;</div><div class="line">    open(<span class="string">'/path/to/does/not/exist'</span>, <span class="string">'rb'</span>)</div><div class="line">IOError: [Errno <span class="number">2</span>] No such file <span class="keyword">or</span> directory: <span class="string">'/path/to/does/not/exist'</span></div></pre></td></tr></table></figure>
+<p>你也可以调用 logger.Exception(msg, <em>args)，这相当于 logger.error(msg,exc_info=True,</em>args)。</p>
+<h2 id="除非-disable-existing-loggers-False，否则不要在模块级别获取-logger"><a href="#除非-disable-existing-loggers-False，否则不要在模块级别获取-logger" class="headerlink" title="除非 disable_existing_loggers == False，否则不要在模块级别获取 logger"></a>除非 disable_existing_loggers == False，否则不要在模块级别获取 logger</h2><p>你可以看到很多的例子（包括这篇文章）在模块级别获取 logger。这看上去是无害的，<br>但是实际上，这是一个陷阱 - 在你从一个文件加载配置前，logging 模块会遵守所有<br>已经创建的 logger，如果你在模块级别获取 logger，像这种：</p>
+<hr>
+<p>my_module.py<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> logging</div><div class="line"></div><div class="line">logger = logging.getLogger(__name__)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">foo</span><span class="params">()</span>:</span></div><div class="line">    logger.info(<span class="string">'Hi, foo'</span>)</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar</span><span class="params">(object)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">bar</span><span class="params">(self)</span>:</span></div><div class="line">        logger.info(<span class="string">'Hi, bar'</span>)</div></pre></td></tr></table></figure></p>
+<hr>
+<p>main.py</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> logging</div><div class="line"></div><div class="line"><span class="comment"># load my module</span></div><div class="line"><span class="keyword">import</span> my_module</div><div class="line"></div><div class="line"><span class="comment"># load the logging configuration</span></div><div class="line">logging.config.fileConfig(<span class="string">'logging.ini'</span>)</div><div class="line"></div><div class="line">my_module.foo()</div><div class="line">bar = my_module.Bar()</div><div class="line">bar.bar()</div></pre></td></tr></table></figure>
+<hr>
+<p>logging.ini</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">[loggers]</div><div class="line">keys=root</div><div class="line"></div><div class="line">[handlers]</div><div class="line">keys=consoleHandler</div><div class="line"></div><div class="line">[formatters]</div><div class="line">keys=simpleFormatter</div><div class="line"></div><div class="line">[logger_root]</div><div class="line">level=DEBUG</div><div class="line">handlers=consoleHandler</div><div class="line"></div><div class="line">[handler_consoleHandler]</div><div class="line">class=StreamHandler</div><div class="line">level=DEBUG</div><div class="line">formatter=simpleFormatter</div><div class="line">args=(sys.stdout,)</div><div class="line"></div><div class="line">[formatter_simpleFormatter]</div><div class="line">format=%(asctime)s - %(name)s - %(levelname)s - %(message)s</div><div class="line">datefmt=</div></pre></td></tr></table></figure>
+<hr>
+<p>你期望看到记录显示在日志中，但是日志中是空的。为什么？ 因为你在模块级别创建 logger ，<br>所以在从文件加载 logging 配置之前导入该模块。 logging.fileConfig 和 logging.dictConfig<br>默认禁用已经存在的 logger。 所以配置文件中的配置不会在你的 logger 中生效。<br>这适合在你需要的时候获取 logger。 你可以像下面这样编写：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> logging</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">foo</span><span class="params">()</span>:</span></div><div class="line">    logger = logging.getLogger(__name__)</div><div class="line">    logger.info(<span class="string">'Hi, foo'</span>)</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar</span><span class="params">(object)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, logger=None)</span>:</span></div><div class="line">        self.logger = logger <span class="keyword">or</span> logging.getLogger(__name__)</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">bar</span><span class="params">(self)</span>:</span></div><div class="line">        self.logger.info(<span class="string">'Hi, bar'</span>)</div></pre></td></tr></table></figure>
+<p>通过这样做， logger 将会在你加载配置之后创建，配置会正确生效。</p>
+<p>从 Python 2.7 开始，添加一个新的参数名为 “disable_existing_loggers” 到 fileConfig 和<br>dictConfig，通过将其设置为 False，可以解决上面提到的问题。比如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> logging</div><div class="line"><span class="keyword">import</span> logging.config</div><div class="line"></div><div class="line">logger = logging.getLogger(__name__)</div><div class="line"></div><div class="line"><span class="comment"># load config from file</span></div><div class="line"><span class="comment"># logging.config.fileConfig('logging.ini', disable_existing_loggers=False)</span></div><div class="line"><span class="comment"># or, for dictConfig</span></div><div class="line">logging.config.dictConfig(&#123;</div><div class="line">    <span class="string">'version'</span>: <span class="number">1</span>,</div><div class="line">    <span class="string">'disable_existing_loggers'</span>: <span class="keyword">False</span>,  <span class="comment"># this fixes the problem</span></div><div class="line">    <span class="string">'formatters'</span>: &#123;</div><div class="line">        <span class="string">'standard'</span>: &#123;</div><div class="line">            <span class="string">'format'</span>: <span class="string">'%(asctime)s [%(levelname)s] %(name)s: %(message)s'</span></div><div class="line">        &#125;,</div><div class="line">    &#125;,</div><div class="line">    <span class="string">'handlers'</span>: &#123;</div><div class="line">        <span class="string">'default'</span>: &#123;</div><div class="line">            <span class="string">'level'</span>:<span class="string">'INFO'</span>,</div><div class="line">            <span class="string">'class'</span>:<span class="string">'logging.StreamHandler'</span>,</div><div class="line">        &#125;,</div><div class="line">    &#125;,</div><div class="line">    <span class="string">'loggers'</span>: &#123;</div><div class="line">        <span class="string">''</span>: &#123;</div><div class="line">            <span class="string">'handlers'</span>: [<span class="string">'default'</span>],</div><div class="line">            <span class="string">'level'</span>: <span class="string">'INFO'</span>,</div><div class="line">            <span class="string">'propagate'</span>: <span class="keyword">True</span></div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;)</div><div class="line"></div><div class="line">logger.info(<span class="string">'It works!'</span>)</div></pre></td></tr></table></figure>
+<h2 id="使用-JSON-和-YAML-配置-logging"><a href="#使用-JSON-和-YAML-配置-logging" class="headerlink" title="使用 JSON 和 YAML 配置 logging"></a>使用 JSON 和 YAML 配置 logging</h2><p>你可以再 Python 代码中配置 logging 参数，但是这不够灵活。更好的方式<br>是使用 logging 配置文件。在 Python2.7 之后，你可以加载 logging 配置<br>从一个字典，这意味着你可以从 JSON 或 YAML 文件中加载 logging 配置。<br>虽然你可以通过 old.ini 方式加载 logging 配置，但是这对于可读性和可编辑<br>来说是困难的。这里我将展示通过 JSON 或者 YAML 的配置文件示例。</p>
+<hr>
+<p>logging.json </p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    <span class="attr">"version"</span>: <span class="number">1</span>,</div><div class="line">    <span class="attr">"disable_existing_loggers"</span>: <span class="literal">false</span>,</div><div class="line">    <span class="attr">"formatters"</span>: &#123;</div><div class="line">        <span class="attr">"simple"</span>: &#123;</div><div class="line">            <span class="attr">"format"</span>: <span class="string">"%(asctime)s - %(name)s - %(levelname)s - %(message)s"</span></div><div class="line">        &#125;</div><div class="line">    &#125;,</div><div class="line"></div><div class="line">    <span class="attr">"handlers"</span>: &#123;</div><div class="line">        <span class="attr">"console"</span>: &#123;</div><div class="line">            <span class="attr">"class"</span>: <span class="string">"logging.StreamHandler"</span>,</div><div class="line">            <span class="attr">"level"</span>: <span class="string">"DEBUG"</span>,</div><div class="line">            <span class="attr">"formatter"</span>: <span class="string">"simple"</span>,</div><div class="line">            <span class="attr">"stream"</span>: <span class="string">"ext://sys.stdout"</span></div><div class="line">        &#125;,</div><div class="line"></div><div class="line">        <span class="attr">"info_file_handler"</span>: &#123;</div><div class="line">            <span class="attr">"class"</span>: <span class="string">"logging.handlers.RotatingFileHandler"</span>,</div><div class="line">            <span class="attr">"level"</span>: <span class="string">"INFO"</span>,</div><div class="line">            <span class="attr">"formatter"</span>: <span class="string">"simple"</span>,</div><div class="line">            <span class="attr">"filename"</span>: <span class="string">"info.log"</span>,</div><div class="line">            <span class="attr">"maxBytes"</span>: <span class="number">10485760</span>,</div><div class="line">            <span class="attr">"backupCount"</span>: <span class="number">20</span>,</div><div class="line">            <span class="attr">"encoding"</span>: <span class="string">"utf8"</span></div><div class="line">        &#125;,</div><div class="line"></div><div class="line">        <span class="attr">"error_file_handler"</span>: &#123;</div><div class="line">            <span class="attr">"class"</span>: <span class="string">"logging.handlers.RotatingFileHandler"</span>,</div><div class="line">            <span class="attr">"level"</span>: <span class="string">"ERROR"</span>,</div><div class="line">            <span class="attr">"formatter"</span>: <span class="string">"simple"</span>,</div><div class="line">            <span class="attr">"filename"</span>: <span class="string">"errors.log"</span>,</div><div class="line">            <span class="attr">"maxBytes"</span>: <span class="number">10485760</span>,</div><div class="line">            <span class="attr">"backupCount"</span>: <span class="number">20</span>,</div><div class="line">            <span class="attr">"encoding"</span>: <span class="string">"utf8"</span></div><div class="line">        &#125;</div><div class="line">    &#125;,</div><div class="line"></div><div class="line">    <span class="attr">"loggers"</span>: &#123;</div><div class="line">        <span class="attr">"my_module"</span>: &#123;</div><div class="line">            <span class="attr">"level"</span>: <span class="string">"ERROR"</span>,</div><div class="line">            <span class="attr">"handlers"</span>: [<span class="string">"console"</span>],</div><div class="line">            <span class="attr">"propagate"</span>: <span class="string">"no"</span></div><div class="line">        &#125;</div><div class="line">    &#125;,</div><div class="line"></div><div class="line">    <span class="attr">"root"</span>: &#123;</div><div class="line">        <span class="attr">"level"</span>: <span class="string">"INFO"</span>,</div><div class="line">        <span class="attr">"handlers"</span>: [<span class="string">"console"</span>, <span class="string">"info_file_handler"</span>, <span class="string">"error_file_handler"</span>]</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<hr>
+<p>logging.yaml </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div></pre></td><td class="code"><pre><div class="line"><span class="meta">---</span></div><div class="line"><span class="attr">version:</span> <span class="number">1</span></div><div class="line"><span class="attr">disable_existing_loggers:</span> <span class="literal">False</span></div><div class="line"><span class="attr">formatters:</span></div><div class="line"><span class="attr">    simple:</span></div><div class="line"><span class="attr">        format:</span> <span class="string">"%(asctime)s - %(name)s - %(levelname)s - %(message)s"</span></div><div class="line"></div><div class="line"><span class="attr">handlers:</span></div><div class="line"><span class="attr">    console:</span></div><div class="line"><span class="attr">        class:</span> <span class="string">logging.StreamHandler</span></div><div class="line"><span class="attr">        level:</span> <span class="string">DEBUG</span></div><div class="line"><span class="attr">        formatter:</span> <span class="string">simple</span></div><div class="line"><span class="attr">        stream:</span> <span class="attr">ext://sys.stdout</span></div><div class="line"></div><div class="line"><span class="attr">    info_file_handler:</span></div><div class="line"><span class="attr">        class:</span> <span class="string">logging.handlers.RotatingFileHandler</span></div><div class="line"><span class="attr">        level:</span> <span class="string">INFO</span></div><div class="line"><span class="attr">        formatter:</span> <span class="string">simple</span></div><div class="line"><span class="attr">        filename:</span> <span class="string">info.log</span></div><div class="line"><span class="attr">        maxBytes:</span> <span class="number">10485760</span> <span class="comment"># 10MB</span></div><div class="line"><span class="attr">        backupCount:</span> <span class="number">20</span></div><div class="line"><span class="attr">        encoding:</span> <span class="string">utf8</span></div><div class="line"></div><div class="line"><span class="attr">    error_file_handler:</span></div><div class="line"><span class="attr">        class:</span> <span class="string">logging.handlers.RotatingFileHandler</span></div><div class="line"><span class="attr">        level:</span> <span class="string">ERROR</span></div><div class="line"><span class="attr">        formatter:</span> <span class="string">simple</span></div><div class="line"><span class="attr">        filename:</span> <span class="string">errors.log</span></div><div class="line"><span class="attr">        maxBytes:</span> <span class="number">10485760</span> <span class="comment"># 10MB</span></div><div class="line"><span class="attr">        backupCount:</span> <span class="number">20</span></div><div class="line"><span class="attr">        encoding:</span> <span class="string">utf8</span></div><div class="line"></div><div class="line"><span class="attr">loggers:</span></div><div class="line"><span class="attr">    my_module:</span></div><div class="line"><span class="attr">        level:</span> <span class="string">ERROR</span></div><div class="line"><span class="attr">        handlers:</span> <span class="string">[console]</span></div><div class="line"><span class="attr">        propagate:</span> <span class="literal">no</span></div><div class="line"></div><div class="line"><span class="attr">root:</span></div><div class="line"><span class="attr">    level:</span> <span class="string">INFO</span></div><div class="line"><span class="attr">    handlers:</span> <span class="string">[console,</span> <span class="string">info_file_handler,</span> <span class="string">error_file_handler]</span></div><div class="line"><span class="string">...</span></div></pre></td></tr></table></figure>
+<p>以下配置展示了如何从 json 文件中读取 logging 配置：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> os</div><div class="line"><span class="keyword">import</span> json</div><div class="line"><span class="keyword">import</span> logging.config</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">setup_logging</span><span class="params">(</span></span></div><div class="line"><span class="function"><span class="params">    default_path=<span class="string">'logging.json'</span>,</span></span></div><div class="line"><span class="function"><span class="params">    default_level=logging.INFO,</span></span></div><div class="line"><span class="function"><span class="params">    env_key=<span class="string">'LOG_CFG'</span></span></span></div><div class="line"><span class="function"><span class="params">)</span>:</span></div><div class="line">    <span class="string">"""Setup logging configuration</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">    """</span></div><div class="line">    path = default_path</div><div class="line">    value = os.getenv(env_key, <span class="keyword">None</span>)</div><div class="line">    <span class="keyword">if</span> value:</div><div class="line">        path = value</div><div class="line">    <span class="keyword">if</span> os.path.exists(path):</div><div class="line">        <span class="keyword">with</span> open(path, <span class="string">'rt'</span>) <span class="keyword">as</span> f:</div><div class="line">            config = json.load(f)</div><div class="line">        logging.config.dictConfig(config)</div><div class="line">    <span class="keyword">else</span>:</div><div class="line">        logging.basicConfig(level=default_level)</div></pre></td></tr></table></figure>
+<p>使用 JSON 配置的一个优点是 json 是标准库中的模块，你不需要安装。但就个人来说，<br>我更喜欢 YAML。这有非常好的可读性和可编辑性。你可以按照以下方式加载 YAML 配置：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="string">import</span> <span class="string">os</span></div><div class="line"><span class="string">import</span> <span class="string">logging.config</span></div><div class="line"></div><div class="line"><span class="string">import</span> <span class="string">yaml</span></div><div class="line"></div><div class="line"><span class="string">def</span> <span class="string">setup_logging(</span></div><div class="line">    <span class="string">default_path='logging.yaml',</span></div><div class="line">    <span class="string">default_level=logging.INFO,</span></div><div class="line">    <span class="string">env_key='LOG_CFG'</span></div><div class="line"><span class="string">):</span></div><div class="line">    <span class="string">""</span><span class="string">"Setup logging configuration</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">    "</span><span class="string">""</span></div><div class="line">    <span class="string">path</span> <span class="string">=</span> <span class="string">default_path</span></div><div class="line">    <span class="string">value</span> <span class="string">=</span> <span class="string">os.getenv(env_key,</span> <span class="string">None)</span></div><div class="line">    <span class="string">if</span> <span class="attr">value:</span></div><div class="line">        <span class="string">path</span> <span class="string">=</span> <span class="string">value</span></div><div class="line">    <span class="string">if</span> <span class="string">os.path.exists(path):</span></div><div class="line">        <span class="string">with</span> <span class="string">open(path,</span> <span class="string">'rt'</span><span class="string">)</span> <span class="string">as</span> <span class="attr">f:</span></div><div class="line">            <span class="string">config</span> <span class="string">=</span> <span class="string">yaml.safe_load(f.read())</span></div><div class="line">        <span class="string">logging.config.dictConfig(config)</span></div><div class="line"><span class="attr">    else:</span></div><div class="line">        <span class="string">logging.basicConfig(level=default_level)</span></div></pre></td></tr></table></figure>
+<p>现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者<br>logging.yaml。你也可以设置 LOG_CFG 环境变量去从指定的路径下加载配置文件。比如：</p>
+<p><code>LOG_CFG=my_logging.json python my_server.py</code></p>
+<p>或者</p>
+<p><code>LOG_CFG=my_logging.yaml python my_server.py</code></p>
+<h2 id="配置文件轮询"><a href="#配置文件轮询" class="headerlink" title="配置文件轮询"></a>配置文件轮询</h2><p>如果你使用 FileHandler 去写日志，随着时间的增加日志文件大小也会增长，某一天，会撑爆你的磁盘。<br>为了避免这种情况，你应该在生产环境中使用 RotatingFileHandler 替换 FileHandler 。</p>
+<h2 id="配置日志中心"><a href="#配置日志中心" class="headerlink" title="配置日志中心"></a>配置日志中心</h2><p>当你有多台服务器和不同的日志文件时，你可以配置一个日志中心去手机所有重要的文件。这样你可以<br>更方便的监控和通知你的系统发生了哪些报错。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>我很开心 Python logging 库设置的很好，最好的是它是标准库中的一员，你无须选择。<br>它非常灵活，你可以编辑自己的处理器和过滤器。还有第三方程序比如 pyzmq 提供的 ZeroMQ 日志处理，<br>它允许你通过 zmq socket 发送日志信息。<br>如果你不知道如何正确的使用 logging，那么本文对你会有所帮助。通过良好的日志记录练习，<br>你可以更轻松的找到系统中的问题。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/07/08/Flask-流式响应/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/08/Flask-流式响应/" itemprop="url">Flask 流式响应</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-08T09:44:24+08:00">
+                2018-07-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/07/08/Flask-流式响应/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/07/08/Flask-流式响应/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在 web 场景下，经常会碰到下载文件的需求，通常小文件我们会采用 Flask <code>send_file</code> 或者 <code>send_from_directory</code>的方式，下载，但是当下载的文件是一个大压缩文件（&gt;1GiB）时，这种方式就显得不友好了，我们需要采用流式下载的方式返回给客户端。</p>
+<h2 id="流式下载"><a href="#流式下载" class="headerlink" title="流式下载"></a>流式下载</h2><p>简单实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Response</div><div class="line"></div><div class="line"><span class="meta">@app.route("/download/&lt;file_path&gt;", methods=["GET"])</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">download</span><span class="params">(file_path)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">()</span>:</span></div><div class="line">        <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(file_path):</div><div class="line">            <span class="keyword">raise</span> <span class="string">"File not found."</span></div><div class="line">        <span class="keyword">with</span> open(file_path, <span class="string">"rb"</span>) <span class="keyword">as</span> f:</div><div class="line">            <span class="keyword">while</span> <span class="keyword">True</span>:</div><div class="line">                chunk = f.read(chunk_size=<span class="number">10</span> * <span class="number">1024</span> * <span class="number">1024</span>)</div><div class="line">                <span class="keyword">if</span> <span class="keyword">not</span> chunk:</div><div class="line">                    <span class="keyword">break</span></div><div class="line">                <span class="keyword">yield</span> chunk</div><div class="line"></div><div class="line">    <span class="keyword">return</span> Response(generate(), content_type=<span class="string">"application/octet-stream"</span>)</div><div class="line">```   </div><div class="line"></div><div class="line">运行 Flask app，可以正确下载文件，但是下载只有实时速度，没有文件总大小，导致无法知道下载进度，也没有文件类型，这些我们都可以通过增加 header 字段实现：</div><div class="line">```python</div><div class="line">response = Response(generate(), mimetype=<span class="string">'application/gzip'</span>)</div><div class="line">response.headers[<span class="string">'Content-Disposition'</span>] = <span class="string">'attachment; filename=&#123;&#125;.tar.gz'</span>.format(<span class="string">"download_file"</span>)</div><div class="line">response.headers[<span class="string">'content-length'</span>] = os.stat(str(file_path)).st_size</div><div class="line"><span class="keyword">return</span> response</div></pre></td></tr></table></figure></p>
+<p>这样，我们下载文件就可以看到文件类型、文件总大小及已下载大小了，其中 <code>mimetype</code> 根据实际压缩文件类型修改匹配即可。</p>
+<hr>
+<h2 id="转发流式下载"><a href="#转发流式下载" class="headerlink" title="转发流式下载"></a>转发流式下载</h2><p>当我们下载本地节点文件，可以通过上述方法实现，但是如果我们的产品是集群形式的，要求在集群中的任一节点均可下载集群中所有节点的指定文件，我们就需要支持将流式下载转发并实时下载，避免访问节点占用太多内存。</p>
+<p>如果是单节点转发流式请求，我们可以通过 flask 的 <code>stream_with_context</code> 实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> (</div><div class="line">    Flask,</div><div class="line">    Response,</div><div class="line">    stream_with_context</div><div class="line">    )</div><div class="line"><span class="keyword">import</span> requests</div><div class="line"></div><div class="line">app = Flask(__name__)</div><div class="line"></div><div class="line"><span class="meta">@app.route("/download/&lt;file_path&gt;", method=["GET"])</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">download</span><span class="params">(file_path)</span>:</span></div><div class="line">    url_prefix = <span class="string">"http://1.1.1.1/"</span></div><div class="line">    remote_url = url_prefix + file_path</div><div class="line">    req = requests.get(remote_url, stream = <span class="keyword">True</span>)</div><div class="line">    <span class="keyword">return</span> Response(stream_with_context(req.iter_content()), </div><div class="line">                    content_type = req.headers[<span class="string">'content-type'</span>])</div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</div><div class="line">    app.run(host=<span class="string">"0.0.0.0"</span>, debug=<span class="keyword">True</span>)</div></pre></td></tr></table></figure></p>
+<p>在我们访问 <code>http://localhost:5000/download/file_name</code>  时，通过 requests 访问远端节点 1.1.1.1 的地址，并将请求通过流式的方式转发至客户端，实现下载。</p>
+<p>如果是转发多节点流式请求，我们该如何保证多个请求最终 merge 后是一个正确的文件呢？<br>通过查询资料，排除了标准库中的 tarfile 和 zipfile 打包压缩方式，最终采用 zipstream（<a href="https://github.com/allanlei/python-zipstream）" target="_blank" rel="external">https://github.com/allanlei/python-zipstream）</a> 第三方库实现。</p>
+<hr>
+<p>zipstream 支持通过迭代器的方式写入文件，并可实时压缩读取，官方示例如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">iterable</span><span class="params">()</span>:</span></div><div class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> xrange(<span class="number">10</span>):</div><div class="line">        <span class="keyword">yield</span> <span class="string">b'this is a byte string\x01\n'</span></div><div class="line"></div><div class="line">z = zipstream.ZipFile()</div><div class="line">z.write_iter(<span class="string">'my_archive_iter'</span>, iterable())</div><div class="line"></div><div class="line"><span class="keyword">with</span> open(<span class="string">'zipfile.zip'</span>, <span class="string">'wb'</span>) <span class="keyword">as</span> f:</div><div class="line">    <span class="keyword">for</span> data <span class="keyword">in</span> z:</div><div class="line">        f.write(data)</div></pre></td></tr></table></figure></p>
+<hr>
+<p>根据上述特性，我们结合转发单节点请求，实现同时请求多节点并实时压缩下载：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@app.route("/cluster_download/&lt;file_path&gt;", method=["GET"])</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">cluster_download</span><span class="params">(reqs)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">(req)</span>:</span></div><div class="line">        z = zipstream.ZipFile(mode=<span class="string">"w"</span>, compression=zipstream.ZIP_DEFLATED)</div><div class="line">        <span class="keyword">for</span> req <span class="keyword">in</span> reqs:</div><div class="line">            host = req.raw._fp.fp._sock.getpeername()[<span class="number">0</span>]</div><div class="line">            z.write_iter(<span class="string">"%s.tar.gz"</span> % host, req.iter_content(chunk_size=<span class="number">10</span> * <span class="number">1024</span> * <span class="number">1024</span>)</div><div class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> z:</div><div class="line">            <span class="keyword">yield</span> chunk</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_file_size</span><span class="params">(reqs)</span>:</span></div><div class="line">        size = <span class="number">0</span></div><div class="line">        <span class="keyword">for</span> req <span class="keyword">in</span> reqs:</div><div class="line">            size += int(req.headers.get(<span class="string">"content-length"</span>))</div><div class="line">        <span class="keyword">return</span> size</div><div class="line"></div><div class="line">    remote_hosts = [<span class="string">"1.1.1.1"</span>, <span class="string">"2.2.2.2"</span>]</div><div class="line">    reqs = []</div><div class="line">    <span class="keyword">for</span> host <span class="keyword">in</span> remote_hosts:</div><div class="line">        req = requests.get(<span class="string">"http://%s/%s"</span> % (host, file_path), timeout=<span class="number">5</span>, stream=<span class="keyword">True</span>)</div><div class="line">        <span class="keyword">if</span> req.status_code == <span class="number">200</span>:</div><div class="line">            reqs.append(req)</div><div class="line">    response = Response(generate(reqs))</div><div class="line">    response.headers[<span class="string">'mimetype'</span>] = <span class="string">'application/zip'</span></div><div class="line">    response.headers[<span class="string">'Content-Disposition'</span>] = <span class="string">'attachment; filename=cluster_logs.zip)</span></div><div class="line"><span class="string">    response.hreads['</span>content-length<span class="string">'] = get_file_size(reqs)</span></div></pre></td></tr></table></figure>
+<p>当我们访问 <code>http://localhost/cluster_download/file_name</code> 时，会先去 remote_hosts 中各个节点下载该文件，并通过 <code>write_iter</code> 的方式写入到 zip 文件中，Flask Response 返回的是 zip 文件中的数据块。</p>
+<hr>
+<p>如果我们要在 zip 文件中增加某些运行过程中产生的数据，我们可以通过再定义一个生成器的方式：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_file</span><span class="params">(content)</span>:</span></div><div class="line">    <span class="keyword">yield</span> content</div><div class="line"></div><div class="line">z.write_iter(<span class="string">"running_status"</span>, generate_file)</div></pre></td></tr></table></figure></p>
+<p>这样我们就可以在最终的 zip 文件中，包含一个名为 <code>running_status</code> 的文件，文件内容为 content 的内容。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个需求在日常使用中是很常见的，跟下载类似，上传文件的话我们也可以采用类似的方式实现。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/07/07/将-CSV-文件转换为嵌套-Json-文件/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1401,346 +1750,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/05/29/CentOS-多网卡多网关配置/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/05/29/CentOS-多网卡多网关配置/" itemprop="url">CentOS 多网卡多网关配置</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-29T19:21:36+08:00">
-                2018-05-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/05/29/CentOS-多网卡多网关配置/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/05/29/CentOS-多网卡多网关配置/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>日常使用中，开发机通常只配置一块网卡，通常配置为 DHCP 自动获取 IP，这样就可以自动从 DHCP Server 获取 IP，网关，DNS Server 等配置，不用手动配置。</p>
-<p>最近在工作中存在一种场景，一台服务器，多块网卡，需要对不同的网卡配置各自网关，查找了一些资料，也踩了一些坑，记录一下过程。</p>
-<h3 id="配置过程"><a href="#配置过程" class="headerlink" title="配置过程"></a>配置过程</h3><ol>
-<li><p>官方配置<br>尝试在 <code>/etc/sysconfig/network-scripts/ifcfg-&lt;device&gt;</code> 中增加 GATEWAY 自动使之生效，实际上来看，多张网卡都配置 GATEWAY 字段会产生冲突，只能放弃通过网卡配置文件方式，尝试通过给网卡配置静态路由方式添加。<br>在 CentOS <a href="https://www.centos.org/docs/5/html/5.2/Deployment_Guide/s1-networkscripts-static-routes.html" target="_blank" rel="external">官方网站</a>查找配置静态路由方法，文档中提到通过编写网卡路由配置文件<code>/etc/sysconfig/network-scripts/route-_&lt;interface&gt;</code>  ，配置完成后重启网络可以自动生效。<br>官方这种方式我尝试了两种文件编写方式，一种为<code>192.168.64.0/20 via &lt;gateway&gt; dev &lt;device&gt;</code>，一种为 <code>ADDRESS0=xxxxx; NETMASK0=xxxxx; GATEWAY0=xxxxx</code>。两种配置方式均没有生效，只能放弃。</p>
-</li>
-<li><p>手动配置<br>可以通过 <code>route add</code> 命令临时给第二章网卡配置网关，通过 <code>route -n</code> 查看是可以生效。但是因为最终目标是让路由随着网络服务（公司内部未使用 NetworkManager）Network 启动而配置，因此在 /etc/rc.local 中假如 <code>route add</code> 类似命令无法走通。   </p>
-</li>
-<li><p>上述方法要么无法生效，要么存在无法持久化问题，均无法完成需求。 只能通过查看 网卡服务启动脚本来查找，查看 <code>/etc/init.d/network</code> （systemd 服务控制也是执行该文件），该文件是一个 Shell 脚本，找到路由配置相关：  </p>
-</li>
-</ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">  2     # Add non interface-specific static-routes.</div><div class="line">  1     if [ -f /etc/sysconfig/static-routes ]; then</div><div class="line">141        if [ -x /sbin/route ]; then</div><div class="line">  1            grep "^any" /etc/sysconfig/static-routes | while read ignore args ; do</div><div class="line">  2                    /sbin/route add -$args</div><div class="line">  3            done</div><div class="line">  4        else</div><div class="line">  5            net_log $"Legacy static-route support not available: /sbin/route not found"</div><div class="line">  6        fi</div><div class="line">  7     fi</div></pre></td></tr></table></figure>
-<p>可以看到，在网络服务 network 启动过程中，会判断 <code>/etc/sysconfig/static-routes</code> 文件是否存在，如果存在则会通过 <code>route</code> 命令对该文件中记录以 <code>any</code> 开头的路由进行添加，添加命令为 <code>/sbin/route add -$args</code>。<br>根据上述脚本，尝试编写 static-routes 文件：  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">any net 192.168.64.0/20 gw 192.168.64.1</div><div class="line">any net 10.0.10.0/24 gw 10.0.10.222</div></pre></td></tr></table></figure>
-<p>编写完成后，重启网络服务 <code>systemctl restart network</code> ，执行 <code>route -n</code> 查看是否生效：  </p>
-<pre><code class="bash">[root@scvm9 19:49:55 ~]<span class="variable">$route</span> -n
-Kernel IP routing table
-Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-0.0.0.0         192.168.64.1    0.0.0.0         UG    0      0        0 eth0
-10.0.10.0       0.0.0.0         255.255.255.0   U     0      0        0 eth2
-10.0.10.0       10.0.10.222     255.255.255.0   UG    0      0        0 eth2
-169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
-</code></pre>
-<p>看上去已经生效，因为实际环境中没有第二块网卡网关设备，临时指定一个不存在的 IP。<br>本以为已经搞定，结果在实际验证的时候，发现第二块网卡无法连接其他节点，哪怕其他节点与它二层联通；尝试将网关指定可以正常工作的 IP 节点，可以与其他节点联通，且 traceroute 也没有经过网关而是直接连接。</p>
-<h3 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h3><ol>
-<li>尝试将网关配置成可以正常工作的节点<ul>
-<li>各个节点可以正确联通</li>
-<li>traceroute 到其他节点未经过网关</li>
-</ul>
-</li>
-<li>尝试将网关配置成不存在节点<ul>
-<li>各个节点无法正确联通</li>
-</ul>
-</li>
-<li>尝试将网关掩码配置为网卡掩码的超集<ul>
-<li>各个节点可以正确联通</li>
-<li>traceroute 到其他节点未经过网关</li>
-</ul>
-</li>
-</ol>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>红帽系列发行版本配置静态路由可通过 /etc/sysconfig/static-routes 配置生效，但要注意在 static-routes 文件中的路由添加要添加网关节点对应的掩码而不是本地节点网卡掩码，网关掩码为本地网卡掩码的超集。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2017/12/31/2017年读书记录/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/12/31/2017年读书记录/" itemprop="url">2017年读书记录</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-31T09:35:40+08:00">
-                2017-12-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/12/31/2017年读书记录/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/12/31/2017年读书记录/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="年终总结"><a href="#年终总结" class="headerlink" title="年终总结"></a>年终总结</h2><p>计划 32 本，实际读完 23 本。</p>
-<h2 id="已读"><a href="#已读" class="headerlink" title="已读"></a>已读</h2><ul>
-<li>《软技能*代码之外的生存指南》  </li>
-<li>《SRE：Google 运维解密》  </li>
-<li>《Vim 实用技巧》  </li>
-<li>《谈判力》  </li>
-<li>《黑客与画家》  </li>
-<li>《大话存储ⅰ》  </li>
-<li>《跟老齐学 Python》  </li>
-<li>《Python编程快速上手 让繁琐工作自动化》  </li>
-<li>《Think Python》  </li>
-<li>《奔跑吧 Ansible》  </li>
-<li>《Python核心编程（第二版）》  </li>
-<li>《Python 学习手册》  </li>
-<li>《嫌疑人X的献身》  </li>
-<li>《图解 HTTP》  </li>
-<li>《你是那人间的四月天》</li>
-<li>《失乐园》</li>
-<li>《活出生命的意义》</li>
-<li>《Python核心编程（第三版）》</li>
-<li>《深度工作》</li>
-<li>《深度实践 KVM》</li>
-<li>《Shell 脚本学习指南》</li>
-<li>《浪潮之巅》</li>
-<li>《人间失格》</li>
-</ul>
-<h2 id="在读"><a href="#在读" class="headerlink" title="在读"></a>在读</h2><ul>
-<li>《Flask Web开发：基于Python的Web应用开发实战》</li>
-<li>《哲学家们都干了些什么》</li>
-<li>《二手时间》</li>
-<li>《Python 算法教程》   </li>
-</ul>
-<h2 id="想读"><a href="#想读" class="headerlink" title="想读"></a>想读</h2><ul>
-<li>《Python Web开发实战》</li>
-<li>《problem solving with algorithms and data structure using python 中文版》</li>
-<li>《Fluent Python》</li>
-<li>《大话数据结构》</li>
-<li>《构建高性能WEB站点》</li>
-<li>《C和指针》</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1795,7 +1804,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">42</span>
+                  <span class="site-state-item-count">44</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
