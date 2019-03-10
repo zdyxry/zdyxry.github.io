@@ -1,87 +1,11 @@
 <!DOCTYPE html>
-
-
-
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
   
-
-
-<html class="theme-next gemini use-motion" lang="zh-Hans">
-<head>
-  <meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-<meta name="theme-color" content="#222">
-
-
-
-
-
-
-
-
-
-<meta http-equiv="Cache-Control" content="no-transform" />
-<meta http-equiv="Cache-Control" content="no-siteapp" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-  
-  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
-
-
-
-
-
-
-
-<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
-
-<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
-
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
-
-
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
-
-
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
-
-
-  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
-
-
-
-
-
-  <meta name="keywords" content="Linux,Network," />
-
-
-
-
-
-  <link rel="alternate" href="/atom.xml" title="Yiran" type="application/atom+xml" />
-
-
-
-
-
-
-<meta name="description" content="背景在平时遇到网络问题时，我们通常会使用 ping,route,ip 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 traceroute 来判断网络走向。 最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 traceroute，一直使用它却不知道是怎么工作的，研究了一下，作为总结。 Traceroute">
+  <title>Traceroute 简易实现 | Yiran</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="背景在平时遇到网络问题时，我们通常会使用 ping,route,ip 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 traceroute 来判断网络走向。 最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 traceroute，一直使用它却不知道是怎么工作的，研究了一下，作为总结。 Traceroute">
 <meta name="keywords" content="Linux,Network">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Traceroute 简易实现">
@@ -93,251 +17,77 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Traceroute 简易实现">
 <meta name="twitter:description" content="背景在平时遇到网络问题时，我们通常会使用 ping,route,ip 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 traceroute 来判断网络走向。 最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 traceroute，一直使用它却不知道是怎么工作的，研究了一下，作为总结。 Traceroute">
-<meta name="twitter:creator" content="@zhouyiran1994">
-
-
-
-<script type="text/javascript" id="hexo.configurations">
-  var NexT = window.NexT || {};
-  var CONFIG = {
-    root: '/',
-    scheme: 'Gemini',
-    version: '5.1.4',
-    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
-    fancybox: true,
-    tabs: true,
-    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
-    duoshuo: {
-      userId: '0',
-      author: '博主'
-    },
-    algolia: {
-      applicationID: '',
-      apiKey: '',
-      indexName: '',
-      hits: {"per_page":10},
-      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
-    }
-  };
-</script>
-
-
-
-  <link rel="canonical" href="http://zdyxry.com/2018/11/18/Traceroute-简易实现/"/>
-
-
-
-
-
-  <title>Traceroute 简易实现 | Yiran</title>
   
-
-
-
-
-
-
-
+    <link rel="alternate" href="/atom.xml" title="Yiran" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
 
 </head>
-
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
-
-  
-  
-    
-  
-
-  <div class="container sidebar-position-left page-post-detail">
-    <div class="headband"></div>
-
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><div class="site-brand-wrapper">
-  <div class="site-meta ">
-    
-
-    <div class="custom-logo-site-title">
-      <a href="/"  class="brand" rel="start">
-        <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Yiran</span>
-        <span class="logo-line-after"><i></i></span>
-      </a>
+</html>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Yiran</a>
+      </h1>
+      
     </div>
-      
-        <p class="site-subtitle"></p>
-      
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://zdyxry.com"></form>
+      </div>
+    </div>
   </div>
-
-  <div class="site-nav-toggle">
-    <button>
-      <span class="btn-bar"></span>
-      <span class="btn-bar"></span>
-      <span class="btn-bar"></span>
-    </button>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Traceroute-简易实现" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/11/18/Traceroute-简易实现/" class="article-date">
+  <time datetime="2018-11-18T04:33:35.000Z" itemprop="datePublished">2018-11-18</time>
+</a>
+    
   </div>
-</div>
-
-<nav class="site-nav">
-  
-
-  
-    <ul id="menu" class="menu">
-      
-        
-        <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
-            
-              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
-            
-            首页
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-about">
-          <a href="/about/" rel="section">
-            
-              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
-            
-            关于
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-tags">
-          <a href="/tags/" rel="section">
-            
-              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
-            
-            标签
-          </a>
-        </li>
-      
-        
-        <li class="menu-item menu-item-archives">
-          <a href="/archives/" rel="section">
-            
-              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
-            
-            归档
-          </a>
-        </li>
-      
-
-      
-    </ul>
-  
-
-  
-</nav>
-
-
-
- </div>
-    </header>
-
-    <main id="main" class="main">
-      <div class="main-inner">
-        <div class="content-wrap">
-          <div id="content" class="content">
-            
-
-  <div id="posts" class="posts-expand">
+  <div class="article-inner">
     
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://zdyxry.com/2018/11/18/Traceroute-简易实现/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran">
-    </span>
-
     
-      <header class="post-header">
-
+      <header class="article-header">
         
-        
-          <h1 class="post-title" itemprop="name headline">Traceroute 简易实现</h1>
-        
+  
+    <h1 class="article-title" itemprop="name">
+      Traceroute 简易实现
+    </h1>
+  
 
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T12:33:35+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/11/18/Traceroute-简易实现/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/11/18/Traceroute-简易实现/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-            <span class="post-meta-divider">|</span>
-            <span class="page-pv"><i class="fa fa-file-o"></i>
-            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
-            </span>
-          
-
-          
-
-          
-
-        </div>
       </header>
     
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
+    <div class="article-entry" itemprop="articleBody">
       
         <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在平时遇到网络问题时，我们通常会使用 <code>ping</code>,<code>route</code>,<code>ip</code> 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 <code>traceroute</code> 来判断网络走向。</p>
 <p>最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 <code>traceroute</code>，一直使用它却不知道是怎么工作的，研究了一下，作为总结。</p>
@@ -346,514 +96,156 @@
 <p>traceroute，现代Linux系统称为tracepath，Windows系统称为tracert，是一种计算机网络工具。它可显示数据包在IP网络经过的路由器的IP地址。</p>
 </blockquote>
 <p>我们通常使用无需特殊配置，直接用 traceroute 加上我们的目标地址即可，如：  </p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">root@yiran-workstation:~ </div><div class="line"> $ traceroute 192.168.16.1</div><div class="line">traceroute to 192.168.16.1 (192.168.16.1), 30 hops max, 60 byte packets</div><div class="line"> 1  gateway (192.168.8.1)  19.469 ms  19.089 ms  18.911 ms</div><div class="line"> 2  192.168.1.201 (192.168.1.201)  11.539 ms  11.423 ms  11.307 ms</div><div class="line"> 3  192.168.16.1 (192.168.16.1)  18.289 ms  18.184 ms  18.064 ms</div></pre></td></tr></table></figure>
-<p>当我们想设置 TTL 数值时，我们可以使用 <code>-m</code> 参数:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">root@yiran-workstation:~ </div><div class="line"> $ traceroute 192.168.16.1 -m 2</div><div class="line">traceroute to 192.168.16.1 (192.168.16.1), 2 hops max, 60 byte packets</div><div class="line"> 1  gateway (192.168.8.1)  20.914 ms  20.700 ms  20.616 ms</div><div class="line"> 2  192.168.1.201 (192.168.1.201)  20.497 ms  20.465 ms  20.383 ms</div></pre></td></tr></table></figure></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-workstation:~ </span><br><span class="line"> $ traceroute 192.168.16.1</span><br><span class="line">traceroute to 192.168.16.1 (192.168.16.1), 30 hops max, 60 byte packets</span><br><span class="line"> 1  gateway (192.168.8.1)  19.469 ms  19.089 ms  18.911 ms</span><br><span class="line"> 2  192.168.1.201 (192.168.1.201)  11.539 ms  11.423 ms  11.307 ms</span><br><span class="line"> 3  192.168.16.1 (192.168.16.1)  18.289 ms  18.184 ms  18.064 ms</span><br></pre></td></tr></table></figure>
+<p>当我们想设置 TTL 数值时，我们可以使用 <code>-m</code> 参数:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-workstation:~ </span><br><span class="line"> $ traceroute 192.168.16.1 -m 2</span><br><span class="line">traceroute to 192.168.16.1 (192.168.16.1), 2 hops max, 60 byte packets</span><br><span class="line"> 1  gateway (192.168.8.1)  20.914 ms  20.700 ms  20.616 ms</span><br><span class="line"> 2  192.168.1.201 (192.168.1.201)  20.497 ms  20.465 ms  20.383 ms</span><br></pre></td></tr></table></figure></p>
 <p>实现原理：</p>
 <blockquote>
 <p>主叫方首先发出 TTL=1 的数据包，第一个路由器将 TTL 减1得0后就不再继续转发此数据包，而是返回一个 ICMP 逾时报文，主叫方从逾时报文中即可提取出数据包所经过的第一个网关地址。然后又发出一个 TTL=2 的 ICMP 数据包，可获得第二个网关地址，依次递增 TTL 便获取了沿途所有网关地址。</p>
+</blockquote>
+<blockquote>
 <p>需要注意的是，并不是所有网关都会如实返回 ICMP 超时报文。出于安全性考虑，大多数防火墙以及启用了防火墙功能的路由器缺省配置为不返回各种 ICMP 报文，其余路由器或交换机也可被管理员主动修改配置变为不返回 ICMP 报文。因此 Traceroute 程序不一定能拿全所有的沿途网关地址。所以，当某个 TTL 值的数据包得不到响应时，并不能停止这一追踪过程，程序仍然会把 TTL 递增而发出下一个数据包。一直达到默认或用参数指定的追踪限制（maximum_hops）才结束追踪。</p>
 </blockquote>
 <p>这里要说明一下，加入我们去 traceroute 最常用的 baidu.com，就会看到这个现象，traceroute 命令的结果中包含 <code>* * *</code> ，我也没有找到一个较为明确的解释，猜测这个节点禁止了 ping 或其他配置，无法返回 ICMP 超时报文，导致 traceroute 无法正常解析。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">master ✗ $ traceroute  baidu.com -m 20 </div><div class="line">traceroute to baidu.com (220.181.57.216), 20 hops max, 60 byte packets</div><div class="line"> 1  gateway (192.168.8.1)  18.535 ms  18.456 ms  29.185 ms</div><div class="line"> 2  10.1.1.1 (10.1.1.1)  6.599 ms  6.533 ms  6.378 ms</div><div class="line"> 3  106.38.14.1 (106.38.14.1)  28.707 ms  28.606 ms  28.514 ms</div><div class="line"> 4  5.0.142.219.broad.bj.bj.dynamic.163data.com.cn (219.142.0.5)  28.384 ms  28.305 ms  28.205 ms</div><div class="line"> 5  * * *</div><div class="line"> 6  36.110.244.46 (36.110.244.46)  37.131 ms  31.660 ms  31.489 ms</div><div class="line"> 7  * * *</div><div class="line"> 8  220.181.17.94 (220.181.17.94)  10.700 ms 220.181.17.146 (220.181.17.146)  10.511 ms 220.181.17.150 (220.181.17.150)  10.336 ms</div><div class="line"> 9  * * *</div><div class="line">10  * * *</div><div class="line">11  * * *</div><div class="line">12  * * *</div><div class="line">13  * * *</div><div class="line">14  * * *</div><div class="line">15  * * *</div><div class="line">16  * * *</div><div class="line">17  * * *</div><div class="line">18  * * *</div><div class="line">19  * * *</div><div class="line">20  * * *</div></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">master ✗ $ traceroute  baidu.com -m 20 </span><br><span class="line">traceroute to baidu.com (220.181.57.216), 20 hops max, 60 byte packets</span><br><span class="line"> 1  gateway (192.168.8.1)  18.535 ms  18.456 ms  29.185 ms</span><br><span class="line"> 2  10.1.1.1 (10.1.1.1)  6.599 ms  6.533 ms  6.378 ms</span><br><span class="line"> 3  106.38.14.1 (106.38.14.1)  28.707 ms  28.606 ms  28.514 ms</span><br><span class="line"> 4  5.0.142.219.broad.bj.bj.dynamic.163data.com.cn (219.142.0.5)  28.384 ms  28.305 ms  28.205 ms</span><br><span class="line"> 5  * * *</span><br><span class="line"> 6  36.110.244.46 (36.110.244.46)  37.131 ms  31.660 ms  31.489 ms</span><br><span class="line"> 7  * * *</span><br><span class="line"> 8  220.181.17.94 (220.181.17.94)  10.700 ms 220.181.17.146 (220.181.17.146)  10.511 ms 220.181.17.150 (220.181.17.150)  10.336 ms</span><br><span class="line"> 9  * * *</span><br><span class="line">10  * * *</span><br><span class="line">11  * * *</span><br><span class="line">12  * * *</span><br><span class="line">13  * * *</span><br><span class="line">14  * * *</span><br><span class="line">15  * * *</span><br><span class="line">16  * * *</span><br><span class="line">17  * * *</span><br><span class="line">18  * * *</span><br><span class="line">19  * * *</span><br><span class="line">20  * * *</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>依据上述原理，利用了 UDP 数据包的 Traceroute 程序在数据包到达真正的目的主机时，就可能因为该主机没有提供 UDP 服务而简单将数据包抛弃，并不返回任何信息。为了解决这个问题，Traceroute 故意使用了一个大于 30000 的端口号，因 UDP 协议规定端口号必须小于 30000 ，所以目标主机收到数据包后唯一能做的事就是返回一个“端口不可达”的 ICMP 报文，于是主叫方就将端口不可达报文当作跟踪结束的标志。</p>
 </blockquote>
-<h2 id="简易实现"><a href="#简易实现" class="headerlink" title="简易实现"></a>简易实现</h2><p>源地址： <a href="https://github.com/dnaeon/pytraceroute" target="_blank" rel="external">https://github.com/dnaeon/pytraceroute</a><br>对整个实现中最重要的部分做下注释：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># Copyright (c) 2015 Marin Atanasov Nikolov &lt;dnaeon@gmail.com&gt;</span></div><div class="line"><span class="comment"># All rights reserved.</span></div><div class="line"><span class="comment">#</span></div><div class="line"><span class="comment"># Redistribution and use in source and binary forms, with or without</span></div><div class="line"><span class="comment"># modification, are permitted provided that the following conditions</span></div><div class="line"><span class="comment"># are met:</span></div><div class="line"><span class="comment"># 1. Redistributions of source code must retain the above copyright</span></div><div class="line"><span class="comment">#    notice, this list of conditions and the following disclaimer</span></div><div class="line"><span class="comment">#    in this position and unchanged.</span></div><div class="line"><span class="comment"># 2. Redistributions in binary form must reproduce the above copyright</span></div><div class="line"><span class="comment">#    notice, this list of conditions and the following disclaimer in the</span></div><div class="line"><span class="comment">#    documentation and/or other materials provided with the distribution.</span></div><div class="line"><span class="comment">#</span></div><div class="line"><span class="comment"># THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS'' AND ANY EXPRESS OR</span></div><div class="line"><span class="comment"># IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES</span></div><div class="line"><span class="comment"># OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span></div><div class="line"><span class="comment"># IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,</span></div><div class="line"><span class="comment"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT</span></div><div class="line"><span class="comment"># NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,</span></div><div class="line"><span class="comment"># DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY</span></div><div class="line"><span class="comment"># THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT</span></div><div class="line"><span class="comment"># (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF</span></div><div class="line"><span class="comment"># THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span></div><div class="line"></div><div class="line"><span class="string">"""</span></div><div class="line"><span class="string">Core module</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">"""</span></div><div class="line"></div><div class="line"><span class="keyword">import</span> socket</div><div class="line"><span class="keyword">import</span> random</div><div class="line"><span class="keyword">import</span> struct</div><div class="line"><span class="keyword">import</span> time</div><div class="line"></div><div class="line">__all__ = [<span class="string">'Tracer'</span>]</div><div class="line"></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tracer</span><span class="params">(object)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, dst, hops=<span class="number">30</span>)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line"><span class="string">        Initializes a new tracer object</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        Args:</span></div><div class="line"><span class="string">            dst  (str): Destination host to probe</span></div><div class="line"><span class="string">            hops (int): Max number of hops to probe</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        """</span></div><div class="line">        self.dst = dst <span class="comment"># 目标地址：域名或 IPv4 地址</span></div><div class="line">        self.hops = hops </div><div class="line">        self.ttl = <span class="number">1</span></div><div class="line"></div><div class="line">        <span class="comment"># Pick up a random port in the range 33434-33534</span></div><div class="line">        <span class="comment"># 对应上述解释，随机选择一个 &gt; 30000 的端口用于连接</span></div><div class="line">        self.port = random.choice(range(<span class="number">33434</span>, <span class="number">33535</span>))</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line"><span class="string">        Run the tracer</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        Raises:</span></div><div class="line"><span class="string">            IOError</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        """</span></div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            dst_ip = socket.gethostbyname(self.dst) <span class="comment"># 解析域名</span></div><div class="line">        <span class="keyword">except</span> socket.error <span class="keyword">as</span> e:</div><div class="line">            <span class="keyword">raise</span> IOError(<span class="string">'Unable to resolve &#123;&#125;: &#123;&#125;'</span>, self.dst, e)</div><div class="line"></div><div class="line">        text = <span class="string">'traceroute to &#123;&#125; (&#123;&#125;), &#123;&#125; hops max'</span>.format(</div><div class="line">            self.dst,</div><div class="line">            dst_ip,</div><div class="line">            self.hops</div><div class="line">        )</div><div class="line"></div><div class="line">        print(text)</div><div class="line"></div><div class="line">        <span class="keyword">while</span> <span class="keyword">True</span>:</div><div class="line">            startTimer = time.time()</div><div class="line">            receiver = self.create_receiver() <span class="comment"># 创建接收 socket 实例</span></div><div class="line">            sender = self.create_sender() <span class="comment"># 创建发送 socket 实例</span></div><div class="line">            sender.sendto(<span class="string">b''</span>, (self.dst, self.port)) <span class="comment"># 向目标地址指定端口发送报文</span></div><div class="line"></div><div class="line">            addr = <span class="keyword">None</span></div><div class="line">            <span class="keyword">try</span>:</div><div class="line">                data, addr = receiver.recvfrom(<span class="number">1024</span>) <span class="comment"># 获取发送 ICMP 超时报文，并解析地址</span></div><div class="line">                entTimer = time.time()</div><div class="line">            <span class="keyword">except</span> socket.error:</div><div class="line">                <span class="keyword">pass</span></div><div class="line">                <span class="comment"># raise IOError('Socket error: &#123;&#125;'.format(e))</span></div><div class="line">            <span class="keyword">finally</span>:</div><div class="line">                receiver.close()</div><div class="line">                sender.close()</div><div class="line"></div><div class="line">            <span class="keyword">if</span> addr: <span class="comment"># 如果获取到地址，则打印相应信息及用时</span></div><div class="line">                timeCost = round((entTimer - startTimer) * <span class="number">1000</span>, <span class="number">2</span>)</div><div class="line">                print(<span class="string">'&#123;:&lt;4&#125; &#123;&#125; &#123;&#125; ms'</span>.format(self.ttl, addr[<span class="number">0</span>]), timeCost)</div><div class="line">                <span class="keyword">if</span> addr[<span class="number">0</span>] == dst_ip:</div><div class="line">                    <span class="keyword">break</span></div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                print(<span class="string">'&#123;:&lt;4&#125; *'</span>.format(self.ttl))</div><div class="line"></div><div class="line">            self.ttl += <span class="number">1</span> <span class="comment"># 增加 TTL，获取下一跳地址</span></div><div class="line"></div><div class="line">            <span class="keyword">if</span> self.ttl &gt; self.hops:</div><div class="line">                <span class="keyword">break</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">create_receiver</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line"><span class="string">        Creates a receiver socket</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        Returns:</span></div><div class="line"><span class="string">            A socket instance</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        Raises:</span></div><div class="line"><span class="string">            IOError</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        """</span></div><div class="line">        s = socket.socket(</div><div class="line">            family=socket.AF_INET, <span class="comment"># 指定 proto family 为 IPv4</span></div><div class="line">            type=socket.SOCK_RAW, <span class="comment"># 指定接收 socket 类型为 raw，这里是因为普通的 socket 类型无法处理 ICMP 报文</span></div><div class="line">            proto=socket.IPPROTO_ICMP <span class="comment"># 指定 socket 协议为 ICMP 协议，type 与 proto 需要特定的组合，不允许任意配置</span></div><div class="line">        )</div><div class="line"></div><div class="line">        timeout = struct.pack(<span class="string">"ll"</span>, <span class="number">5</span>, <span class="number">0</span>)</div><div class="line">        s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, timeout)</div><div class="line"></div><div class="line">        <span class="keyword">try</span>:</div><div class="line">            s.bind((<span class="string">''</span>, self.port))</div><div class="line">        <span class="keyword">except</span> socket.error <span class="keyword">as</span> e:</div><div class="line">            <span class="keyword">raise</span> IOError(<span class="string">'Unable to bind receiver socket: &#123;&#125;'</span>.format(e))</div><div class="line"></div><div class="line">        <span class="keyword">return</span> s</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">create_sender</span><span class="params">(self)</span>:</span></div><div class="line">        <span class="string">"""</span></div><div class="line"><span class="string">        Creates a sender socket</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        Returns:</span></div><div class="line"><span class="string">            A socket instance</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">        """</span></div><div class="line">        s = socket.socket(</div><div class="line">            family=socket.AF_INET, <span class="comment"># 指定 proto family 为 IPv4</span></div><div class="line">            type=socket.SOCK_DGRAM, <span class="comment"># 指定发送的类型为 UDP，即发送广播消息</span></div><div class="line">            proto=socket.IPPROTO_UDP <span class="comment"># 指定协议为 IP UDP </span></div><div class="line">        )</div><div class="line"></div><div class="line">        s.setsockopt(socket.SOL_IP, socket.IP_TTL, self.ttl)</div><div class="line"></div><div class="line">        <span class="keyword">return</span> s</div></pre></td></tr></table></figure>
+<h2 id="简易实现"><a href="#简易实现" class="headerlink" title="简易实现"></a>简易实现</h2><p>源地址： <a href="https://github.com/dnaeon/pytraceroute" target="_blank" rel="noopener">https://github.com/dnaeon/pytraceroute</a><br>对整个实现中最重要的部分做下注释：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Copyright (c) 2015 Marin Atanasov Nikolov &lt;dnaeon@gmail.com&gt;</span></span><br><span class="line"><span class="comment"># All rights reserved.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Redistribution and use in source and binary forms, with or without</span></span><br><span class="line"><span class="comment"># modification, are permitted provided that the following conditions</span></span><br><span class="line"><span class="comment"># are met:</span></span><br><span class="line"><span class="comment"># 1. Redistributions of source code must retain the above copyright</span></span><br><span class="line"><span class="comment">#    notice, this list of conditions and the following disclaimer</span></span><br><span class="line"><span class="comment">#    in this position and unchanged.</span></span><br><span class="line"><span class="comment"># 2. Redistributions in binary form must reproduce the above copyright</span></span><br><span class="line"><span class="comment">#    notice, this list of conditions and the following disclaimer in the</span></span><br><span class="line"><span class="comment">#    documentation and/or other materials provided with the distribution.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS'' AND ANY EXPRESS OR</span></span><br><span class="line"><span class="comment"># IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES</span></span><br><span class="line"><span class="comment"># OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span></span><br><span class="line"><span class="comment"># IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,</span></span><br><span class="line"><span class="comment"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT</span></span><br><span class="line"><span class="comment"># NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,</span></span><br><span class="line"><span class="comment"># DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY</span></span><br><span class="line"><span class="comment"># THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT</span></span><br><span class="line"><span class="comment"># (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF</span></span><br><span class="line"><span class="comment"># THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span></span><br><span class="line"></span><br><span class="line"><span class="string">"""</span></span><br><span class="line"><span class="string">Core module</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">"""</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> struct</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line">__all__ = [<span class="string">'Tracer'</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tracer</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, dst, hops=<span class="number">30</span>)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Initializes a new tracer object</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Args:</span></span><br><span class="line"><span class="string">            dst  (str): Destination host to probe</span></span><br><span class="line"><span class="string">            hops (int): Max number of hops to probe</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        self.dst = dst <span class="comment"># 目标地址：域名或 IPv4 地址</span></span><br><span class="line">        self.hops = hops </span><br><span class="line">        self.ttl = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># Pick up a random port in the range 33434-33534</span></span><br><span class="line">        <span class="comment"># 对应上述解释，随机选择一个 &gt; 30000 的端口用于连接</span></span><br><span class="line">        self.port = random.choice(range(<span class="number">33434</span>, <span class="number">33535</span>))</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Run the tracer</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Raises:</span></span><br><span class="line"><span class="string">            IOError</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            dst_ip = socket.gethostbyname(self.dst) <span class="comment"># 解析域名</span></span><br><span class="line">        <span class="keyword">except</span> socket.error <span class="keyword">as</span> e:</span><br><span class="line">            <span class="keyword">raise</span> IOError(<span class="string">'Unable to resolve &#123;&#125;: &#123;&#125;'</span>, self.dst, e)</span><br><span class="line"></span><br><span class="line">        text = <span class="string">'traceroute to &#123;&#125; (&#123;&#125;), &#123;&#125; hops max'</span>.format(</span><br><span class="line">            self.dst,</span><br><span class="line">            dst_ip,</span><br><span class="line">            self.hops</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        print(text)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">            startTimer = time.time()</span><br><span class="line">            receiver = self.create_receiver() <span class="comment"># 创建接收 socket 实例</span></span><br><span class="line">            sender = self.create_sender() <span class="comment"># 创建发送 socket 实例</span></span><br><span class="line">            sender.sendto(<span class="string">b''</span>, (self.dst, self.port)) <span class="comment"># 向目标地址指定端口发送报文</span></span><br><span class="line"></span><br><span class="line">            addr = <span class="keyword">None</span></span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                data, addr = receiver.recvfrom(<span class="number">1024</span>) <span class="comment"># 获取发送 ICMP 超时报文，并解析地址</span></span><br><span class="line">                entTimer = time.time()</span><br><span class="line">            <span class="keyword">except</span> socket.error:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line">                <span class="comment"># raise IOError('Socket error: &#123;&#125;'.format(e))</span></span><br><span class="line">            <span class="keyword">finally</span>:</span><br><span class="line">                receiver.close()</span><br><span class="line">                sender.close()</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> addr: <span class="comment"># 如果获取到地址，则打印相应信息及用时</span></span><br><span class="line">                timeCost = round((entTimer - startTimer) * <span class="number">1000</span>, <span class="number">2</span>)</span><br><span class="line">                print(<span class="string">'&#123;:&lt;4&#125; &#123;&#125; &#123;&#125; ms'</span>.format(self.ttl, addr[<span class="number">0</span>]), timeCost)</span><br><span class="line">                <span class="keyword">if</span> addr[<span class="number">0</span>] == dst_ip:</span><br><span class="line">                    <span class="keyword">break</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                print(<span class="string">'&#123;:&lt;4&#125; *'</span>.format(self.ttl))</span><br><span class="line"></span><br><span class="line">            self.ttl += <span class="number">1</span> <span class="comment"># 增加 TTL，获取下一跳地址</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> self.ttl &gt; self.hops:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">create_receiver</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Creates a receiver socket</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Returns:</span></span><br><span class="line"><span class="string">            A socket instance</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Raises:</span></span><br><span class="line"><span class="string">            IOError</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        s = socket.socket(</span><br><span class="line">            family=socket.AF_INET, <span class="comment"># 指定 proto family 为 IPv4</span></span><br><span class="line">            type=socket.SOCK_RAW, <span class="comment"># 指定接收 socket 类型为 raw，这里是因为普通的 socket 类型无法处理 ICMP 报文</span></span><br><span class="line">            proto=socket.IPPROTO_ICMP <span class="comment"># 指定 socket 协议为 ICMP 协议，type 与 proto 需要特定的组合，不允许任意配置</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        timeout = struct.pack(<span class="string">"ll"</span>, <span class="number">5</span>, <span class="number">0</span>)</span><br><span class="line">        s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, timeout)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            s.bind((<span class="string">''</span>, self.port))</span><br><span class="line">        <span class="keyword">except</span> socket.error <span class="keyword">as</span> e:</span><br><span class="line">            <span class="keyword">raise</span> IOError(<span class="string">'Unable to bind receiver socket: &#123;&#125;'</span>.format(e))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> s</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">create_sender</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Creates a sender socket</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Returns:</span></span><br><span class="line"><span class="string">            A socket instance</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        s = socket.socket(</span><br><span class="line">            family=socket.AF_INET, <span class="comment"># 指定 proto family 为 IPv4</span></span><br><span class="line">            type=socket.SOCK_DGRAM, <span class="comment"># 指定发送的类型为 UDP，即发送广播消息</span></span><br><span class="line">            proto=socket.IPPROTO_UDP <span class="comment"># 指定协议为 IP UDP </span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        s.setsockopt(socket.SOL_IP, socket.IP_TTL, self.ttl)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> s</span><br></pre></td></tr></table></figure>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>了解了实现原理之后，希望之后排查网络问题应该也会得心应手一些吧。<br>也希望自己能更多的关注于 Why，而不是 How。</p>
 <h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="http://dnaeon.github.io/traceroute-in-python/" target="_blank" rel="external">http://dnaeon.github.io/traceroute-in-python/</a></li>
-<li><a href="https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/" target="_blank" rel="external">https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/</a></li>
-<li><a href="https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required" target="_blank" rel="external">https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required</a></li>
-<li><a href="https://blog.csdn.net/newnewman80/article/details/8000404" target="_blank" rel="external">https://blog.csdn.net/newnewman80/article/details/8000404</a></li>
-<li><a href="http://www.zmonster.me/notes/tcp-ip-socket-in-c.html" target="_blank" rel="external">http://www.zmonster.me/notes/tcp-ip-socket-in-c.html</a></li>
-<li><a href="http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf" target="_blank" rel="external">http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf</a></li>
+<li><a href="http://dnaeon.github.io/traceroute-in-python/" target="_blank" rel="noopener">http://dnaeon.github.io/traceroute-in-python/</a></li>
+<li><a href="https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/" target="_blank" rel="noopener">https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/</a></li>
+<li><a href="https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required" target="_blank" rel="noopener">https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required</a></li>
+<li><a href="https://blog.csdn.net/newnewman80/article/details/8000404" target="_blank" rel="noopener">https://blog.csdn.net/newnewman80/article/details/8000404</a></li>
+<li><a href="http://www.zmonster.me/notes/tcp-ip-socket-in-c.html" target="_blank" rel="noopener">http://www.zmonster.me/notes/tcp-ip-socket-in-c.html</a></li>
+<li><a href="http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf" target="_blank" rel="noopener">http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf</a></li>
 </ul>
 
       
     </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-        <div class="post-tags">
-          
-            <a href="/tags/Linux/" rel="tag"># Linux</a>
-          
-            <a href="/tags/Network/" rel="tag"># Network</a>
-          
-        </div>
-      
-
+    <footer class="article-footer">
+      <a data-url="http://zdyxry.com/2018/11/18/Traceroute-简易实现/" data-id="cjt2w3xd50019ca79fzlpzn1d" class="article-share-link">Share</a>
       
       
-      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Network/">Network</a></li></ul>
 
-      
-        <div class="post-nav">
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2018/11/18/剑指-Offer（一）/" rel="next" title="剑指 Offer（一）">
-                <i class="fa fa-chevron-left"></i> 剑指 Offer（一）
-              </a>
-            
-          </div>
-
-          <span class="post-nav-divider"></span>
-
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/20/剑指-Offer（二）/" rel="prev" title="剑指 Offer（二）">
-                剑指 Offer（二） <i class="fa fa-chevron-right"></i>
-              </a>
-            
-          </div>
-        </div>
-      
-
-      
-      
     </footer>
   </div>
   
-  
-  
-  </article>
-
-
-
-    <div class="post-spread">
-      
-    </div>
-  </div>
-
-
-          </div>
-          
-
-
-          
-
-  
-    <div class="comments" id="comments">
-      <div id="disqus_thread">
-        <noscript>
-          Please enable JavaScript to view the
-          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
-        </noscript>
-      </div>
-    </div>
-
-  
-
-
-
-        </div>
-        
-          
-  
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
-    </div>
-  </div>
-
-  <aside id="sidebar" class="sidebar">
     
-    <div class="sidebar-inner">
+<nav id="article-nav">
+  
+    <a href="/2018/11/20/剑指-Offer（二）/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          剑指 Offer（二）
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/11/18/剑指-Offer（一）/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">剑指 Offer（一）</div>
+    </a>
+  
+</nav>
 
-      
+  
+</article>
 
-      
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">11</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Ansible/" style="font-size: 12.5px;">Ansible</a> <a href="/tags/Bash/" style="font-size: 12.5px;">Bash</a> <a href="/tags/Book/" style="font-size: 15px;">Book</a> <a href="/tags/Flask/" style="font-size: 10px;">Flask</a> <a href="/tags/Hardware/" style="font-size: 10px;">Hardware</a> <a href="/tags/Json/" style="font-size: 10px;">Json</a> <a href="/tags/Libvirt/" style="font-size: 10px;">Libvirt</a> <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/LiveCD/" style="font-size: 10px;">LiveCD</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/OpenvSwitch/" style="font-size: 10px;">OpenvSwitch</a> <a href="/tags/Ops/" style="font-size: 10px;">Ops</a> <a href="/tags/Python/" style="font-size: 17.5px;">Python</a> <a href="/tags/Server/" style="font-size: 15px;">Server</a> <a href="/tags/Shell/" style="font-size: 12.5px;">Shell</a> <a href="/tags/Socket/" style="font-size: 10px;">Socket</a> <a href="/tags/alogrithms/" style="font-size: 17.5px;">alogrithms</a> <a href="/tags/cgroups/" style="font-size: 10px;">cgroups</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/logging/" style="font-size: 10px;">logging</a> <a href="/tags/qemu/" style="font-size: 10px;">qemu</a> <a href="/tags/tools/" style="font-size: 12.5px;">tools</a> <a href="/tags/vim/" style="font-size: 10px;">vim</a> <a href="/tags/zeroconf/" style="font-size: 10px;">zeroconf</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/03/10/Python-调用-systemd-watchdog-方法/">Python 调用 systemd watchdog 方法</a>
           </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
+        
+          <li>
+            <a href="/2019/03/09/Python-生成器使用/">Python 生成器使用</a>
           </li>
-        </ul>
-      
-
-      <section class="site-overview-wrap sidebar-panel">
-        <div class="site-overview">
-          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-            
-              <img class="site-author-image" itemprop="image"
-                src="/images/yiran.png"
-                alt="yiran" />
-            
-              <p class="site-author-name" itemprop="name">yiran</p>
-              <p class="site-description motion-element" itemprop="description">yiran's blog</p>
-          </div>
-
-          <nav class="site-state motion-element">
-
-            
-              <div class="site-state-item site-state-posts">
-              
-                <a href="/archives/">
-              
-                  <span class="site-state-item-count">46</span>
-                  <span class="site-state-item-name">日志</span>
-                </a>
-              </div>
-            
-
-            
-
-            
-              
-              
-              <div class="site-state-item site-state-tags">
-                <a href="/tags/index.html">
-                  <span class="site-state-item-count">24</span>
-                  <span class="site-state-item-name">标签</span>
-                </a>
-              </div>
-            
-
-          </nav>
-
-          
-            <div class="feed-link motion-element">
-              <a href="/atom.xml" rel="alternate">
-                <i class="fa fa-rss"></i>
-                RSS
-              </a>
-            </div>
-          
-
-          
-            <div class="links-of-author motion-element">
-                
-                  <span class="links-of-author-item">
-                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
-                      
-                        <i class="fa fa-fw fa-github"></i>GitHub</a>
-                  </span>
-                
-                  <span class="links-of-author-item">
-                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
-                      
-                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
-                  </span>
-                
-                  <span class="links-of-author-item">
-                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
-                      
-                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
-                  </span>
-                
-                  <span class="links-of-author-item">
-                    <a href="https://instagram.com/zdyxry" target="_blank" title="Instagram">
-                      
-                        <i class="fa fa-fw fa-instagram"></i>Instagram</a>
-                  </span>
-                
-            </div>
-          
-
-          
-          
-
-          
-          
-            <div class="links-of-blogroll motion-element links-of-blogroll-block">
-              <div class="links-of-blogroll-title">
-                <i class="fa  fa-fw fa-link"></i>
-                友情链接
-              </div>
-              <ul class="links-of-blogroll-list">
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
-                  </li>
-                
-              </ul>
-            </div>
-          
-
-          
-
-        </div>
-      </section>
-
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Traceroute"><span class="nav-number">2.</span> <span class="nav-text">Traceroute</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#简易实现"><span class="nav-number">3.</span> <span class="nav-text">简易实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">5.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
-      
-
-      
-
+        
+          <li>
+            <a href="/2019/03/02/Libvirt-CPU-配置/">Libvirt CPU 配置</a>
+          </li>
+        
+          <li>
+            <a href="/2019/02/05/学会拒绝/">学会拒绝</a>
+          </li>
+        
+          <li>
+            <a href="/2019/01/12/聊一聊-ISO-9660/">聊一聊 ISO 9660</a>
+          </li>
+        
+      </ul>
     </div>
-  </aside>
-
-
-        
-      </div>
-    </main>
-
-    <footer id="footer" class="footer">
-      <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
-  <span class="with-love">
-    <i class="fa fa-user"></i>
-  </span>
-  <span class="author" itemprop="copyrightHolder">yiran</span>
-
-  
-</div>
-
-
-  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
-
-
-
-  <span class="post-meta-divider">|</span>
-
-
-
-  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
-
-
-
-
-        
-<div class="busuanzi-count">
-  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-  
-    <span class="site-uv">
-      <i class="fa fa-user"></i>
-      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
-      
-    </span>
-  
-
-  
-    <span class="site-pv">
-      <i class="fa fa-eye"></i>
-      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
-      
-    </span>
-  
-</div>
-
-
-
-
-
-
-
-
-        
-      </div>
-    </footer>
-
-    
-      <div class="back-to-top">
-        <i class="fa fa-arrow-up"></i>
-        
-      </div>
-    
-
-    
-
   </div>
 
   
-
-<script type="text/javascript">
-  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
-    window.Promise = null;
-  }
-</script>
-
-
-
-
-
-
-
-
-
+</aside>
+        
+      </div>
+      <footer id="footer">
   
-
-
-
-
-
-
-
-
-
-
-
-
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2019 yiran<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
   
+    <a href="/" class="mobile-nav-link">Home</a>
   
-    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+    <a href="/archives" class="mobile-nav-link">Archives</a>
   
-
+    <a href="/about" class="mobile-nav-link">About</a>
   
-  
-    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
-  
-
-  
-  
-    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
-  
-
-  
-  
-    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
-  
-
-  
-  
-    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
-  
-
-  
-  
-    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
-  
-
-
-  
-
-
-  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
-
-  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
-
-
-
-  
-  
-
-
-  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
-
-  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
-
-
-
-  
-  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
-<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
-
-
-
-  
-
-
-  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
-
-
-
-  
-
-
-  
-
-    
-      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+</nav>
     
 
-    
-      <script type="text/javascript">
-        var disqus_config = function () {
-          this.page.url = 'http://zdyxry.com/2018/11/18/Traceroute-简易实现/';
-          this.page.identifier = '2018/11/18/Traceroute-简易实现/';
-          this.page.title = 'Traceroute 简易实现';
-        };
-        var d = document, s = d.createElement('script');
-        s.src = 'https://zdyxry.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', '' + +new Date());
-        (d.head || d.body).appendChild(s);
-      </script>
-    
-
-  
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
 
 
-	
+<script src="/js/script.js"></script>
 
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-  
-
-  
-
-  
-
-  
-  
-
-  
-
-  
-
-  
-
+  </div>
 </body>
 </html>
