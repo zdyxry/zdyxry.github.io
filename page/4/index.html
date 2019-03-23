@@ -81,6 +81,59 @@ ga('send', 'pageview');
       <div class="outer">
         <section id="main">
   
+    <article id="post-Ansible-配置-IPv6-连接" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/08/17/Ansible-配置-IPv6-连接/" class="article-date">
+  <time datetime="2018-08-17T05:43:40.000Z" itemprop="datePublished">2018-08-17</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/08/17/Ansible-配置-IPv6-连接/">Ansible 配置 IPv6 连接</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>平时工作中因为通常需要远程操作较多 Linux 环境，引入了 Ansible，但是大都是通过 Ansible 远程命令的方式执行，少数的封装为 Playbook 也是很简单的配置。<br>最早的时候用过简单的 SaltStack，但是要安装 Agent，觉得不好用，在 16年早期的时候使用 Ansible，简单快捷（当然我对性能没有要求）。<br>最近需要把之前由 Shell &amp; Python 拼装的一个服务统一用 Ansible 进行重写，又花了些时间看了看相关文档。发现大家操作远程机器无论是通过秘钥还是通过密码，都是基于 IPv4 的地址链接的，而有些机器是没有 IPv4 地址的，于是花费了些时间验证 Ansible IPv6 配置方式。</p>
+<h2 id="IPv6"><a href="#IPv6" class="headerlink" title="IPv6"></a>IPv6</h2><p>IPv6 维基百科的解释是：网际协议第6版（英文：Internet Protocol version 6，缩写：IPv6）是网际协议（IP）的最新版本，用作互联网的网络层协议，用它来取代IPv4主要是为了解决IPv4地址枯竭问题，不过它也在其他很多方面对IPv4有所改进。我们目前日常中使用的地址都是 IPv4 的地址（比如：192.168.1.1）。<br>使用 IPv6 有一个好处是，可以通过 NDP（Neighbor Discovery Protocol）扫描二层网络内的所有的 IPv6 地址，方便我们使用，那么我们如何判断 IPv6 是否可以连通呢？<br>可以通过 ping6 的方式判断，比如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 14:00:44 ~]<span class="variable">$ping6</span> fe80::2487:93ff:fe9a:c546%port-mgt</span><br><span class="line">PING fe80::2487:93ff:fe9a:c546%port-mgt(fe80::2487:93ff:fe9a:c546%port-mgt) 56 data bytes</span><br><span class="line">64 bytes from fe80::2487:93ff:fe9a:c546%port-mgt: icmp_seq=1 ttl=64 time=0.443 ms</span><br><span class="line">64 bytes from fe80::2487:93ff:fe9a:c546%port-mgt: icmp_seq=2 ttl=64 time=0.488 ms</span><br><span class="line">^C</span><br><span class="line">--- fe80::2487:93ff:fe9a:c546%port-mgt ping statistics ---</span><br><span class="line">2 packets transmitted, 2 received, 0% packet loss, time 1000ms</span><br><span class="line">rtt min/avg/max/mdev = 0.443/0.465/0.488/0.031 ms</span><br></pre></td></tr></table></figure></p>
+<p>注意这里的 IPv6 的格式，前面是 IPv6 地址，后面是本地网络接口名称，如果是物理网卡则接物理网卡名称，如果是 OVS Port，则接 Port 名称。</p>
+<p>既然地址可以连通，那么我们思考如何进行远程控制。</p>
+<h2 id="SSH-远程连接"><a href="#SSH-远程连接" class="headerlink" title="SSH 远程连接"></a>SSH 远程连接</h2><p>通常我们通过 IPv4 地址链接远程 Linux，通过如下方式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 14:01:23 ~]<span class="variable">$ssh</span> 192.168.30.112</span><br><span class="line">root@192.168.30.112<span class="string">'s password: </span></span><br><span class="line"><span class="string">Last login: Fri Aug 17 12:15:52 2018 from 192.168.16.1</span></span><br><span class="line"><span class="string">[root@node112 14:03:46 ~]$</span></span><br></pre></td></tr></table></figure></p>
+<p>我们尝试将上面的 IPv4 地址替换为 IPv6 地址试试看：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 14:04:55 ~]<span class="variable">$ssh</span> fe80::2487:93ff:fe9a:c546</span><br><span class="line">ssh: connect to host fe80::2487:93ff:fe9a:c546 port 22: Invalid argument</span><br><span class="line">[root@node111 14:05:10 ~]$</span><br></pre></td></tr></table></figure>
+<p>直接指定 IPv6 地址是无法识别的，那么我们按照 ping6 规则，加上网络接口名称试试看：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 14:05:10 ~]<span class="variable">$ssh</span> fe80::2487:93ff:fe9a:c546%port-mgt</span><br><span class="line">root@fe80::2487:93ff:fe9a:c546%port-mgt<span class="string">'s password: </span></span><br><span class="line"><span class="string">Last login: Fri Aug 17 14:04:56 2018 from fe80::d4b7:acff:fe2f:604e%ovsbr-mgt</span></span><br><span class="line"><span class="string">[root@node112 14:03:46 ~]$</span></span><br></pre></td></tr></table></figure></p>
+<p>一切顺利，我们成功的登录到了远程的机器上，我们知道 Ansible 是通过 SSH 的方式远程控制的，具体是调用 Python 的 (paramiko)[<a href="https://github.com/paramiko/paramiko/]" target="_blank" rel="noopener">https://github.com/paramiko/paramiko/]</a> ，我们接下来配置 Ansible。</p>
+<h2 id="Ansible-远程连接"><a href="#Ansible-远程连接" class="headerlink" title="Ansible 远程连接"></a>Ansible 远程连接</h2><p>Ansible Inventory 标准格式是：<code>IP  options</code> ，比如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[cluster]</span><br><span class="line">fe80::58d3:16ff:fe43:ce77%port-mgt ansible_ssh_user=root ansible_ssh_pass=abc123</span><br></pre></td></tr></table></figure></p>
+<p>验证 Ansible 远程控制：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 14:11:14 ~]<span class="variable">$ansible</span> cluster -m raw -a <span class="string">'uptime'</span></span><br><span class="line">fe80::58d3:16ff:fe43:ce77%port-mgt | SUCCESS | rc=0 &gt;&gt;</span><br><span class="line"> 14:11:22 up 7 days, 23:15,  2 users,  load average: 1.55, 1.39, 1.23</span><br><span class="line">Shared connection to fe80::58d3:16ff:fe43:ce77%port-mgt closed.</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>只要注意在 IPv6 地址后加上本地网络接口名称就可以正确配置 IPv6 远程控制了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://zdyxry.com/2018/08/17/Ansible-配置-IPv6-连接/" data-id="cjtlggncr00063p790ofvwwza" class="article-share-link">Share</a>
+      
+        <a href="http://zdyxry.com/2018/08/17/Ansible-配置-IPv6-连接/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ansible/">Ansible</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Pure-Bash-Bible" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2018/08/11/Pure-Bash-Bible/" class="article-date">
@@ -118,7 +171,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/08/11/Pure-Bash-Bible/" data-id="cjtbcgse0000r3z79lhxslfyh" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/08/11/Pure-Bash-Bible/" data-id="cjtlggndp000t3p79annpy6cx" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/08/11/Pure-Bash-Bible/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -179,7 +232,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/08/09/Linux-安全清理-boot-分区/" data-id="cjtbcgsdr000l3z79qlfj5y1x" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/08/09/Linux-安全清理-boot-分区/" data-id="cjtlggndk000o3p79p55lbzy2" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/08/09/Linux-安全清理-boot-分区/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -241,7 +294,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/08/04/CentOS-LiveCD-构建及修改方式/" data-id="cjtbcgscx00073z799ri1w2mu" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/08/04/CentOS-LiveCD-构建及修改方式/" data-id="cjtlggncy000a3p79wf1lisnd" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/08/04/CentOS-LiveCD-构建及修改方式/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -324,7 +377,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/07/28/RPM-常用构建方式/" data-id="cjtbcgse9000x3z79cxjnonwj" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/07/28/RPM-常用构建方式/" data-id="cjtlggnea00123p798c6mu2gu" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/07/28/RPM-常用构建方式/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -435,7 +488,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/07/22/译-python-logging-最佳实践/" data-id="cjtbcgsfq002k3z79nn7vq1y5" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/07/22/译-python-logging-最佳实践/" data-id="cjtlggnfh002m3p797lrmy8mg" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/07/22/译-python-logging-最佳实践/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -493,7 +546,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/07/08/Flask-流式响应/" data-id="cjtbcgsdc000f3z79b07tf9l0" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/07/08/Flask-流式响应/" data-id="cjtlggnd1000d3p79fut1u6g1" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/07/08/Flask-流式响应/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -549,7 +602,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/07/07/将-CSV-文件转换为嵌套-Json-文件/" data-id="cjtbcgsfl00293z79ou6u43z5" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/07/07/将-CSV-文件转换为嵌套-Json-文件/" data-id="cjtlggnfa00283p79ye8tiekl" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/07/07/将-CSV-文件转换为嵌套-Json-文件/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -624,7 +677,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/07/06/Linux-主机异常信息收集/" data-id="cjtbcgsdt000m3z79wc4gskzs" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/07/06/Linux-主机异常信息收集/" data-id="cjtlggndm000q3p7988wqwi1k" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/07/06/Linux-主机异常信息收集/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -682,57 +735,12 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/06/28/使用-systemd-timer-替换-crontab/" data-id="cjtbcgsfd001s3z793xbw8p82" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/06/28/使用-systemd-timer-替换-crontab/" data-id="cjtlggnev001k3p797ru10tvm" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/06/28/使用-systemd-timer-替换-crontab/#disqus_thread" class="article-comment-link">Comments</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-将-Json-转换为-Python-Object2" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2018/06/17/将-Json-转换为-Python-Object2/" class="article-date">
-  <time datetime="2018-06-17T13:00:49.000Z" itemprop="datePublished">2018-06-17</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/06/17/将-Json-转换为-Python-Object2/">将 Json 转换为 Python Object(二)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。<br>今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。</p>
-<p>源码代码很少，补充一些关键变量用于了解整体实现流程。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br></pre></td><td class="code"><pre><span class="line">import copy</span><br><span class="line">from pprint import pprint</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">class Dict(dict):</span><br><span class="line"></span><br><span class="line">    def __init__(__self, *args, **kwargs):</span><br><span class="line">        print &apos;init kwargs is &apos;, kwargs</span><br><span class="line">        object.__setattr__(__self, &apos;__parent&apos;, kwargs.pop(&apos;__parent&apos;, None))</span><br><span class="line">        object.__setattr__(__self, &apos;__key&apos;, kwargs.pop(&apos;__key&apos;, None))</span><br><span class="line">        for arg in args:</span><br><span class="line">            if not arg:</span><br><span class="line">                continue</span><br><span class="line">            elif isinstance(arg, dict):</span><br><span class="line">                for key, val in arg.items():</span><br><span class="line">                    __self[key] = __self._hook(val)</span><br><span class="line">            elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)):</span><br><span class="line">                __self[arg[0]] = __self._hook(arg[1])</span><br><span class="line">            else:</span><br><span class="line">                for key, val in iter(arg):</span><br><span class="line">                    __self[key] = __self._hook(val)</span><br><span class="line"></span><br><span class="line">        for key, val in kwargs.items():</span><br><span class="line">            __self[key] = __self._hook(val)</span><br><span class="line"></span><br><span class="line">    def __setattr__(self, name, value):</span><br><span class="line">        if hasattr(Dict, name):</span><br><span class="line">            raise AttributeError(&quot;&apos;Dict&apos; object attribute &quot;</span><br><span class="line">                                 &quot;&apos;&#123;0&#125;&apos; is read-only&quot;.format(name))</span><br><span class="line">        else:</span><br><span class="line">            self[name] = value</span><br><span class="line"></span><br><span class="line">    def __setitem__(self, name, value):</span><br><span class="line">        print &apos;setitem name is %s, value is %s &apos; % (name, value)</span><br><span class="line">        super(Dict, self).__setitem__(name, value)</span><br><span class="line">        try:</span><br><span class="line">            p = object.__getattribute__(self, &apos;__parent&apos;)</span><br><span class="line">            key = object.__getattribute__(self, &apos;__key&apos;)</span><br><span class="line">        except AttributeError:</span><br><span class="line">            p = None</span><br><span class="line">            key = None</span><br><span class="line">        if p is not None:</span><br><span class="line">            print &apos;parent is %s&apos; % p</span><br><span class="line">            print &apos;key is %s&apos; % key</span><br><span class="line">            p[key] = self</span><br><span class="line">            object.__delattr__(self, &apos;__parent&apos;)</span><br><span class="line">            object.__delattr__(self, &apos;__key&apos;)</span><br><span class="line"></span><br><span class="line">    def __add__(self, other):</span><br><span class="line">        if not self.keys():</span><br><span class="line">            return other</span><br><span class="line">        else:</span><br><span class="line">            self_type = type(self).__name__</span><br><span class="line">            other_type = type(other).__name__</span><br><span class="line">            msg = &quot;unsupported operand type(s) for +: &apos;&#123;&#125;&apos; and &apos;&#123;&#125;&apos;&quot;</span><br><span class="line">            raise TypeError(msg.format(self_type, other_type))</span><br><span class="line"></span><br><span class="line">    @classmethod</span><br><span class="line">    def _hook(cls, item):</span><br><span class="line">        if isinstance(item, dict):</span><br><span class="line">            return cls(item)</span><br><span class="line">        elif isinstance(item, (list, tuple)):</span><br><span class="line">            return type(item)(cls._hook(elem) for elem in item)</span><br><span class="line">        return item</span><br><span class="line"></span><br><span class="line">    def __getattr__(self, item):</span><br><span class="line">        return self.__getitem__(item)</span><br><span class="line"></span><br><span class="line">    def __getitem__(self, name):</span><br><span class="line">        print &apos;getitem name is &apos;, name</span><br><span class="line">        if name not in self:</span><br><span class="line">            print &quot;%s not in self&quot; % name</span><br><span class="line">            return Dict(__parent=self, __key=name)</span><br><span class="line">        return super(Dict, self).__getitem__(name)</span><br><span class="line"></span><br><span class="line">    def __delattr__(self, name):</span><br><span class="line">        del self[name]</span><br><span class="line"></span><br><span class="line">    def to_dict(self):</span><br><span class="line">        base = &#123;&#125;</span><br><span class="line">        for key, value in self.items():</span><br><span class="line">            if isinstance(value, type(self)):</span><br><span class="line">                base[key] = value.to_dict()</span><br><span class="line">            elif isinstance(value, (list, tuple)):</span><br><span class="line">                base[key] = type(value)(</span><br><span class="line">                    item.to_dict() if isinstance(item, type(self)) else</span><br><span class="line">                    item for item in value)</span><br><span class="line">            else:</span><br><span class="line">                base[key] = value</span><br><span class="line">        return base</span><br><span class="line"></span><br><span class="line">    def copy(self):</span><br><span class="line">        return copy.copy(self)</span><br><span class="line"></span><br><span class="line">    def deepcopy(self):</span><br><span class="line">        return copy.deepcopy(self)</span><br><span class="line"></span><br><span class="line">    def __deepcopy__(self, memo):</span><br><span class="line">        other = self.__class__()</span><br><span class="line">        memo[id(self)] = other</span><br><span class="line">        for key, value in self.items():</span><br><span class="line">            other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)</span><br><span class="line">        return other</span><br><span class="line"></span><br><span class="line">    def update(self, *args, **kwargs):</span><br><span class="line">        other = &#123;&#125;</span><br><span class="line">        if args:</span><br><span class="line">            if len(args) &gt; 1:</span><br><span class="line">                raise TypeError()</span><br><span class="line">            other.update(args[0])</span><br><span class="line">        other.update(kwargs)</span><br><span class="line">        for k, v in other.items():</span><br><span class="line">            if ((k not in self) or</span><br><span class="line">                (not isinstance(self[k], dict)) or</span><br><span class="line">                    (not isinstance(v, dict))):</span><br><span class="line">                self[k] = v</span><br><span class="line">            else:</span><br><span class="line">                self[k].update(v)</span><br><span class="line"></span><br><span class="line">    def __getnewargs__(self):</span><br><span class="line">        return tuple(self.items())</span><br><span class="line"></span><br><span class="line">    def __getstate__(self):</span><br><span class="line">        return self</span><br><span class="line"></span><br><span class="line">    def __setstate__(self, state):</span><br><span class="line">        self.update(state)</span><br><span class="line"></span><br><span class="line">    def setdefault(self, key, default=None):</span><br><span class="line">        if key in self:</span><br><span class="line">            return self[key]</span><br><span class="line">        else:</span><br><span class="line">            self[key] = default</span><br><span class="line">            return default</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">json_data = &#123;</span><br><span class="line">    &quot;a&quot;: &quot;a&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">test1 = Dict(json_data)</span><br><span class="line">test1.b.c = &quot;c&quot;</span><br><span class="line">test1.b.d.e = &quot;e&quot;</span><br><span class="line">pprint(test1.to_dict())</span><br></pre></td></tr></table></figure>
-<hr>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"> $ python a.py</span><br><span class="line">init kwargs is  &#123;&#125;</span><br><span class="line">setitem name is a, value is a </span><br><span class="line">getitem name is  b</span><br><span class="line">b not in self</span><br><span class="line">init kwargs is  &#123;&apos;__key&apos;: &apos;b&apos;, &apos;__parent&apos;: &#123;&apos;a&apos;: &apos;a&apos;&#125;&#125;</span><br><span class="line">setitem name is c, value is c </span><br><span class="line">parent is &#123;&apos;a&apos;: &apos;a&apos;&#125;</span><br><span class="line">key is b</span><br><span class="line">setitem name is b, value is &#123;&apos;c&apos;: &apos;c&apos;&#125; </span><br><span class="line">getitem name is  b</span><br><span class="line">getitem name is  d</span><br><span class="line">d not in self</span><br><span class="line">init kwargs is  &#123;&apos;__key&apos;: &apos;d&apos;, &apos;__parent&apos;: &#123;&apos;c&apos;: &apos;c&apos;&#125;&#125;</span><br><span class="line">setitem name is e, value is e </span><br><span class="line">parent is &#123;&apos;c&apos;: &apos;c&apos;&#125;</span><br><span class="line">key is d</span><br><span class="line">setitem name is d, value is &#123;&apos;e&apos;: &apos;e&apos;&#125; </span><br><span class="line">&#123;&apos;a&apos;: &apos;a&apos;, &apos;b&apos;: &#123;&apos;c&apos;: &apos;c&apos;, &apos;d&apos;: &#123;&apos;e&apos;: &apos;e&apos;&#125;&#125;&#125;</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/06/17/将-Json-转换为-Python-Object2/" data-id="cjtbcgsfm002c3z79mo6yfq97" class="article-share-link">Share</a>
-      
-        <a href="http://zdyxry.com/2018/06/17/将-Json-转换为-Python-Object2/#disqus_thread" class="article-comment-link">Comments</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Json/">Json</a></li></ul>
 
     </footer>
   </div>
@@ -757,7 +765,7 @@ ga('send', 'pageview');
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">11</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">11</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Wireguard/">Wireguard</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -767,7 +775,7 @@ ga('send', 'pageview');
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Ansible/" style="font-size: 12.5px;">Ansible</a> <a href="/tags/Bash/" style="font-size: 12.5px;">Bash</a> <a href="/tags/Book/" style="font-size: 15px;">Book</a> <a href="/tags/Flask/" style="font-size: 10px;">Flask</a> <a href="/tags/Hardware/" style="font-size: 10px;">Hardware</a> <a href="/tags/Json/" style="font-size: 10px;">Json</a> <a href="/tags/Libvirt/" style="font-size: 10px;">Libvirt</a> <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/LiveCD/" style="font-size: 10px;">LiveCD</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/OpenvSwitch/" style="font-size: 10px;">OpenvSwitch</a> <a href="/tags/Ops/" style="font-size: 10px;">Ops</a> <a href="/tags/Python/" style="font-size: 17.5px;">Python</a> <a href="/tags/Server/" style="font-size: 15px;">Server</a> <a href="/tags/Shell/" style="font-size: 12.5px;">Shell</a> <a href="/tags/Socket/" style="font-size: 10px;">Socket</a> <a href="/tags/alogrithms/" style="font-size: 17.5px;">alogrithms</a> <a href="/tags/cgroups/" style="font-size: 10px;">cgroups</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/logging/" style="font-size: 10px;">logging</a> <a href="/tags/qemu/" style="font-size: 10px;">qemu</a> <a href="/tags/tools/" style="font-size: 12.5px;">tools</a> <a href="/tags/vim/" style="font-size: 10px;">vim</a> <a href="/tags/zeroconf/" style="font-size: 10px;">zeroconf</a>
+      <a href="/tags/Ansible/" style="font-size: 12.5px;">Ansible</a> <a href="/tags/Bash/" style="font-size: 12.5px;">Bash</a> <a href="/tags/Book/" style="font-size: 15px;">Book</a> <a href="/tags/Flask/" style="font-size: 10px;">Flask</a> <a href="/tags/Hardware/" style="font-size: 10px;">Hardware</a> <a href="/tags/Json/" style="font-size: 10px;">Json</a> <a href="/tags/Libvirt/" style="font-size: 10px;">Libvirt</a> <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/LiveCD/" style="font-size: 10px;">LiveCD</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/OpenvSwitch/" style="font-size: 10px;">OpenvSwitch</a> <a href="/tags/Ops/" style="font-size: 10px;">Ops</a> <a href="/tags/Python/" style="font-size: 17.5px;">Python</a> <a href="/tags/Server/" style="font-size: 15px;">Server</a> <a href="/tags/Shell/" style="font-size: 12.5px;">Shell</a> <a href="/tags/Socket/" style="font-size: 10px;">Socket</a> <a href="/tags/Wireguard/" style="font-size: 10px;">Wireguard</a> <a href="/tags/alogrithms/" style="font-size: 17.5px;">alogrithms</a> <a href="/tags/cgroups/" style="font-size: 10px;">cgroups</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/logging/" style="font-size: 10px;">logging</a> <a href="/tags/qemu/" style="font-size: 10px;">qemu</a> <a href="/tags/tools/" style="font-size: 12.5px;">tools</a> <a href="/tags/vim/" style="font-size: 10px;">vim</a> <a href="/tags/zeroconf/" style="font-size: 10px;">zeroconf</a>
     </div>
   </div>
 
@@ -777,6 +785,10 @@ ga('send', 'pageview');
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2019/03/23/Wireguard-体验/">Wireguard 体验</a>
+          </li>
         
           <li>
             <a href="/2019/03/16/关于-On-Call/">关于 On-Call</a>
@@ -792,10 +804,6 @@ ga('send', 'pageview');
         
           <li>
             <a href="/2019/03/02/Libvirt-CPU-配置/">Libvirt CPU 配置</a>
-          </li>
-        
-          <li>
-            <a href="/2019/02/05/学会拒绝/">学会拒绝</a>
           </li>
         
       </ul>

@@ -81,6 +81,60 @@ ga('send', 'pageview');
       <div class="outer">
         <section id="main">
   
+    <article id="post-cgroup-资源预留" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/12/18/cgroup-资源预留/" class="article-date">
+  <time datetime="2018-12-18T13:15:33.000Z" itemprop="datePublished">2018-12-18</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/12/18/cgroup-资源预留/">cgroup 资源预留</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="cgroup-资源预留"><a href="#cgroup-资源预留" class="headerlink" title="cgroup 资源预留"></a>cgroup 资源预留</h2><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在之前的博客中，提到了 cgroup 中如何为自己的服务配置资源限制，比如 CPU，内存等，当时以为在 <code>cgroup.conf</code> 中配置的服务，那么相应绑定的 CPU 就归属于该服务，也就是资源预留，今天发现并不是这样，记录下如何通过 cgroup 做资源预留。</p>
+<h2 id="资源预留"><a href="#资源预留" class="headerlink" title="资源预留"></a>资源预留</h2><p>在之前提到的博客中关于资源限制是这么配置的：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">[root@node 20:56:49 ~]<span class="variable">$cat</span> /etc/cgconfig.conf</span><br><span class="line"><span class="comment"># yiran cgroups configuration</span></span><br><span class="line"></span><br><span class="line">group . &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.memory_pressure_enabled = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">group yiran &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.cpus = <span class="string">"0,1,2,3,4,5"</span>;</span><br><span class="line">        cpuset.mems = <span class="string">"0-1"</span>;</span><br><span class="line">        cpuset.cpu_exclusive = <span class="string">"1"</span>;</span><br><span class="line">        cpuset.mem_hardwall = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">group yiran/<span class="built_in">test</span> &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.cpus = <span class="string">"0"</span>;</span><br><span class="line">        cpuset.mems = <span class="string">"0-1"</span>;</span><br><span class="line">        cpuset.cpu_exclusive = <span class="string">"1"</span>;</span><br><span class="line">        cpuset.mem_hardwall = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我为 yiran 这个服务做了限制，其中分配给 <code>yiran/test</code> 的 CPU 是 <code>0</code>，并且配置了 <code>cpuset.cpu_exclusive</code> 选项。注意，这里的 exclusive 的意思并不是说分配到 <code>yiran/test</code> 中的服务独自占用该线程，而是说分配到 <code>yiran/test</code> 中的服务只会占用该线程，不会侵入到其他线程中，也就是通常我们说的 Limit。<br>可以通过 <code>stress</code> 命令来进行验证：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 对一台配置好 cgroup 的物理服务器 CPU 加压</span></span><br><span class="line">[root@node 21:05:37 ~]<span class="variable">$stress</span> -c 24</span><br><span class="line">stress: info: [4033] dispatching hogs: 24 cpu, 0 io, 0 vm, 0 hdd</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 新开终端，执行 top 命令查看 CPU 情况</span></span><br><span class="line">[root@node 21:05:37 ~]<span class="variable">$top</span></span><br><span class="line">top - 21:06:35 up 5 days,  9:03,  3 users,  load average: 32.58, 19.04, 15.43</span><br><span class="line">Tasks: 449 total,  36 running, 412 sleeping,   0 stopped,   1 zombie</span><br><span class="line">%Cpu0  : 89.0 us,  8.6 sy,  0.0 ni,  2.3 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  : 90.4 us,  8.9 sy,  0.0 ni,  0.3 id,  0.3 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  : 95.4 us,  4.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  : 84.4 us, 13.6 sy,  0.3 ni,  1.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  : 46.5 us, 36.0 sy,  1.7 ni, 15.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu6  : 93.4 us,  6.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu7  : 94.4 us,  5.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu8  : 88.0 us, 12.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu9  : 88.7 us, 11.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu10 : 88.4 us, 10.9 sy,  0.0 ni,  0.3 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu11 : 85.4 us, 13.9 sy,  0.7 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu12 : 98.7 us,  1.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu13 : 39.0 us, 12.0 sy,  0.0 ni, 49.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu14 : 92.7 us,  6.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu15 : 98.7 us,  1.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu16 : 97.0 us,  3.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu17 : 97.0 us,  2.3 sy,  0.0 ni,  0.3 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu18 :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu19 : 93.7 us,  6.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu20 : 88.4 us, 11.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu21 : 89.4 us, 10.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu22 : 88.1 us, 11.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu23 : 90.4 us,  9.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br></pre></td></tr></table></figure>
+<p>那么我们如何确保自己的服务有足够的资源运行呢？ 比如像 vSphere ESXi 上面可以针对某些虚拟机进行具体的资源预留（CPU，内存，磁盘等）。<br>其实只要将其他资源也限制在一个 cgroup 中就可以了。  </p>
+<ol>
+<li>在 <code>/etc/cgconfig.conf</code> 中创建一个新的 cgroup，将系统上其余的资源分配给该 group，如创建 <code>yiran/others</code> 并分配 3个 线程；</li>
+<li>修改 <code>/etc/cgrules.conf</code> ，将系统其它所有服务分配到步骤1创建的 group 中，如：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">*       cpuset       yiran/others</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>修改配置完成后，分别重启 <code>cgred</code> 和 <code>cgconfig</code> 使配置生效：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart cgred</span><br><span class="line">systemctl restart cgconfig</span><br></pre></td></tr></table></figure></p>
+<p>此时我们再通过 <code>stress</code> 进行验证<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node 21:09:29 ~]<span class="variable">$stress</span> -c 24</span><br><span class="line">stress: info: [12475] dispatching hogs: 24 cpu, 0 io, 0 vm, 0 hdd</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">top - 21:11:58 up 5 days,  9:09,  3 users,  load average: 38.11, 30.37, 21.48</span><br><span class="line">Tasks: 445 total,  38 running, 406 sleeping,   0 stopped,   1 zombie</span><br><span class="line">%Cpu0  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  :  0.0 us,  0.0 sy,  0.3 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  :  0.0 us,  0.3 sy,  0.0 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  : 88.1 us, 11.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  : 81.9 us, 16.1 sy,  1.6 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu6  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu7  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu8  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu9  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu10 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu11 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu12 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu13 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu14 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu15 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu16 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu17 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu18 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu19 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu20 :  0.0 us,  0.0 sy,  0.3 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu21 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu22 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu23 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">KiB Mem : 13174792+total, 11522948+free,  6439344 used, 10079088 buff/cache</span><br><span class="line">KiB Swap:        0 total,        0 free,        0 used. 12406676+avail Mem</span><br></pre></td></tr></table></figure>
+<p>我在 <code>yiran/others</code> 中配置了 3 个线程，那么此时哪怕我执行 <code>stress</code>  worker 为 24，也只会在这3个线程中，不会对其他 cgroup 服务产生干扰，从而达到了资源预留的效果。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://zdyxry.com/2018/12/18/cgroup-资源预留/" data-id="cjtlggner001d3p79d52y2in0" class="article-share-link">Share</a>
+      
+        <a href="http://zdyxry.com/2018/12/18/cgroup-资源预留/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-剑指-Offer（七）" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2018/12/15/剑指-Offer（七）/" class="article-date">
@@ -112,7 +166,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/15/剑指-Offer（七）/" data-id="cjtbcgsfa001n3z79uisscd2u" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/15/剑指-Offer（七）/" data-id="cjtlggnf2001s3p79oeaa3pm1" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/15/剑指-Offer（七）/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -193,7 +247,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/12/戴尔服务器-iDrac-配置/" data-id="cjtbcgsfp002i3z795kz4kxio" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/12/戴尔服务器-iDrac-配置/" data-id="cjtlggnfg002j3p79euxjidtw" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/12/戴尔服务器-iDrac-配置/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -234,7 +288,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/06/剑指-Offer（六）/" data-id="cjtbcgsfh00213z79esxtb1j5" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/06/剑指-Offer（六）/" data-id="cjtlggnf4001w3p796v1q40ag" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/06/剑指-Offer（六）/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -276,7 +330,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/05/剑指-Offer（五）/" data-id="cjtbcgsfg001x3z792694fn6a" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/05/剑指-Offer（五）/" data-id="cjtlggnf5001z3p79zccljr2r" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/05/剑指-Offer（五）/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -317,7 +371,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/02/剑指-Offer（四）/" data-id="cjtbcgsfg001z3z797om4ycfb" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/02/剑指-Offer（四）/" data-id="cjtlggnf700233p79i7h0op9n" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/02/剑指-Offer（四）/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -379,7 +433,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/02/个人常用工具/" data-id="cjtbcgsf5001g3z79ari8o5b0" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/02/个人常用工具/" data-id="cjtlggneu001h3p79ld77ttgv" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/02/个人常用工具/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -431,7 +485,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/01/Exponential-backoff/" data-id="cjtbcgsdg000h3z79mhd90nvp" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/01/Exponential-backoff/" data-id="cjtlggnd7000h3p7907l4ej25" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/01/Exponential-backoff/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -470,7 +524,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/11/25/剑指-Offer（三）/" data-id="cjtbcgsfc001p3z79b8dy0myc" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/11/25/剑指-Offer（三）/" data-id="cjtlggnf1001r3p79r6huzaxi" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/11/25/剑指-Offer（三）/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -593,53 +647,12 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/11/24/Ansible最佳实践/" data-id="cjtbcgscu00063z79pe5glw23" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/11/24/Ansible最佳实践/" data-id="cjtlggncv00093p79y19m4k23" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/11/24/Ansible最佳实践/#disqus_thread" class="article-comment-link">Comments</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ansible/">Ansible</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-剑指-Offer（二）" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2018/11/20/剑指-Offer（二）/" class="article-date">
-  <time datetime="2018-11-20T13:08:14.000Z" itemprop="datePublished">2018-11-20</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/11/20/剑指-Offer（二）/">剑指 Offer（二）</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="数值的整数次方"><a href="#数值的整数次方" class="headerlink" title="数值的整数次方"></a>数值的整数次方</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 给定一个double类型的浮点数base和int类型的整数exponent。求base的exponent次方。</span></span><br><span class="line"><span class="comment"># 考虑边界情况，base = 0, exponent &lt; 0, exponent = 0 场景。</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">equal_zero</span><span class="params">(num)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> abs(num - <span class="number">0.0</span>) &lt; <span class="number">0.0000001</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">power</span><span class="params">(base, exponent)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> equal_zero(base):</span><br><span class="line">        result = <span class="keyword">False</span></span><br><span class="line">    <span class="keyword">if</span> exponent == <span class="number">0</span>:</span><br><span class="line">        result = <span class="number">1</span></span><br><span class="line">    result = power(base, abs(exponent) &gt;&gt; <span class="number">1</span>)</span><br><span class="line">    result *= result</span><br><span class="line">    <span class="keyword">if</span> abs(exponent) &amp; <span class="number">1</span> == <span class="number">1</span>:</span><br><span class="line">        result *= base</span><br><span class="line">    <span class="keyword">if</span> exponent &lt; <span class="number">0</span>:</span><br><span class="line">        result = <span class="number">1.0</span> / result</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line">power_value(<span class="number">2</span>, <span class="number">2</span>)</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/11/20/剑指-Offer（二）/" data-id="cjtbcgsfe001u3z79hjjgreiz" class="article-share-link">Share</a>
-      
-        <a href="http://zdyxry.com/2018/11/20/剑指-Offer（二）/#disqus_thread" class="article-comment-link">Comments</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/alogrithms/">alogrithms</a></li></ul>
 
     </footer>
   </div>
@@ -664,7 +677,7 @@ ga('send', 'pageview');
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">11</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">11</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Wireguard/">Wireguard</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -674,7 +687,7 @@ ga('send', 'pageview');
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Ansible/" style="font-size: 12.5px;">Ansible</a> <a href="/tags/Bash/" style="font-size: 12.5px;">Bash</a> <a href="/tags/Book/" style="font-size: 15px;">Book</a> <a href="/tags/Flask/" style="font-size: 10px;">Flask</a> <a href="/tags/Hardware/" style="font-size: 10px;">Hardware</a> <a href="/tags/Json/" style="font-size: 10px;">Json</a> <a href="/tags/Libvirt/" style="font-size: 10px;">Libvirt</a> <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/LiveCD/" style="font-size: 10px;">LiveCD</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/OpenvSwitch/" style="font-size: 10px;">OpenvSwitch</a> <a href="/tags/Ops/" style="font-size: 10px;">Ops</a> <a href="/tags/Python/" style="font-size: 17.5px;">Python</a> <a href="/tags/Server/" style="font-size: 15px;">Server</a> <a href="/tags/Shell/" style="font-size: 12.5px;">Shell</a> <a href="/tags/Socket/" style="font-size: 10px;">Socket</a> <a href="/tags/alogrithms/" style="font-size: 17.5px;">alogrithms</a> <a href="/tags/cgroups/" style="font-size: 10px;">cgroups</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/logging/" style="font-size: 10px;">logging</a> <a href="/tags/qemu/" style="font-size: 10px;">qemu</a> <a href="/tags/tools/" style="font-size: 12.5px;">tools</a> <a href="/tags/vim/" style="font-size: 10px;">vim</a> <a href="/tags/zeroconf/" style="font-size: 10px;">zeroconf</a>
+      <a href="/tags/Ansible/" style="font-size: 12.5px;">Ansible</a> <a href="/tags/Bash/" style="font-size: 12.5px;">Bash</a> <a href="/tags/Book/" style="font-size: 15px;">Book</a> <a href="/tags/Flask/" style="font-size: 10px;">Flask</a> <a href="/tags/Hardware/" style="font-size: 10px;">Hardware</a> <a href="/tags/Json/" style="font-size: 10px;">Json</a> <a href="/tags/Libvirt/" style="font-size: 10px;">Libvirt</a> <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/LiveCD/" style="font-size: 10px;">LiveCD</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/OpenvSwitch/" style="font-size: 10px;">OpenvSwitch</a> <a href="/tags/Ops/" style="font-size: 10px;">Ops</a> <a href="/tags/Python/" style="font-size: 17.5px;">Python</a> <a href="/tags/Server/" style="font-size: 15px;">Server</a> <a href="/tags/Shell/" style="font-size: 12.5px;">Shell</a> <a href="/tags/Socket/" style="font-size: 10px;">Socket</a> <a href="/tags/Wireguard/" style="font-size: 10px;">Wireguard</a> <a href="/tags/alogrithms/" style="font-size: 17.5px;">alogrithms</a> <a href="/tags/cgroups/" style="font-size: 10px;">cgroups</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/logging/" style="font-size: 10px;">logging</a> <a href="/tags/qemu/" style="font-size: 10px;">qemu</a> <a href="/tags/tools/" style="font-size: 12.5px;">tools</a> <a href="/tags/vim/" style="font-size: 10px;">vim</a> <a href="/tags/zeroconf/" style="font-size: 10px;">zeroconf</a>
     </div>
   </div>
 
@@ -684,6 +697,10 @@ ga('send', 'pageview');
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2019/03/23/Wireguard-体验/">Wireguard 体验</a>
+          </li>
         
           <li>
             <a href="/2019/03/16/关于-On-Call/">关于 On-Call</a>
@@ -699,10 +716,6 @@ ga('send', 'pageview');
         
           <li>
             <a href="/2019/03/02/Libvirt-CPU-配置/">Libvirt CPU 配置</a>
-          </li>
-        
-          <li>
-            <a href="/2019/02/05/学会拒绝/">学会拒绝</a>
           </li>
         
       </ul>
