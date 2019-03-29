@@ -83,6 +83,64 @@ ga('send', 'pageview');
       <div class="outer">
         <section id="main">
   
+    <article id="post-使用-systemd-timer-替换-crontab" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/06/28/使用-systemd-timer-替换-crontab/" class="article-date">
+  <time datetime="2018-06-27T23:04:39.000Z" itemprop="datePublished">2018-06-28</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/06/28/使用-systemd-timer-替换-crontab/">使用 systemd timer 替换 crontab</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在日常工作中，经常会用到定时任务配合脚本自动处理一些重复性工作，通常我会选择 crontab &amp; flock &amp; script 这样的组合进行配置，<br>最近了解了 systemd timer ，发现虽然配置上比 crontab 要麻烦一点（需要编写两个配置文件），<br>但是其他的优势是 crontab 不具备的。</p>
+<h2 id="systemd-timer-优势"><a href="#systemd-timer-优势" class="headerlink" title="systemd timer 优势"></a>systemd timer 优势</h2><ol>
+<li>systemd 会自动将定时任务事件记录在 systemd 日志中，可以通过 journalctl 轻松查找</li>
+<li>可以配置定时器之间的依赖关系</li>
+<li>定时器启动/关闭不需要再注释掉 crontab 中的某一行或移除 <code>/etc/cron.d/</code> 下的某个文件，而是直接 start/stop/enable/disable 控制</li>
+<li>自带锁机制，无需通过 flock 或脚本中添加锁文件的方式控制任务执行与否</li>
+</ol>
+<h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><p>例如，我想要定时备份数据从开发机到服务器上，通常重要的文件采用 inotify &amp; rsync 的方式同步，优先级较低的采用定时同步方式。   </p>
+<hr>
+<h3 id="crontab-配置方式"><a href="#crontab-配置方式" class="headerlink" title="crontab 配置方式"></a>crontab 配置方式</h3><h4 id="编写-crontab-配置文件"><a href="#编写-crontab-配置文件" class="headerlink" title="编写 crontab 配置文件"></a>编写 crontab 配置文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">crontab -e (或者在 /etc/cron.*/ 对应路径下编写配置文件)</span><br><span class="line">0 1 * * * flock /usr/<span class="built_in">local</span>/bin/system-backup.sh</span><br></pre></td></tr></table></figure>
+<h4 id="手动触发定时任务"><a href="#手动触发定时任务" class="headerlink" title="手动触发定时任务"></a>手动触发定时任务</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/<span class="built_in">local</span>/bin/system-backup.sh</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="systemd-timer-配置方式"><a href="#systemd-timer-配置方式" class="headerlink" title="systemd timer 配置方式"></a>systemd timer 配置方式</h3><h4 id="编写-timer-配置文件"><a href="#编写-timer-配置文件" class="headerlink" title="编写 timer 配置文件"></a>编写 timer 配置文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Perform system backup</span><br><span class="line"></span><br><span class="line">[Timer]</span><br><span class="line">OnCalendar=daily</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=timers.target</span><br></pre></td></tr></table></figure>
+<h4 id="编写-timer-对应-service-配置文件"><a href="#编写-timer-对应-service-配置文件" class="headerlink" title="编写 timer 对应 service 配置文件"></a>编写 timer 对应 service 配置文件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Perform system backup</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Type=simple</span><br><span class="line">Nice=19</span><br><span class="line">IOSchedulingClass=2</span><br><span class="line">IOSchedulingPriority=7</span><br><span class="line">ExecStart=/usr/loca/bin/system-backup.sh</span><br></pre></td></tr></table></figure>
+<h4 id="启动定时任务"><a href="#启动定时任务" class="headerlink" title="启动定时任务"></a>启动定时任务</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start system-backup.timer   </span><br><span class="line">systemctl <span class="built_in">enable</span> system-backup.timer</span><br></pre></td></tr></table></figure>
+<h4 id="检查定时任务是否启动"><a href="#检查定时任务是否启动" class="headerlink" title="检查定时任务是否启动"></a>检查定时任务是否启动</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-timers --all</span><br></pre></td></tr></table></figure>
+<h4 id="手动触发定时任务-1"><a href="#手动触发定时任务-1" class="headerlink" title="手动触发定时任务"></a>手动触发定时任务</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start system-backup.service</span><br></pre></td></tr></table></figure>
+<h4 id="查看日志"><a href="#查看日志" class="headerlink" title="查看日志"></a>查看日志</h4><p>可以通过 journalctl 查看定时任务日志，并且可以指定过滤条件。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">journalctl -u system-backup --since=<span class="string">"yesterday"</span></span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://zdyxry.com/2018/06/28/使用-systemd-timer-替换-crontab/" data-id="cjtu6fwgn002cpy79giq2x5fk" class="article-share-link">Share</a>
+      
+        <a href="http://zdyxry.com/2018/06/28/使用-systemd-timer-替换-crontab/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-将-Json-转换为-Python-Object2" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2018/06/17/将-Json-转换为-Python-Object2/" class="article-date">
@@ -114,7 +172,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/06/17/将-Json-转换为-Python-Object2/" data-id="cjtrvqvbd0038rh79kqhay0d0" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/06/17/将-Json-转换为-Python-Object2/" data-id="cjtu6fwh20033py79spa8qsr0" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/06/17/将-Json-转换为-Python-Object2/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -157,7 +215,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/06/09/将-Json-转换为-Python-Object1/" data-id="cjtrvqvbc0036rh799kqz45wu" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/06/09/将-Json-转换为-Python-Object1/" data-id="cjtu6fwgz002ypy796q6jgbce" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/06/09/将-Json-转换为-Python-Object1/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -209,7 +267,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/06/08/奇怪的-Shell-作用域/" data-id="cjtrvqvb90032rh790fys8mim" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/06/08/奇怪的-Shell-作用域/" data-id="cjtu6fwgw002tpy79h3wgidhw" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/06/08/奇怪的-Shell-作用域/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -277,7 +335,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/05/29/Hexo-Git-管理/" data-id="cjtrvqv7o000erh7961f2hcsu" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/05/29/Hexo-Git-管理/" data-id="cjtu6fwdx000ipy79gb88tpk2" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/05/29/Hexo-Git-管理/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -318,7 +376,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/05/29/Vim-配置/" data-id="cjtrvqv8p0014rh79cpgt66fq" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/05/29/Vim-配置/" data-id="cjtu6fwga001upy79whur4bvg" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/05/29/Vim-配置/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -398,7 +456,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/05/29/CentOS-多网卡多网关配置/" data-id="cjtrvqv7r000frh79ocv14pdd" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/05/29/CentOS-多网卡多网关配置/" data-id="cjtu6fwds000fpy79b1etlzq1" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/05/29/CentOS-多网卡多网关配置/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -478,7 +536,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2017/12/31/2017年读书记录/" data-id="cjtrvqv7d0005rh791byj3c3c" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2017/12/31/2017年读书记录/" data-id="cjtu6fwd50005py79sgo439md" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2017/12/31/2017年读书记录/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -542,7 +600,7 @@ iops-total-max-length=60
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/" data-id="cjtrvqv7z000jrh79qy5ztx8h" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/" data-id="cjtu6fwe1000lpy7909rmocb2" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2017/11/16/I-O-bursts-with-QEMU-2-6/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -602,7 +660,7 @@ iops-total-max-length=60
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2016/12/31/2016年读书记录/" data-id="cjtrvqv6m0000rh794oe1a8cz" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2016/12/31/2016年读书记录/" data-id="cjtu6fwcp0001py79rg4xwwwu" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2016/12/31/2016年读书记录/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -632,7 +690,7 @@ iops-total-max-length=60
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">11</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Wireguard/">Wireguard</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Wireguard/">Wireguard</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -654,6 +712,10 @@ iops-total-max-length=60
       <ul>
         
           <li>
+            <a href="/2019/03/29/LVM-使用总结/">LVM 使用总结</a>
+          </li>
+        
+          <li>
             <a href="/2019/03/23/Wireguard-体验/">Wireguard 体验</a>
           </li>
         
@@ -667,10 +729,6 @@ iops-total-max-length=60
         
           <li>
             <a href="/2019/03/09/Python-生成器使用/">Python 生成器使用</a>
-          </li>
-        
-          <li>
-            <a href="/2019/03/02/Libvirt-CPU-配置/">Libvirt CPU 配置</a>
           </li>
         
       </ul>
