@@ -83,6 +83,71 @@ ga('send', 'pageview');
       <div class="outer">
         <section id="main">
   
+    <article id="post-Libvirt-CPU-配置" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/03/02/Libvirt-CPU-配置/" class="article-date">
+  <time datetime="2019-03-02T11:40:20.000Z" itemprop="datePublished">2019-03-02</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/02/Libvirt-CPU-配置/">Libvirt CPU 配置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Libvirt-CPU-配置参数"><a href="#Libvirt-CPU-配置参数" class="headerlink" title="Libvirt CPU 配置参数"></a>Libvirt CPU 配置参数</h2><p>我们先来看下 Libvirt 关于虚拟机 CPU 配置项：</p>
+<ul>
+<li>match</li>
+<li>check</li>
+<li>mode</li>
+<li>model</li>
+<li>…</li>
+</ul>
+<p>具体配置解释可以去 Libvirt 官方文档中查看，这里主要说一下 <code>mode</code> 参数，看一下 <code>mode</code> 具体含义及可选配置：</p>
+<h3 id="host-passthrough"><a href="#host-passthrough" class="headerlink" title="host-passthrough"></a>host-passthrough</h3><p>Libvirt 通知 KVM 对 CPU 不做任何配置项修改，直通给虚拟机。因为虚拟机可以使用与物理主机相同 CPU 指令集，性能最好，相反，在虚拟机热迁移过程中，对目标主机 CPU 要求同型号同代。</p>
+<h3 id="host-model"><a href="#host-model" class="headerlink" title="host-model"></a>host-model</h3><p>本质上是根据物理主机 CPU 从 <code>cpu_map.xml</code> 文件中选择最匹配的 CPU 型号。由于CPU定义是在启动虚拟机之前复制的，因此可以在不同主机上使用完全相同的XML，同时仍然提供每个主机支持的最佳虚拟机 CPU。属于在功能与性能之间的平衡。</p>
+<h3 id="custom"><a href="#custom" class="headerlink" title="custom"></a>custom</h3><p>不指定 <code>mode</code> 属性时的默认值。此模式使得无论虚拟机启动哪个主机，虚拟机都将看到相同的硬件，兼容性最好。</p>
+<h2 id="最佳选择"><a href="#最佳选择" class="headerlink" title="最佳选择"></a>最佳选择</h2><p>在不考虑虚拟机兼容性（热迁移）情况下，优先选择 <code>host-passthrough</code> ，综合考虑选择 <code>host-model</code> 。  </p>
+<p>OpenStack 中如果检测到 hypervisor 是 kvm-qemu ，则默认值为 <code>host-model</code> ；在 hypervisor 是其他类型时，默认值为 <code>none</code>，即由 hypervisor 自己选择。</p>
+<p>我查看了自己两台 VPS 的 CPU 信息，如下：</p>
+<h3 id="Vultr"><a href="#Vultr" class="headerlink" title="Vultr"></a>Vultr</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@vultr ~]<span class="comment"># lscpu</span></span><br><span class="line">Architecture:          x86_64</span><br><span class="line">厂商 ID：           GenuineIntel</span><br><span class="line">CPU 系列：          6</span><br><span class="line">型号：              60</span><br><span class="line">型号名称：        Virtual CPU 71438xxxxxxx</span><br><span class="line">超管理器厂商：  KVM</span><br><span class="line">虚拟化类型：     完全</span><br><span class="line">Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx rdtscp lm constant_tsc rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm invpcid_single pti fsgsbase bmi1 avx2 smep bmi2 erms invpcid xsaveopt arat</span><br></pre></td></tr></table></figure>
+<h3 id="BWH"><a href="#BWH" class="headerlink" title="BWH"></a>BWH</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@bwh ~]<span class="comment"># lscpu</span></span><br><span class="line">Architecture:          x86_64</span><br><span class="line">厂商 ID：           GenuineIntel</span><br><span class="line">CPU 系列：          6</span><br><span class="line">型号：              13</span><br><span class="line">型号名称：        QEMU Virtual CPU version (cpu64-rhel6)</span><br><span class="line">超管理器厂商：  KVM</span><br><span class="line">虚拟化类型：     完全</span><br><span class="line">Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pse36 clflush mmx fxsr sse sse2 ss syscall nx pdpe1gb rdtscp lm rep_good nopl pni pclmulqdq ssse3 cx16 pcid sse4_1 sse4_2 x2apic popcnt aes xsave avx f16c rdrand hypervisor lahf_lm fsgsbase smep xsaveopt</span><br></pre></td></tr></table></figure>
+<p>可以看到 BWH 的 CPU 比 Vultr CPU 指令集少了很多，而且 CPU 型号是 <code>QEMU Virtual CPU version (cpu64-rhel6)</code> 推断物理机 libvirt 配置是 <code>custom</code> ，果然便宜无好货。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://docs.openstack.org/juno/config-reference/content/kvm.html" target="_blank" rel="noopener">https://docs.openstack.org/juno/config-reference/content/kvm.html</a></li>
+<li><a href="https://wiki.openstack.org/wiki/LibvirtXMLCPUModel" target="_blank" rel="noopener">https://wiki.openstack.org/wiki/LibvirtXMLCPUModel</a></li>
+<li><a href="https://patchwork.kernel.org/patch/9219601/" target="_blank" rel="noopener">https://patchwork.kernel.org/patch/9219601/</a></li>
+<li><a href="https://lists.gnu.org/archive/html/qemu-devel/2016-06/msg00634.html" target="_blank" rel="noopener">https://lists.gnu.org/archive/html/qemu-devel/2016-06/msg00634.html</a></li>
+<li><a href="http://wsfdl.com/openstack/2018/01/02/libvirt_cpu_mode.html" target="_blank" rel="noopener">http://wsfdl.com/openstack/2018/01/02/libvirt_cpu_mode.html</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://zdyxry.com/2019/03/02/Libvirt-CPU-配置/" data-id="cjuoyujh8000q3479zui0x5if" class="article-share-link">Share</a>
+      
+        <a href="http://zdyxry.com/2019/03/02/Libvirt-CPU-配置/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Libvirt/">Libvirt</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-学会拒绝" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2019/02/05/学会拒绝/" class="article-date">
@@ -116,7 +181,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2019/02/05/学会拒绝/" data-id="cjucpt7y7002efz79ozrvgkdw" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2019/02/05/学会拒绝/" data-id="cjuoyujiz003d3479n36vedha" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2019/02/05/学会拒绝/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -191,7 +256,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2019/01/12/聊一聊-ISO-9660/" data-id="cjucpt7yg002wfz79si1swfgv" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2019/01/12/聊一聊-ISO-9660/" data-id="cjuoyujj8003q3479jaws0q3n" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2019/01/12/聊一聊-ISO-9660/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -234,7 +299,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2019/01/05/Shell-cat-保存文件方式/" data-id="cjucpt7x0001efz79tj2qj1zw" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2019/01/05/Shell-cat-保存文件方式/" data-id="cjuoyujhl001f3479otjvwht3" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2019/01/05/Shell-cat-保存文件方式/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -305,7 +370,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2019/01/01/Wireshark-远程抓包方法/" data-id="cjucpt7xj001lfz79nuqbjgv9" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2019/01/01/Wireshark-远程抓包方法/" data-id="cjuoyujhr001p3479cd9imxt6" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2019/01/01/Wireshark-远程抓包方法/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -384,7 +449,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/30/2018年读书记录/" data-id="cjucpt7uw0008fz798ndkl7z6" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/30/2018年读书记录/" data-id="cjuoyujgl000c3479kubrm8hz" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/30/2018年读书记录/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -438,7 +503,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/18/cgroup-资源预留/" data-id="cjucpt7x7001gfz79qwi3petg" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/18/cgroup-资源预留/" data-id="cjuoyujhv001u34799p7iweol" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/18/cgroup-资源预留/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -483,7 +548,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/15/剑指-Offer（七）/" data-id="cjucpt7xy0021fz79382htnhk" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/15/剑指-Offer（七）/" data-id="cjuoyuji4002d3479bdzjib3t" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/15/剑指-Offer（七）/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -564,7 +629,7 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/12/戴尔服务器-iDrac-配置/" data-id="cjucpt7yk0031fz79xlanrgme" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/12/戴尔服务器-iDrac-配置/" data-id="cjuoyujj4003l34798mzj7rb5" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/12/戴尔服务器-iDrac-配置/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -605,51 +670,9 @@ ga('send', 'pageview');
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/06/剑指-Offer（六）/" data-id="cjucpt7y5002bfz79bp62nvqn" class="article-share-link">Share</a>
+      <a data-url="http://zdyxry.com/2018/12/06/剑指-Offer（六）/" data-id="cjuoyuji8002i3479s4l8dd6b" class="article-share-link">Share</a>
       
         <a href="http://zdyxry.com/2018/12/06/剑指-Offer（六）/#disqus_thread" class="article-comment-link">Comments</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/alogrithms/">alogrithms</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-剑指-Offer（五）" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2018/12/05/剑指-Offer（五）/" class="article-date">
-  <time datetime="2018-12-05T12:25:38.000Z" itemprop="datePublished">2018-12-05</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/12/05/剑指-Offer（五）/">剑指 Offer（五）</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="调整数组顺序使奇数位于偶数前面"><a href="#调整数组顺序使奇数位于偶数前面" class="headerlink" title="调整数组顺序使奇数位于偶数前面"></a>调整数组顺序使奇数位于偶数前面</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">reorder</span><span class="params">(nums, func)</span>:</span></span><br><span class="line">    left, right = <span class="number">0</span>, len(nums) - <span class="number">1</span></span><br><span class="line">    <span class="keyword">while</span> left &lt; right:</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">not</span> func(nums[left]):</span><br><span class="line">            left += <span class="number">1</span></span><br><span class="line">        <span class="keyword">while</span> func(nums[right]):</span><br><span class="line">            right -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> left &lt; right:</span><br><span class="line">            nums[left], nums[right] = nums[right], nums[left]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">is_even</span><span class="params">(num)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> (num &amp; <span class="number">1</span>) == <span class="number">0</span></span><br></pre></td></tr></table></figure>
-<h2 id="调整数组顺序使奇数位于偶数前面，保持相对位置不变"><a href="#调整数组顺序使奇数位于偶数前面，保持相对位置不变" class="headerlink" title="调整数组顺序使奇数位于偶数前面，保持相对位置不变"></a>调整数组顺序使奇数位于偶数前面，保持相对位置不变</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">reorder2</span><span class="params">(nums)</span>:</span></span><br><span class="line">    left = [num <span class="keyword">for</span> num <span class="keyword">in</span> nums <span class="keyword">if</span> num &amp; <span class="number">1</span> != <span class="number">0</span>]</span><br><span class="line">    right = [num <span class="keyword">for</span> num <span class="keyword">in</span> nums <span class="keyword">if</span> num &amp; <span class="number">1</span> == <span class="number">0</span>]</span><br><span class="line">    <span class="keyword">return</span> left + right</span><br><span class="line"></span><br><span class="line">nums = [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>]</span><br><span class="line"><span class="keyword">print</span> reorder2(nums)</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://zdyxry.com/2018/12/05/剑指-Offer（五）/" data-id="cjucpt7ya002ifz79u7d9lqet" class="article-share-link">Share</a>
-      
-        <a href="http://zdyxry.com/2018/12/05/剑指-Offer（五）/#disqus_thread" class="article-comment-link">Comments</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/alogrithms/">alogrithms</a></li></ul>
@@ -677,7 +700,7 @@ ga('send', 'pageview');
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Wireguard/">Wireguard</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ansible/">Ansible</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Book/">Book</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flask/">Flask</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hardware/">Hardware</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Json/">Json</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Libvirt/">Libvirt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a><span class="tag-list-count">12</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LiveCD/">LiveCD</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/">Network</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OpenvSwitch/">OpenvSwitch</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ops/">Ops</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/">Python</a><span class="tag-list-count">10</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Server/">Server</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Socket/">Socket</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Wireguard/">Wireguard</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/alogrithms/">alogrithms</a><span class="tag-list-count">7</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cgroups/">cgroups</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/logging/">logging</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/qemu/">qemu</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tools/">tools</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zeroconf/">zeroconf</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -687,7 +710,7 @@ ga('send', 'pageview');
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Ansible/" style="font-size: 12px;">Ansible</a> <a href="/tags/Bash/" style="font-size: 12px;">Bash</a> <a href="/tags/Book/" style="font-size: 14px;">Book</a> <a href="/tags/Flask/" style="font-size: 10px;">Flask</a> <a href="/tags/Hardware/" style="font-size: 10px;">Hardware</a> <a href="/tags/Json/" style="font-size: 10px;">Json</a> <a href="/tags/Libvirt/" style="font-size: 10px;">Libvirt</a> <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/LiveCD/" style="font-size: 10px;">LiveCD</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/OpenvSwitch/" style="font-size: 10px;">OpenvSwitch</a> <a href="/tags/Ops/" style="font-size: 10px;">Ops</a> <a href="/tags/Python/" style="font-size: 18px;">Python</a> <a href="/tags/Server/" style="font-size: 14px;">Server</a> <a href="/tags/Shell/" style="font-size: 12px;">Shell</a> <a href="/tags/Socket/" style="font-size: 10px;">Socket</a> <a href="/tags/Wireguard/" style="font-size: 10px;">Wireguard</a> <a href="/tags/alogrithms/" style="font-size: 16px;">alogrithms</a> <a href="/tags/cgroups/" style="font-size: 12px;">cgroups</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/logging/" style="font-size: 10px;">logging</a> <a href="/tags/qemu/" style="font-size: 10px;">qemu</a> <a href="/tags/tools/" style="font-size: 12px;">tools</a> <a href="/tags/vim/" style="font-size: 10px;">vim</a> <a href="/tags/zeroconf/" style="font-size: 10px;">zeroconf</a>
+      <a href="/tags/Ansible/" style="font-size: 14px;">Ansible</a> <a href="/tags/Bash/" style="font-size: 12px;">Bash</a> <a href="/tags/Book/" style="font-size: 14px;">Book</a> <a href="/tags/Flask/" style="font-size: 10px;">Flask</a> <a href="/tags/Hardware/" style="font-size: 10px;">Hardware</a> <a href="/tags/Json/" style="font-size: 10px;">Json</a> <a href="/tags/Libvirt/" style="font-size: 10px;">Libvirt</a> <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/LiveCD/" style="font-size: 10px;">LiveCD</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/OpenvSwitch/" style="font-size: 10px;">OpenvSwitch</a> <a href="/tags/Ops/" style="font-size: 10px;">Ops</a> <a href="/tags/Python/" style="font-size: 18px;">Python</a> <a href="/tags/Server/" style="font-size: 14px;">Server</a> <a href="/tags/Shell/" style="font-size: 12px;">Shell</a> <a href="/tags/Socket/" style="font-size: 10px;">Socket</a> <a href="/tags/Wireguard/" style="font-size: 10px;">Wireguard</a> <a href="/tags/alogrithms/" style="font-size: 16px;">alogrithms</a> <a href="/tags/cgroups/" style="font-size: 12px;">cgroups</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/logging/" style="font-size: 10px;">logging</a> <a href="/tags/qemu/" style="font-size: 10px;">qemu</a> <a href="/tags/tools/" style="font-size: 12px;">tools</a> <a href="/tags/vim/" style="font-size: 10px;">vim</a> <a href="/tags/zeroconf/" style="font-size: 10px;">zeroconf</a>
     </div>
   </div>
 
@@ -697,6 +720,10 @@ ga('send', 'pageview');
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2019/04/20/PingCAP-tidb-ansible-源码阅读/">PingCAP tidb-ansible 源码阅读</a>
+          </li>
         
           <li>
             <a href="/2019/04/11/记一次-libcgroup-配置失败/">记一次 libcgroup 配置失败</a>
@@ -712,10 +739,6 @@ ga('send', 'pageview');
         
           <li>
             <a href="/2019/03/31/huey-源码阅读/">huey 源码阅读</a>
-          </li>
-        
-          <li>
-            <a href="/2019/03/29/LVM-使用总结/">LVM 使用总结</a>
           </li>
         
       </ul>
