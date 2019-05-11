@@ -267,6 +267,152 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/10/Python-调用-systemd-watchdog-方法/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/10/Python-调用-systemd-watchdog-方法/" itemprop="url">Python 调用 systemd watchdog 方法</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-10T10:21:19+08:00">
+                2019-03-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/10/Python-调用-systemd-watchdog-方法/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/03/10/Python-调用-systemd-watchdog-方法/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="systemd"><a href="#systemd" class="headerlink" title="systemd"></a>systemd</h2><p>在之前的博客中介绍过 systemd 的基本使用及通过 timer 来替换 crontab 的方法，今天来说一下如何调用 watchdog。</p>
+<p>在 systemd 中，提供 watchdog 来检测服务状态状态，官方文档中描述这个功能为 “keep-alive ping”，我们可以在服务的启动配置中，添加 <code>WatchdogSec</code> 来指定 timeout 时间，在服务程序中通过发送 <code>WATCHDOG=1</code> 来不断的通知 systemd，服务处于正常状态，当超过 timeout 时间未收到 <code>WATCHDOG=1</code> 信号后，systemd 会根据 <code>Restart</code> 配置，决定是否自动重启服务。</p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><p>服务程序：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">root@yiran<span class="number">-30</span><span class="number">-250</span>:/usr/lib/systemd/system</span><br><span class="line"> $ cat /root/project/watchdog/test.py</span><br><span class="line"><span class="comment">#!/usr/bin/python</span></span><br><span class="line"><span class="comment"># coding:utf-8</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line">print(<span class="string">"Test starting up..."</span>)</span><br><span class="line">time.sleep(<span class="number">1</span>)  <span class="comment"># 模拟执行真实业务</span></span><br><span class="line">print(<span class="string">"Test startup finished"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)</span><br><span class="line">    addr = os.getenv(<span class="string">"NOTIFY_SOCKET"</span>)  <span class="comment"># systemd default addr = "/run/systemd/notify"</span></span><br><span class="line">    <span class="keyword">if</span> addr <span class="keyword">and</span> addr[<span class="number">0</span>] == <span class="string">"@"</span>:</span><br><span class="line">        addr = <span class="string">"\0"</span> + addr[<span class="number">1</span>:]</span><br><span class="line"><span class="keyword">except</span> Exception:</span><br><span class="line">    logging.error(<span class="string">"Failed to get notify socket addr"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> sock <span class="keyword">and</span> addr:</span><br><span class="line">    sock.connect(addr)</span><br><span class="line">    sock.sendall(<span class="string">"READY=1"</span>)  <span class="comment"># 通知 systemd 服务启动完成</span></span><br><span class="line"></span><br><span class="line">count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">    print(<span class="string">"Running..."</span>)</span><br><span class="line">    time.sleep(<span class="number">2</span>)</span><br><span class="line">    <span class="keyword">if</span> count &lt;= <span class="number">10</span>:</span><br><span class="line">        sock.sendall(<span class="string">"WATCHDOG=1"</span>)  <span class="comment"># 通知 systemd 服务正常运行</span></span><br><span class="line">        logging.info(<span class="string">"Notify socket addr is:%s"</span>, addr)</span><br><span class="line">        logging.info(<span class="string">"test.service watchdog timestamp update succeeded"</span>)</span><br><span class="line">        count += <span class="number">1</span></span><br></pre></td></tr></table></figure></p>
+<p>服务 systemd 配置：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/usr/lib/systemd/system</span><br><span class="line"> $ cat test.service</span><br><span class="line">[Unit]</span><br><span class="line">Description=A <span class="built_in">test</span> service written <span class="keyword">in</span> Python</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Environment=PYTHONUNBUFFERED=<span class="literal">true</span></span><br><span class="line">ExecStart=/usr/bin/python /root/project/watchdog/test.py</span><br><span class="line">Type=notify</span><br><span class="line">Restart=always</span><br><span class="line">WatchdogSec=5</span><br></pre></td></tr></table></figure>
+<p>我们启动服务观察下运行状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/usr/lib/systemd/system</span><br><span class="line"> $ systemctl daemon-reload</span><br><span class="line">root@yiran-30-250:/usr/lib/systemd/system</span><br><span class="line"> $ systemctl start test.service</span><br><span class="line">root@yiran-30-250:/usr/lib/systemd/system</span><br><span class="line"> $ systemctl status <span class="built_in">test</span></span><br><span class="line">● test.service - A <span class="built_in">test</span> service written <span class="keyword">in</span> Python</span><br><span class="line">   Loaded: loaded (/usr/lib/systemd/system/test.service; static; vendor preset: disabled)</span><br><span class="line">   Active: active (running) since 日 2019-03-10 10:16:39 CST; 21s ago</span><br><span class="line"> Main PID: 12202 (python)</span><br><span class="line">   Memory: 4.0M</span><br><span class="line">   CGroup: /system.slice/test.service</span><br><span class="line">           └─12202 /usr/bin/python /root/project/watchdog/test.py</span><br><span class="line"><span class="comment"># 在 Python 程序中，如果没有指定输出位置，会默认打到系统日志中</span></span><br><span class="line">3月 10 10:16:41 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:43 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:45 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:47 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:49 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:51 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:53 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:55 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:57 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:59 yiran-30-250 python[12202]: Running...</span><br></pre></td></tr></table></figure>
+<p>timeout 导致服务重启：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/usr/lib/systemd/system</span><br><span class="line"> $ systemctl status <span class="built_in">test</span></span><br><span class="line">● test.service - A <span class="built_in">test</span> service written <span class="keyword">in</span> Python</span><br><span class="line">   Loaded: loaded (/usr/lib/systemd/system/test.service; static; vendor preset: disabled)</span><br><span class="line">   Active: deactivating (stop-sigabrt) (Result: watchdog) since 日 2019-03-10 10:17:06 CST; 2ms ago</span><br><span class="line"> Main PID: 12202 (python)</span><br><span class="line">   Memory: 3.9M</span><br><span class="line">   CGroup: /system.slice/test.service</span><br><span class="line">           └─12202 /usr/bin/python /root/project/watchdog/test.py</span><br><span class="line"></span><br><span class="line">3月 10 10:16:49 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:51 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:53 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:55 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:57 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:16:59 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:17:01 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:17:03 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:17:05 yiran-30-250 python[12202]: Running...</span><br><span class="line">3月 10 10:17:06 yiran-30-250 systemd[1]: test.service watchdog timeout (<span class="built_in">limit</span> 5s)!</span><br></pre></td></tr></table></figure>
+<p>journalctl 查看具体重启原因：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">3月 10 10:19:20 yiran-30-250 python[12303]: Running...</span><br><span class="line">3月 10 10:19:22 yiran-30-250 python[12303]: Running...</span><br><span class="line">3月 10 10:19:24 yiran-30-250 python[12303]: Running...</span><br><span class="line">3月 10 10:19:26 yiran-30-250 python[12303]: Running...</span><br><span class="line">3月 10 10:19:28 yiran-30-250 python[12303]: Running...</span><br><span class="line">3月 10 10:19:29 yiran-30-250 systemd[1]: test.service watchdog timeout (limit 5s)!</span><br><span class="line">3月 10 10:19:29 yiran-30-250 systemd[1]: test.service: main process exited, code=dumped, status=6/ABRT</span><br><span class="line">3月 10 10:19:29 yiran-30-250 systemd[1]: Unit test.service entered failed state.</span><br><span class="line">3月 10 10:19:29 yiran-30-250 systemd[1]: test.service failed.</span><br><span class="line">3月 10 10:19:29 yiran-30-250 systemd[1]: test.service holdoff time over, scheduling restart.</span><br><span class="line">3月 10 10:19:29 yiran-30-250 systemd[1]: Starting A test service written in Python...</span><br><span class="line">3月 10 10:19:29 yiran-30-250 python[12324]: Test starting up...</span><br><span class="line">3月 10 10:19:30 yiran-30-250 python[12324]: Test startup finished</span><br><span class="line">3月 10 10:19:30 yiran-30-250 systemd[1]: Started A test service written in Python.</span><br></pre></td></tr></table></figure>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/bb4242/sdnotify" target="_blank" rel="noopener">https://github.com/bb4242/sdnotify</a></li>
+<li><a href="https://gist.github.com/Spindel/1d07533ef94a4589d348" target="_blank" rel="noopener">https://gist.github.com/Spindel/1d07533ef94a4589d348</a></li>
+<li><a href="https://www.freedesktop.org/software/systemd/man/sd_notify.html#" target="_blank" rel="noopener">https://www.freedesktop.org/software/systemd/man/sd_notify.html#</a> </li>
+<li><a href="https://www.freedesktop.org/software/systemd/man/systemd.service.html" target="_blank" rel="noopener">https://www.freedesktop.org/software/systemd/man/systemd.service.html</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/09/Python-生成器使用/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1595,176 +1741,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/12/戴尔服务器-iDrac-配置/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/12/戴尔服务器-iDrac-配置/" itemprop="url">戴尔服务器 iDrac 配置</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T22:18:15+08:00">
-                2018-12-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/12/12/戴尔服务器-iDrac-配置/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/12/戴尔服务器-iDrac-配置/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前介绍过超微的 IPMI 配置时提过，超微的 IPMI 是最简陋的，最近在用戴尔服务器的时候碰到了一个比较坑的事情，查了资料解决了，更加坚定之前的结论，IPMI 相应的配置尽量独立。</p>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>在戴尔服务器安装 CentOS 后，可见网卡比预期要多出一块，物理服务器安装了两块 PCIe 网卡，一块千兆，一块万兆，每块网卡有两个网口，那么理应在服务器看到的应该是 4个网口，即 <code>ip ad</code> 看到的应该是</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@node11 22:24:49 ~]<span class="variable">$ip</span> ad |grep enp</span><br><span class="line">2: enp94s0f0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq master ovs-system state UP qlen 1000</span><br><span class="line">3: enp24s0f0: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc mq portid 3cfdfe6c9e10 state DOWN qlen 1000</span><br><span class="line">4: enp24s0f1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq master ovs-system portid 3cfdfe6c9e12 state UP qlen 1000</span><br><span class="line">5: enp94s0f1: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc mq state DOWN qlen 1000</span><br></pre></td></tr></table></figure>
-<p>但是安装完 OS，发现多出一块网口 <code>eno16</code> ，通过 <code>ethtool</code> 工具查看，发现该网口为千兆，且处于连接状态，最开始没多想，直接将该网口作为管理网络配置了，一切正常。</p>
-<p>当我尝试通过该网口连接 IPMI 获取风扇信息时，发现无法获取，验证命令为：<br><code>ipmitool -I lanplus -H &lt;ipmi ip&gt; -U &lt;user name&gt; -P &lt;password&gt; lan print</code><br>最开始以为是密码不对，后来发现是在 OS 内部无法 ping 通 IPMI IP，这就很奇怪了。</p>
-<p>当时网络情况如下：</p>
-<table>
-<thead>
-<tr>
-<th>连通情况</th>
-<th>yiran’s PC</th>
-<th>IPMI IP</th>
-<th>OS IP</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>yiran’s PC</td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-</tr>
-<tr>
-<td>IPMI IP</td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-</tr>
-<tr>
-<td>OS IP</td>
-<td>1</td>
-<td>0</td>
-<td>1</td>
-</tr>
-</tbody>
-</table>
-<p>因为没遇到过这种情况，根据经验，先检查了下 iDRAC 网络配置，发现当时 iDRAC 网卡选择的是 LOM1，也就是板载网卡，且该网卡处于 pass-through 状态，官方解释如下：</p>
-<blockquote>
-<p>板载网卡 (LAN On Motherboards, LOM)，如果您选择 Network Settings（网络设置）下的 Auto Dedicated NIC（自动专用 NIC），则当 iDRAC 将其 NIC 选择作为共享 LOM（1、2、3 或 4）并且在 iDRAC 专用 NIC 上检测到链接时，iDRAC 会更改其 NIC 选择来使用专用 NIC。如果在专用 NIC 上检 测不到链接，则 iDRAC 使用共享 LOM。从共享 NIC 切换到专用 NIC 的超时为五秒，而从专用 NIC 切换到共享 NIC 的超时为 30 秒。可以使用 RACADM 或 WS-MAN 配置此超时值。<br>如果选择 LOM 作为直通配置，并且使用专用模式连接服务器，则输入操作系统的 IPv4 地址。 注: 如果在共享的 LOM 模式下连接了服务器，则操作系统 IP 地址字段将禁用。</p>
-</blockquote>
-<h2 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h2><p>将 iDRAC 网络配置从 LOM 改为 Dedicated 后，重启 OS 即可，注意，改为 Dedicated 后，OS 将无法识别到 LOM，需要重新配置网络。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1817,7 +1793,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">56</span>
+                  <span class="site-state-item-count">57</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
