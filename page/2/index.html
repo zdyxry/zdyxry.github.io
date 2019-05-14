@@ -267,6 +267,162 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/23/Wireguard-体验/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/23/Wireguard-体验/" itemprop="url">Wireguard 体验</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-23T20:13:38+08:00">
+                2019-03-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/23/Wireguard-体验/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/03/23/Wireguard-体验/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>从春节假期之后，因为一些原因，就没有再使用 SS 作为访问互联网的工具了，而是使用了 V2ray，使用 2个月下来，感受还是很好的，无论是速度还是稳定性都要比 SS 好很多。最近看到好多新闻说 Wireguard 客户端适配多了起来，比如 Win，Mac，Android，今天尝试一下。</p>
+<h2 id="Wireguard"><a href="#Wireguard" class="headerlink" title="Wireguard"></a>Wireguard</h2><blockquote>
+<p>WireGuard is a free and open-source software application and protocol that implements virtual private network (VPN) techniques to create secure point-to-point connections in routed or bridged configurations. It is run as a module inside the Linux kernel and aims for better performance than the IPsec and OpenVPN tunneling protocols.[2] </p>
+</blockquote>
+<p>Linus 的评价： <code>Maybe the code isn&#39;t perfect, but I&#39;ve skimmed it, and compared
+to the horrors that are OpenVPN and IPSec, it&#39;s a work of art.</code>  </p>
+<h2 id="服务端配置"><a href="#服务端配置" class="headerlink" title="服务端配置"></a>服务端配置</h2><h3 id="kernel-配置"><a href="#kernel-配置" class="headerlink" title="kernel 配置"></a>kernel 配置</h3><p>环境配置为：<code>CentOS Linux release 7.6.1810 (Core)</code>  </p>
+<p>Kernel 版本： <code>4.20.3-1.el7.elrepo.x86_64</code></p>
+<p>安装 <code>kernel-devel kernel-headers</code>，注意，如果使用的是 <code>elrepo</code> 源，则需要安装对应版本的 <code>kernel-ml-devel kernel-ml-headers</code> ， 安装后状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># rpm -qa |grep kernel  |grep "4.20"</span></span><br><span class="line">kernel-ml-4.20.3-1.el7.elrepo.x86_64</span><br><span class="line">kernel-ml-devel-4.20.3-1.el7.elrepo.x86_64</span><br><span class="line">kernel-ml-headers-4.20.3-1.el7.elrepo.x86_64</span><br></pre></td></tr></table></figure>
+<h3 id="安装-wireguard"><a href="#安装-wireguard" class="headerlink" title="安装 wireguard"></a>安装 wireguard</h3><p><code>yum install wireguard-dkms wireguard-tools</code></p>
+<p>加载 Kernel module</p>
+<p><code>modprobe wireguard &amp;&amp; lsmod |grep wire</code></p>
+<h3 id="编辑-wireguard-配置文件"><a href="#编辑-wireguard-配置文件" class="headerlink" title="编辑 wireguard 配置文件"></a>编辑 wireguard 配置文件</h3><p>通过 <code>ip ad</code> 查看本机网卡名称，以 <code>eth0</code> 为例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#mkdir /etc/wireguard &amp;&amp; cd /etc/wireguard</span></span><br><span class="line"><span class="comment"># wg genkey # 生成 Private Key</span></span><br><span class="line"><span class="comment">#cat &gt; /etc/wireguard/wg0.conf &lt;&lt; EOF</span></span><br><span class="line">[Interface]</span><br><span class="line">PrivateKey = &lt;Private Key&gt;</span><br><span class="line">Address = 10.0.0.1/24 <span class="comment"># 服务端 IP 地址</span></span><br><span class="line">ListenPort = 11111 <span class="comment"># 连接端口</span></span><br><span class="line">PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE; ip6tables -D FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">SaveConfig = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+<h3 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#wg-quick up wg0</span></span><br><span class="line"><span class="comment">#wg</span></span><br><span class="line">interface: wg0</span><br><span class="line">  public key: YNyypVL5wmYA/aaaaaa/VOz4c7BGALHgo= <span class="comment"># 后续配置客户端用到</span></span><br><span class="line">  private key: (hidden)</span><br><span class="line">  listening port: 11111</span><br><span class="line"></span><br><span class="line"><span class="comment"># ip ad</span></span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">    inet 127.0.0.1/8 scope host lo</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 ::1/128 scope host</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 </span><br><span class="line">3: wg0: &lt;POINTOPOINT,NOARP,UP,LOWER_UP&gt; mtu 1420 qdisc noqueue state UNKNOWN group default qlen 1000</span><br><span class="line">    link/none</span><br><span class="line">    inet 10.0.0.1/24 scope global wg0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br></pre></td></tr></table></figure>
+<h2 id="客户端配置"><a href="#客户端配置" class="headerlink" title="客户端配置"></a>客户端配置</h2><h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># wg genkey # 生成客户端 PublicKey</span></span><br><span class="line">[Interface]</span><br><span class="line">PublicKey = &lt;PublicKey&gt;</span><br><span class="line">Address = 10.0.0.2/24 <span class="comment"># 客户端 IP 地址</span></span><br><span class="line">DNS = 8.8.8.8 <span class="comment"># 指定 DNS Server</span></span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = YNyypVL5wmYA/aaaaaa/VOz4c7BGALHgo= <span class="comment"># 服务端公钥</span></span><br><span class="line">Endpoint = &lt;Server ip&gt;:11111 <span class="comment"># 服务端公网 IP，端口为服务端配置端口</span></span><br><span class="line">AllowedIPs = 0.0.0.0/0 <span class="comment"># 允许 IP 段</span></span><br></pre></td></tr></table></figure>
+<h3 id="服务端添加客户端信息"><a href="#服务端添加客户端信息" class="headerlink" title="服务端添加客户端信息"></a>服务端添加客户端信息</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#wg set wg0 peer &lt;客户端公钥&gt; allowed-ips 10.0.0.2/24</span></span><br><span class="line"><span class="comment">## wg</span></span><br><span class="line">interface: wg0</span><br><span class="line">  public key: YNyypVL5wmYA/aaaaaa/VOz4c7BGALHgo=</span><br><span class="line">  private key: (hidden)</span><br><span class="line">  listening port: 11111</span><br><span class="line"></span><br><span class="line">peer: QRcE0sLvJib8MhWxxxxxxxxx61L0IdZis=</span><br><span class="line">  endpoint: xxxxxxx:yyy</span><br><span class="line">  allowed ips: 10.0.0.0/24</span><br><span class="line">  latest handshake: 1 minute, 9 seconds ago</span><br><span class="line">  transfer: 3.61 MiB received, 92.67 MiB sent</span><br></pre></td></tr></table></figure>
+<h2 id="检查"><a href="#检查" class="headerlink" title="检查"></a>检查</h2><p>在服务端查看主机路由信息：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ip route show</span></span><br><span class="line">default via 111.111.111.1 dev eth0</span><br><span class="line">10.0.0.0/24 dev wg0 proto kernel scope link src 10.0.0.1</span><br></pre></td></tr></table></figure></p>
+<p>可以看到已经添加的 wireguard 网络默认路由是通过 10.0.0.1，所以我们需要开启地址转发功能：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#cat /etc/sysctl.conf</span></span><br><span class="line">net.ipv4.ip_forward = 1</span><br><span class="line"><span class="comment"># sysctl -p</span></span><br></pre></td></tr></table></figure></p>
+<p>此时在服务端 ping 客户端 IP，也就是 10.0.0.2 ，检查状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ping 10.0.0.2</span></span><br><span class="line">PING 10.0.0.2 (10.0.0.2) 56(84) bytes of data.</span><br><span class="line">64 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=334 ms</span><br><span class="line">64 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=335 ms</span><br></pre></td></tr></table></figure></p>
+<p>已经看到可以联通了。</p>
+<p>整体上来说 Wireguard 配置上很简单，没有过多的配置文件，只是目前非 Linux 客户端都处于开发阶段，不推荐使用，尝鲜还是可以的。</p>
+<h2 id="配置文件示例"><a href="#配置文件示例" class="headerlink" title="配置文件示例"></a>配置文件示例</h2><p>wg0</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[Interface]</span><br><span class="line">PrivateKey = 6G2jd1VVCRofQzkLxxxxxxxxxxxxx/3GJFTjzwxz62k=</span><br><span class="line">Address = 10.0.0.1/24</span><br><span class="line">PostUp   = echo 1 &gt; /proc/sys/net/ipv4/ip_forward; iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">ListenPort = 11111</span><br><span class="line">DNS = 8.8.8.8</span><br><span class="line">MTU = 1420</span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = nMUQDNdDMtMLslqmLpe/j9qqGNdJMxxxxxxxxxu5NjA=</span><br><span class="line">AllowedIPs = 10.0.0.3/32</span><br></pre></td></tr></table></figure>
+<p>client.conf</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[Interface]</span><br><span class="line">PrivateKey = 8LnMNxNlvxZnnnBkMpd/hFl1xxxxxxxxxxW+5D4qUk=</span><br><span class="line">Address = 10.0.0.3/24</span><br><span class="line">DNS = 8.8.8.8</span><br><span class="line">MTU = 1420</span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = QWhJChuDG7HdNnSF4ximOoxxxxxxxxxxitl1mzIjo=</span><br><span class="line">Endpoint = 114.187.221.217:11111</span><br><span class="line">AllowedIPs = 0.0.0.0/0, ::0/0</span><br><span class="line">PersistentKeepalive = 25</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/16/关于-On-Call/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1627,149 +1783,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/18/cgroup-资源预留/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/18/cgroup-资源预留/" itemprop="url">cgroup 资源预留</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-18T21:15:33+08:00">
-                2018-12-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/12/18/cgroup-资源预留/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/18/cgroup-资源预留/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="cgroup-资源预留"><a href="#cgroup-资源预留" class="headerlink" title="cgroup 资源预留"></a>cgroup 资源预留</h2><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在之前的博客中，提到了 cgroup 中如何为自己的服务配置资源限制，比如 CPU，内存等，当时以为在 <code>cgroup.conf</code> 中配置的服务，那么相应绑定的 CPU 就归属于该服务，也就是资源预留，今天发现并不是这样，记录下如何通过 cgroup 做资源预留。</p>
-<h2 id="资源预留"><a href="#资源预留" class="headerlink" title="资源预留"></a>资源预留</h2><p>在之前提到的博客中关于资源限制是这么配置的：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">[root@node 20:56:49 ~]<span class="variable">$cat</span> /etc/cgconfig.conf</span><br><span class="line"><span class="comment"># yiran cgroups configuration</span></span><br><span class="line"></span><br><span class="line">group . &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.memory_pressure_enabled = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">group yiran &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.cpus = <span class="string">"0,1,2,3,4,5"</span>;</span><br><span class="line">        cpuset.mems = <span class="string">"0-1"</span>;</span><br><span class="line">        cpuset.cpu_exclusive = <span class="string">"1"</span>;</span><br><span class="line">        cpuset.mem_hardwall = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">group yiran/<span class="built_in">test</span> &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.cpus = <span class="string">"0"</span>;</span><br><span class="line">        cpuset.mems = <span class="string">"0-1"</span>;</span><br><span class="line">        cpuset.cpu_exclusive = <span class="string">"1"</span>;</span><br><span class="line">        cpuset.mem_hardwall = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>我为 yiran 这个服务做了限制，其中分配给 <code>yiran/test</code> 的 CPU 是 <code>0</code>，并且配置了 <code>cpuset.cpu_exclusive</code> 选项。注意，这里的 exclusive 的意思并不是说分配到 <code>yiran/test</code> 中的服务独自占用该线程，而是说分配到 <code>yiran/test</code> 中的服务只会占用该线程，不会侵入到其他线程中，也就是通常我们说的 Limit。<br>可以通过 <code>stress</code> 命令来进行验证：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 对一台配置好 cgroup 的物理服务器 CPU 加压</span></span><br><span class="line">[root@node 21:05:37 ~]<span class="variable">$stress</span> -c 24</span><br><span class="line">stress: info: [4033] dispatching hogs: 24 cpu, 0 io, 0 vm, 0 hdd</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 新开终端，执行 top 命令查看 CPU 情况</span></span><br><span class="line">[root@node 21:05:37 ~]<span class="variable">$top</span></span><br><span class="line">top - 21:06:35 up 5 days,  9:03,  3 users,  load average: 32.58, 19.04, 15.43</span><br><span class="line">Tasks: 449 total,  36 running, 412 sleeping,   0 stopped,   1 zombie</span><br><span class="line">%Cpu0  : 89.0 us,  8.6 sy,  0.0 ni,  2.3 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  : 90.4 us,  8.9 sy,  0.0 ni,  0.3 id,  0.3 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  : 95.4 us,  4.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  : 84.4 us, 13.6 sy,  0.3 ni,  1.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  : 46.5 us, 36.0 sy,  1.7 ni, 15.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu6  : 93.4 us,  6.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu7  : 94.4 us,  5.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu8  : 88.0 us, 12.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu9  : 88.7 us, 11.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu10 : 88.4 us, 10.9 sy,  0.0 ni,  0.3 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu11 : 85.4 us, 13.9 sy,  0.7 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu12 : 98.7 us,  1.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu13 : 39.0 us, 12.0 sy,  0.0 ni, 49.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu14 : 92.7 us,  6.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu15 : 98.7 us,  1.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu16 : 97.0 us,  3.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu17 : 97.0 us,  2.3 sy,  0.0 ni,  0.3 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu18 :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu19 : 93.7 us,  6.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu20 : 88.4 us, 11.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu21 : 89.4 us, 10.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu22 : 88.1 us, 11.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu23 : 90.4 us,  9.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br></pre></td></tr></table></figure>
-<p>那么我们如何确保自己的服务有足够的资源运行呢？ 比如像 vSphere ESXi 上面可以针对某些虚拟机进行具体的资源预留（CPU，内存，磁盘等）。<br>其实只要将其他资源也限制在一个 cgroup 中就可以了。  </p>
-<ol>
-<li>在 <code>/etc/cgconfig.conf</code> 中创建一个新的 cgroup，将系统上其余的资源分配给该 group，如创建 <code>yiran/others</code> 并分配 3个 线程；</li>
-<li>修改 <code>/etc/cgrules.conf</code> ，将系统其它所有服务分配到步骤1创建的 group 中，如：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">*       cpuset       yiran/others</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<p>修改配置完成后，分别重启 <code>cgred</code> 和 <code>cgconfig</code> 使配置生效：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart cgred</span><br><span class="line">systemctl restart cgconfig</span><br></pre></td></tr></table></figure></p>
-<p>此时我们再通过 <code>stress</code> 进行验证<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node 21:09:29 ~]<span class="variable">$stress</span> -c 24</span><br><span class="line">stress: info: [12475] dispatching hogs: 24 cpu, 0 io, 0 vm, 0 hdd</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">top - 21:11:58 up 5 days,  9:09,  3 users,  load average: 38.11, 30.37, 21.48</span><br><span class="line">Tasks: 445 total,  38 running, 406 sleeping,   0 stopped,   1 zombie</span><br><span class="line">%Cpu0  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  :  0.0 us,  0.0 sy,  0.3 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  :  0.0 us,  0.3 sy,  0.0 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  : 88.1 us, 11.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  : 81.9 us, 16.1 sy,  1.6 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st</span><br><span class="line">%Cpu6  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu7  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu8  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu9  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu10 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu11 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu12 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu13 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu14 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu15 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu16 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu17 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu18 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu19 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu20 :  0.0 us,  0.0 sy,  0.3 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu21 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu22 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu23 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">KiB Mem : 13174792+total, 11522948+free,  6439344 used, 10079088 buff/cache</span><br><span class="line">KiB Swap:        0 total,        0 free,        0 used. 12406676+avail Mem</span><br></pre></td></tr></table></figure>
-<p>我在 <code>yiran/others</code> 中配置了 3 个线程，那么此时哪怕我执行 <code>stress</code>  worker 为 24，也只会在这3个线程中，不会对其他 cgroup 服务产生干扰，从而达到了资源预留的效果。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1822,7 +1835,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">58</span>
+                  <span class="site-state-item-count">59</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
