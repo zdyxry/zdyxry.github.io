@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Kubernetes,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="基础日志处理在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 kuberctl logs 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 /var/lib/docker/ 路径下，下面我们来看一个例子： 在 k8s">
+<meta name="keywords" content="Kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 实战-日志处理">
+<meta property="og:url" content="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="基础日志处理在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 kuberctl logs 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 /var/lib/docker/ 路径下，下面我们来看一个例子： 在 k8s">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/log1.png">
+<meta property="og:updated_time" content="2019-05-18T10:22:23.944Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes 实战-日志处理">
+<meta name="twitter:description" content="基础日志处理在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 kuberctl logs 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 /var/lib/docker/ 路径下，下面我们来看一个例子： 在 k8s">
+<meta name="twitter:image" content="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/log1.png">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/">
+
+
+
+
+
+  <title>Kubernetes 实战-日志处理 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kubernetes 实战-日志处理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-17T08:50:44+08:00">
+                2019-05-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/17/Kubernetes-实战-日志处理/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/17/Kubernetes-实战-日志处理/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv"></span>
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="基础日志处理"><a href="#基础日志处理" class="headerlink" title="基础日志处理"></a>基础日志处理</h1><p>在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 <code>kuberctl logs</code> 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 <code>/var/lib/docker/</code> 路径下，下面我们来看一个例子：</p>
+<p>在 k8s 中创建一个 Pod，Pod 中指定打印当前时间到标准输出中：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">            <span class="string">'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
+<p>运行该 Pod，通过 <code>kubectl logs</code> 获取当前 Pod 日志：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># kubectl get pod |grep counter</span></span><br><span class="line">counter            1/1     Running   0          9s</span><br><span class="line">[root@node1 blog]<span class="comment"># kubectl logs counter</span></span><br><span class="line">0: Fri May 17 00:34:01 UTC 2019</span><br><span class="line">1: Fri May 17 00:34:02 UTC 2019</span><br><span class="line">2: Fri May 17 00:34:03 UTC 2019</span><br><span class="line">3: Fri May 17 00:34:04 UTC 2019</span><br><span class="line">4: Fri May 17 00:34:05 UTC 2019</span><br><span class="line">5: Fri May 17 00:34:06 UTC 2019</span><br><span class="line">6: Fri May 17 00:34:07 UTC 2019</span><br><span class="line">7: Fri May 17 00:34:08 UTC 2019</span><br><span class="line">8: Fri May 17 00:34:09 UTC 2019</span><br><span class="line">9: Fri May 17 00:34:10 UTC 2019</span><br><span class="line">10: Fri May 17 00:34:11 UTC 2019</span><br><span class="line">11: Fri May 17 00:34:12 UTC 2019</span><br><span class="line">12: Fri May 17 00:34:13 UTC 2019</span><br></pre></td></tr></table></figure>
+<p>这里如果使用 <code>-f</code> 选项，可以持续输出该 Pod 日志。</p>
+<p>那么我们如何找到该容器对应的实际日志文件呢？</p>
+<p>我们可以现在 Docker 中找到该容器信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># docker ps |grep count</span></span><br><span class="line">012e0352b193        busybox                                             <span class="string">"/bin/sh -c 'i=0; wh…"</span>   2 minutes ago       Up 2 minutes                            k8s_count_counter_default_75792a2a-783b-11e9-a3d9-525400aea01a_0</span><br></pre></td></tr></table></figure>
+<p>可以看到在 Docker 中该容器名称为    <code>k8s_count_counter_default_75792a2a-783b-11e9-a3d9-525400aea01a_0</code>  ，我们先不去管最后的 UUID 是什么含义，先看前几个字段，跟集群信息关联可以看到，分别是：k8s，容器名称，Pod 名称，namespaces 名称。那么我们来看下这个容器在 Docker 中的配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 containers]<span class="comment"># pwd</span></span><br><span class="line">/var/lib/docker/containers</span><br><span class="line">[root@node1 containers]<span class="comment"># ls</span></span><br><span class="line">012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2  </span><br><span class="line">...</span><br><span class="line">5c9e765f68a15d5510870179160c59d45d0287b9f92265687d6c37a3557a1017  c563c36b0d3d28ea611b270bc1609ae9c0e720c1c1f85ba669cdab5f7099b77b</span><br></pre></td></tr></table></figure>
+<p>在 Docker 容器路径下，我们看到了很多以不知道什么 ID 明明的子目录，最开始以为是我们 <code>docker ps</code> 中看到的最后 uuid，但是发现对不上，那么我们可以查看下 Pod 的详细信息来试图获取:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 containers]<span class="comment"># kubectl describe pod counter</span></span><br><span class="line">Name:         counter</span><br><span class="line">Namespace:    default</span><br><span class="line">Node:         192.168.27.231/192.168.27.231</span><br><span class="line">Start Time:   Fri, 17 May 2019 08:33:58 +0800</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  &lt;none&gt;</span><br><span class="line">Status:       Running</span><br><span class="line">IP:           172.20.2.13</span><br><span class="line">Containers:</span><br><span class="line">  count:</span><br><span class="line">    Container ID:  docker://012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2</span><br><span class="line">    Image:         busybox</span><br><span class="line">    Image ID:      docker-pullable://busybox@sha256:4b6ad3a68d34da29bf7c8ccb5d355ba8b4babcad1f99798204e7abb43e54ee3d</span><br></pre></td></tr></table></figure>
+<p>忽略掉无关信息，我们可以看到 <code>Container ID</code> 字段，这里对应的 ID 就是在 <code>/var/lib/docker/containers/</code> 下的 ID，找到了 ID，我们可以来看看具体的配置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2]# tree .</span><br><span class="line">.</span><br><span class="line">├── 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2-json.log</span><br><span class="line">├── checkpoints</span><br><span class="line">├── config.v2.json</span><br><span class="line">├── hostconfig.json</span><br><span class="line">└── mounts</span><br><span class="line"></span><br><span class="line">2 directories, 3 files</span><br></pre></td></tr></table></figure>
+<p>可以看到有配置文件和日志文件，我们今天只来讨论日志，那么我们看下这个日志文件的内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2]<span class="comment"># tail 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2-json.log</span></span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"706: Fri May 17 00:45:48 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:48.913451073Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"707: Fri May 17 00:45:49 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:49.915605471Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"708: Fri May 17 00:45:50 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:50.917823388Z"</span>&#125;,</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"713: Fri May 17 00:45:55 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:55.928645971Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"714: Fri May 17 00:45:56 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:56.930660054Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"715: Fri May 17 00:45:57 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:57.932763561Z"</span>&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到这里日志输出是 JSON 格式的，这里跟 <code>kubectl logs</code> 输出不一致啊，为啥这里是 JSON 呢？ 其实这跟你的 Docker 配置有关，具体的配置可以在 Docker 配置中看到，比如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 docker]<span class="comment"># pwd</span></span><br><span class="line">/etc/docker</span><br><span class="line">[root@node1 docker]<span class="comment"># cat daemon.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">"registry-mirrors"</span>: [</span><br><span class="line">    <span class="string">"https://dockerhub.azk8s.cn"</span>,</span><br><span class="line">    <span class="string">"https://docker.mirrors.ustc.edu.cn"</span>,</span><br><span class="line">    <span class="string">"http://hub-mirror.c.163.com"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="string">"max-concurrent-downloads"</span>: 10,</span><br><span class="line">  <span class="string">"log-driver"</span>: <span class="string">"json-file"</span>,</span><br><span class="line">  <span class="string">"log-level"</span>: <span class="string">"warn"</span>,</span><br><span class="line">  <span class="string">"log-opts"</span>: &#123;</span><br><span class="line">    <span class="string">"max-size"</span>: <span class="string">"10m"</span>,</span><br><span class="line">    <span class="string">"max-file"</span>: <span class="string">"3"</span></span><br><span class="line">    &#125;,</span><br><span class="line">  <span class="string">"data-root"</span>: <span class="string">"/var/lib/docker"</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>  Docker 默认的日志格式是 JSON，这里我猜测是 k8s 通过 Docker 接口获取日志类型，然后进行相应的解析输出（希望之后对 k8s 更深入的了解来验证猜想）。</p>
+<p>  在了解了标准日志处理，那么我们来看下节点级别的日志处理是怎样的。</p>
+<h1 id="节点级别日志"><a href="#节点级别日志" class="headerlink" title="节点级别日志"></a>节点级别日志</h1><h2 id="标准处理"><a href="#标准处理" class="headerlink" title="标准处理"></a>标准处理</h2><p>我们现在知道了 Pod 的日志其实是存放在容器真正运行所在节点上的，那么如果 Pod 一直运行，日志会不断增大，占用很多的日志空间，这个在节点上是怎么控制的呢？</p>
+<p>因为这种方式不是 k8s 推荐的方式，这里并没有采用集群级别的控制方式，而是以节点为粒度的，各个节点通过 logrotate 自己处理日志轮询，logrotate 相信大部分同学都使用过，这里不详细说了。</p>
+<h2 id="特殊处理"><a href="#特殊处理" class="headerlink" title="特殊处理"></a>特殊处理</h2><p>如果我们不想将应用日志都输出到标准输出，想将日志打印到 <code>/var/log/</code> 下的自定义路径下怎么办？我们可以在 Pod 启动时挂载一个 Volume，这个 Volume 就是Pod 所在的节点真实路径，这样我们在容器中就可以直接将日志打印到该路径下，哪怕 Pod 被销毁，日志也会一直存在。</p>
+<p>我们创建一个 Deployment 类型的资源，在创建之前，我们需要先创建出指定的挂载路径: <code>/var/log/yiran/</code>，资源配置如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[root@node1</span> <span class="string">blog]#</span> <span class="string">cat</span> <span class="string">log.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        run:</span> <span class="string">helloworldanilhostpath</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">        image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">        args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">              <span class="string">'i=0; while true; do echo "$i: $(date)" &gt;&gt; /var/log/yiran/test.log; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br><span class="line"><span class="attr">        volumeMounts:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">          mountPath:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">      volumes:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">        hostPath:</span></span><br><span class="line"><span class="attr">          path:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">          type:</span> <span class="string">Directory</span></span><br></pre></td></tr></table></figure>
+<p>创建完成后，我们来查看下该 Pod 的日志：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># kubectl get pod</span></span><br><span class="line">NAME                       READY   STATUS    RESTARTS   AGE</span><br><span class="line">counter-76b584fd8f-7fq99   1/1     Running   0          2m30s</span><br><span class="line">testlog-rs-lwxts           1/1     Running   0          2d1h</span><br><span class="line">[root@node1 blog]<span class="comment"># kubectl logs counter-76b584fd8f-7fq99</span></span><br></pre></td></tr></table></figure>
+<p>可以看到没有标准日志输出，我们按照上面描述，去看下容器对应的 Docker 日志是否为空：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node2 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2]<span class="comment"># pwd</span></span><br><span class="line">/var/lib/docker/containers/166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2</span><br><span class="line">[root@node2 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2]<span class="comment"># ll</span></span><br><span class="line">total 12</span><br><span class="line">-rw-r-----. 1 root root    0 May 18 17:39 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2-json.log</span><br><span class="line">drwx------. 2 root root    6 May 18 17:39 checkpoints</span><br><span class="line">-rw-------. 1 root root 5173 May 18 17:39 config.v2.json</span><br><span class="line">-rw-r--r--. 1 root root 2064 May 18 17:39 hostconfig.json</span><br><span class="line">drwx------. 2 root root    6 May 18 17:39 mounts</span><br></pre></td></tr></table></figure>
+<p>这里是符合预期的，因为我们将所有的日志输出到指定日志： <code>/var/log/yiran/test.log</code> 中了，我们去看看节点日志是否存在：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node2 yiran]<span class="comment"># pwd</span></span><br><span class="line">/var/<span class="built_in">log</span>/yiran</span><br><span class="line">[root@node2 yiran]<span class="comment"># tailf test.log</span></span><br><span class="line">327: Sat May 18 09:45:23 UTC 2019</span><br><span class="line">328: Sat May 18 09:45:24 UTC 2019</span><br><span class="line">329: Sat May 18 09:45:25 UTC 2019</span><br><span class="line">330: Sat May 18 09:45:26 UTC 2019</span><br></pre></td></tr></table></figure>
+<p>可以看到这里已经按照预期打印在 Pod 所在节点上了，满足我们的需求。</p>
+<p>接下来是重头戏，集群级别的日志控制。</p>
+<h1 id="集群级别日志"><a href="#集群级别日志" class="headerlink" title="集群级别日志"></a>集群级别日志</h1><p>我们为什么需要日志？对于开发者，可以通过日志进行快速的错误排查；对于运维同学可以根据日志来了解程序运行状态。一句话就是日志非常重要。</p>
+<p>那么既然日志这么重要，那么在 k8s 上如何处理日志，尤其是 k8s 提供了 ReplicaSet/DeploymentSet 这类可以自动缩扩容，自动 ha 的资源，我们如果仅仅通过节点级别的日志管理，集群规模小还好，当集群规模变大之后，对于使用日志的同学简直是灾难。</p>
+<p>在看过了标准日志处理和节点日志处理后，我们来看看一个标准的 k8s 集群是如何处理服务日志和应用日志的。</p>
+<p>这里的前提是，我们有一个日志中心（如 ES)去处理日志，有几种配置方式可以选择：</p>
+<h2 id="节点级别日志代理"><a href="#节点级别日志代理" class="headerlink" title="节点级别日志代理"></a>节点级别日志代理</h2><p>在 k8s 集群中运行一个 DaemonSet，启动的容器运行日志转发器，用于将节点上的日志转发到日志中心，日志转发器可以根据各自资源情况和需求自由选择，如 Logstash,Fluentd,Fluent-bit 等等。</p>
+<p>k8s 标准配置中推荐该方案，无论是从资源使用还是从配置管理上都是最佳方案。</p>
+<p>对应配置在 <code>kubernetes/cluster/addons/fluentd-elasticsearch</code> 路径下，我们可以直接创建部署，部署后状态如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get rs |grep kibana</span></span><br><span class="line">kibana-logging-f4d99b69f          1         1         1       2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get ds |grep fluent</span></span><br><span class="line">fluentd-es-v2.4.0       3         3         3       3            3           &lt;none&gt;                          2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get statefulset</span></span><br><span class="line">NAME                    READY   AGE</span><br><span class="line">elasticsearch-logging   2/2     2d6h</span><br></pre></td></tr></table></figure>
+<p>可以看到 Fluentd 是以 DaemonSet 方式运行的；ElasticSearch 是以 StatefulSet 方式运行的；Kibana 是以 ReplicaSet 方式运行的。</p>
+<p>其中 Fluentd 配置文件中监控的是 <code>/var/log/container</code> 路径下的所有日志，所以我们理论上可以在 ES 中看到所有应用的日志，那么看到日志之后，我们如何与实际的应用对应呢？这里可以看下具体示例：</p>
+<p>创建 ReplicaSet 类型资源，指定 replica 为 1：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[root@node1</span> <span class="string">~]#</span> <span class="string">cat</span> <span class="string">log.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ReplicaSet</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">testlog-rs</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">  selector:</span></span><br><span class="line"><span class="attr">    matchLabels:</span></span><br><span class="line"><span class="attr">      app:</span> <span class="string">testlog-label</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        app:</span> <span class="string">testlog-label</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">testlog-container-name</span></span><br><span class="line"><span class="attr">          image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">          args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">                 <span class="string">'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
+<p>我们将涉及到名称的字段均加上对应 key，便于在 ES 中查看对应关系，那么接下来看看在 ES 中该容器对应的日志是什么形式的：</p>
+<img src="/2019/05/17/Kubernetes-实战-日志处理/log1.png" title="log1">
+<p>根据上述对应关系，哪怕 Pod 重建了，我们仍可以通过 container_name 字段来查看对应应用日志，便于调试。</p>
+<h2 id="节点级别日志代理配合伴生容器"><a href="#节点级别日志代理配合伴生容器" class="headerlink" title="节点级别日志代理配合伴生容器"></a>节点级别日志代理配合伴生容器</h2><p>我们知道，标准容器日志应该输出到 stdout 和 stderr 中，那么如果我们一个 Pod 中输出多份日志怎么办？虽然这种情况是我们应该极度避免的，我们应该始终保证一个 Pod 只做一件事情。但是我们有时候迫于代码结构或者其他因素，导致我们会遇到这种情况，那么此时我们需要伴生容器配合使用。</p>
+<p>示例如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">admin/logging/two-files-counter-pod-streaming-sidecar.yaml</span> </span><br><span class="line"></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">    -</span> <span class="bullet">-c</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">&gt;</span></span><br><span class="line"><span class="string">      i=0;</span></span><br><span class="line"><span class="string">      while true;</span></span><br><span class="line"><span class="string">      do</span></span><br><span class="line"><span class="string">        echo "$i: $(date)" &gt;&gt; /var/log/1.log;</span></span><br><span class="line"><span class="string">        echo "$(date) INFO $i" &gt;&gt; /var/log/2.log;</span></span><br><span class="line"><span class="string">        i=$((i+1));</span></span><br><span class="line"><span class="string">        sleep 1;</span></span><br><span class="line"><span class="string">      done</span></span><br><span class="line"><span class="string"></span><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-1</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/1.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-2</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/2.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">    emptyDir:</span> <span class="string">&#123;&#125;</span></span><br></pre></td></tr></table></figure>
+<p>这种方法是极度不推荐的，如果我们配置了 EFK，那么我们 1 份日志相当于写了 3 份，如果我们 ES 的后端存储是一个副本机制的分布式存储，那么我们 1 份日志相当于写了 3 * 2(或 3，存储副本数)份，这是极大的浪费了存储资源的，且会大大影响 SSD 磁盘寿命。</p>
+<h2 id="Pod-级别日志代理"><a href="#Pod-级别日志代理" class="headerlink" title="Pod 级别日志代理"></a>Pod 级别日志代理</h2><p>如果觉得节点级别日志代理粒度太粗，我们也可以选择 Pod 级别，在每个 Pod 中都启动一个伴生容器作为日志代理，将日志直接转发到日志中心。</p>
+<p>若以该形式部署，则我们的应用程序配置不仅要配置应用自身，还要考虑日志处理策略；节点计算能力现在大幅提升，每个节点的 Pod 数量很大，浪费了大量的计算资源。</p>
+<h2 id="应用自处理日志代理"><a href="#应用自处理日志代理" class="headerlink" title="应用自处理日志代理"></a>应用自处理日志代理</h2><p>如标题，我们当然可以在应用中直接将日志转发到指定的日志中心，这种情况也是极度糟糕的， <code>Make each program do one thing well.</code>。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>到这里我们关于日志部分的介绍就到这里，总的来说我们需要集中式的日志中心，且推荐以节点级别日志代理方式配置，前提是我们能够预留足够的计算资源和存储资源。后续有机会我们可以了解下日志与事件审计关联使用。</p>
+<p>下一篇我们来看下 Kubernetes 中镜像相关管理与使用。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/05/14/Kubernetes-实战-微服务/" rel="next" title="Kubernetes 实战-微服务">
+                <i class="fa fa-chevron-left"></i> Kubernetes 实战-微服务
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">60</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">26</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://instagram.com/zdyxry" target="_blank" title="Instagram">
+                      
+                        <i class="fa fa-fw fa-instagram"></i>Instagram</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#基础日志处理"><span class="nav-number">1.</span> <span class="nav-text">基础日志处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#节点级别日志"><span class="nav-number">2.</span> <span class="nav-text">节点级别日志</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#标准处理"><span class="nav-number">2.1.</span> <span class="nav-text">标准处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#特殊处理"><span class="nav-number">2.2.</span> <span class="nav-text">特殊处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#集群级别日志"><span class="nav-number">3.</span> <span class="nav-text">集群级别日志</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#节点级别日志代理"><span class="nav-number">3.1.</span> <span class="nav-text">节点级别日志代理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#节点级别日志代理配合伴生容器"><span class="nav-number">3.2.</span> <span class="nav-text">节点级别日志代理配合伴生容器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pod-级别日志代理"><span class="nav-number">3.3.</span> <span class="nav-text">Pod 级别日志代理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#应用自处理日志代理"><span class="nav-number">3.4.</span> <span class="nav-text">应用自处理日志代理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/';
+          this.page.identifier = '2019/05/17/Kubernetes-实战-日志处理/';
+          this.page.title = 'Kubernetes 实战-日志处理';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
