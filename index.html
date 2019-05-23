@@ -267,6 +267,170 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/24/Kubernetes-实战-镜像管理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/24/Kubernetes-实战-镜像管理/" itemprop="url">Kubernetes 实战-镜像管理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-24T07:35:08+08:00">
+                2019-05-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/24/Kubernetes-实战-镜像管理/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/24/Kubernetes-实战-镜像管理/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="镜像组织形式"><a href="#镜像组织形式" class="headerlink" title="镜像组织形式"></a>镜像组织形式</h2><p>镜像默认采用 OverlayFS 方式挂载，最终效果是将多个目录结构合并为一个。</p>
+<p>其中 lowerdir 为只读路径，最右层级最深。最终容器运行时会将 lowerdir 和 upperdir 合并挂在为 merged，对应容器中的路径为 <code>/</code> 。<br>举例：<br>镜像 testadd:0.5 版本的层级挂载如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:02:24 overlay2]$docker inspect testadd:0.5 |grep Dir</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">                &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/693c140b9c70744a7a6ce93de56d3ac7549dae84195cbfac3486062d1ceaccf1/diff&quot;,</span><br><span class="line">                &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/merged&quot;,</span><br><span class="line">                &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/diff&quot;,</span><br><span class="line">                &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/work&quot;</span><br></pre></td></tr></table></figure>
+<p>运行该容器后，可以看到多了一个 overlay 方式挂载的路径：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:05:53 overlay2]$mount |grep overlay</span><br><span class="line">/dev/md127 on /var/lib/docker/overlay2 type ext4 (rw,relatime,data=ordered)</span><br><span class="line">overlay on /var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/3NA23BH5OMSSXWTHGPRS6YENB7:/var/lib/docker/overlay2/l/QQVS7UVPGRBVHRZOBDPMMO4EQM:/var/lib/docker/overlay2/l/E7HTYBVD5SXSZRLVTETODOIANT,upperdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/diff,workdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/work)</span><br></pre></td></tr></table></figure>
+<p>查看对应关系：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:05:53 overlay2]$mount |grep overlay</span><br><span class="line">/dev/md127 on /var/lib/docker/overlay2 type ext4 (rw,relatime,data=ordered)</span><br><span class="line">overlay on /var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/3NA23BH5OMSSXWTHGPRS6YENB7:/var/lib/docker/overlay2/l/QQVS7UVPGRBVHRZOBDPMMO4EQM:/var/lib/docker/overlay2/l/E7HTYBVD5SXSZRLVTETODOIANT,upperdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/diff,workdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/work)</span><br><span class="line">[root@node111 16:06:07 overlay2]$docker inspect testadd:0.5 |grep Dir                                                             </span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">                &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/693c140b9c70744a7a6ce93de56d3ac7549dae84195cbfac3486062d1ceaccf1/diff&quot;,</span><br><span class="line">                &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/merged&quot;,</span><br><span class="line">                &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/diff&quot;,</span><br><span class="line">                &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/work&quot;</span><br><span class="line">[root@node111 16:06:54 overlay2]$docker ps </span><br><span class="line">CONTAINER ID        IMAGE               COMMAND             CREATED              STATUS              PORTS               NAMES</span><br><span class="line">e53180ddcd03        testadd:0.5         &quot;bash&quot;              About a minute ago   Up About a minute                       compassionate_roentgen</span><br><span class="line">[root@node111 16:07:06 overlay2]$docker inspect e53180ddcd03 |grep Dir</span><br><span class="line">                &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00-init/diff:/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/diff:/var/lib/docker/overlay2/693c140b9c70744a7a6ce93de56d3ac7549dae84195cbfac3486062d1ceaccf1/diff&quot;,</span><br><span class="line">                &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged&quot;,</span><br><span class="line">                &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/diff&quot;,</span><br><span class="line">                &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/work&quot;</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br></pre></td></tr></table></figure>
+<p>查看容器内根分区，并在容器内创建文件，查看容器挂载 merged 路径下文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@e53180ddcd03 /]# ls </span><br><span class="line">anaconda-post.log  bin  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  test  tmp  usr  var</span><br><span class="line">[root@e53180ddcd03 /]# touch yiran</span><br><span class="line">[root@e53180ddcd03 /]# ls anaconda-post.log  bin  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  test  tmp  usr  var  yiran</span><br><span class="line">[root@e53180ddcd03 /]#</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:07:13 overlay2]$cd e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged/</span><br><span class="line">You have mail in /var/spool/mail/root</span><br><span class="line">[root@node111 16:09:31 merged]$ls </span><br><span class="line">anaconda-post.log  bin  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  test  tmp  usr  var  yiran</span><br><span class="line">[root@node111 16:09:32 merged]$pwd</span><br><span class="line">/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged</span><br></pre></td></tr></table></figure>
+<p>在容器中创建的文件 <code>yiran</code> 在宿主机相应的挂载路径下是可以看到的。</p>
+<h2 id="镜像管理"><a href="#镜像管理" class="headerlink" title="镜像管理"></a>镜像管理</h2><h3 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h3><p>默认从 docker.io 获取最新镜像，可以在 /etc/docker/daemon.json 中指定 <code>registry-mirrors</code> 或 <code>insecure-registries</code> 获取私有镜像。</p>
+<p>下载完成后可以看到镜像下载完成后会在 <code>/var/lib/docker/overlay2/</code> 下保存一份镜像真实内容。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:17:15 docker]$docker images</span><br><span class="line">REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">[root@node111 16:17:19 docker]$du -sh . </span><br><span class="line">624K    .</span><br><span class="line">[root@node111 16:17:21 docker]$docker pull centos</span><br><span class="line">Using default tag: latest</span><br><span class="line">Trying to pull repository docker.io/library/centos ... </span><br><span class="line">latest: Pulling from docker.io/library/centos</span><br><span class="line">8ba884070f61: Pull complete </span><br><span class="line">Digest: sha256:b5e66c4651870a1ad435cd75922fe2cb943c9e973a9673822d1414824a1d0475</span><br><span class="line">Status: Downloaded newer image for docker.io/centos:latest</span><br><span class="line">[root@node111 16:18:06 docker]$docker images</span><br><span class="line">REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">docker.io/centos    latest              9f38484d220f        2 months ago        202 MB</span><br><span class="line">[root@node111 16:18:17 docker]$du -sh . </span><br><span class="line">214M    .</span><br><span class="line">[root@node111 16:18:19 docker]$ll overlay2/*</span><br><span class="line">overlay2/6061bd16e5de86e56298bee1496e02998e6a029c34374b21bc0fa3c30202db55:</span><br><span class="line">total 8</span><br><span class="line">drwxr-xr-x 16 root root 4096 May 22 16:18 diff</span><br><span class="line">-rw-r--r--  1 root root   26 May 22 16:17 link</span><br><span class="line"></span><br><span class="line">overlay2/l:</span><br><span class="line">total 4</span><br><span class="line">lrwxrwxrwx 1 root root 72 May 22 16:17 A3LUDFNM6LHHPQ6DVXCEI2KFYQ -&gt; ../6061bd16e5de86e56298bee1496e02998e6a029c34374b21bc0fa3c30202db55/diff</span><br></pre></td></tr></table></figure>
+<h3 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h3><p>在不同服务构建镜像时，应保证最小化且合理分层，这样可以在最底层使用相同的 overlay 缓存，比较空间浪费。<br>参考 OpenStack Kolla 项目层级结构，openstack 所有服务镜像均基于 CentOS，60+服务镜像打包占用总空间为 5.48G：</p>
+<p>注意：<br>尽量使用最精简基础镜像，只安装必要软件包<br>合理拆分服务<br>尽量保证 Dockerfile 中上层指令相同，若顺序不同则会构建出不同的层级，无法利用缓存特性<br>保证层级处于最精简状态<br>…</p>
+<h3 id="上传"><a href="#上传" class="headerlink" title="上传"></a>上传</h3><p>当我们本地存在一份镜像，想要将其上传至指定仓库，我们需要先对镜像打 tag，举例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:24:55 image]$docker images</span><br><span class="line">REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">testadd             0.2                 4e47f016385b        35 seconds ago      202 MB</span><br><span class="line">docker.io/centos    latest              9f38484d220f        2 months ago        202 MB</span><br><span class="line">[root@node111 16:25:07 image]$cat /etc/docker/daemon.json </span><br><span class="line">&#123;</span><br><span class="line">  &quot;insecure-registries&quot;: [</span><br><span class="line">    &quot;192.168.27.146&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[root@node111 16:25:12 image]$docker tag testadd:0.2 192.168.27.146/testadd:0.2</span><br><span class="line">[root@node111 16:25:28 image]$docker images</span><br><span class="line">REPOSITORY               TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">192.168.27.146/testadd   0.2                 4e47f016385b        58 seconds ago      202 MB</span><br><span class="line">testadd                  0.2                 4e47f016385b        58 seconds ago      202 MB</span><br><span class="line">docker.io/centos         latest              9f38484d220f        2 months ago        202 MB</span><br><span class="line">[root@node111 16:25:31 image]$docker push 192.168.27.146/testadd:0.2</span><br><span class="line">The push refers to a repository [192.168.27.146/testadd]</span><br><span class="line">f5011c15a820: Pushed </span><br><span class="line">d69483a6face: Layer already exists </span><br><span class="line">0.2: digest: sha256:072611b154402d0760d7860374eb5dc706712319331710b4f046e043ba2cc26a size: 736</span><br></pre></td></tr></table></figure>
+<p>上传到指定仓库之后，其他节点可以修改 docker 配置文件，重启 docker 后即可直接下载指定镜像。</p>
+<h2 id="Kubernetes-镜像管理"><a href="#Kubernetes-镜像管理" class="headerlink" title="Kubernetes 镜像管理"></a>Kubernetes 镜像管理</h2><h3 id="下载-1"><a href="#下载-1" class="headerlink" title="下载"></a>下载</h3><p>在 k8s 中，没有针对镜像仓库的集群级别配置，节点各自维护自己的仓库地址，如果需要增加仓库地址，需要修改集群中所有节点配置文件，重启 docker 生效。</p>
+<p>可以在 k8s 中配置指定仓库的 secret 类型为 docker-registry 来配置私有仓库的用户名密码，在之后创建 Pod 时指定该 secret 名称即可自动下载，具体操作如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@node3 ~]# kubectl create secret docker-registry regsecret --docker-server=192.168.30.111 --docker-username=admin --docker-password=Harbor12345 --docker-email=yiran@smartx.com</span><br><span class="line">[root@node3 ~]# kubectl get secret regsecret -o yaml</span><br><span class="line">[root@node3 ~]# cat private-reg-pod.yaml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: private-reg</span><br><span class="line">spec:</span><br><span class="line">  nodeSelector:</span><br><span class="line">    type: &quot;233&quot;</span><br><span class="line">  containers:</span><br><span class="line">  - name: private-reg-container</span><br><span class="line">    image: 192.168.30.111/test/busybox:latest</span><br><span class="line">    args: [/bin/sh, -c,</span><br><span class="line">           &apos;i=0; while true; do echo &quot;$i: $(date)&quot;; i=$((i+1)); sleep 1; done&apos;]</span><br><span class="line">  imagePullSecrets:</span><br><span class="line">  - name: regsecret</span><br></pre></td></tr></table></figure>
+<h3 id="删除"><a href="#删除" class="headerlink" title="删除"></a>删除</h3><p>k8s 自身不提供主动删除节点中无用镜像操作，默认通过配置 GC 参数删除无用镜像。</p>
+<p>不推荐使用其它管理工具或手工进行容器和镜像的清理，因为kubelet需要通过容器来判断pod的运行状态，如果使用其它方式清除容器有可能影响kubelet的正常工作。</p>
+<ul>
+<li><p>–image-gc-high-threshold int32<br>当用于存储镜像的磁盘使用率达到百分之–image-gc-high-threshold时将触发镜像回收(default 85)</p>
+</li>
+<li><p>–image-gc-low-threshold int32<br>删除最近最久未使用（LRU，Least Recently Used）的镜像直到磁盘使用率降为百分之–image-gc-low-threshold或无镜像可删为止 (default 80)</p>
+</li>
+</ul>
+<h2 id="CNCF-Harbor"><a href="#CNCF-Harbor" class="headerlink" title="CNCF-Harbor"></a>CNCF-Harbor</h2><p>Harbor项目是一个具有存储、签署和扫描内容功能的开源云原生registry。Harbor 由 VMware 创建，通过添加用户所需功能（如安全性，身份认证和管理）来扩展开源Docker Distribution，并支持在registry之间复制镜像。Harbor还提供高级安全功能，比如漏洞分析，基于角色的访问控制，活动审计等等。<br>主要功能：<br>角色控制/身份校验<br>镜像复制<br>漏洞扫描<br>…<br>资源消耗情况：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 11:09:02 harbor]$docker stats --no-stream</span><br><span class="line">CONTAINER ID        NAME                CPU %               MEM USAGE / LIMIT     MEM %               NET I/O             BLOCK I/O           PIDS</span><br><span class="line">90dcf1505eb0        nginx               0.02%               4.152MiB / 15.51GiB   0.03%               6.53MB / 6.77MB     0B / 0B             7</span><br><span class="line">75945a1aa004        harbor-jobservice   0.12%               9.109MiB / 15.51GiB   0.06%               1.24MB / 15.1MB     0B / 0B             13</span><br><span class="line">000f6f349708        harbor-portal       0.07%               1.676MiB / 15.51GiB   0.01%               200kB / 5.47MB      0B / 0B             2</span><br><span class="line">84635df4fe51        harbor-core         0.53%               12.96MiB / 15.51GiB   0.08%               3.62MB / 2.84MB     0B / 0B             14</span><br><span class="line">c6e53b654127        redis               0.18%               6.816MiB / 15.51GiB   0.04%               15.4MB / 1.41MB     0B / 180kB          5</span><br><span class="line">9048a587cf29        registryctl         0.06%               3.031MiB / 15.51GiB   0.02%               114kB / 87.8kB      0B / 0B             7</span><br><span class="line">d88f7c4b36c5        harbor-db           0.03%               8.09MiB / 15.51GiB    0.05%               929kB / 1.57MB      0B / 4.65MB         11</span><br><span class="line">83c474625566        registry            0.20%               19.45MiB / 15.51GiB   0.12%               1.04MB / 335kB      0B / 1.65MB         16</span><br><span class="line">5a3d2707e96f        harbor-log          0.00%               2.152MiB / 15.51GiB   0.01%               766kB / 147kB       81.9kB / 16.4kB     12</span><br></pre></td></tr></table></figure>
+<p>默认推荐部署方式：docker-composer<br>k8s 推荐部署方式：Helm</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在日常开发过程中，公司内部部署私有仓库（比如 Harbor）可以控制用户角色，方便测试同学快速获取最新版本镜像。<br>在融合产品生命周期中，只有升级场景涉及到镜像的导入、上传、下载、删除操作，因此没必要在集群中持续运行一个仓库服务，浪费资源。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><p>openstack kolla 项目，目标是通过容器化方式部署 openstack，便于 openstack 滚动升级。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -348,7 +512,7 @@
       
         
           
-            <h1 id="基础日志处理"><a href="#基础日志处理" class="headerlink" title="基础日志处理"></a>基础日志处理</h1><p>在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 <code>kuberctl logs</code> 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 <code>/var/lib/docker/</code> 路径下，下面我们来看一个例子：</p>
+            <h2 id="基础日志处理"><a href="#基础日志处理" class="headerlink" title="基础日志处理"></a>基础日志处理</h2><p>在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 <code>kuberctl logs</code> 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 <code>/var/lib/docker/</code> 路径下，下面我们来看一个例子：</p>
 <p>在 k8s 中创建一个 Pod，Pod 中指定打印当前时间到标准输出中：</p>
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">            <span class="string">'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
 <p>运行该 Pod，通过 <code>kubectl logs</code> 获取当前 Pod 日志：</p>
@@ -369,9 +533,9 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 docker]<span class="comment"># pwd</span></span><br><span class="line">/etc/docker</span><br><span class="line">[root@node1 docker]<span class="comment"># cat daemon.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">"registry-mirrors"</span>: [</span><br><span class="line">    <span class="string">"https://dockerhub.azk8s.cn"</span>,</span><br><span class="line">    <span class="string">"https://docker.mirrors.ustc.edu.cn"</span>,</span><br><span class="line">    <span class="string">"http://hub-mirror.c.163.com"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="string">"max-concurrent-downloads"</span>: 10,</span><br><span class="line">  <span class="string">"log-driver"</span>: <span class="string">"json-file"</span>,</span><br><span class="line">  <span class="string">"log-level"</span>: <span class="string">"warn"</span>,</span><br><span class="line">  <span class="string">"log-opts"</span>: &#123;</span><br><span class="line">    <span class="string">"max-size"</span>: <span class="string">"10m"</span>,</span><br><span class="line">    <span class="string">"max-file"</span>: <span class="string">"3"</span></span><br><span class="line">    &#125;,</span><br><span class="line">  <span class="string">"data-root"</span>: <span class="string">"/var/lib/docker"</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 <p>  Docker 默认的日志格式是 JSON，这里我猜测是 k8s 通过 Docker 接口获取日志类型，然后进行相应的解析输出（希望之后对 k8s 更深入的了解来验证猜想）。</p>
 <p>  在了解了标准日志处理，那么我们来看下节点级别的日志处理是怎样的。</p>
-<h1 id="节点级别日志"><a href="#节点级别日志" class="headerlink" title="节点级别日志"></a>节点级别日志</h1><h2 id="标准处理"><a href="#标准处理" class="headerlink" title="标准处理"></a>标准处理</h2><p>我们现在知道了 Pod 的日志其实是存放在容器真正运行所在节点上的，那么如果 Pod 一直运行，日志会不断增大，占用很多的日志空间，这个在节点上是怎么控制的呢？</p>
+<h2 id="节点级别日志"><a href="#节点级别日志" class="headerlink" title="节点级别日志"></a>节点级别日志</h2><h3 id="标准处理"><a href="#标准处理" class="headerlink" title="标准处理"></a>标准处理</h3><p>我们现在知道了 Pod 的日志其实是存放在容器真正运行所在节点上的，那么如果 Pod 一直运行，日志会不断增大，占用很多的日志空间，这个在节点上是怎么控制的呢？</p>
 <p>因为这种方式不是 k8s 推荐的方式，这里并没有采用集群级别的控制方式，而是以节点为粒度的，各个节点通过 logrotate 自己处理日志轮询，logrotate 相信大部分同学都使用过，这里不详细说了。</p>
-<h2 id="特殊处理"><a href="#特殊处理" class="headerlink" title="特殊处理"></a>特殊处理</h2><p>如果我们不想将应用日志都输出到标准输出，想将日志打印到 <code>/var/log/</code> 下的自定义路径下怎么办？我们可以在 Pod 启动时挂载一个 Volume，这个 Volume 就是Pod 所在的节点真实路径，这样我们在容器中就可以直接将日志打印到该路径下，哪怕 Pod 被销毁，日志也会一直存在。</p>
+<h3 id="特殊处理"><a href="#特殊处理" class="headerlink" title="特殊处理"></a>特殊处理</h3><p>如果我们不想将应用日志都输出到标准输出，想将日志打印到 <code>/var/log/</code> 下的自定义路径下怎么办？我们可以在 Pod 启动时挂载一个 Volume，这个 Volume 就是Pod 所在的节点真实路径，这样我们在容器中就可以直接将日志打印到该路径下，哪怕 Pod 被销毁，日志也会一直存在。</p>
 <p>我们创建一个 Deployment 类型的资源，在创建之前，我们需要先创建出指定的挂载路径: <code>/var/log/yiran/</code>，资源配置如下：</p>
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[root@node1</span> <span class="string">blog]#</span> <span class="string">cat</span> <span class="string">log.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        run:</span> <span class="string">helloworldanilhostpath</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">        image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">        args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">              <span class="string">'i=0; while true; do echo "$i: $(date)" &gt;&gt; /var/log/yiran/test.log; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br><span class="line"><span class="attr">        volumeMounts:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">          mountPath:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">      volumes:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">        hostPath:</span></span><br><span class="line"><span class="attr">          path:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">          type:</span> <span class="string">Directory</span></span><br></pre></td></tr></table></figure>
 <p>创建完成后，我们来查看下该 Pod 的日志：</p>
@@ -382,11 +546,11 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node2 yiran]<span class="comment"># pwd</span></span><br><span class="line">/var/<span class="built_in">log</span>/yiran</span><br><span class="line">[root@node2 yiran]<span class="comment"># tailf test.log</span></span><br><span class="line">327: Sat May 18 09:45:23 UTC 2019</span><br><span class="line">328: Sat May 18 09:45:24 UTC 2019</span><br><span class="line">329: Sat May 18 09:45:25 UTC 2019</span><br><span class="line">330: Sat May 18 09:45:26 UTC 2019</span><br></pre></td></tr></table></figure>
 <p>可以看到这里已经按照预期打印在 Pod 所在节点上了，满足我们的需求。</p>
 <p>接下来是重头戏，集群级别的日志控制。</p>
-<h1 id="集群级别日志"><a href="#集群级别日志" class="headerlink" title="集群级别日志"></a>集群级别日志</h1><p>我们为什么需要日志？对于开发者，可以通过日志进行快速的错误排查；对于运维同学可以根据日志来了解程序运行状态。一句话就是日志非常重要。</p>
+<h2 id="集群级别日志"><a href="#集群级别日志" class="headerlink" title="集群级别日志"></a>集群级别日志</h2><p>我们为什么需要日志？对于开发者，可以通过日志进行快速的错误排查；对于运维同学可以根据日志来了解程序运行状态。一句话就是日志非常重要。</p>
 <p>那么既然日志这么重要，那么在 k8s 上如何处理日志，尤其是 k8s 提供了 ReplicaSet/DeploymentSet 这类可以自动缩扩容，自动 ha 的资源，我们如果仅仅通过节点级别的日志管理，集群规模小还好，当集群规模变大之后，对于使用日志的同学简直是灾难。</p>
 <p>在看过了标准日志处理和节点日志处理后，我们来看看一个标准的 k8s 集群是如何处理服务日志和应用日志的。</p>
 <p>这里的前提是，我们有一个日志中心（如 ES)去处理日志，有几种配置方式可以选择：</p>
-<h2 id="节点级别日志代理"><a href="#节点级别日志代理" class="headerlink" title="节点级别日志代理"></a>节点级别日志代理</h2><p>在 k8s 集群中运行一个 DaemonSet，启动的容器运行日志转发器，用于将节点上的日志转发到日志中心，日志转发器可以根据各自资源情况和需求自由选择，如 Logstash,Fluentd,Fluent-bit 等等。</p>
+<h3 id="节点级别日志代理"><a href="#节点级别日志代理" class="headerlink" title="节点级别日志代理"></a>节点级别日志代理</h3><p>在 k8s 集群中运行一个 DaemonSet，启动的容器运行日志转发器，用于将节点上的日志转发到日志中心，日志转发器可以根据各自资源情况和需求自由选择，如 Logstash,Fluentd,Fluent-bit 等等。</p>
 <p>k8s 标准配置中推荐该方案，无论是从资源使用还是从配置管理上都是最佳方案。</p>
 <p>对应配置在 <code>kubernetes/cluster/addons/fluentd-elasticsearch</code> 路径下，我们可以直接创建部署，部署后状态如下：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get rs |grep kibana</span></span><br><span class="line">kibana-logging-f4d99b69f          1         1         1       2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get ds |grep fluent</span></span><br><span class="line">fluentd-es-v2.4.0       3         3         3       3            3           &lt;none&gt;                          2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get statefulset</span></span><br><span class="line">NAME                    READY   AGE</span><br><span class="line">elasticsearch-logging   2/2     2d6h</span><br></pre></td></tr></table></figure>
@@ -397,14 +561,14 @@
 <p>我们将涉及到名称的字段均加上对应 key，便于在 ES 中查看对应关系，那么接下来看看在 ES 中该容器对应的日志是什么形式的：</p>
 <img src="/2019/05/17/Kubernetes-实战-日志处理/log1.png" title="log1">
 <p>根据上述对应关系，哪怕 Pod 重建了，我们仍可以通过 container_name 字段来查看对应应用日志，便于调试。</p>
-<h2 id="节点级别日志代理配合伴生容器"><a href="#节点级别日志代理配合伴生容器" class="headerlink" title="节点级别日志代理配合伴生容器"></a>节点级别日志代理配合伴生容器</h2><p>我们知道，标准容器日志应该输出到 stdout 和 stderr 中，那么如果我们一个 Pod 中输出多份日志怎么办？虽然这种情况是我们应该极度避免的，我们应该始终保证一个 Pod 只做一件事情。但是我们有时候迫于代码结构或者其他因素，导致我们会遇到这种情况，那么此时我们需要伴生容器配合使用。</p>
+<h3 id="节点级别日志代理配合伴生容器"><a href="#节点级别日志代理配合伴生容器" class="headerlink" title="节点级别日志代理配合伴生容器"></a>节点级别日志代理配合伴生容器</h3><p>我们知道，标准容器日志应该输出到 stdout 和 stderr 中，那么如果我们一个 Pod 中输出多份日志怎么办？虽然这种情况是我们应该极度避免的，我们应该始终保证一个 Pod 只做一件事情。但是我们有时候迫于代码结构或者其他因素，导致我们会遇到这种情况，那么此时我们需要伴生容器配合使用。</p>
 <p>示例如下：</p>
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">admin/logging/two-files-counter-pod-streaming-sidecar.yaml</span> </span><br><span class="line"></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">    -</span> <span class="bullet">-c</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">&gt;</span></span><br><span class="line"><span class="string">      i=0;</span></span><br><span class="line"><span class="string">      while true;</span></span><br><span class="line"><span class="string">      do</span></span><br><span class="line"><span class="string">        echo "$i: $(date)" &gt;&gt; /var/log/1.log;</span></span><br><span class="line"><span class="string">        echo "$(date) INFO $i" &gt;&gt; /var/log/2.log;</span></span><br><span class="line"><span class="string">        i=$((i+1));</span></span><br><span class="line"><span class="string">        sleep 1;</span></span><br><span class="line"><span class="string">      done</span></span><br><span class="line"><span class="string"></span><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-1</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/1.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-2</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/2.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">    emptyDir:</span> <span class="string">&#123;&#125;</span></span><br></pre></td></tr></table></figure>
 <p>这种方法是极度不推荐的，如果我们配置了 EFK，那么我们 1 份日志相当于写了 3 份，如果我们 ES 的后端存储是一个副本机制的分布式存储，那么我们 1 份日志相当于写了 3 * 2(或 3，存储副本数)份，这是极大的浪费了存储资源的，且会大大影响 SSD 磁盘寿命。</p>
-<h2 id="Pod-级别日志代理"><a href="#Pod-级别日志代理" class="headerlink" title="Pod 级别日志代理"></a>Pod 级别日志代理</h2><p>如果觉得节点级别日志代理粒度太粗，我们也可以选择 Pod 级别，在每个 Pod 中都启动一个伴生容器作为日志代理，将日志直接转发到日志中心。</p>
+<h3 id="Pod-级别日志代理"><a href="#Pod-级别日志代理" class="headerlink" title="Pod 级别日志代理"></a>Pod 级别日志代理</h3><p>如果觉得节点级别日志代理粒度太粗，我们也可以选择 Pod 级别，在每个 Pod 中都启动一个伴生容器作为日志代理，将日志直接转发到日志中心。</p>
 <p>若以该形式部署，则我们的应用程序配置不仅要配置应用自身，还要考虑日志处理策略；节点计算能力现在大幅提升，每个节点的 Pod 数量很大，浪费了大量的计算资源。</p>
-<h2 id="应用自处理日志代理"><a href="#应用自处理日志代理" class="headerlink" title="应用自处理日志代理"></a>应用自处理日志代理</h2><p>如标题，我们当然可以在应用中直接将日志转发到指定的日志中心，这种情况也是极度糟糕的， <code>Make each program do one thing well.</code>。</p>
-<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>到这里我们关于日志部分的介绍就到这里，总的来说我们需要集中式的日志中心，且推荐以节点级别日志代理方式配置，前提是我们能够预留足够的计算资源和存储资源。后续有机会我们可以了解下日志与事件审计关联使用。</p>
+<h3 id="应用自处理日志代理"><a href="#应用自处理日志代理" class="headerlink" title="应用自处理日志代理"></a>应用自处理日志代理</h3><p>如标题，我们当然可以在应用中直接将日志转发到指定的日志中心，这种情况也是极度糟糕的， <code>Make each program do one thing well.</code>。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里我们关于日志部分的介绍就到这里，总的来说我们需要集中式的日志中心，且推荐以节点级别日志代理方式配置，前提是我们能够预留足够的计算资源和存储资源。后续有机会我们可以了解下日志与事件审计关联使用。</p>
 <p>下一篇我们来看下 Kubernetes 中镜像相关管理与使用。</p>
 
           
@@ -1841,189 +2005,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/31/huey-源码阅读/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/31/huey-源码阅读/" itemprop="url">huey 源码阅读</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-31T11:25:48+08:00">
-                2019-03-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/03/31/huey-源码阅读/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/03/31/huey-源码阅读/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近读完了 《Redis 实战》对 Redis 有了一些了解，但是没有在实际项目中应用过，就想找一个使用 Redis 的项目来看看，找到 Huey 是因为之前使用过，趁机了解下具体实现。</p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>Huey 的定位是一个轻量级的任务队列，仅依赖于 Redis 作为任务相关信息存储，支持的功能有：</p>
-<ul>
-<li>多种 worker 执行方式：thread，process，greenlet</li>
-<li>支持多种任务类型：特定时间运行，周期性运行</li>
-<li>包含重试机制，可以指定重试次数及重试间隔</li>
-<li>支持任务锁</li>
-<li>…</li>
-</ul>
-<p>我们根据官方的<a href="https://github.com/coleifer/huey/blob/master/examples/simple/README" target="_blank" rel="noopener">示例</a>，来看看 Huey 是如何处理任务的，目录结构如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">master ✔ $ <span class="built_in">pwd</span></span><br><span class="line">/Users/yiran/Documents/git-repo/huey/examples/simple</span><br><span class="line">yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/huey/examples/simple</span><br><span class="line">master ✔ $ tree .</span><br><span class="line">.</span><br><span class="line">├── README</span><br><span class="line">├── __init__.py</span><br><span class="line">├── config.py</span><br><span class="line">├── cons.sh</span><br><span class="line">├── main.py</span><br><span class="line">└── tasks.py</span><br></pre></td></tr></table></figure>
-<p>注意，这个目录结构是 Huey <a href="https://huey.readthedocs.io/en/latest/imports.html" target="_blank" rel="noopener">官方建议</a>的，具体原因为：</p>
-<blockquote>
-<p>Behind-the-scenes when you decorate a function with task() or periodic_task(), the function registers itself with a centralized in-memory registry. When that function is called, a reference is put into the queue (along with the arguments the function was called with, etc), and when that message is consumed, the function is then looked-up in the consumer’s registry. Because of the way this works, it is strongly recommended that all decorated functions be imported when the consumer starts up. </p>
-</blockquote>
-<h2 id="Task"><a href="#Task" class="headerlink" title="Task"></a>Task</h2><p>Huey 支持通过 @task 装饰器的方式创建任务，示例如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> huey <span class="keyword">import</span> RedisHuey</span><br><span class="line"></span><br><span class="line">huey = RedisHuey(<span class="string">'simple.test'</span>, blocking=<span class="keyword">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@huey.task()</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">count_beans</span><span class="params">(num)</span>:</span></span><br><span class="line">    print(<span class="string">'-- counted %s beans --'</span> % num)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">'Counted %s beans'</span> % num</span><br></pre></td></tr></table></figure>
-<p>从 huey.RedisHuey 创建了 huey 实例，我们看下 RedisHuey 是什么：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RedisHuey</span><span class="params">(Huey)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_storage</span><span class="params">(self, read_timeout=<span class="number">1</span>, max_errors=<span class="number">1000</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                    connection_pool=None, url=None, **connection_params)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> RedisStorage(</span><br><span class="line">            name=self.name,</span><br><span class="line">            blocking=self.blocking,</span><br><span class="line">            read_timeout=read_timeout,</span><br><span class="line">            max_errors=max_errors,</span><br><span class="line">            connection_pool=connection_pool,</span><br><span class="line">            url=url,</span><br><span class="line">            **connection_params)</span><br></pre></td></tr></table></figure>
-<p>在 huey.storage 中定义了 RedisHuey，继承自 Huey 类，重新实现了 <code>get_storage</code> 方法，我们看下 <code>RedisStorage</code> 是做什么用途的：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RedisStorage</span><span class="params">(BaseStorage)</span>:</span></span><br><span class="line">    redis_client = Redis</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, name=<span class="string">'huey'</span>, blocking=False, read_timeout=<span class="number">1</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 max_errors=<span class="number">1000</span>, connection_pool=None, url=None,</span></span></span><br><span class="line"><span class="function"><span class="params">                 client_name=None, **connection_params)</span>:</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> Redis <span class="keyword">is</span> <span class="keyword">None</span>:</span><br><span class="line">            <span class="keyword">raise</span> ImportError(<span class="string">'"redis" python module not found, cannot use '</span></span><br><span class="line">                              <span class="string">'Redis storage backend. Run "pip install redis" '</span></span><br><span class="line">                              <span class="string">'to install.'</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> sum(<span class="number">1</span> <span class="keyword">for</span> p <span class="keyword">in</span> (url, connection_pool, connection_params) <span class="keyword">if</span> p) &gt; <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(</span><br><span class="line">                <span class="string">'The connection configuration is over-determined. '</span></span><br><span class="line">                <span class="string">'Please specify only one of the the following: '</span></span><br><span class="line">                <span class="string">'"url", "connection_pool", or "connection_params"'</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> url:</span><br><span class="line">            connection_pool = ConnectionPool.from_url(</span><br><span class="line">                url, decode_components=<span class="keyword">True</span>)</span><br><span class="line">        <span class="keyword">elif</span> connection_pool <span class="keyword">is</span> <span class="keyword">None</span>:</span><br><span class="line">            connection_pool = ConnectionPool(**connection_params)</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">clean_name</span><span class="params">(self, name)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">convert_ts</span><span class="params">(self, ts)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">enqueue</span><span class="params">(self, data)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">dequeue</span><span class="params">(self)</span>:</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_errors</span><span class="params">(self, limit=None, offset=<span class="number">0</span>)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">flush_errors</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">emit</span><span class="params">(self, message)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">listener</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__iter__</span><span class="params">(self)</span>:</span></span><br></pre></td></tr></table></figure>
-<p>RedisStorage 继承自 Storage，主要用于所有任务相关信息的写入及读取，目前 Huey 中只实现了 Storage 介质，如果想使用其他方式（如 MongoDB）就需要自己实现了。</p>
-<p>知道了 RedisHuey 跟 Huey 的主要区别只是在于 <code>get_storage</code> 方法不同，那么看看 <code>task</code> 方法的具体实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">task</span><span class="params">(self, retries=<span class="number">0</span>, retry_delay=<span class="number">0</span>, retries_as_argument=False,</span></span></span><br><span class="line"><span class="function"><span class="params">         include_task=False, name=None, **task_settings)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">decorator</span><span class="params">(func)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Decorator to execute a function out-of-band via the consumer.</span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        <span class="keyword">return</span> TaskWrapper(</span><br><span class="line">            self,</span><br><span class="line">            func.func <span class="keyword">if</span> isinstance(func, TaskWrapper) <span class="keyword">else</span> func,</span><br><span class="line">            retries=retries,</span><br><span class="line">            retry_delay=retry_delay,</span><br><span class="line">            retries_as_argument=retries_as_argument,</span><br><span class="line">            include_task=include_task,</span><br><span class="line">            name=name,</span><br><span class="line">            **task_settings)</span><br><span class="line">    <span class="keyword">return</span> decorator</span><br></pre></td></tr></table></figure>
-<p>我们看下 <code>TaskWrapper</code> 做了啥，一些变量复制忽略掉，关键的是这几行:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TaskWrapper</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, huey, func, retries=<span class="number">0</span>, retry_delay=<span class="number">0</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">                 retries_as_argument=False, include_task=False, name=None,</span></span></span><br><span class="line"><span class="function"><span class="params">                 task_base=None, **task_settings)</span>:</span></span><br><span class="line">        ...</span><br><span class="line">        self.task_class = create_task(</span><br><span class="line">            QueueTask <span class="keyword">if</span> task_base <span class="keyword">is</span> <span class="keyword">None</span> <span class="keyword">else</span> task_base,</span><br><span class="line">            func,</span><br><span class="line">            retries_as_argument,</span><br><span class="line">            name,</span><br><span class="line">            include_task,</span><br><span class="line">            **task_settings)</span><br><span class="line">        self.huey.registry.register(self.task_class)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">is_revoked</span><span class="params">(self, dt=None, peek=True)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.huey.is_revoked(self.task_class, dt, peek)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">revoke</span><span class="params">(self, revoke_until=None, revoke_once=False)</span>:</span></span><br><span class="line">        self.huey.revoke_all(self.task_class, revoke_until, revoke_once)</span><br></pre></td></tr></table></figure>
-<p>将函数 func 创建为一个任务，并将任务注册到 Huey 中。同时实现了一些方法，这些方法最终调用的都是在 Huey 类中实现的。</p>
-<h2 id="Consumer"><a href="#Consumer" class="headerlink" title="Consumer"></a>Consumer</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">root@yiran30250:~/project/huey/examples/simple</span><br><span class="line">master ✔ $ cat cons.sh</span><br><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"HUEY CONSUMER"</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"-------------"</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"In another terminal, run 'python main.py'"</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"Stop the consumer using Ctrl+C"</span></span><br><span class="line">PYTHONPATH=.:<span class="variable">$PYTHONPATH</span></span><br><span class="line"><span class="built_in">export</span> WORKER_CLASS=<span class="variable">$&#123;1:-thread&#125;</span></span><br><span class="line">python ../../huey/bin/huey_consumer.py main.huey --workers=2 -v -s 10 -k <span class="variable">$WORKER_CLASS</span> -C</span><br></pre></td></tr></table></figure>
-<p>接下来我们看下 Consumer 是如何实现的，在进程启动脚本里，先忽略其他参数，我们指定了 huey 实例，并指定了 worker 数量为 2，我们看下是如何执行的：</p>
-<p>huey_consumer.py</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">consumer_main</span><span class="params">()</span>:</span></span><br><span class="line">    ...</span><br><span class="line">    huey_instance = load_huey(args[<span class="number">0</span>])</span><br><span class="line">    config.setup_logger()</span><br><span class="line">    consumer = huey_instance.create_consumer(**config.values)</span><br><span class="line">    consumer.run()</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    consumer_main()</span><br></pre></td></tr></table></figure>
-<p>加载 huey 实例，创建相应 Consumer 实例并运行，我们看下 Consumer 做了什么：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Consumer</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Consumer sets up and coordinates the execution of the workers and scheduler</span></span><br><span class="line"><span class="string">    and registers signal handlers.</span></span><br><span class="line"><span class="string">    """</span></span><br></pre></td></tr></table></figure>
-<p>根据注释我们可以知道 Consumer 主要是启动了 worker 和 scheduler，并截获相应的信息进行处理。<br>在 huey/consumer.py 中定义了 <code>Worker</code>,<code>Scheduler</code>,<code>Environment</code> 类，其中 <code>Environment</code> 根据所指定的 worker 类型的不同，分为 thread,process,greenlet。</p>
-<p>我们看下 <code>Worker</code> 是如何执行对应的任务的：</p>
-<h2 id="Worker"><a href="#Worker" class="headerlink" title="Worker"></a>Worker</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">loop</span><span class="params">(self, now=None)</span>:</span></span><br><span class="line">    task = <span class="keyword">None</span></span><br><span class="line">    exc_raised = <span class="keyword">True</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        task = self.huey.dequeue() <span class="comment"># 从 hue 中获取任务，也就是从 redis 中获取任务</span></span><br><span class="line">        ...</span><br><span class="line">    <span class="keyword">if</span> task:</span><br><span class="line">        self.delay = self.default_delay</span><br><span class="line">        self.handle_task(task, now <span class="keyword">or</span> self.get_now()) <span class="comment"># 如果获取到了任务，对任务进行处理</span></span><br><span class="line">    <span class="keyword">elif</span> exc_raised <span class="keyword">or</span> <span class="keyword">not</span> self.huey.blocking:</span><br><span class="line">        self.sleep()</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">handle_task</span><span class="params">(self, task, ts)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> self.huey.ready_to_run(task, ts):</span><br><span class="line">        self.add_schedule(task) <span class="comment"># 若任务没有到达执行时间，则添加到 schedule 中</span></span><br><span class="line">    <span class="keyword">elif</span> <span class="keyword">not</span> self.is_revoked(task, ts):</span><br><span class="line">        self.process_task(task, ts) <span class="comment"># 若任务没有被取消，则执行任务</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        self.huey.emit_task(</span><br><span class="line">            EVENT_REVOKED,</span><br><span class="line">            task,</span><br><span class="line">            timestamp=ts)</span><br><span class="line">        self._logger.debug(<span class="string">'Task %s was revoked, not running'</span>, task) <span class="comment"># 任务被取消，通知 event</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">process_task</span><span class="params">(self, task, ts)</span>:</span></span><br><span class="line">    ...</span><br><span class="line">    self.run_pre_execute_hooks(task)   <span class="comment"># 执行 pre hook 动作</span></span><br><span class="line">    ...  </span><br><span class="line">    task_value = self.huey.execute(task) <span class="comment"># 具体执行 task</span></span><br><span class="line">    ...</span><br><span class="line">    self.run_post_execute_hooks(task, task_value, exception) <span class="comment"># 执行 post hook 动作</span></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
-<p>看到 self.huey.execute(task) 我们发现最终还是通过 Huey 中的方法 execute 来执行 task，那么我们看下是如何实现的：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">execute</span><span class="params">(self, task)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> isinstance(task, QueueTask):</span><br><span class="line">        <span class="keyword">raise</span> TypeError(<span class="string">'Unknown object: %s'</span> % task)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        result = task.execute()</span><br></pre></td></tr></table></figure>
-<p>发现这里调用的是 task.execute，这里的 task 是谁呢，是我们最开始提到的 <code>TaskWrapper</code> 么，在 <code>TaskWrapper</code> 中没有实现 <code>execute</code> 方法，这里其实是上面提到的 <code>create_task</code> 返回的类，我们看下 <code>create_task</code> 的具体实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">create_task</span><span class="params">(task_class, func, retries_as_argument=False, task_name=None,</span></span></span><br><span class="line"><span class="function"><span class="params">                include_task=False, **kwargs)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">execute</span><span class="params">(self)</span>:</span></span><br><span class="line">        args, kwargs = self.data <span class="keyword">or</span> ((), &#123;&#125;)</span><br><span class="line">        <span class="keyword">if</span> retries_as_argument:</span><br><span class="line">            kwargs[<span class="string">'retries'</span>] = self.retries</span><br><span class="line">        <span class="keyword">if</span> include_task:</span><br><span class="line">            kwargs[<span class="string">'task'</span>] = self</span><br><span class="line">        <span class="keyword">return</span> func(*args, **kwargs)</span><br><span class="line"></span><br><span class="line">    attrs = &#123;</span><br><span class="line">        <span class="string">'execute'</span>: execute,</span><br><span class="line">        <span class="string">'__module__'</span>: func.__module__,</span><br><span class="line">        <span class="string">'__doc__'</span>: func.__doc__&#125;</span><br><span class="line">    attrs.update(kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> task_name:</span><br><span class="line">        task_name = func.__name__</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> type(task_name, (task_class,), attrs)</span><br></pre></td></tr></table></figure>
-<p>可以看到 <code>execute</code> 函数中最终执行的就是 func 自己， <code>func(*args, **kwargs)</code> ，通过 type 返回真正的 task 类，指定父类为 <code>task_class</code> （默认是 QueueTask）。</p>
-<p>到这里我们就完成了整个流程：任务注册，任务调度，任务执行。那么我们再来看看 Huey 中的锁是怎么实现的。</p>
-<h2 id="Lock"><a href="#Lock" class="headerlink" title="Lock"></a>Lock</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TaskLock</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Utilize the Storage key/value APIs to implement simple locking. For more</span></span><br><span class="line"><span class="string">    details see :py:meth:`Huey.lock_task`.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, huey, name)</span>:</span></span><br><span class="line">        self._huey = huey</span><br><span class="line">        self._name = name</span><br><span class="line">        self._key = <span class="string">'%s.lock.%s'</span> % (self._huey.name, self._name)</span><br><span class="line">        self._huey._locks.add(self._key)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__call__</span><span class="params">(self, fn)</span>:</span></span><br><span class="line"><span class="meta">        @wraps(fn)</span></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">inner</span><span class="params">(*args, **kwargs)</span>:</span></span><br><span class="line">            <span class="keyword">with</span> self:</span><br><span class="line">                <span class="keyword">return</span> fn(*args, **kwargs)</span><br><span class="line">        <span class="keyword">return</span> inner</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__enter__</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self._huey._put_if_empty(self._key, <span class="string">'1'</span>):</span><br><span class="line">            <span class="keyword">raise</span> TaskLockedException(<span class="string">'unable to set lock: %s'</span> % self._name)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__exit__</span><span class="params">(self, exc_type, exc_val, exc_tb)</span>:</span></span><br><span class="line">        self._huey._get_data(self._key)</span><br></pre></td></tr></table></figure>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">put_if_empty</span><span class="params">(self, key, value)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> self.conn.hsetnx(self.result_key, key, value)</span><br></pre></td></tr></table></figure>
-<p>在 Huey 中，任务锁的实现非常简单，单纯的利用了下 Redis 中的 HSETNX 机制：</p>
-<blockquote>
-<p>Sets field in the hash stored at key to value, only if field does not yet exist. If key does not exist, a new key holding a hash is created. If field already exists, this operation has no effect.</p>
-</blockquote>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Huey 作为一个任务调度应用，整体代码量不多，但是有很多值得学习的地方，也许过段时间再看会有新的收获。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2071,7 +2057,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">60</span>
+                  <span class="site-state-item-count">61</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

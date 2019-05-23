@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Kubernetes,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="镜像组织形式镜像默认采用 OverlayFS 方式挂载，最终效果是将多个目录结构合并为一个。 其中 lowerdir 为只读路径，最右层级最深。最终容器运行时会将 lowerdir 和 upperdir 合并挂在为 merged，对应容器中的路径为 / 。举例：镜像 testadd:0.5 版本的层级挂载如下： 1234567[root@node111 16:02:24 overlay2]$doc">
+<meta name="keywords" content="Kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 实战-镜像管理">
+<meta property="og:url" content="https://zdyxry.github.io/2019/05/24/Kubernetes-实战-镜像管理/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="镜像组织形式镜像默认采用 OverlayFS 方式挂载，最终效果是将多个目录结构合并为一个。 其中 lowerdir 为只读路径，最右层级最深。最终容器运行时会将 lowerdir 和 upperdir 合并挂在为 merged，对应容器中的路径为 / 。举例：镜像 testadd:0.5 版本的层级挂载如下： 1234567[root@node111 16:02:24 overlay2]$doc">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-05-23T23:35:45.583Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes 实战-镜像管理">
+<meta name="twitter:description" content="镜像组织形式镜像默认采用 OverlayFS 方式挂载，最终效果是将多个目录结构合并为一个。 其中 lowerdir 为只读路径，最右层级最深。最终容器运行时会将 lowerdir 和 upperdir 合并挂在为 merged，对应容器中的路径为 / 。举例：镜像 testadd:0.5 版本的层级挂载如下： 1234567[root@node111 16:02:24 overlay2]$doc">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2019/05/24/Kubernetes-实战-镜像管理/">
+
+
+
+
+
+  <title>Kubernetes 实战-镜像管理 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/24/Kubernetes-实战-镜像管理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kubernetes 实战-镜像管理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-24T07:35:08+08:00">
+                2019-05-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/24/Kubernetes-实战-镜像管理/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/24/Kubernetes-实战-镜像管理/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv"></span>
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="镜像组织形式"><a href="#镜像组织形式" class="headerlink" title="镜像组织形式"></a>镜像组织形式</h2><p>镜像默认采用 OverlayFS 方式挂载，最终效果是将多个目录结构合并为一个。</p>
+<p>其中 lowerdir 为只读路径，最右层级最深。最终容器运行时会将 lowerdir 和 upperdir 合并挂在为 merged，对应容器中的路径为 <code>/</code> 。<br>举例：<br>镜像 testadd:0.5 版本的层级挂载如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:02:24 overlay2]$docker inspect testadd:0.5 |grep Dir</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">                &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/693c140b9c70744a7a6ce93de56d3ac7549dae84195cbfac3486062d1ceaccf1/diff&quot;,</span><br><span class="line">                &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/merged&quot;,</span><br><span class="line">                &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/diff&quot;,</span><br><span class="line">                &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/work&quot;</span><br></pre></td></tr></table></figure>
+<p>运行该容器后，可以看到多了一个 overlay 方式挂载的路径：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:05:53 overlay2]$mount |grep overlay</span><br><span class="line">/dev/md127 on /var/lib/docker/overlay2 type ext4 (rw,relatime,data=ordered)</span><br><span class="line">overlay on /var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/3NA23BH5OMSSXWTHGPRS6YENB7:/var/lib/docker/overlay2/l/QQVS7UVPGRBVHRZOBDPMMO4EQM:/var/lib/docker/overlay2/l/E7HTYBVD5SXSZRLVTETODOIANT,upperdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/diff,workdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/work)</span><br></pre></td></tr></table></figure>
+<p>查看对应关系：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:05:53 overlay2]$mount |grep overlay</span><br><span class="line">/dev/md127 on /var/lib/docker/overlay2 type ext4 (rw,relatime,data=ordered)</span><br><span class="line">overlay on /var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/3NA23BH5OMSSXWTHGPRS6YENB7:/var/lib/docker/overlay2/l/QQVS7UVPGRBVHRZOBDPMMO4EQM:/var/lib/docker/overlay2/l/E7HTYBVD5SXSZRLVTETODOIANT,upperdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/diff,workdir=/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/work)</span><br><span class="line">[root@node111 16:06:07 overlay2]$docker inspect testadd:0.5 |grep Dir                                                             </span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br><span class="line">                &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/693c140b9c70744a7a6ce93de56d3ac7549dae84195cbfac3486062d1ceaccf1/diff&quot;,</span><br><span class="line">                &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/merged&quot;,</span><br><span class="line">                &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/diff&quot;,</span><br><span class="line">                &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/work&quot;</span><br><span class="line">[root@node111 16:06:54 overlay2]$docker ps </span><br><span class="line">CONTAINER ID        IMAGE               COMMAND             CREATED              STATUS              PORTS               NAMES</span><br><span class="line">e53180ddcd03        testadd:0.5         &quot;bash&quot;              About a minute ago   Up About a minute                       compassionate_roentgen</span><br><span class="line">[root@node111 16:07:06 overlay2]$docker inspect e53180ddcd03 |grep Dir</span><br><span class="line">                &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00-init/diff:/var/lib/docker/overlay2/e2f2ad8332a9567ad28495b28342b5f5712218e235b0129435abfc3c781be957/diff:/var/lib/docker/overlay2/693c140b9c70744a7a6ce93de56d3ac7549dae84195cbfac3486062d1ceaccf1/diff&quot;,</span><br><span class="line">                &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged&quot;,</span><br><span class="line">                &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/diff&quot;,</span><br><span class="line">                &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/work&quot;</span><br><span class="line">            &quot;WorkingDir&quot;: &quot;&quot;,</span><br></pre></td></tr></table></figure>
+<p>查看容器内根分区，并在容器内创建文件，查看容器挂载 merged 路径下文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@e53180ddcd03 /]# ls </span><br><span class="line">anaconda-post.log  bin  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  test  tmp  usr  var</span><br><span class="line">[root@e53180ddcd03 /]# touch yiran</span><br><span class="line">[root@e53180ddcd03 /]# ls anaconda-post.log  bin  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  test  tmp  usr  var  yiran</span><br><span class="line">[root@e53180ddcd03 /]#</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:07:13 overlay2]$cd e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged/</span><br><span class="line">You have mail in /var/spool/mail/root</span><br><span class="line">[root@node111 16:09:31 merged]$ls </span><br><span class="line">anaconda-post.log  bin  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  test  tmp  usr  var  yiran</span><br><span class="line">[root@node111 16:09:32 merged]$pwd</span><br><span class="line">/var/lib/docker/overlay2/e1378dc042b534fe00ca6f4565e399f30d56c81d434a30a6137cfae6b5355d00/merged</span><br></pre></td></tr></table></figure>
+<p>在容器中创建的文件 <code>yiran</code> 在宿主机相应的挂载路径下是可以看到的。</p>
+<h2 id="镜像管理"><a href="#镜像管理" class="headerlink" title="镜像管理"></a>镜像管理</h2><h3 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h3><p>默认从 docker.io 获取最新镜像，可以在 /etc/docker/daemon.json 中指定 <code>registry-mirrors</code> 或 <code>insecure-registries</code> 获取私有镜像。</p>
+<p>下载完成后可以看到镜像下载完成后会在 <code>/var/lib/docker/overlay2/</code> 下保存一份镜像真实内容。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:17:15 docker]$docker images</span><br><span class="line">REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">[root@node111 16:17:19 docker]$du -sh . </span><br><span class="line">624K    .</span><br><span class="line">[root@node111 16:17:21 docker]$docker pull centos</span><br><span class="line">Using default tag: latest</span><br><span class="line">Trying to pull repository docker.io/library/centos ... </span><br><span class="line">latest: Pulling from docker.io/library/centos</span><br><span class="line">8ba884070f61: Pull complete </span><br><span class="line">Digest: sha256:b5e66c4651870a1ad435cd75922fe2cb943c9e973a9673822d1414824a1d0475</span><br><span class="line">Status: Downloaded newer image for docker.io/centos:latest</span><br><span class="line">[root@node111 16:18:06 docker]$docker images</span><br><span class="line">REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">docker.io/centos    latest              9f38484d220f        2 months ago        202 MB</span><br><span class="line">[root@node111 16:18:17 docker]$du -sh . </span><br><span class="line">214M    .</span><br><span class="line">[root@node111 16:18:19 docker]$ll overlay2/*</span><br><span class="line">overlay2/6061bd16e5de86e56298bee1496e02998e6a029c34374b21bc0fa3c30202db55:</span><br><span class="line">total 8</span><br><span class="line">drwxr-xr-x 16 root root 4096 May 22 16:18 diff</span><br><span class="line">-rw-r--r--  1 root root   26 May 22 16:17 link</span><br><span class="line"></span><br><span class="line">overlay2/l:</span><br><span class="line">total 4</span><br><span class="line">lrwxrwxrwx 1 root root 72 May 22 16:17 A3LUDFNM6LHHPQ6DVXCEI2KFYQ -&gt; ../6061bd16e5de86e56298bee1496e02998e6a029c34374b21bc0fa3c30202db55/diff</span><br></pre></td></tr></table></figure>
+<h3 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h3><p>在不同服务构建镜像时，应保证最小化且合理分层，这样可以在最底层使用相同的 overlay 缓存，比较空间浪费。<br>参考 OpenStack Kolla 项目层级结构，openstack 所有服务镜像均基于 CentOS，60+服务镜像打包占用总空间为 5.48G：</p>
+<p>注意：<br>尽量使用最精简基础镜像，只安装必要软件包<br>合理拆分服务<br>尽量保证 Dockerfile 中上层指令相同，若顺序不同则会构建出不同的层级，无法利用缓存特性<br>保证层级处于最精简状态<br>…</p>
+<h3 id="上传"><a href="#上传" class="headerlink" title="上传"></a>上传</h3><p>当我们本地存在一份镜像，想要将其上传至指定仓库，我们需要先对镜像打 tag，举例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 16:24:55 image]$docker images</span><br><span class="line">REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">testadd             0.2                 4e47f016385b        35 seconds ago      202 MB</span><br><span class="line">docker.io/centos    latest              9f38484d220f        2 months ago        202 MB</span><br><span class="line">[root@node111 16:25:07 image]$cat /etc/docker/daemon.json </span><br><span class="line">&#123;</span><br><span class="line">  &quot;insecure-registries&quot;: [</span><br><span class="line">    &quot;192.168.27.146&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[root@node111 16:25:12 image]$docker tag testadd:0.2 192.168.27.146/testadd:0.2</span><br><span class="line">[root@node111 16:25:28 image]$docker images</span><br><span class="line">REPOSITORY               TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">192.168.27.146/testadd   0.2                 4e47f016385b        58 seconds ago      202 MB</span><br><span class="line">testadd                  0.2                 4e47f016385b        58 seconds ago      202 MB</span><br><span class="line">docker.io/centos         latest              9f38484d220f        2 months ago        202 MB</span><br><span class="line">[root@node111 16:25:31 image]$docker push 192.168.27.146/testadd:0.2</span><br><span class="line">The push refers to a repository [192.168.27.146/testadd]</span><br><span class="line">f5011c15a820: Pushed </span><br><span class="line">d69483a6face: Layer already exists </span><br><span class="line">0.2: digest: sha256:072611b154402d0760d7860374eb5dc706712319331710b4f046e043ba2cc26a size: 736</span><br></pre></td></tr></table></figure>
+<p>上传到指定仓库之后，其他节点可以修改 docker 配置文件，重启 docker 后即可直接下载指定镜像。</p>
+<h2 id="Kubernetes-镜像管理"><a href="#Kubernetes-镜像管理" class="headerlink" title="Kubernetes 镜像管理"></a>Kubernetes 镜像管理</h2><h3 id="下载-1"><a href="#下载-1" class="headerlink" title="下载"></a>下载</h3><p>在 k8s 中，没有针对镜像仓库的集群级别配置，节点各自维护自己的仓库地址，如果需要增加仓库地址，需要修改集群中所有节点配置文件，重启 docker 生效。</p>
+<p>可以在 k8s 中配置指定仓库的 secret 类型为 docker-registry 来配置私有仓库的用户名密码，在之后创建 Pod 时指定该 secret 名称即可自动下载，具体操作如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@node3 ~]# kubectl create secret docker-registry regsecret --docker-server=192.168.30.111 --docker-username=admin --docker-password=Harbor12345 --docker-email=yiran@smartx.com</span><br><span class="line">[root@node3 ~]# kubectl get secret regsecret -o yaml</span><br><span class="line">[root@node3 ~]# cat private-reg-pod.yaml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: private-reg</span><br><span class="line">spec:</span><br><span class="line">  nodeSelector:</span><br><span class="line">    type: &quot;233&quot;</span><br><span class="line">  containers:</span><br><span class="line">  - name: private-reg-container</span><br><span class="line">    image: 192.168.30.111/test/busybox:latest</span><br><span class="line">    args: [/bin/sh, -c,</span><br><span class="line">           &apos;i=0; while true; do echo &quot;$i: $(date)&quot;; i=$((i+1)); sleep 1; done&apos;]</span><br><span class="line">  imagePullSecrets:</span><br><span class="line">  - name: regsecret</span><br></pre></td></tr></table></figure>
+<h3 id="删除"><a href="#删除" class="headerlink" title="删除"></a>删除</h3><p>k8s 自身不提供主动删除节点中无用镜像操作，默认通过配置 GC 参数删除无用镜像。</p>
+<p>不推荐使用其它管理工具或手工进行容器和镜像的清理，因为kubelet需要通过容器来判断pod的运行状态，如果使用其它方式清除容器有可能影响kubelet的正常工作。</p>
+<ul>
+<li><p>–image-gc-high-threshold int32<br>当用于存储镜像的磁盘使用率达到百分之–image-gc-high-threshold时将触发镜像回收(default 85)</p>
+</li>
+<li><p>–image-gc-low-threshold int32<br>删除最近最久未使用（LRU，Least Recently Used）的镜像直到磁盘使用率降为百分之–image-gc-low-threshold或无镜像可删为止 (default 80)</p>
+</li>
+</ul>
+<h2 id="CNCF-Harbor"><a href="#CNCF-Harbor" class="headerlink" title="CNCF-Harbor"></a>CNCF-Harbor</h2><p>Harbor项目是一个具有存储、签署和扫描内容功能的开源云原生registry。Harbor 由 VMware 创建，通过添加用户所需功能（如安全性，身份认证和管理）来扩展开源Docker Distribution，并支持在registry之间复制镜像。Harbor还提供高级安全功能，比如漏洞分析，基于角色的访问控制，活动审计等等。<br>主要功能：<br>角色控制/身份校验<br>镜像复制<br>漏洞扫描<br>…<br>资源消耗情况：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@node111 11:09:02 harbor]$docker stats --no-stream</span><br><span class="line">CONTAINER ID        NAME                CPU %               MEM USAGE / LIMIT     MEM %               NET I/O             BLOCK I/O           PIDS</span><br><span class="line">90dcf1505eb0        nginx               0.02%               4.152MiB / 15.51GiB   0.03%               6.53MB / 6.77MB     0B / 0B             7</span><br><span class="line">75945a1aa004        harbor-jobservice   0.12%               9.109MiB / 15.51GiB   0.06%               1.24MB / 15.1MB     0B / 0B             13</span><br><span class="line">000f6f349708        harbor-portal       0.07%               1.676MiB / 15.51GiB   0.01%               200kB / 5.47MB      0B / 0B             2</span><br><span class="line">84635df4fe51        harbor-core         0.53%               12.96MiB / 15.51GiB   0.08%               3.62MB / 2.84MB     0B / 0B             14</span><br><span class="line">c6e53b654127        redis               0.18%               6.816MiB / 15.51GiB   0.04%               15.4MB / 1.41MB     0B / 180kB          5</span><br><span class="line">9048a587cf29        registryctl         0.06%               3.031MiB / 15.51GiB   0.02%               114kB / 87.8kB      0B / 0B             7</span><br><span class="line">d88f7c4b36c5        harbor-db           0.03%               8.09MiB / 15.51GiB    0.05%               929kB / 1.57MB      0B / 4.65MB         11</span><br><span class="line">83c474625566        registry            0.20%               19.45MiB / 15.51GiB   0.12%               1.04MB / 335kB      0B / 1.65MB         16</span><br><span class="line">5a3d2707e96f        harbor-log          0.00%               2.152MiB / 15.51GiB   0.01%               766kB / 147kB       81.9kB / 16.4kB     12</span><br></pre></td></tr></table></figure>
+<p>默认推荐部署方式：docker-composer<br>k8s 推荐部署方式：Helm</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在日常开发过程中，公司内部部署私有仓库（比如 Harbor）可以控制用户角色，方便测试同学快速获取最新版本镜像。<br>在融合产品生命周期中，只有升级场景涉及到镜像的导入、上传、下载、删除操作，因此没必要在集群中持续运行一个仓库服务，浪费资源。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><p>openstack kolla 项目，目标是通过容器化方式部署 openstack，便于 openstack 滚动升级。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/05/17/Kubernetes-实战-日志处理/" rel="next" title="Kubernetes 实战-日志处理">
+                <i class="fa fa-chevron-left"></i> Kubernetes 实战-日志处理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">61</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">26</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://instagram.com/zdyxry" target="_blank" title="Instagram">
+                      
+                        <i class="fa fa-fw fa-instagram"></i>Instagram</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#镜像组织形式"><span class="nav-number">1.</span> <span class="nav-text">镜像组织形式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#镜像管理"><span class="nav-number">2.</span> <span class="nav-text">镜像管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#下载"><span class="nav-number">2.1.</span> <span class="nav-text">下载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#构建"><span class="nav-number">2.2.</span> <span class="nav-text">构建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#上传"><span class="nav-number">2.3.</span> <span class="nav-text">上传</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kubernetes-镜像管理"><span class="nav-number">3.</span> <span class="nav-text">Kubernetes 镜像管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#下载-1"><span class="nav-number">3.1.</span> <span class="nav-text">下载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#删除"><span class="nav-number">3.2.</span> <span class="nav-text">删除</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CNCF-Harbor"><span class="nav-number">4.</span> <span class="nav-text">CNCF-Harbor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">6.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2019/05/24/Kubernetes-实战-镜像管理/';
+          this.page.identifier = '2019/05/24/Kubernetes-实战-镜像管理/';
+          this.page.title = 'Kubernetes 实战-镜像管理';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
