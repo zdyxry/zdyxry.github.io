@@ -373,12 +373,20 @@
 <p>kube-controller-manager 判定节点故障，重建 Pod 的超时时间。</p>
 <h2 id="具体流程"><a href="#具体流程" class="headerlink" title="具体流程"></a>具体流程</h2><p>看完了相关参数，我们来看下 kubelet 和 kube-controller-manager 是如何相互关联工作来保证 Pod 可用性的。</p>
 <ol>
-<li>kubelet 按照 <code>--node-status-update-frequency</code> 周期，定时与 kube-apiserver 通信将其状态记录到 etcd</li>
-<li>若 kubelet 无法连接到 kube-apiserver，那么 kubelet 会尝试 <code>nodeStatusUpdateRetry</code> 次更新状态信息</li>
-<li>kube-controller-manager 按照 <code>--node-monitor-period</code> 周期，定时从 etcd 中获取 kubelet 状态</li>
-<li>若 kubelet 在 <code>--node-monitor-grace-period</code> 周期内均为非健康状态（这里如果 kubelet 未更新状态，等同），且时间超过了 <code>node-startup-grace-period</code> 则 kube-controller-manager 将其更新为 unhealthy 状态</li>
-<li>当 kubelet NotReady 的 <code>--pod-eviction-timeout</code> 时间后， kube-controller-manager 开始进行 Pod 驱逐动作</li>
-<li>驱逐速度为 <code>--node-eviction-rate</code> ，即每10s 迁移（重建）1个 Pod</li>
+<li><p>kubelet 启动，若启动时间超过 node-startup-grace-period，则 kube-controller-manager 将其置为 unhealthy</p>
+</li>
+<li><p>kubelet 按照 –node-status-update-frequency 周期，定时与 kube-apiserver 通信将其状态记录到 etcd</p>
+</li>
+<li><p>若 kubelet 无法连接到 kube-apiserver，那么 kubelet 会尝试 nodeStatusUpdateRetry 次更新状态信息</p>
+</li>
+<li><p>kube-controller-manager 按照 –node-monitor-period 周期，定时从 etcd 中获取 kubelet 状态</p>
+</li>
+<li><p>若 kubelet 在 –node-monitor-grace-period 周期内均为非健康状态（这里如果 kubelet 未更新状态，等同），则该节点更新为 NotReady，将需要迁移（重建）的资源放置到队列中</p>
+</li>
+<li><p>当 kubelet NotReady 的 –pod-eviction-timeout 时间后， kube-controller-manager 开始进行 Pod 驱逐动作</p>
+</li>
+<li><p>驱逐速度为 –node-eviction-rate ，即每10s 迁移（重建）1个 Pod</p>
+</li>
 </ol>
 <p>需要注意的是，上述 kubelet 和 kube-controller-manager 的操作是异步的，中间任何一个更新步骤都有可能出现延迟的情况，所以真实情况会比上述流程复杂（诡异）的多。比如 lijieao 的<a href="https://www.lijiaocn.com/%E9%97%AE%E9%A2%98/2019/05/27/kubernetes-node-frequently-not-ready.html" target="_blank" rel="noopener">最新博客</a>中碰到的因为磁盘 IO 压力导致 kubelet NotReady 的情况，都是有可能出现的。</p>
 <p>按照上面的流程，可以看到，当我们节点故障后，要花费 5min 的时间才会重建我们的业务，这种情况下大部分对稳定性要求较高的业务都无法忍受的，所以有同学可能会考虑修改默认配置，来减少业务宕机时间。</p>
