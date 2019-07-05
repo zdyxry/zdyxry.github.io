@@ -267,6 +267,185 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/14/Kubernetes-实战-微服务/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/14/Kubernetes-实战-微服务/" itemprop="url">Kubernetes 实战-微服务</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-14T22:32:43+08:00">
+                2019-05-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/14/Kubernetes-实战-微服务/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/14/Kubernetes-实战-微服务/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="微服务"><a href="#微服务" class="headerlink" title="微服务"></a>微服务</h2><p>在 《Kubernetes In Action》的开始，先要了解 k8s 的需求来自于哪里，为什么我们需要 k8s。</p>
+<p>引用维基百科解释：</p>
+<blockquote>
+<p>微服务 (Microservices) 是一种软件架构风格，它是以专注于单一责任与功能的小型功能区块 (Small Building Blocks) 为基础，利用模块化的方式组合出复杂的大型应用程序，各功能区块使用与语言无关 (Language-Independent/Language agnostic) 的 API 集相互通信。</p>
+</blockquote>
+<p>说一说我的理解，在项目早期，都是单体应用，随着功能越来越多，项目越来越大，虽然保证了部署运维的方便，但对于组内同学并不友好，新同学往往要在一坨代码中找自己想要的一点，本地修改提交跑 CI 也是以项目为单位的执行（前段时间 B 站不小心泄露的 Golang 代码就是这种）。当后续升级产品时，因为是以项目为最小粒度，哪怕无关代码，也要被迫进行代码升级，服务重启等操作，带来了额外的风险。</p>
+<p>在 2014年，Martin Fowler 与 James Lewis 共同提出了微服务的概念，把单体应用改为通过接口产生的远程方法调用，将项目拆分，一个项目保证只做一件事情，独立部署和维护。</p>
+<p>优点：</p>
+<ul>
+<li>高度可维护和可测试</li>
+<li>松散耦合</li>
+<li>可独立部署</li>
+<li>围绕业务能力进行组织</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>服务数量大幅增加，部署维护困难</li>
+<li>服务间依赖管理</li>
+<li>服务故障处理</li>
+</ul>
+<h2 id="容器"><a href="#容器" class="headerlink" title="容器"></a>容器</h2><p>那么我们提到了项目演进，在同一时间，容器技术的标准化统一也间接促成了微服务的推广（我猜的），Docker 在 2013.03.13 发布第一个版本，容器化技术让我们产品发布形态有了新的选择，开发直接将容器镜像发布，运维同学通过镜像进行产品上线，确保了环境的统一，无须纠结环境配置相关问题（不用吵架了）。</p>
+<p>当我们产品发布采用容器化上线后，我们面临一些其他的问题了：</p>
+<ul>
+<li>微服务追求的是将服务解耦，拆分为多个服务，那么最终发布形态对应的也是多个镜像，运维同学管理这些镜像之间的关系难度增加。</li>
+<li>同时当镜像运行在不同的物理节点上，对计算资源和网络资源的要求是一致的，运维同学需要做到让镜像无感知。</li>
+<li>当产品要进行升级时，镜像之间的依赖关系，故障切换等操作紧靠现有容器功能实现困难。</li>
+</ul>
+<p>这么一看，与之前单体应用比也没好哪里去。于是有了各种容器编排系统，比如 Swarm，Mesos等等，但都不是很好用且各家一个标准，这时候老大哥谷歌发话了，我来把我们内部用了很多年要淘汰的东西拿出来给大家解决问题吧，于是有了 Kubernetes。</p>
+<p>Kubernetes 功能上提供了解决微服务引入的问题，并更好的配合微服务去提供稳定高可用的统一容器化环境，具体如何解决的我们后续可以通过了解 Pod，ConfigMap，ReplicaSet 等功能去详细了解。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>可能是因为我考虑问题都是从运维角度去看的，网上的一些文章讲的带来的好处反而没看太清，可能作为 2C 产品，追求敏捷开发，产品不断快速迭代的目标比较适合，但是如果本身作为一个追求稳定可靠的 2B 产品来说，引入 k8s 带来的好处和维护 k8s 带来的成本真的要仔细的从产品层面考虑清楚，这里感觉跟具体的技术关系不大，而是说从产品面向的客户对象考虑，客户想要的是一个什么产品，而 k8s 作为一个还在不断（频繁）迭代的产品来说（可以去看看 release notes 的更新速度），后续若出现某些 API 不兼容等情况，如何去应对，感觉还是个灾难。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://zh.wikipedia.org/wiki/%E5%BE%AE%E6%9C%8D%E5%8B%99" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/%E5%BE%AE%E6%9C%8D%E5%8B%99</a></li>
+<li><a href="https://hoxis.github.io/learn-microservice-from-0.html" target="_blank" rel="noopener">https://hoxis.github.io/learn-microservice-from-0.html</a></li>
+<li><a href="https://www.infoq.cn/article/Rdx-PkjmTpPRA5oox5EM" target="_blank" rel="noopener">https://www.infoq.cn/article/Rdx-PkjmTpPRA5oox5EM</a></li>
+</ul>
+<p>在学习过程中，通过阅读 <a href="https://github.com/cch123" target="_blank" rel="noopener">cch123</a> 的博客对微服务有了更深的了解，这里列一下相关的系列博客链接：</p>
+<ol>
+<li><p><a href="http://xargin.com/disaster-of-microservice-ul/" target="_blank" rel="noopener">微服务的灾难-通用语言</a></p>
+</li>
+<li><p><a href="http://xargin.com/disaster-of-microservice-techstack/" target="_blank" rel="noopener">微服务的灾难-技术栈</a></p>
+</li>
+<li><p><a href="http://xargin.com/disaster-of-microservice-divide/" target="_blank" rel="noopener">微服务的灾难-拆分</a></p>
+</li>
+<li><p><a href="http://xargin.com/disaster-of-microservice-dephell/" target="_blank" rel="noopener">微服务的灾难-依赖地狱</a></p>
+</li>
+<li><p><a href="http://xargin.com/disaster-of-microservice-evconst/" target="_blank" rel="noopener">微服务的灾难-最终一致</a></p>
+</li>
+<li><p><a href="http://xargin.com/disaster-of-microservice-conway-law/" target="_blank" rel="noopener">微服务的灾难-康威定律和 KPI 冲突</a></p>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/11/Kubernetes-实战-前言/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1813,162 +1992,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/23/Wireguard-体验/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/23/Wireguard-体验/" itemprop="url">Wireguard 体验</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-23T20:13:38+08:00">
-                2019-03-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/03/23/Wireguard-体验/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/03/23/Wireguard-体验/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>从春节假期之后，因为一些原因，就没有再使用 SS 作为访问互联网的工具了，而是使用了 V2ray，使用 2个月下来，感受还是很好的，无论是速度还是稳定性都要比 SS 好很多。最近看到好多新闻说 Wireguard 客户端适配多了起来，比如 Win，Mac，Android，今天尝试一下。</p>
-<h2 id="Wireguard"><a href="#Wireguard" class="headerlink" title="Wireguard"></a>Wireguard</h2><blockquote>
-<p>WireGuard is a free and open-source software application and protocol that implements virtual private network (VPN) techniques to create secure point-to-point connections in routed or bridged configurations. It is run as a module inside the Linux kernel and aims for better performance than the IPsec and OpenVPN tunneling protocols.[2] </p>
-</blockquote>
-<p>Linus 的评价： <code>Maybe the code isn&#39;t perfect, but I&#39;ve skimmed it, and compared
-to the horrors that are OpenVPN and IPSec, it&#39;s a work of art.</code>  </p>
-<h2 id="服务端配置"><a href="#服务端配置" class="headerlink" title="服务端配置"></a>服务端配置</h2><h3 id="kernel-配置"><a href="#kernel-配置" class="headerlink" title="kernel 配置"></a>kernel 配置</h3><p>环境配置为：<code>CentOS Linux release 7.6.1810 (Core)</code>  </p>
-<p>Kernel 版本： <code>4.20.3-1.el7.elrepo.x86_64</code></p>
-<p>安装 <code>kernel-devel kernel-headers</code>，注意，如果使用的是 <code>elrepo</code> 源，则需要安装对应版本的 <code>kernel-ml-devel kernel-ml-headers</code> ， 安装后状态：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># rpm -qa |grep kernel  |grep "4.20"</span></span><br><span class="line">kernel-ml-4.20.3-1.el7.elrepo.x86_64</span><br><span class="line">kernel-ml-devel-4.20.3-1.el7.elrepo.x86_64</span><br><span class="line">kernel-ml-headers-4.20.3-1.el7.elrepo.x86_64</span><br></pre></td></tr></table></figure>
-<h3 id="安装-wireguard"><a href="#安装-wireguard" class="headerlink" title="安装 wireguard"></a>安装 wireguard</h3><p><code>yum install wireguard-dkms wireguard-tools</code></p>
-<p>加载 Kernel module</p>
-<p><code>modprobe wireguard &amp;&amp; lsmod |grep wire</code></p>
-<h3 id="编辑-wireguard-配置文件"><a href="#编辑-wireguard-配置文件" class="headerlink" title="编辑 wireguard 配置文件"></a>编辑 wireguard 配置文件</h3><p>通过 <code>ip ad</code> 查看本机网卡名称，以 <code>eth0</code> 为例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#mkdir /etc/wireguard &amp;&amp; cd /etc/wireguard</span></span><br><span class="line"><span class="comment"># wg genkey # 生成 Private Key</span></span><br><span class="line"><span class="comment">#cat &gt; /etc/wireguard/wg0.conf &lt;&lt; EOF</span></span><br><span class="line">[Interface]</span><br><span class="line">PrivateKey = &lt;Private Key&gt;</span><br><span class="line">Address = 10.0.0.1/24 <span class="comment"># 服务端 IP 地址</span></span><br><span class="line">ListenPort = 11111 <span class="comment"># 连接端口</span></span><br><span class="line">PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE; ip6tables -D FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">SaveConfig = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
-<h3 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#wg-quick up wg0</span></span><br><span class="line"><span class="comment">#wg</span></span><br><span class="line">interface: wg0</span><br><span class="line">  public key: YNyypVL5wmYA/aaaaaa/VOz4c7BGALHgo= <span class="comment"># 后续配置客户端用到</span></span><br><span class="line">  private key: (hidden)</span><br><span class="line">  listening port: 11111</span><br><span class="line"></span><br><span class="line"><span class="comment"># ip ad</span></span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">    inet 127.0.0.1/8 scope host lo</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 ::1/128 scope host</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 </span><br><span class="line">3: wg0: &lt;POINTOPOINT,NOARP,UP,LOWER_UP&gt; mtu 1420 qdisc noqueue state UNKNOWN group default qlen 1000</span><br><span class="line">    link/none</span><br><span class="line">    inet 10.0.0.1/24 scope global wg0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br></pre></td></tr></table></figure>
-<h2 id="客户端配置"><a href="#客户端配置" class="headerlink" title="客户端配置"></a>客户端配置</h2><h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># wg genkey # 生成客户端 PublicKey</span></span><br><span class="line">[Interface]</span><br><span class="line">PublicKey = &lt;PublicKey&gt;</span><br><span class="line">Address = 10.0.0.2/24 <span class="comment"># 客户端 IP 地址</span></span><br><span class="line">DNS = 8.8.8.8 <span class="comment"># 指定 DNS Server</span></span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = YNyypVL5wmYA/aaaaaa/VOz4c7BGALHgo= <span class="comment"># 服务端公钥</span></span><br><span class="line">Endpoint = &lt;Server ip&gt;:11111 <span class="comment"># 服务端公网 IP，端口为服务端配置端口</span></span><br><span class="line">AllowedIPs = 0.0.0.0/0 <span class="comment"># 允许 IP 段</span></span><br></pre></td></tr></table></figure>
-<h3 id="服务端添加客户端信息"><a href="#服务端添加客户端信息" class="headerlink" title="服务端添加客户端信息"></a>服务端添加客户端信息</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#wg set wg0 peer &lt;客户端公钥&gt; allowed-ips 10.0.0.2/24</span></span><br><span class="line"><span class="comment">## wg</span></span><br><span class="line">interface: wg0</span><br><span class="line">  public key: YNyypVL5wmYA/aaaaaa/VOz4c7BGALHgo=</span><br><span class="line">  private key: (hidden)</span><br><span class="line">  listening port: 11111</span><br><span class="line"></span><br><span class="line">peer: QRcE0sLvJib8MhWxxxxxxxxx61L0IdZis=</span><br><span class="line">  endpoint: xxxxxxx:yyy</span><br><span class="line">  allowed ips: 10.0.0.0/24</span><br><span class="line">  latest handshake: 1 minute, 9 seconds ago</span><br><span class="line">  transfer: 3.61 MiB received, 92.67 MiB sent</span><br></pre></td></tr></table></figure>
-<h2 id="检查"><a href="#检查" class="headerlink" title="检查"></a>检查</h2><p>在服务端查看主机路由信息：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ip route show</span></span><br><span class="line">default via 111.111.111.1 dev eth0</span><br><span class="line">10.0.0.0/24 dev wg0 proto kernel scope link src 10.0.0.1</span><br></pre></td></tr></table></figure></p>
-<p>可以看到已经添加的 wireguard 网络默认路由是通过 10.0.0.1，所以我们需要开启地址转发功能：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#cat /etc/sysctl.conf</span></span><br><span class="line">net.ipv4.ip_forward = 1</span><br><span class="line"><span class="comment"># sysctl -p</span></span><br></pre></td></tr></table></figure></p>
-<p>此时在服务端 ping 客户端 IP，也就是 10.0.0.2 ，检查状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ping 10.0.0.2</span></span><br><span class="line">PING 10.0.0.2 (10.0.0.2) 56(84) bytes of data.</span><br><span class="line">64 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=334 ms</span><br><span class="line">64 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=335 ms</span><br></pre></td></tr></table></figure></p>
-<p>已经看到可以联通了。</p>
-<p>整体上来说 Wireguard 配置上很简单，没有过多的配置文件，只是目前非 Linux 客户端都处于开发阶段，不推荐使用，尝鲜还是可以的。</p>
-<h2 id="配置文件示例"><a href="#配置文件示例" class="headerlink" title="配置文件示例"></a>配置文件示例</h2><p>wg0</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[Interface]</span><br><span class="line">PrivateKey = 6G2jd1VVCRofQzkLxxxxxxxxxxxxx/3GJFTjzwxz62k=</span><br><span class="line">Address = 10.0.0.1/24</span><br><span class="line">PostUp   = echo 1 &gt; /proc/sys/net/ipv4/ip_forward; iptables -A FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">ListenPort = 11111</span><br><span class="line">DNS = 8.8.8.8</span><br><span class="line">MTU = 1420</span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = nMUQDNdDMtMLslqmLpe/j9qqGNdJMxxxxxxxxxu5NjA=</span><br><span class="line">AllowedIPs = 10.0.0.3/32</span><br></pre></td></tr></table></figure>
-<p>client.conf</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[Interface]</span><br><span class="line">PrivateKey = 8LnMNxNlvxZnnnBkMpd/hFl1xxxxxxxxxxW+5D4qUk=</span><br><span class="line">Address = 10.0.0.3/24</span><br><span class="line">DNS = 8.8.8.8</span><br><span class="line">MTU = 1420</span><br><span class="line"></span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = QWhJChuDG7HdNnSF4ximOoxxxxxxxxxxitl1mzIjo=</span><br><span class="line">Endpoint = 114.187.221.217:11111</span><br><span class="line">AllowedIPs = 0.0.0.0/0, ::0/0</span><br><span class="line">PersistentKeepalive = 25</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2021,7 +2044,7 @@ to the horrors that are OpenVPN and IPSec, it&#39;s a work of art.</code>  </p>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-count">69</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
