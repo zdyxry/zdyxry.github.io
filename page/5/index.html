@@ -267,6 +267,218 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/11/24/Ansible最佳实践/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/24/Ansible最佳实践/" itemprop="url">Ansible最佳实践</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-24T21:18:28+08:00">
+                2018-11-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/11/24/Ansible最佳实践/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/11/24/Ansible最佳实践/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>说起来我真正负责过大批量服务器线上管理的时间，还是在16年负责运维的时候，那时候还都是通过 Shell 脚本来完成一些自动化的工作，当时觉得还不错，至少我觉得可定制化上还是很好的。  </p>
+<p>目前负责公司产品中一部分功能目前是通过 Shell 来完成的，但是 Shell 脚本在使用中存在一些弊端，最近在用 Ansible 来重写这部分功能，在重写过程中感受负责，又爱又恨，也有一些疑惑，特此记录。</p>
+<h2 id="Ansible"><a href="#Ansible" class="headerlink" title="Ansible"></a>Ansible</h2><p>相信大家都或多或少听过 Ansible,Puppet,SaltStack 等等自动管理工具，它们的功能都很强大，但使用起来又不简单，Ansible 可以说是这里面上手最快的一个。</p>
+<p>这里我不讲述 Ansible 具体的使用规则，大家看文档就好，我讲下我常用的几个场景：</p>
+<h3 id="批量查看、操作、拷贝"><a href="#批量查看、操作、拷贝" class="headerlink" title="批量查看、操作、拷贝"></a>批量查看、操作、拷贝</h3><p>无论是作为一名开发，还是测试、运维，应该都碰到过需要管理多台服务器的情况，比如我们想要查看一个集群中所有节点的负责情况，那么我们可以执行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"> $ ansible yiran-cluster -m raw -a <span class="string">'uptime'</span></span><br><span class="line">192.168.67.39 | SUCCESS | rc=0 &gt;&gt;</span><br><span class="line"> 20:23:24 up 3 days,  7:32,  4 users,  load average: 14.97, 13.81, 12.55</span><br><span class="line">Shared connection to 192.168.67.39 closed.</span><br><span class="line">192.168.67.40 | SUCCESS | rc=0 &gt;&gt;</span><br><span class="line"> 20:23:24 up 3 days,  7:32,  1 user,  load average: 11.79, 14.15, 14.81</span><br><span class="line">Shared connection to 192.168.67.40 closed.</span><br><span class="line">192.168.67.41 | SUCCESS | rc=0 &gt;&gt;</span><br><span class="line"> 20:23:24 up 6 days, 22:36,  1 user,  load average: 19.89, 20.10, 19.79</span><br><span class="line">Shared connection to 192.168.67.41 closed.</span><br></pre></td></tr></table></figure></p>
+<p>如果我们想要拷贝自己的测试代码到所有的服务器上，我们可以执行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible yiran-cluster -m synchronize -a <span class="string">'src=zbs_rest dest=/usr/lib/python2.7/site-packages/'</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="重复性操作"><a href="#重复性操作" class="headerlink" title="重复性操作"></a>重复性操作</h3><p>如果我们经常要查看某些集群（无监控）情况下的性能，我们可以编写一个 playbook，这个 playbook 专门用来收集集群的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"> $ cat cluster_status.yml</span><br><span class="line"><span class="comment">#!/usr/bin/env ansible-playbook</span></span><br><span class="line">---</span><br><span class="line">- name: cluster status</span><br><span class="line">  hosts: yiran-cluster</span><br><span class="line">  max_fail_percentage: 0</span><br><span class="line">  gather_facts: <span class="literal">false</span></span><br><span class="line">  tasks:</span><br><span class="line">     - name: uptime</span><br><span class="line">       raw: uptime</span><br><span class="line">       register: out</span><br><span class="line">     - debug: var=out.stdout_lines</span><br><span class="line"></span><br><span class="line">     - name: check services status</span><br><span class="line">       shell: /usr/share/tuna/script/control_all_services.sh --action=status --group=role</span><br><span class="line">       register: out</span><br><span class="line">       async: 300</span><br><span class="line">       poll: 2</span><br><span class="line">     - debug: var=out.stdout_lines</span><br><span class="line"></span><br><span class="line">     - name: memory status</span><br><span class="line">       raw: free -h</span><br><span class="line">       register: out</span><br><span class="line">     - debug: var=out.stdout_lines</span><br></pre></td></tr></table></figure></p>
+<h2 id="Shell-Script-vs-Ansible"><a href="#Shell-Script-vs-Ansible" class="headerlink" title="Shell Script vs Ansible"></a>Shell Script vs Ansible</h2><p>通过上述的简单示例，可以体会到 Ansible 的强大，但是 Ansible 真的有那么好么？</p>
+<p>明明几行  Shell 就可以搞定的事情，为什么一定要使用 Ansible 来做呢？<br>明明一个 Shell 脚本就可以完成的环境监察，为什么一定要使用 Ansible Playbook 来做呢？要知道 Playbook 编写语法虽然是 YAML，但是使用起来并不简单，有很多特殊的语法需要去注意，完全没有必要花费精力去学习一个新的工具去完成。</p>
+<p>前两天看到 <a href="https://www.kawabangga.com/" target="_blank" rel="noopener">卡瓦邦噶</a> 介绍 Ansible的一篇博客中，提到了一篇 <a href="https://hvops.com/articles/ansible-vs-shell-scripts/" target="_blank" rel="noopener">Shell Script vs Ansible: Fight</a> 的文章（远古版真香），其中有一段总结，用来描述 Ansible 的优势，我加上了 Shell Script 的对比如下：   </p>
+<table>
+<thead>
+<tr>
+<th>Ansible</th>
+<th>Shell Script</th>
+<th>优胜者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可以进行源码管理</td>
+<td>Shell 也可以</td>
+<td>-</td>
+</tr>
+<tr>
+<td>幂等性</td>
+<td>Shell 中需要额外做条件判断</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>同时在多台服务器运行</td>
+<td>Shell 可以通过 sshpass 编写脚本同时在多台运行</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>验证服务器正确性</td>
+<td>Shell 需要编写脚本收集更多信息</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>定位部分服务器组</td>
+<td>Shell 需要编写脚本对配置文件进行过滤筛选</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>支持模板</td>
+<td>-</td>
+<td>Ansible</td>
+</tr>
+<tr>
+<td>技术栈支持</td>
+<td>-</td>
+<td>Ansible</td>
+</tr>
+</tbody>
+</table>
+<p> 综合看上去，感觉 Ansible 太好了，上述情况下如果可以选择的话，我们都应该选择 Ansible 来做管理，事实上真的是这样么？ </p>
+<p> 我也以为是这样，直到我通过 Ansible 重写 Shell 脚本。</p>
+<h2 id="噩梦开始"><a href="#噩梦开始" class="headerlink" title="噩梦开始"></a>噩梦开始</h2><p> 由于产品功能需要处理多平台的、多场景的情况，该功能的 Shell 脚本大概有 4800 行左右。<br> <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> --------------------------------------------------------------------------------</span><br><span class="line">Language                      files          blank        comment           code</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">Bourne Shell                     57            990            154           4847</span><br><span class="line">Python                            2             48              0            201</span><br><span class="line">Bourne Again Shell                1              4              5             28</span><br></pre></td></tr></table></figure></p>
+<p>我们找一个简单的脚本来看下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">master ✔ $ cat stage_mount_extent_disks.sh</span><br><span class="line"><span class="meta">#!/usr/bin/env bash</span></span><br><span class="line"></span><br><span class="line">cur=`dirname <span class="variable">$0</span>`</span><br><span class="line">. <span class="variable">$cur</span>/zbs_util.sh</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">"<span class="variable">$#</span>"</span> -lt 1 ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"Usage: <span class="variable">$0</span> &lt;disk1&gt; &lt;disk2&gt;"</span></span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">disks=$*</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"waiting service start ....."</span></span><br><span class="line"><span class="keyword">for</span> ((i = 0; i &lt; 30; i++)); <span class="keyword">do</span></span><br><span class="line">    <span class="keyword">if</span> pidof service; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">break</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        sleep 2</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"service started"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># mount partition</span></span><br><span class="line"><span class="keyword">for</span> disk <span class="keyword">in</span> <span class="variable">$&#123;disks[@]&#125;</span>; <span class="keyword">do</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"mount <span class="variable">$disk</span>"</span></span><br><span class="line">    <span class="variable">$cur</span>/mount_extent_disk.sh <span class="string">"/dev/<span class="variable">$disk</span>"</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure></p>
+<p>这是一个很简单的脚本，首先我们判断了下输入参数，需要输入两块磁盘盘符，接下来等待服务启动后，我们调用另一个脚本进行磁盘的挂载，如果我们想要执行这个脚本，那么我们可以执行执行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./stage_mount_extent_disks.sh sda sdb</span><br></pre></td></tr></table></figure></p>
+<p>然后等待脚本执行结束就可以了，这里的 sda 和 sdb 是存在一个 json 文件中，我们使用 <code>jq</code> 命令可以很容易的获取到 json 文件中的执行磁盘。</p>
+<p>那么我们在 Ansible Playbook 我们要怎么做？ </p>
+<ol>
+<li>读取配置文件，并将读取结果设置为参数 <code>myvar</code></li>
+<li>解析 <code>myvar</code> 获取 extent disks list，注意，这里的解析语法是 JMESPath 的语法</li>
+<li>将 extent disk list 转换为 extent disk string ，这里是因为如果调用 raw 模块，需要传递字符串</li>
+<li>如果平台是 xen7 的话，执行 xen7 的脚本</li>
+<li>如果平台不是 xen7，且是 halo 的话，执行 halo 脚本</li>
+</ol>
+<p>具体 Playbook 如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">- name: mount extent disk</span><br><span class="line">  gather_facts: <span class="literal">false</span></span><br><span class="line">  hosts: master:storage</span><br><span class="line">  tasks:</span><br><span class="line">      - shell: cat /path/config.json</span><br><span class="line">        register: result</span><br><span class="line">      - set_fact:</span><br><span class="line">          myvar: <span class="string">"&#123;&#123; result.stdout | from_json &#125;&#125;"</span></span><br><span class="line"></span><br><span class="line">      - name: get all extent disk list</span><br><span class="line">        set_fact:</span><br><span class="line">          extent_disk_list: <span class="string">"&#123;&#123; myvar | json_query('disks[?function==`extent`][].drive') | list &#125;&#125;"</span></span><br><span class="line"></span><br><span class="line">      - name: get all extent disk string</span><br><span class="line">        set_fact:</span><br><span class="line">          extent_disk_string: <span class="string">"&#123;&#123; extent_disk_list | join(' ') &#125;&#125;"</span></span><br><span class="line"></span><br><span class="line">      - name: mount xen7 extent disk</span><br><span class="line">        raw: /usr/share/tuna/script/xen70/stage_mount_extent_disks.sh <span class="string">"&#123;&#123; extent_disk_string &#125;&#125;"</span></span><br><span class="line">        when: myvar.xen7 == True</span><br><span class="line">        register: out</span><br><span class="line">      - debug: var=out.stdout_lines</span><br><span class="line"></span><br><span class="line">      - name: mount halo extent disk</span><br><span class="line">        raw: /usr/share/tuna/script/halo/stage_mount_extent_disks.sh <span class="string">"&#123;&#123; extent_disk_string &#125;&#125;"</span></span><br><span class="line">        when: myvar.xen7 == False and myvar.halo == True</span><br><span class="line">        register: out</span><br><span class="line">      - debug: var=out.stdout_lines</span><br></pre></td></tr></table></figure></p>
+<p>相信大家通过这个简单的示例发现一些问题，我总结了下：</p>
+<ol>
+<li>如果脚本中存在较多判断，不宜使用 Playbook 实现逻辑</li>
+<li>如果脚本中存在部分参数解析功能，不宜使用 Playbook 实现逻辑</li>
+<li>不要过度拆分 task，保证每个 task 完整性</li>
+</ol>
+<p>其实上面的 Playbook 我们完全可以写成这样：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">- name: mount extent disk</span><br><span class="line">  gather_facts: <span class="literal">false</span></span><br><span class="line">  hosts: master:storage</span><br><span class="line">  tasks:</span><br><span class="line">      - name: mount  extent disk</span><br><span class="line">      <span class="comment"># 所有逻辑判断均在 stage_mount_extent_disks.sh 中完成</span></span><br><span class="line">        raw: /usr/share/tuna/script/stage_mount_extent_disks.sh <span class="string">"&#123;&#123; extent_disk_string &#125;&#125;"</span></span><br><span class="line">        register: out</span><br><span class="line">      - debug: var=out.stdout_lines</span><br></pre></td></tr></table></figure></p>
+<p>Ansible 只作操作分发，减轻 Playbook 复杂性，虽然这会损失一部分幂等性，但是可以最简化的满足要求，同时执行，获取执行结果。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>从个人使用上来说，Ansible 还是很好用的，至少它无需 Agent，SSH 连接等特性，使用起来很友好。<br>但是我们也不应该过分使用 Playbook，编写 Playbook 解析 json 花费了不少的时间，远不如直接在被执行脚本中完成的成本低。</p>
+<p>Ansible 还有一些未能合理解决的问题，比如如何知道一个 Playbook 执行的总体进度？<br>如何获取执行的实时结果输出等。</p>
+<p>如果我们只是普通的操作一些节点执行命令，获取信息，那么完全可以通过 sshpass，mmh 等命令完成，相对来说更方便。</p>
+<p>希望随着自己的使用，能够更好的掌握使用 Ansible 的度。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/11/20/剑指-Offer（二）/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1607,156 +1819,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/08/22/基于zeroconf实现节点自发现/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/08/22/基于zeroconf实现节点自发现/" itemprop="url">基于zeroconf实现节点自发现</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-22T16:07:11+08:00">
-                2018-08-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/08/22/基于zeroconf实现节点自发现/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/08/22/基于zeroconf实现节点自发现/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>通常我们使用联网的电子设备，都会配置一个 IP 地址用于通信，一般采用 DHCP 配置，DHCP 有<br>lease 时间，如果超过 lease 时间又没有续约的话，产生的 IP 地址有可能发生改变，那么如何<br>自动识别我们的设备呢？ ZeroConf 是一个好的选择。</p>
-<h2 id="ZeroConf"><a href="#ZeroConf" class="headerlink" title="ZeroConf"></a>ZeroConf</h2><p>以下介绍摘录自维基百科：</p>
-<blockquote>
-<p>Zero-configuration networking (zeroconf) is a set of technologies that<br>automatically creates a usable computer network based on the<br>Internet Protocol Suite (TCP/IP) when computers or network peripherals are<br>interconnected. It does not require manual operator intervention or special<br>configuration servers. Without zeroconf, a network administrator must set up<br>network services, such as Dynamic Host Configuration Protocol (DHCP) and<br>Domain Name System (DNS), or configure each computer’s network settings manually.<br>Zeroconf is built on three core technologies: automatic assignment of numeric<br>network addresses for networked devices, automatic distribution and resolution<br>of computer hostnames, and automatic location of network services, such as printing devices.  </p>
-</blockquote>
-<p>简单来说我们可以通过 ZeroConf 进行服务自发现，日常使用最多的就是 Apple 家的产品及一些<br>打印设备。</p>
-<h2 id="Avahi"><a href="#Avahi" class="headerlink" title="Avahi"></a>Avahi</h2><p>如果我们想要在 Linux 中使用的话，我们可以选择 Avahi，配合 nss-mdns 一起使用可以在复杂网络场景下自动发现服务器，并获取 IPv4 或 IPv6 地址进行通信。</p>
-<h3 id="扫描节点安装"><a href="#扫描节点安装" class="headerlink" title="扫描节点安装"></a>扫描节点安装</h3><p>我们使用 yum 进行相应工具的安装：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install avahi-libs avahi-tools avahi-autoipd avahi nss-mdns</span><br></pre></td></tr></table></figure></p>
-<h3 id="扫描节点配置"><a href="#扫描节点配置" class="headerlink" title="扫描节点配置"></a>扫描节点配置</h3><p>安装完成后，我们修改配置文件，开启 IPv6 配置：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran-pxe data]<span class="comment"># cat /etc/nsswitch.conf |grep -v ^# |grep -v ^$</span></span><br><span class="line">passwd:     files sss</span><br><span class="line">shadow:     files sss</span><br><span class="line">group:      files sss</span><br><span class="line">hosts:      files mdns4_minimal [NOTFOUND=<span class="built_in">return</span>] dns</span><br><span class="line">bootparams: nisplus [NOTFOUND=<span class="built_in">return</span>] files</span><br><span class="line">ethers:     files</span><br><span class="line">netmasks:   files</span><br><span class="line">networks:   files</span><br><span class="line">protocols:  files</span><br><span class="line">rpc:        files</span><br><span class="line">services:   files sss</span><br><span class="line">netgroup:   files sss</span><br><span class="line">publickey:  nisplus</span><br><span class="line">automount:  files</span><br><span class="line">aliases:    files nisplus</span><br><span class="line">[root@yiran-pxe data]<span class="comment"># cat /etc/avahi/avahi-daemon.conf  |grep -v ^# |grep -v ^$</span></span><br><span class="line">[server]</span><br><span class="line">use-ipv4=no</span><br><span class="line">use-ipv6=yes            <span class="comment">## 开启 IPv6 </span></span><br><span class="line">ratelimit-interval-usec=1000000</span><br><span class="line">ratelimit-burst=1000</span><br><span class="line">[wide-area]</span><br><span class="line"><span class="built_in">enable</span>-wide-area=yes</span><br><span class="line">[publish]</span><br><span class="line">[reflector]</span><br><span class="line">[rlimits]</span><br><span class="line">rlimit-core=0</span><br><span class="line">rlimit-data=4194304</span><br><span class="line">rlimit-fsize=0</span><br><span class="line">rlimit-nofile=768</span><br><span class="line">rlimit-stack=4194304</span><br><span class="line">rlimit-nproc=3</span><br></pre></td></tr></table></figure>
-<p>配置完成后我们启动服务：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start avahi-daemon</span><br></pre></td></tr></table></figure></p>
-<h3 id="被扫描节点配置"><a href="#被扫描节点配置" class="headerlink" title="被扫描节点配置"></a>被扫描节点配置</h3><p>扫描节点可以通过制定的域名进行扫描，我们可以通过给被扫描节点配置特殊的主机名称，来实现自动识别被扫描节点具体是什么类型的服务器，比如我们可以通过 ipmitool 获取 IPMI IP，并配置主机名为 <code>node-192-168-67-173</code> 来实现识别，具体操作：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node-192-168-67-173 ~]<span class="comment"># cat /etc/hostname </span></span><br><span class="line">node-192-168-67-173</span><br><span class="line">[root@node-192-168-67-173 ~]<span class="comment"># hostname -F /etc/hostname</span></span><br></pre></td></tr></table></figure></p>
-<p>同样编辑 avahi 配置文件，开启 IPv6 配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node-192-168-67-173 avahi]<span class="comment"># cat avahi-daemon.conf |grep -v ^# |grep -v ^$</span></span><br><span class="line">[server]</span><br><span class="line">use-ipv4=yes</span><br><span class="line">use-ipv6=yes</span><br><span class="line">ratelimit-interval-usec=1000000</span><br><span class="line">ratelimit-burst=1000</span><br><span class="line">[wide-area]</span><br><span class="line"><span class="built_in">enable</span>-wide-area=yes</span><br><span class="line">[publish]</span><br><span class="line">publish<span class="_">-a</span>-on-ipv6=yes</span><br><span class="line">[reflector]</span><br><span class="line">[rlimits]</span><br><span class="line">rlimit-core=0</span><br><span class="line">rlimit-data=4194304</span><br><span class="line">rlimit-fsize=0</span><br><span class="line">rlimit-nofile=768</span><br><span class="line">rlimit-stack=4194304</span><br><span class="line">rlimit-nproc=3</span><br></pre></td></tr></table></figure></p>
-<p>启动 avahi 服务：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start avahi-daemon</span><br></pre></td></tr></table></figure></p>
-<h3 id="扫描节点发现节点"><a href="#扫描节点发现节点" class="headerlink" title="扫描节点发现节点"></a>扫描节点发现节点</h3><p>我们可以通过 <code>avahi-tools</code> 提供的 avahi-brower 工具进行持续扫描：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran-pxe data]<span class="comment"># avahi-browse -a</span></span><br><span class="line">+ eno33559296 IPv6 node-192-168-67-173 [24:6e:96:7c:50:70]       Workstation          <span class="built_in">local</span></span><br><span class="line">+ eno16780032 IPv6 node-192-168-67-173 [24:6e:96:7c:50:50]       Workstation          <span class="built_in">local</span></span><br></pre></td></tr></table></figure></p>
-<p>可以看到我们在扫描节点已经发现了被扫描节点的信息，那么我们接下来获取具体的 IP 地址：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran-pxe data]<span class="comment"># avahi-resolve --help </span></span><br><span class="line">avahi-resolve [options] -n &lt;host name ...&gt;</span><br><span class="line">avahi-resolve [options] -a &lt;address ... &gt;</span><br><span class="line"></span><br><span class="line">    -h --<span class="built_in">help</span>            Show this <span class="built_in">help</span></span><br><span class="line">    -V --version         Show version</span><br><span class="line">    -n --name            Resolve host name</span><br><span class="line">    -a --address         Resolve address</span><br><span class="line">    -v --verbose         Enable verbose mode</span><br><span class="line">    -6                   Lookup IPv6 address</span><br><span class="line">    -4                   Lookup IPv4 address</span><br><span class="line">[root@yiran-pxe data]<span class="comment"># avahi-resolve -n node-192-168-67-173.local -4</span></span><br><span class="line">node-192-168-67-173.local       127.0.0.1</span><br><span class="line">[root@yiran-pxe data]<span class="comment"># avahi-resolve -n node-192-168-67-173.local -6</span></span><br><span class="line">node-192-168-67-173.local       fe80::266e:96ff:fe7c:5070</span><br></pre></td></tr></table></figure>
-<p>如果被扫描节点没有 IPv4 地址，则会显示 127.0.0.1，若有 IPv4 地址，则会正常显示。</p>
-<h3 id="远程通信"><a href="#远程通信" class="headerlink" title="远程通信"></a>远程通信</h3><p>在得到具体的 IP 地址之后我们就可以按照上一篇博客提到的 IPv6 地址远程连接的方式进行通信了。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran-pxe data]<span class="comment"># ping6 fe80::266e:96ff:fe7c:5070%eno33559296</span></span><br><span class="line">PING fe80::266e:96ff:fe7c:5070%eno33559296(fe80::266e:96ff:fe7c:5070) 56 data bytes</span><br><span class="line">64 bytes from fe80::266e:96ff:fe7c:5070: icmp_seq=1 ttl=64 time=0.448 ms</span><br><span class="line">64 bytes from fe80::266e:96ff:fe7c:5070: icmp_seq=2 ttl=64 time=0.338 ms</span><br><span class="line">^C</span><br><span class="line">--- fe80::266e:96ff:fe7c:5070%eno33559296 ping statistics ---</span><br><span class="line">2 packets transmitted, 2 received, 0% packet loss, time 999ms</span><br><span class="line">rtt min/avg/max/mdev = 0.338/0.393/0.448/0.055 ms</span><br><span class="line">[root@yiran-pxe data]<span class="comment"># ssh fe80::266e:96ff:fe7c:5070%eno33559296</span></span><br><span class="line">root@fe80::266e:96ff:fe7c:5070%eno33559296<span class="string">'s password: </span></span><br><span class="line"><span class="string">Last login: Wed Aug 22 15:44:17 2018 from fe80::250:56ff:fe9f:ef9c%eno3</span></span><br><span class="line"><span class="string">[root@node-192-168-67-173 ~]# hostname</span></span><br><span class="line"><span class="string">node-192-168-67-173</span></span><br><span class="line"><span class="string">[root@node-192-168-67-173 ~]# logout</span></span><br><span class="line"><span class="string">Connection to fe80::266e:96ff:fe7c:5070%eno33559296 closed.</span></span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>目前 Linux 发行版本都自动安装了 Avahi 服务，大家可以启用，方便远程连接控制。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1809,7 +1871,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">69</span>
+                  <span class="site-state-item-count">70</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
