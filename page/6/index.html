@@ -267,6 +267,176 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/09/23/cgroups-常用配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/09/23/cgroups-常用配置/" itemprop="url">cgroups 常用配置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-09-23T11:40:19+08:00">
+                2018-09-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/09/23/cgroups-常用配置/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/09/23/cgroups-常用配置/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在软件运行过程中，我们经常需要限制 CPU 、内存、磁盘的使用，方式程序超出了限定边界范围。在 Linux 中，我们可以通过 cgroups 来进行限制。</p>
+<h2 id="cgroups"><a href="#cgroups" class="headerlink" title="cgroups"></a>cgroups</h2><p>中文名称为控制组群，具体功能分类为：</p>
+<ul>
+<li>资源限制：组可以被设置不超过设定的内存限制；这也包括虚拟内存。</li>
+<li>优先级：一些组可能会得到大量的CPU或磁盘IO吞吐量。</li>
+<li>结算：用来衡量系统确实把多少资源用到适合的目的上。</li>
+<li>控制：冻结组或检查点和重启动。</li>
+</ul>
+<p>下面来说下常见的使用方式</p>
+<h3 id="CPU"><a href="#CPU" class="headerlink" title="CPU"></a>CPU</h3><p>RedHat 官方文档中描述 cgroups 在 RHEL7/CentOS7 之后的版本需要通过 systemd 配置，不再使用 libcgconfig 方式。<br>但是在 systemd 的配置中，CPU 相关的配置项比较简单，或者说 OS 自动配置了很多，没有暴露出来。所以我们这里还是采用 libcgconfig 的配置方式。</p>
+<p>在进行 CPU 限制之前，我们需要了解一下 NUMA 结构。什么是 NUMA？ NUMA 是一种为多处理器的计算机设计的内存，内存访问时间取决于内存相对于处理器的位置。在NUMA下，处理器访问它自己的本地内存的速度比非本地内存快一些。<br>不同的 Thread 在同一个 Core 上也会发生抢占情况，具体可以通过 sysbench 进行测试。</p>
+<p>相关概念定义：</p>
+<ol>
+<li>Socket：物理服务器上的 CPU 插槽</li>
+<li>Core：物理 CPU 核心数</li>
+<li>Thread：超线程</li>
+</ol>
+<p>简单的说就是如果你的程序是计算密集型，那么尽可能的要让 CPU 限制在同一个 NUMA node 上。<br>查看 NUMA node 方式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@<span class="built_in">test</span> 10:53:43 ~]<span class="variable">$numactl</span> -H</span><br><span class="line">available: 2 nodes (0-1)</span><br><span class="line">node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30</span><br><span class="line">node 0 size: 65221 MB</span><br><span class="line">node 0 free: 52239 MB</span><br><span class="line">node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31</span><br><span class="line">node 1 size: 65536 MB</span><br><span class="line">node 1 free: 57566 MB</span><br><span class="line">node distances:</span><br><span class="line">node   0   1</span><br><span class="line">  0:  10  21</span><br><span class="line">  1:  21  10</span><br></pre></td></tr></table></figure></p>
+<p>这台服务器的配置为 2(socket) * <code>Intel(R) Xeon(R) Silver 4110 CPU @ 2.10GHz</code> ，内存为 128 GB。观察 NUMA node  分配，可以看到分为两个 node，分别为 node 0 和 node 1。<br>那么 <code>node $index cpus</code> 字段代表的是什么意思呢？ 在这里对应的是两个 socket ，也就是两个物理插槽上的 CPU 对应的 Thread。 Thread 排序方式是优先按照不同 Core 排序的，比如 Thread 0 在 Core 0 上，Thread 2 在 Core 1 上，以此类推。<br>具体的 CPU 配置大家可以通过 <code>lscpu</code> ， 或者查看 <code>/proc/cpuinfo</code> 了解。</p>
+<p>根据 NUMA 配置，我们可以选择将程序限制在 Thread 0,2,4,6,8 上。<br>那么我们编辑配置文件 <code>/etc/cgconfig.conf</code>  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">[root@<span class="built_in">test</span> 11:03:45 ~]<span class="variable">$cat</span> /etc/cgconfig.conf |head -n 25</span><br><span class="line"><span class="comment"># yiran cgroups configuration</span></span><br><span class="line"></span><br><span class="line">group . &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.memory_pressure_enabled = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">group yiran &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.cpus = <span class="string">"0,2,4,6,8"</span>;</span><br><span class="line">        cpuset.mems = <span class="string">"0-1"</span>;</span><br><span class="line">        cpuset.cpu_exclusive = <span class="string">"1"</span>;</span><br><span class="line">        cpuset.mem_hardwall = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">group yiran/flask &#123;</span><br><span class="line">    cpuset &#123;</span><br><span class="line">        cpuset.cpus = <span class="string">"0,2,4"</span>;</span><br><span class="line">        cpuset.mems = <span class="string">"0-1"</span>;</span><br><span class="line">        cpuset.cpu_exclusive = <span class="string">"0"</span>;</span><br><span class="line">        cpuset.mem_hardwall = <span class="string">"1"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 首先，我们定义了一个组，组名叫 <code>yiran</code>，我们又在 <code>yiran</code> 下创建了一个叫 <code>flask</code> 的组，限制 CPU在 <code>0,2,4</code> 上。<br>接下来我们重启 cgconfig 相关服务，注意遵守重启顺序：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@<span class="built_in">test</span> 11:04:45 ~]systemctl restart cgconfig</span><br><span class="line">[root@<span class="built_in">test</span> 11:04:46 ~]systemctl restart cgred</span><br></pre></td></tr></table></figure></p>
+<p>我们可以通过 lscgroup 检测配置是否生效，或者通过查看 <code>/proc/$pid/cgroup</code> 检查。</p>
+<h3 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h3><p>相对于 CPU，内存配置我们可以直接通过 systemd 配置，就简化很多了。<br>最简单的，如果我们想立即配置一个服务的内存限制，我们可以直接执行命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@<span class="built_in">test</span> 11:05:50 ~]systemctl <span class="built_in">set</span>-property &lt;service name&gt; MemoryLimit=500M</span><br></pre></td></tr></table></figure></p>
+<p>执行完这条命令后，系统会自动在该服务的 systemd 配置路径(<code>/etc/systemd/system/&lt;service name&gt;.d/</code> 下生成文件 <code>50-MemoryLimit.conf</code> ，文件内容为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[Slice]</span><br><span class="line">MemoryLimit=5368709120</span><br></pre></td></tr></table></figure></p>
+<p>当然我们如果直接在该路径下编写配置文件也是可以的，重启服务后生效。</p>
+<h4 id="Slice-配置"><a href="#Slice-配置" class="headerlink" title="Slice 配置"></a>Slice 配置</h4><p>上面这种方式只是针对单一的服务配置，如果我们想创建一个组，控制多个服务计算资源总和的配置，我们就需要通过配置 Slice 完成。</p>
+<p><strong>slice</strong> —— 一组按层级排列的单位。slice 并不包含进程，但会组建一个层级，并将 scope 和 service 都放置其中。真正的进程包含在 scope 或 service 中。在这一被划分层级的树中，每一个 slice 单位的名字对应通向层级中一个位置的路径。小横线（”<code>-</code>“）起分离路径组件的作用。例如，如果一个 slice 的名字是：</p>
+<p><em>parent</em>-<em>name</em>.<code>slice</code></p>
+<p>这说明 <em>parent</em>-<em>name</em>.<code>slice</code> 是 <em>parent</em>.<code>slice</code> 的一个子 slice。这一子 slice 可以再拥有自己的子 slice，被命名为：<em>parent</em>-<em>name</em>-<em>name2</em>.<code>slice</code>，以此类推。</p>
+<p>根 slice 的表示方式：<code>-.slice</code> </p>
+<p>我们在 <code>/etc/systemd/system/</code> 下创建一个组，名称还是 <code>yiran</code> ，创建 <code>flask</code> 在 <code>yiran</code> 下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/etc/systemd/system</span><br><span class="line">├── flask.service.d</span><br><span class="line">│   └── cgroup.conf</span><br><span class="line">├── system-yiran.slice</span><br><span class="line">├── system-yiran.slice.d</span><br><span class="line">│   └── 50-MemoryLimit.conf</span><br></pre></td></tr></table></figure></p>
+<p>配置完成后，我们重启 cgconfig 相关服务即可使能配置。</p>
+<h3 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h3><p>如要降低 flask 服务读取某个目录 block IO 的权重，只需要修改该服务配置文件 增加 <code>BlockIODeviceWeight=/home/jdoe 750</code> 字段即可。</p>
+<h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>日常用到最多的应该就是 CPU 和内存，如果很多对 IO 要求高的服务运行在一块磁盘上，那么可以先通过针对不同服务进行不同磁盘分区的方式（此方式不包括 lvm）验证，如果还不能解决的话，再考虑针对服务控制磁盘 IO。</p>
+<p>为了追求性能，我们在 CPU 配置的时候给应用程序分配的 Thread 都位于同一个 Socket 上 CPU 的不同的 Core 上。 老板说还要考虑网卡、磁盘等 PCI 设备接入的 Socket ，如果应用程序分配在了 NUMA node0 上，但是网卡、磁盘等 PCI 设备连接在了 NUMA node1 上，还是会对性能有影响，还没找到相应配置，后续有时间再了解吧。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/resource_management_guide/" target="_blank" rel="noopener">https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/resource_management_guide/</a></li>
+<li><a href="https://www.kernel.org/doc/Documentation/cgroup-v1/" target="_blank" rel="noopener">https://www.kernel.org/doc/Documentation/cgroup-v1/</a></li>
+<li><a href="https://www.kernel.org/doc/Documentation/cgroup-v2.txt" target="_blank" rel="noopener">https://www.kernel.org/doc/Documentation/cgroup-v2.txt</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/08/22/基于zeroconf实现节点自发现/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1651,175 +1821,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/07/06/Linux-主机异常信息收集/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/07/06/Linux-主机异常信息收集/" itemprop="url">Linux 主机异常信息收集</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-06T15:28:09+08:00">
-                2018-07-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/07/06/Linux-主机异常信息收集/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/07/06/Linux-主机异常信息收集/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>通常情况下，一个公司内部都会有监控报警平台去支撑业务主机的稳定运行，比如 Nagios，Zabbix 或者 Prometheus 等其他工具。<br>这些工具，无论是 push 模式还是 pull 模式，都基于一个前提：主机是可访问的，或者说 agent/exporter 是可正常工作的。</p>
-<p>如果运维人员在面对一台处于异常状态的主机，应该如何收集该主机的当前状态及相应日志呢？</p>
-<p>企业级产品通常会内置工具用来采集异常状态信息，比如：</p>
-<ul>
-<li>DELL 服务器如果出现了未知错误，拨打 400 询问问题，<br>一线客服会告诉你，打开 iDRAC 界面，点击“收集日志” 选项，会自动收集并下载节点信息</li>
-<li>如果你是 RedHat RHEL 用户，主机出现异常状态，红帽技术支持工程师进行初始分析时，通常会使用 sosreport 工具</li>
-</ul>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>sosreport 命令是一个工具，用来收集 RHEL 系统上的配置信息、系统信息和诊断信息。比如：正在运行的内核版本、已加载的模块，以及系统和服务的配置文件。同时，sosreport 支持用户自己编写 Plugin ，用于收集自己想要收集的服务日志及命令结果。  </p>
-<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>sosreport 提供了 <code>sosreport</code> 命令行，用户可以直接执行该命令收集信息，默认收集所有 Plugin 信息。</p>
-<h2 id="执行流程"><a href="#执行流程" class="headerlink" title="执行流程"></a>执行流程</h2><p>通过 which 命令查看提供 sosreport 命令行的文件，可以看到指向 <code>sos.sosreport.main</code>。  </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:~/project/sos </span><br><span class="line">master ✔ $ which sosreport</span><br><span class="line">/usr/sbin/sosreport</span><br><span class="line">root@yiran-30-250:~/project/sos </span><br><span class="line">master ✔ $ cat /usr/sbin/sosreport</span><br><span class="line"><span class="meta">#</span><span class="bash">!/usr/bin/python</span></span><br><span class="line">import sys</span><br><span class="line">try:</span><br><span class="line">    from sos.sosreport import main</span><br><span class="line">except KeyboardInterrupt:</span><br><span class="line">    raise SystemExit()</span><br><span class="line"></span><br><span class="line">if __name__ == '__main__':</span><br><span class="line">    main(sys.argv[1:])</span><br></pre></td></tr></table></figure>
-<p>查看 main 函数，实例化 SoSReport，并执行 SoSReport中的 execute 方法，查看 execute 具体做了什么：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">execute</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="comment"># 获取集群配置并配置，包含日志路径，报告路径,配置文件等参数</span></span><br><span class="line">        self.policy.set_commons(self.get_commons())</span><br><span class="line">        self.print_header()</span><br><span class="line">        <span class="comment"># 加载所有插件,并根据发行版本进行校验</span></span><br><span class="line">        self.load_plugins()</span><br><span class="line">        <span class="comment"># 设置默认配置参数</span></span><br><span class="line">        self._set_all_options()</span><br><span class="line">        self._set_tunables()</span><br><span class="line">        self._check_for_unknown_plugins()</span><br><span class="line">        self._set_plugin_options()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> self.opts.list_plugins:</span><br><span class="line">            self.list_plugins()</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line">        <span class="keyword">if</span> self.opts.list_profiles:</span><br><span class="line">            self.list_profiles()</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line">        <span class="keyword">if</span> self.opts.list_presets:</span><br><span class="line">            self.list_presets()</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line">        <span class="keyword">if</span> self.opts.add_preset:</span><br><span class="line">            <span class="keyword">return</span> self.add_preset(self.opts.add_preset)</span><br><span class="line">        <span class="keyword">if</span> self.opts.del_preset:</span><br><span class="line">            <span class="keyword">return</span> self.del_preset(self.opts.del_preset)</span><br><span class="line">        <span class="comment"># verify that at least one plug-in is enabled</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.verify_plugins():</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">False</span></span><br><span class="line"></span><br><span class="line">        self.batch()</span><br><span class="line">        <span class="comment"># 收集前准备工作，包括打包方式等配置</span></span><br><span class="line">        self.prework()</span><br><span class="line">        self.setup()</span><br><span class="line">        <span class="comment"># 真正开始收集执行</span></span><br><span class="line">        self.collect()</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.opts.noreport:</span><br><span class="line">            self.report()</span><br><span class="line">            self.html_report()</span><br><span class="line">            self.plain_report()</span><br><span class="line">        self.postproc()</span><br><span class="line">        self.version()</span><br><span class="line">        <span class="keyword">return</span> self.final_work()</span><br></pre></td></tr></table></figure>
-<p>其中，主要步骤有两步：</p>
-<ol>
-<li>加载插件并校验</li>
-<li>执行各个插件内容</li>
-</ol>
-<h3 id="加载插件并校验"><a href="#加载插件并校验" class="headerlink" title="加载插件并校验"></a>加载插件并校验</h3><p>通过遍历软件包所在路径，先获取所有的插件名称:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_plugin_name</span><span class="params">(self, path)</span>:</span></span><br><span class="line">    <span class="string">"Returns the plugin module name given the path"</span></span><br><span class="line">    base = os.path.basename(path)</span><br><span class="line">    name, ext = os.path.splitext(base)</span><br><span class="line">    <span class="keyword">return</span> name</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_get_plugins_from_list</span><span class="params">(self, list_)</span>:</span></span><br><span class="line">    plugins = [self._plugin_name(plugin)</span><br><span class="line">               <span class="keyword">for</span> plugin <span class="keyword">in</span> list_</span><br><span class="line">               <span class="keyword">if</span> <span class="string">"__init__"</span> <span class="keyword">not</span> <span class="keyword">in</span> plugin <span class="keyword">and</span> plugin.endswith(<span class="string">".py"</span>)]</span><br><span class="line">    plugins.sort()</span><br><span class="line">    <span class="keyword">return</span> plugins</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_find_plugins_in_dir</span><span class="params">(self, path)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> os.path.exists(path):</span><br><span class="line">        py_files = list(find(<span class="string">"*.py"</span>, path))</span><br><span class="line">        pnames = self._get_plugins_from_list(py_files)</span><br><span class="line">        <span class="keyword">if</span> pnames:</span><br><span class="line">            <span class="keyword">return</span> pnames</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> []</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_modules</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="string">"""Returns the list of importable modules in the configured python</span></span><br><span class="line"><span class="string">    package. """</span></span><br><span class="line">    plugins = []</span><br><span class="line">    <span class="keyword">for</span> path <span class="keyword">in</span> self.package.__path__:</span><br><span class="line">        <span class="keyword">if</span> os.path.isdir(path) <span class="keyword">or</span> path == <span class="string">''</span>:</span><br><span class="line">            plugins.extend(self._find_plugins_in_dir(path))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plugins</span><br></pre></td></tr></table></figure>
-<p>获取到插件名称后，获取 Linux 主机发行版本信息，并将发行版本指定为 import 参数，<br>用于判断插件是否支持该发行版本(通过 inspect 校验 是否为子类方式):</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">import_module</span><span class="params">(module_fqname, superclasses=None)</span>:</span></span><br><span class="line">    <span class="string">"""Imports the module module_fqname and returns a list of defined classes</span></span><br><span class="line"><span class="string">    from that module. If superclasses is defined then the classes returned will</span></span><br><span class="line"><span class="string">    be subclasses of the specified superclass or superclasses. If superclasses</span></span><br><span class="line"><span class="string">    is plural it must be a tuple of classes."""</span></span><br><span class="line">    module_name = module_fqname.rpartition(<span class="string">"."</span>)[<span class="number">-1</span>]</span><br><span class="line">    module = __import__(module_fqname, globals(), locals(), [module_name])</span><br><span class="line">    modules = [class_ <span class="keyword">for</span> cname, class_ <span class="keyword">in</span></span><br><span class="line">               inspect.getmembers(module, inspect.isclass)</span><br><span class="line">               <span class="keyword">if</span> class_.__module__ == module_fqname]</span><br><span class="line">    <span class="keyword">if</span> superclasses:</span><br><span class="line">        modules = [m <span class="keyword">for</span> m <span class="keyword">in</span> modules <span class="keyword">if</span> issubclass(m, superclasses)]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> modules</span><br></pre></td></tr></table></figure>
-<p>接下来还有根据命令行参数进行相应配置参数传递，此处不进行展开。</p>
-<h3 id="执行各个插件"><a href="#执行各个插件" class="headerlink" title="执行各个插件"></a>执行各个插件</h3><p>查看 self.collect() 函数，可以发现，最终执行是通过线程池进行的，默认 Pool Size 为 4。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">collect</span><span class="params">(self)</span>:</span></span><br><span class="line">    self.ui_log.info(_(<span class="string">" Running plugins. Please wait ..."</span>))</span><br><span class="line">    self.ui_log.info(<span class="string">""</span>)</span><br><span class="line"></span><br><span class="line">    plugruncount = <span class="number">0</span></span><br><span class="line">    self.pluglist = []</span><br><span class="line">    self.running_plugs = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> self.loaded_plugins:</span><br><span class="line">        plugruncount += <span class="number">1</span></span><br><span class="line">        self.pluglist.append((plugruncount, i[<span class="number">0</span>]))</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        self.plugpool = ThreadPoolExecutor(self.opts.threads)</span><br><span class="line">        <span class="comment"># Pass the plugpool its own private copy of self.pluglist</span></span><br><span class="line">        self.plugpool.map(self._collect_plugin, list(self.pluglist),</span><br><span class="line">                          chunksize=<span class="number">1</span>)</span><br><span class="line">        self.plugpool.shutdown(wait=<span class="keyword">True</span>)</span><br><span class="line">        self.ui_log.info(<span class="string">""</span>)</span><br><span class="line">    <span class="keyword">except</span> KeyboardInterrupt:</span><br><span class="line">        <span class="comment"># We may not be at a newline when the user issues Ctrl-C</span></span><br><span class="line">        self.ui_log.error(<span class="string">"\nExiting on user cancel\n"</span>)</span><br><span class="line">        os._exit(<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
-<p>在查看 self._collect_plugin，发现最终执行的函数为 <code>plug.collect()</code> ,这指向了插件本身，<br>随便找一个插件看看是否有 collect 方法，以 block 插件为例：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> sos.plugins <span class="keyword">import</span> Plugin, RedHatPlugin, DebianPlugin, UbuntuPlugin</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Block</span><span class="params">(Plugin, RedHatPlugin, DebianPlugin, UbuntuPlugin)</span>:</span></span><br><span class="line">    <span class="string">"""Block device information</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    plugin_name = <span class="string">'block'</span></span><br><span class="line">    profiles = (<span class="string">'storage'</span>, <span class="string">'hardware'</span>)</span><br><span class="line">    verify_packages = (<span class="string">'util-linux'</span>,)</span><br><span class="line">    files = (<span class="string">'/sys/block'</span>,)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">setup</span><span class="params">(self)</span>:</span></span><br><span class="line">		<span class="comment"># 执行命令收集信息</span></span><br><span class="line">        self.add_cmd_output([</span><br><span class="line">            <span class="string">"lsblk"</span>,</span><br><span class="line">            <span class="string">"lsblk -t"</span>,</span><br><span class="line">            <span class="string">"lsblk -D"</span>,</span><br><span class="line">            <span class="string">"blkid -c /dev/null"</span>,</span><br><span class="line">            <span class="string">"blockdev --report"</span>,</span><br><span class="line">            <span class="string">"ls -lanR /dev"</span>,</span><br><span class="line">            <span class="string">"ls -lanR /sys/block"</span></span><br><span class="line">        ])</span><br><span class="line"></span><br><span class="line">        <span class="comment"># legacy location for non-/run distributions</span></span><br><span class="line">        <span class="comment"># 拷贝文件路径收集信息</span></span><br><span class="line">        self.add_copy_spec([</span><br><span class="line">            <span class="string">"/etc/blkid.tab"</span>,</span><br><span class="line">            <span class="string">"/run/blkid/blkid.tab"</span>,</span><br><span class="line">            <span class="string">"/proc/partitions"</span>,</span><br><span class="line">            <span class="string">"/proc/diskstats"</span>,</span><br><span class="line">            <span class="string">"/sys/block/*/queue/scheduler"</span></span><br><span class="line">        ])</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> os.path.isdir(<span class="string">"/sys/block"</span>):</span><br><span class="line">            <span class="keyword">for</span> disk <span class="keyword">in</span> os.listdir(<span class="string">"/sys/block"</span>):</span><br><span class="line">                <span class="keyword">if</span> disk.startswith(<span class="string">"ram"</span>):</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                disk_path = os.path.join(<span class="string">'/dev/'</span>, disk)</span><br><span class="line">                self.add_udev_info(disk_path)</span><br><span class="line">                self.add_udev_info(disk_path, attrs=<span class="keyword">True</span>)</span><br><span class="line">                self.add_cmd_output([</span><br><span class="line">                    <span class="string">"parted -s %s unit s print"</span> % (disk_path),</span><br><span class="line">                    <span class="string">"fdisk -l %s"</span> % disk_path</span><br><span class="line">                ])</span><br></pre></td></tr></table></figure>
-<p>可以看到，插件中除了实现了 setup，指定了一些命令及相应收集文件路径，并没有 collect()，<br>那么我们查看 block 插件 Block 的父类，Plugin：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">collect</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="string">"""Collect the data for a plugin."""</span></span><br><span class="line">    start = time()</span><br><span class="line">    self._collect_copy_specs()</span><br><span class="line">    self._collect_cmd_output()</span><br><span class="line">    fields = (self.name(), time() - start)</span><br><span class="line">    self._log_debug(<span class="string">"collected plugin '%s' in %s"</span> % fields)</span><br></pre></td></tr></table></figure>
-<p>这里我们看到，执行 plug.collect() 的内容为：_collect_copy_specs()，_collect_cmd_output()<br>和 _collect_strings(), 那么我们接下来就能看到这三个函数具体执行的内容了：</p>
-<h4 id="收集文件"><a href="#收集文件" class="headerlink" title="收集文件"></a>收集文件</h4><p>通过层层跳转，最终看到各个打包方式的不同，收集文件的方式也不同，这里用 FileCache 举例，<br>可以看到最终调用的是标准库中的 <code>shutil</code> 实现文件拷贝。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_file</span><span class="params">(self, src, dest=None)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> dest:</span><br><span class="line">        dest = src</span><br><span class="line">    dest = self.dest_path(dest)</span><br><span class="line">    self._check_path(dest)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Handle adding a file from either a string respresenting</span></span><br><span class="line">    <span class="comment"># a path, or a File object open for reading.</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> getattr(src, <span class="string">"read"</span>, <span class="keyword">None</span>):</span><br><span class="line">        <span class="comment"># path case</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            shutil.copy(src, dest)</span><br></pre></td></tr></table></figure>
-<h4 id="命令执行"><a href="#命令执行" class="headerlink" title="命令执行"></a>命令执行</h4><p>同理，命令执行对应的最终是 subprocess.Popen 函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    p = Popen(expanded_args, shell=<span class="keyword">False</span>, stdout=PIPE,</span><br><span class="line">              stderr=STDOUT <span class="keyword">if</span> stderr <span class="keyword">else</span> PIPE,</span><br><span class="line">              bufsize=<span class="number">-1</span>, env=cmd_env, close_fds=<span class="keyword">True</span>,</span><br><span class="line">              preexec_fn=_child_prep_fn)</span><br><span class="line"></span><br><span class="line">    reader = AsyncReader(p.stdout, sizelimit, binary)</span><br><span class="line">    stdout = reader.get_contents()</span><br><span class="line">    p.poll()</span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过阅读代码，我们可以了解到，sosreport 插件编写还是很容易的，只需要将要执行的命令及要拷贝的文件填写好就基本上完成了。<br>同时，强烈推荐一下 sosreport 中内置插件，能够帮助我们更好的了解某些功能，毕竟只有在出现故障的时候才是暴露最多的时候，比如 networking.py 中关于网络配置命令、网卡配置文件、DNS/DHCP 配置等信息，可以极大的扩充对 Linux 系统的了解程度，应该很有帮助。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1867,7 +1873,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">70</span>
+                  <span class="site-state-item-count">71</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
