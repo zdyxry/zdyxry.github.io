@@ -267,6 +267,153 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/07/08/Flask-流式响应/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/08/Flask-流式响应/" itemprop="url">Flask 流式响应</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-08T09:44:24+08:00">
+                2018-07-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/07/08/Flask-流式响应/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/07/08/Flask-流式响应/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在 web 场景下，经常会碰到下载文件的需求，通常小文件我们会采用 Flask <code>send_file</code> 或者 <code>send_from_directory</code>的方式，下载，但是当下载的文件是一个大压缩文件（&gt;1GiB）时，这种方式就显得不友好了，我们需要采用流式下载的方式返回给客户端。</p>
+<h2 id="流式下载"><a href="#流式下载" class="headerlink" title="流式下载"></a>流式下载</h2><p>简单实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Response</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route("/download/&lt;file_path&gt;", methods=["GET"])</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">download</span><span class="params">(file_path)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">()</span>:</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(file_path):</span><br><span class="line">            <span class="keyword">raise</span> <span class="string">"File not found."</span></span><br><span class="line">        <span class="keyword">with</span> open(file_path, <span class="string">"rb"</span>) <span class="keyword">as</span> f:</span><br><span class="line">            <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">                chunk = f.read(chunk_size=<span class="number">10</span> * <span class="number">1024</span> * <span class="number">1024</span>)</span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">not</span> chunk:</span><br><span class="line">                    <span class="keyword">break</span></span><br><span class="line">                <span class="keyword">yield</span> chunk</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> Response(generate(), content_type=<span class="string">"application/octet-stream"</span>)</span><br><span class="line">```   </span><br><span class="line"></span><br><span class="line">运行 Flask app，可以正确下载文件，但是下载只有实时速度，没有文件总大小，导致无法知道下载进度，也没有文件类型，这些我们都可以通过增加 header 字段实现：</span><br><span class="line">```python</span><br><span class="line">response = Response(generate(), mimetype=<span class="string">'application/gzip'</span>)</span><br><span class="line">response.headers[<span class="string">'Content-Disposition'</span>] = <span class="string">'attachment; filename=&#123;&#125;.tar.gz'</span>.format(<span class="string">"download_file"</span>)</span><br><span class="line">response.headers[<span class="string">'content-length'</span>] = os.stat(str(file_path)).st_size</span><br><span class="line"><span class="keyword">return</span> response</span><br></pre></td></tr></table></figure></p>
+<p>这样，我们下载文件就可以看到文件类型、文件总大小及已下载大小了，其中 <code>mimetype</code> 根据实际压缩文件类型修改匹配即可。</p>
+<hr>
+<h2 id="转发流式下载"><a href="#转发流式下载" class="headerlink" title="转发流式下载"></a>转发流式下载</h2><p>当我们下载本地节点文件，可以通过上述方法实现，但是如果我们的产品是集群形式的，要求在集群中的任一节点均可下载集群中所有节点的指定文件，我们就需要支持将流式下载转发并实时下载，避免访问节点占用太多内存。</p>
+<p>如果是单节点转发流式请求，我们可以通过 flask 的 <code>stream_with_context</code> 实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> (</span><br><span class="line">    Flask,</span><br><span class="line">    Response,</span><br><span class="line">    stream_with_context</span><br><span class="line">    )</span><br><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route("/download/&lt;file_path&gt;", method=["GET"])</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">download</span><span class="params">(file_path)</span>:</span></span><br><span class="line">    url_prefix = <span class="string">"http://1.1.1.1/"</span></span><br><span class="line">    remote_url = url_prefix + file_path</span><br><span class="line">    req = requests.get(remote_url, stream = <span class="keyword">True</span>)</span><br><span class="line">    <span class="keyword">return</span> Response(stream_with_context(req.iter_content()), </span><br><span class="line">                    content_type = req.headers[<span class="string">'content-type'</span>])</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    app.run(host=<span class="string">"0.0.0.0"</span>, debug=<span class="keyword">True</span>)</span><br></pre></td></tr></table></figure></p>
+<p>在我们访问 <code>http://localhost:5000/download/file_name</code>  时，通过 requests 访问远端节点 1.1.1.1 的地址，并将请求通过流式的方式转发至客户端，实现下载。</p>
+<p>如果是转发多节点流式请求，我们该如何保证多个请求最终 merge 后是一个正确的文件呢？<br>通过查询资料，排除了标准库中的 tarfile 和 zipfile 打包压缩方式，最终采用 zipstream（<a href="https://github.com/allanlei/python-zipstream）" target="_blank" rel="noopener">https://github.com/allanlei/python-zipstream）</a> 第三方库实现。</p>
+<hr>
+<p>zipstream 支持通过迭代器的方式写入文件，并可实时压缩读取，官方示例如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">iterable</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> xrange(<span class="number">10</span>):</span><br><span class="line">        <span class="keyword">yield</span> <span class="string">b'this is a byte string\x01\n'</span></span><br><span class="line"></span><br><span class="line">z = zipstream.ZipFile()</span><br><span class="line">z.write_iter(<span class="string">'my_archive_iter'</span>, iterable())</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'zipfile.zip'</span>, <span class="string">'wb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">for</span> data <span class="keyword">in</span> z:</span><br><span class="line">        f.write(data)</span><br></pre></td></tr></table></figure></p>
+<hr>
+<p>根据上述特性，我们结合转发单节点请求，实现同时请求多节点并实时压缩下载：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.route("/cluster_download/&lt;file_path&gt;", method=["GET"])</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">cluster_download</span><span class="params">(reqs)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">(req)</span>:</span></span><br><span class="line">        z = zipstream.ZipFile(mode=<span class="string">"w"</span>, compression=zipstream.ZIP_DEFLATED)</span><br><span class="line">        <span class="keyword">for</span> req <span class="keyword">in</span> reqs:</span><br><span class="line">            host = req.raw._fp.fp._sock.getpeername()[<span class="number">0</span>]</span><br><span class="line">            z.write_iter(<span class="string">"%s.tar.gz"</span> % host, req.iter_content(chunk_size=<span class="number">10</span> * <span class="number">1024</span> * <span class="number">1024</span>)</span><br><span class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> z:</span><br><span class="line">            <span class="keyword">yield</span> chunk</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">get_file_size</span><span class="params">(reqs)</span>:</span></span><br><span class="line">        size = <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> req <span class="keyword">in</span> reqs:</span><br><span class="line">            size += int(req.headers.get(<span class="string">"content-length"</span>))</span><br><span class="line">        <span class="keyword">return</span> size</span><br><span class="line"></span><br><span class="line">    remote_hosts = [<span class="string">"1.1.1.1"</span>, <span class="string">"2.2.2.2"</span>]</span><br><span class="line">    reqs = []</span><br><span class="line">    <span class="keyword">for</span> host <span class="keyword">in</span> remote_hosts:</span><br><span class="line">        req = requests.get(<span class="string">"http://%s/%s"</span> % (host, file_path), timeout=<span class="number">5</span>, stream=<span class="keyword">True</span>)</span><br><span class="line">        <span class="keyword">if</span> req.status_code == <span class="number">200</span>:</span><br><span class="line">            reqs.append(req)</span><br><span class="line">    response = Response(generate(reqs))</span><br><span class="line">    response.headers[<span class="string">'mimetype'</span>] = <span class="string">'application/zip'</span></span><br><span class="line">    response.headers[<span class="string">'Content-Disposition'</span>] = <span class="string">'attachment; filename=cluster_logs.zip)</span></span><br><span class="line"><span class="string">    response.hreads['</span>content-length<span class="string">'] = get_file_size(reqs)</span></span><br></pre></td></tr></table></figure>
+<p>当我们访问 <code>http://localhost/cluster_download/file_name</code> 时，会先去 remote_hosts 中各个节点下载该文件，并通过 <code>write_iter</code> 的方式写入到 zip 文件中，Flask Response 返回的是 zip 文件中的数据块。</p>
+<hr>
+<p>如果我们要在 zip 文件中增加某些运行过程中产生的数据，我们可以通过再定义一个生成器的方式：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_file</span><span class="params">(content)</span>:</span></span><br><span class="line">    <span class="keyword">yield</span> content</span><br><span class="line"></span><br><span class="line">z.write_iter(<span class="string">"running_status"</span>, generate_file)</span><br></pre></td></tr></table></figure></p>
+<p>这样我们就可以在最终的 zip 文件中，包含一个名为 <code>running_status</code> 的文件，文件内容为 content 的内容。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个需求在日常使用中是很常见的，跟下载类似，上传文件的话我们也可以采用类似的方式实现。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/07/07/将-CSV-文件转换为嵌套-Json-文件/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1573,175 +1720,6 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2017/12/31/2017年读书记录/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/12/31/2017年读书记录/" itemprop="url">2017年读书记录</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-31T09:35:40+08:00">
-                2017-12-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/12/31/2017年读书记录/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/12/31/2017年读书记录/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="年终总结"><a href="#年终总结" class="headerlink" title="年终总结"></a>年终总结</h2><p>计划 32 本，实际读完 23 本。</p>
-<h2 id="已读"><a href="#已读" class="headerlink" title="已读"></a>已读</h2><ul>
-<li>《软技能*代码之外的生存指南》  </li>
-<li>《SRE：Google 运维解密》  </li>
-<li>《Vim 实用技巧》  </li>
-<li>《谈判力》  </li>
-<li>《黑客与画家》  </li>
-<li>《大话存储ⅰ》  </li>
-<li>《跟老齐学 Python》  </li>
-<li>《Python编程快速上手 让繁琐工作自动化》  </li>
-<li>《Think Python》  </li>
-<li>《奔跑吧 Ansible》  </li>
-<li>《Python核心编程（第二版）》  </li>
-<li>《Python 学习手册》  </li>
-<li>《嫌疑人X的献身》  </li>
-<li>《图解 HTTP》  </li>
-<li>《你是那人间的四月天》</li>
-<li>《失乐园》</li>
-<li>《活出生命的意义》</li>
-<li>《Python核心编程（第三版）》</li>
-<li>《深度工作》</li>
-<li>《深度实践 KVM》</li>
-<li>《Shell 脚本学习指南》</li>
-<li>《浪潮之巅》</li>
-<li>《人间失格》</li>
-</ul>
-<h2 id="在读"><a href="#在读" class="headerlink" title="在读"></a>在读</h2><ul>
-<li>《Flask Web开发：基于Python的Web应用开发实战》</li>
-<li>《哲学家们都干了些什么》</li>
-<li>《二手时间》</li>
-<li>《Python 算法教程》   </li>
-</ul>
-<h2 id="想读"><a href="#想读" class="headerlink" title="想读"></a>想读</h2><ul>
-<li>《Python Web开发实战》</li>
-<li>《problem solving with algorithms and data structure using python 中文版》</li>
-<li>《Fluent Python》</li>
-<li>《大话数据结构》</li>
-<li>《构建高性能WEB站点》</li>
-<li>《C和指针》</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1794,7 +1772,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">72</span>
+                  <span class="site-state-item-count">73</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
