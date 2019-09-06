@@ -86,14 +86,14 @@
 <meta name="description" content="背景因为公司提供的产品不单单是软件形式提供，还对应的提供一体机形式（服务器 &amp;amp; 相应软件）。正式工作2年多也接触到了一些硬件的坑，特此总结。 磁盘因为公司主要提供的产品是分布式存储和虚拟化相关产品，最直接的影响也是产生范围最大的影响就是磁盘了，会直接导致存储出现单副本等问题，从而产生数据恢复，影响集群稳定性。 固件版本数据中心级别磁盘，相比于性能的要求，稳定性才是重中之重。大部分厂商的磁盘">
 <meta name="keywords" content="Hardware,Server">
 <meta property="og:type" content="article">
-<meta property="og:title" content="硬件故障坑死人（一）">
+<meta property="og:title" content="硬件故障坑死人（持续更新）">
 <meta property="og:url" content="https://zdyxry.github.io/2018/09/27/硬件故障坑死人（一）/index.html">
 <meta property="og:site_name" content="Yiran&#39;s Blog">
 <meta property="og:description" content="背景因为公司提供的产品不单单是软件形式提供，还对应的提供一体机形式（服务器 &amp;amp; 相应软件）。正式工作2年多也接触到了一些硬件的坑，特此总结。 磁盘因为公司主要提供的产品是分布式存储和虚拟化相关产品，最直接的影响也是产生范围最大的影响就是磁盘了，会直接导致存储出现单副本等问题，从而产生数据恢复，影响集群稳定性。 固件版本数据中心级别磁盘，相比于性能的要求，稳定性才是重中之重。大部分厂商的磁盘">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-09-27T11:50:38.774Z">
+<meta property="og:updated_time" content="2019-09-06T11:44:44.191Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="硬件故障坑死人（一）">
+<meta name="twitter:title" content="硬件故障坑死人（持续更新）">
 <meta name="twitter:description" content="背景因为公司提供的产品不单单是软件形式提供，还对应的提供一体机形式（服务器 &amp;amp; 相应软件）。正式工作2年多也接触到了一些硬件的坑，特此总结。 磁盘因为公司主要提供的产品是分布式存储和虚拟化相关产品，最直接的影响也是产生范围最大的影响就是磁盘了，会直接导致存储出现单副本等问题，从而产生数据恢复，影响集群稳定性。 固件版本数据中心级别磁盘，相比于性能的要求，稳定性才是重中之重。大部分厂商的磁盘">
 <meta name="twitter:creator" content="@zhouyiran1994">
 
@@ -131,7 +131,7 @@
 
 
 
-  <title>硬件故障坑死人（一） | Yiran's Blog</title>
+  <title>硬件故障坑死人（持续更新） | Yiran's Blog</title>
   
 
 
@@ -292,7 +292,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">硬件故障坑死人（一）</h1>
+          <h1 class="post-title" itemprop="name headline">硬件故障坑死人（持续更新）</h1>
         
 
         <div class="post-meta">
@@ -398,8 +398,17 @@
 <li>检查控制器连线，连线正常</li>
 </ul>
 <p>想法到这里就断了，只能求助服务器厂商了，厂商检查后发现是电源背板问题，由于电源背板故障，导致供电不足，磁盘连接一直处于连接断开重复状态。</p>
+<h2 id="网线"><a href="#网线" class="headerlink" title="网线"></a>网线</h2><p>最近遇到了一个用户求助，POC 的过程中发现产品不工作了，我远程查看发现是在进行数据写入的时候失败了，其实也不能说是失败了，而是写入的很慢很慢。</p>
+<p>最初以为是磁盘问题，先通过 <code>iostat</code> 查看磁盘状态，但是磁盘是健康的，并且也没有任何压力，那么就开始排查其他原因。</p>
+<p>因为是分布式存储，在数据无法写入时，除了本地需要写入副本，远端也会同时写入副本，保证数据可用性，那么有没有可能是网络问题呢？</p>
+<p>通过 <code>iperf</code> 测试发现，节点间的 10GbE 网络，带宽只有 30kb 左右，在系统内部检查网卡状态健康，尝试通过更换节点间网线，发现是10GbE 网线故障，导致网络异常，最终通过更换网线解决。</p>
+<p>写到这里突然想起随着 10GbE 的普及，现在大部分用户已经不能得到满足，开始尝试 25GbE，40GbE，甚至 100GbE，但是带来的负面影响是对网络设备的兼容性要求越来越高，甚至很多不同厂商的网线与交换机存在不兼容的情况，使用过程中要注意。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>暂时总结了印象比较深的几次硬件故障，由于大家现在都是只做软件，对硬件了解仅限于概念，随着云计算的兴起，很多同学可能没见过真正的服务器，更别提遇到这些诡异的故障。</p>
 <p>硬件故障特别难定位，如果没有一定的相关经验，估计会像我一样捉瞎。希望这篇文章对大家有所帮助。</p>
+<h2 id="更新记录"><a href="#更新记录" class="headerlink" title="更新记录"></a>更新记录</h2><ul>
+<li>2018-09-27 初稿</li>
+<li>2019-09-06 更新网线故障</li>
+</ul>
 
       
     </div>
@@ -632,7 +641,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘"><span class="nav-number">2.</span> <span class="nav-text">磁盘</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#固件版本"><span class="nav-number">2.1.</span> <span class="nav-text">固件版本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#存储控制器"><span class="nav-number">3.</span> <span class="nav-text">存储控制器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#电源"><span class="nav-number">4.</span> <span class="nav-text">电源</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#导致-CPU-频率过低"><span class="nav-number">4.1.</span> <span class="nav-text">导致 CPU 频率过低</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘闪断"><span class="nav-number">4.2.</span> <span class="nav-text">磁盘闪断</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘"><span class="nav-number">2.</span> <span class="nav-text">磁盘</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#固件版本"><span class="nav-number">2.1.</span> <span class="nav-text">固件版本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#存储控制器"><span class="nav-number">3.</span> <span class="nav-text">存储控制器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#电源"><span class="nav-number">4.</span> <span class="nav-text">电源</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#导致-CPU-频率过低"><span class="nav-number">4.1.</span> <span class="nav-text">导致 CPU 频率过低</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘闪断"><span class="nav-number">4.2.</span> <span class="nav-text">磁盘闪断</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网线"><span class="nav-number">5.</span> <span class="nav-text">网线</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更新记录"><span class="nav-number">7.</span> <span class="nav-text">更新记录</span></a></li></ol></div>
             
 
           </div>
@@ -804,7 +813,7 @@
         var disqus_config = function () {
           this.page.url = 'https://zdyxry.github.io/2018/09/27/硬件故障坑死人（一）/';
           this.page.identifier = '2018/09/27/硬件故障坑死人（一）/';
-          this.page.title = '硬件故障坑死人（一）';
+          this.page.title = '硬件故障坑死人（持续更新）';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://zdyxry.disqus.com/embed.js';
