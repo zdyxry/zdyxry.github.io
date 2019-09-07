@@ -275,6 +275,166 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/01/01/Wireshark-远程抓包方法/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/01/Wireshark-远程抓包方法/" itemprop="url">Wireshark 远程抓包方法</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-01T12:46:50+08:00">
+                2019-01-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/01/Wireshark-远程抓包方法/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/01/Wireshark-远程抓包方法/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近在看 《Wireshark网络分析就这么简单》，目前读了 1/3，觉得作为一本工具介绍书籍还是不错的，至少可以让我更关注网络相关知识。<br>书中有大量的实例来讲解 Wireshark 的使用，及网络基础，在阅读的过程中，需要实际动手操作下，由于搜到的教程中没有正确操作的步骤，特此记录。</p>
+<h2 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h2><ul>
+<li>个人 PC<ul>
+<li>Windows 10</li>
+</ul>
+</li>
+<li>服务器<ul>
+<li>CentOS 7</li>
+</ul>
+</li>
+</ul>
+<h2 id="操作流程"><a href="#操作流程" class="headerlink" title="操作流程"></a>操作流程</h2><h3 id="1-个人-PC"><a href="#1-个人-PC" class="headerlink" title="(1)个人 PC"></a>(1)个人 PC</h3><ol>
+<li>登陆 Wireshark 官网，下载最新版本软件包并安装</li>
+<li>打开 Wireshark ，选择本机的网卡，并进行抓取，验证软件是否正常工作</li>
+</ol>
+<img src="/2019/01/01/Wireshark-远程抓包方法/pc-wireshark.png" title="PC1">
+<img src="/2019/01/01/Wireshark-远程抓包方法/pc-wireshark2.png" title="PC2">
+<h3 id="2-服务器"><a href="#2-服务器" class="headerlink" title="(2)服务器"></a>(2)服务器</h3><p>验证个人 PC 上软件正常后，我们需要在服务器安装 rpcapd，以便让 Wireshark 连接该服务器。</p>
+<ol>
+<li>访问 rpcapd <a href="https://github.com/rpcapd-linux/rpcapd-linux" target="_blank" rel="noopener">github</a></li>
+<li>克隆相应代码 <code>cd /tmp; git clone https://github.com/rpcapd-linux/rpcapd-linux</code>  </li>
+<li>安装相应依赖 <code>yum install glibc-static flex binutils</code></li>
+<li>编译安装 libpcap <code>cd /tmp/rpcapd-linux/libpcap ; ./configure &amp;&amp; make</code></li>
+<li>编译安装 rpcapd ，注意 README 中的 <code>libcrypt.a in glibc-static is broken in ,remove -static in Makefile</code> ，需要先将 Makefile 中的 <code>-static</code> 删掉，执行 <code>make</code> 即可</li>
+<li>执行 <code>./rpcapd -n</code> 可以看到程序正在运行：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/tmp/rpcapd-linux </span><br><span class="line">master ✗ $ ./rpcapd -n</span><br><span class="line">Press CTRL + C to stop the server...</span><br><span class="line"><span class="built_in">bind</span>(): Address already <span class="keyword">in</span> use (code 98)</span><br></pre></td></tr></table></figure>
+<h3 id="3-个人-PC"><a href="#3-个人-PC" class="headerlink" title="(3)个人 PC"></a>(3)个人 PC</h3><ol start="3">
+<li>打开 Wireshark，点击 <code>Capture</code> –&gt; <code>Options</code> –&gt; <code>Manage Interfaces</code> –&gt; <code>Remote interfaces</code> –&gt; <code>+</code> –&gt; 在 Host 输入对应服务器 IP 即可<img src="/2019/01/01/Wireshark-远程抓包方法/pc-add-remote.png" title="PC3"></li>
+<li>在 Wireshark 首页上我们可以看到服务器上的相应网卡列表，选择我们想要抓取的网卡，即可抓取。</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/30/2018年读书记录/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1560,141 +1720,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/11/25/剑指-Offer（三）/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/25/剑指-Offer（三）/" itemprop="url">剑指 Offer（三）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-25T10:29:46+08:00">
-                2018-11-25
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/11/25/剑指-Offer（三）/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/11/25/剑指-Offer（三）/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="打印1到最大的n位数"><a href="#打印1到最大的n位数" class="headerlink" title="打印1到最大的n位数"></a>打印1到最大的n位数</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 将数组转换为字符</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">print_number</span><span class="params">(number)</span>:</span></span><br><span class="line">    is_beginning_0 = <span class="keyword">True</span></span><br><span class="line">    num_len = len(number)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(num_len):</span><br><span class="line">        <span class="keyword">if</span> is_beginning_0 <span class="keyword">and</span> number[i] != <span class="string">"0"</span>:</span><br><span class="line">            is_beginning_0 = <span class="keyword">False</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> is_beginning_0:</span><br><span class="line">            print(<span class="string">"%c"</span> % number[i], end=<span class="string">""</span>)</span><br><span class="line">    print(<span class="string">""</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 边界条件：n &gt; 0</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">print_1_to_max_of_n1</span><span class="params">(n)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> n &lt;= <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span> </span><br><span class="line">    </span><br><span class="line">    number = [<span class="string">"0"</span>] * n</span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">not</span> increment(number):</span><br><span class="line">        print_number(number)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 从最后一位开始计算，如果 最后一位增长为10，则重置为 0，且进位；如果首位增长为 10，则溢出</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">increment</span><span class="params">(number)</span>:</span></span><br><span class="line">    is_carry = <span class="number">0</span></span><br><span class="line">    is_overflow = <span class="keyword">False</span></span><br><span class="line">    sum = <span class="number">0</span></span><br><span class="line">    num_len = len(number)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(num_len - <span class="number">1</span>, <span class="number">-1</span>, <span class="number">-1</span>):</span><br><span class="line">        sum = int(number[i]) + is_carry</span><br><span class="line">        <span class="keyword">if</span> i == num_len - <span class="number">1</span>:</span><br><span class="line">            sum += <span class="number">1</span></span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> sum &gt;= <span class="number">10</span>:</span><br><span class="line">            <span class="keyword">if</span> i == <span class="number">0</span>:</span><br><span class="line">                is_overflow = <span class="keyword">True</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                sum -= <span class="number">10</span></span><br><span class="line">                number[i] = str(sum)</span><br><span class="line">                is_carry = <span class="number">1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            number[i] = str(sum)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> is_overflow</span><br><span class="line">        </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">print_1_to_max_of_n2</span><span class="params">(n)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> n &lt;= <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    </span><br><span class="line">    number = [<span class="string">"0"</span>] * n</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>):</span><br><span class="line">        number[<span class="number">0</span>] = str(i)</span><br><span class="line">        print_1_to_max_of_n_recursively(number, n, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 始终找到最后一位，并将其计算</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">print_1_to_max_of_n_recursively</span><span class="params">(number, num_len, index)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> index == num_len - <span class="number">1</span>:</span><br><span class="line">        print_number(number)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>):</span><br><span class="line">        number[index + <span class="number">1</span>] = str(i)</span><br><span class="line">        print_1_to_max_of_n_recursively(number, num_len, index +<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">print_number([<span class="string">"0"</span>, <span class="string">"1"</span>, <span class="string">"1"</span>])</span><br><span class="line">print_1_to_max_of_n1(<span class="number">2</span>)</span><br><span class="line">print_1_to_max_of_n2(<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1742,7 +1772,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">80</span>
+                  <span class="site-state-item-count">81</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
