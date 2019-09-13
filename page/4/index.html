@@ -275,6 +275,179 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/04/06/apscheduler-源码阅读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/04/06/apscheduler-源码阅读/" itemprop="url">apscheduler 源码阅读</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-06T10:58:49+08:00">
+                2019-04-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/04/06/apscheduler-源码阅读/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/04/06/apscheduler-源码阅读/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>apscheduler 全称 <code>Advanced Python Scheduler</code>，调度器，主要功能如下：</p>
+<ul>
+<li>动态添加、删除任务</li>
+<li>暂停、恢复任务</li>
+<li>周期性调度：cron,date,interval</li>
+<li>…</li>
+</ul>
+<p>那么接下来我们根据官方示例，看看 apscheduler 是如何进行处理任务的。</p>
+<p>示例版本为 2.1，因为在 2.1 版本包含目前 master 分支上的主要功能，简单易懂。</p>
+<p>代码结构如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler</span><br><span class="line">2.1 ✔ $ tree apscheduler</span><br><span class="line">apscheduler</span><br><span class="line">├── __init__.py</span><br><span class="line">├── events.py</span><br><span class="line">├── job.py</span><br><span class="line">├── jobstores</span><br><span class="line">│   ├── __init__.py</span><br><span class="line">│   ├── base.py</span><br><span class="line">│   ├── mongodb_store.py</span><br><span class="line">│   ├── ram_store.py</span><br><span class="line">│   ├── redis_store.py</span><br><span class="line">│   ├── shelve_store.py</span><br><span class="line">│   └── sqlalchemy_store.py</span><br><span class="line">├── scheduler.py</span><br><span class="line">├── threadpool.py</span><br><span class="line">├── triggers</span><br><span class="line">│   ├── __init__.py</span><br><span class="line">│   ├── cron</span><br><span class="line">│   │   ├── __init__.py</span><br><span class="line">│   │   ├── expressions.py</span><br><span class="line">│   │   └── fields.py</span><br><span class="line">│   ├── interval.py</span><br><span class="line">│   └── simple.py</span><br><span class="line">└── util.py</span><br></pre></td></tr></table></figure></p>
+<p>示例：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timedelta</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> apscheduler.scheduler <span class="keyword">import</span> Scheduler</span><br><span class="line"><span class="keyword">from</span> apscheduler.jobstores.shelve_store <span class="keyword">import</span> ShelveJobStore</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">alarm</span><span class="params">(time)</span>:</span></span><br><span class="line">    print(<span class="string">'Alarm! This alarm was scheduled at %s.'</span> % time)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    scheduler = Scheduler(standalone=<span class="keyword">True</span>)</span><br><span class="line">    scheduler.add_jobstore(ShelveJobStore(<span class="string">'example.db'</span>), <span class="string">'shelve'</span>)</span><br><span class="line">    alarm_time = datetime.now() + timedelta(seconds=<span class="number">10</span>)</span><br><span class="line">    scheduler.add_date_job(alarm, alarm_time, name=<span class="string">'alarm'</span>,</span><br><span class="line">                           jobstore=<span class="string">'shelve'</span>, args=[datetime.now()])</span><br><span class="line">    print(<span class="string">'To clear the alarms, delete the example.db file.'</span>)</span><br><span class="line">    print(<span class="string">'Press Ctrl+C to exit'</span>)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        scheduler.start()</span><br><span class="line">    <span class="keyword">except</span> (KeyboardInterrupt, SystemExit):</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="Scheduler"><a href="#Scheduler" class="headerlink" title="Scheduler"></a>Scheduler</h2><p>上述示例很容易理解，首先对 <code>Scheduler</code> 实例化，然后添加 jobstore，定义一个名为 <code>alarm</code> 的 job，并指定其运行时间为当前时间 + 10s，将该 job 添加到 scheduler 中，添加 job 类型为 <code>date_job</code>，然后启动 scheduler。</p>
+<p>可以看到我们所有的操作都是通过 scheduler 方法实现的，那么我们来看下 <code>Scheduler</code> 类具体实现了哪些功能：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Scheduler</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    This class is responsible for scheduling jobs and triggering</span></span><br><span class="line"><span class="string">    their execution.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    _stopped = <span class="keyword">True</span></span><br><span class="line">    _thread = <span class="keyword">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, gconfig=&#123;&#125;, **options)</span>:</span></span><br><span class="line">        self._wakeup = Event()</span><br><span class="line">        self._jobstores = &#123;&#125;</span><br><span class="line">        self._jobstores_lock = Lock()</span><br><span class="line">        self._listeners = []</span><br><span class="line">        self._listeners_lock = Lock()</span><br><span class="line">        self._pending_jobs = []</span><br><span class="line">        self.configure(gconfig, **options)</span><br></pre></td></tr></table></figure>
+<p>在 <code>Scheduler</code> 构造函数中，对一些变量进行初始化，这里要注意 <code>self._wakeup</code> ，后续的一些主要功能都是通过它来实现的。接下来看看 <code>add_jobstore</code> 方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_jobstore</span><span class="params">(self, jobstore, alias, quiet=False)</span>:</span></span><br><span class="line">    self._jobstores_lock.acquire() <span class="comment"># 请求锁</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">if</span> alias <span class="keyword">in</span> self._jobstores:</span><br><span class="line">            <span class="keyword">raise</span> KeyError(<span class="string">'Alias "%s" is already in use'</span> % alias)</span><br><span class="line">        self._jobstores[alias] = jobstore <span class="comment"># 将 jobstore 别名作为 key，添加到 self._jobstores 中</span></span><br><span class="line">        jobstore.load_jobs() <span class="comment"># 加载 jobstore 中所有 job</span></span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        self._jobstores_lock.release() <span class="comment"># 释放锁</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify listeners that a new job store has been added</span></span><br><span class="line">    self._notify_listeners(JobStoreEvent(EVENT_JOBSTORE_ADDED, alias)) <span class="comment"># 事件通知</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify the scheduler so it can scan the new job store for jobs</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> quiet:</span><br><span class="line">        self._wakeup.set() <span class="comment"># 将 Event 置为 True</span></span><br></pre></td></tr></table></figure>
+<p>在 <code>add_jobstore</code> 中，将 jobstore 添加到 scheduler 中，并加载当前 jobstore 中的所有任务，接下来将具体的 job 添加到 scheduler 中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_date_job</span><span class="params">(self, func, date, args=None, kwargs=None, **options)</span>:</span></span><br><span class="line">    trigger = SimpleTrigger(date)</span><br><span class="line">    <span class="keyword">return</span> self.add_job(trigger, func, args, kwargs, **options)</span><br></pre></td></tr></table></figure>
+<p>这里的 <code>SimpleTrigger</code> 只是多种 Trigger 中的一种，根据 Trigger 类型的不同，最主要的差别在于 <code>get_next_fire_time</code> 计算方式不同。</p>
+<p>如果添加的任务是 interval_job，那么对应 Trigger 为 <code>IntervalTrigger</code> ；如果添加的任务是 cron_job，那么对应的 Trigger 为 <code>CronTrigger</code>。</p>
+<p>可以看到不同的任务只是 Trigger 计算方式不同，最终还是通过 <code>add_job</code> 方法，继续看：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_job</span><span class="params">(self, trigger, func, args, kwargs, jobstore=<span class="string">'default'</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">            **options)</span>:</span></span><br><span class="line">    job = Job(trigger, func, args <span class="keyword">or</span> [], kwargs <span class="keyword">or</span> &#123;&#125;,</span><br><span class="line">              options.pop(<span class="string">'misfire_grace_time'</span>, self.misfire_grace_time),</span><br><span class="line">              options.pop(<span class="string">'coalesce'</span>, self.coalesce), **options) <span class="comment"># 将 job 实例化</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> self.running: <span class="comment"># 如果 scheduler 未启动，那么将其添加到等待队列中</span></span><br><span class="line">        self._pending_jobs.append((job, jobstore))</span><br><span class="line">        logger.info(<span class="string">'Adding job tentatively -- it will be properly '</span></span><br><span class="line">                    <span class="string">'scheduled when the scheduler starts'</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        self._real_add_job(job, jobstore, <span class="keyword">True</span>) <span class="comment"># 否则添加 job 到 jobstore 中</span></span><br><span class="line">    <span class="keyword">return</span> job</span><br></pre></td></tr></table></figure>
+<p>继续看 <code>_real_add_job</code> 中的实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_real_add_job</span><span class="params">(self, job, jobstore, wakeup)</span>:</span></span><br><span class="line">    job.compute_next_run_time(datetime.now()) <span class="comment"># 计算job 下次运行时间</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> job.next_run_time:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">'Not adding job since it would never be run'</span>)</span><br><span class="line"></span><br><span class="line">    self._jobstores_lock.acquire() <span class="comment"># 请求锁</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            store = self._jobstores[jobstore]</span><br><span class="line">        <span class="keyword">except</span> KeyError:</span><br><span class="line">            <span class="keyword">raise</span> KeyError(<span class="string">'No such job store: %s'</span> % jobstore)</span><br><span class="line">        store.add_job(job) <span class="comment"># 添加 job</span></span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        self._jobstores_lock.release()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify listeners that a new job has been added</span></span><br><span class="line">    event = JobStoreEvent(EVENT_JOBSTORE_JOB_ADDED, jobstore, job)</span><br><span class="line">    self._notify_listeners(event) <span class="comment"># 事件通知</span></span><br><span class="line"></span><br><span class="line">    logger.info(<span class="string">'Added job "%s" to job store "%s"'</span>, job, jobstore)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify the scheduler about the new job</span></span><br><span class="line">    <span class="keyword">if</span> wakeup:</span><br><span class="line">        self._wakeup.set() <span class="comment"># # 将 Event 置为 True</span></span><br></pre></td></tr></table></figure>
+<p>在 <code>_real_add_job</code> 中我们终于看到 <code>store.add_job(job)</code> ，至于 <code>store.add_job</code> 如何实现我们之后看 <code>JobStore</code> 再说。</p>
+<p>现在我们已经给 scheduler 添加了 jobstore 和 job，那么看下 scheduler 是如何运行的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">start</span><span class="params">(self)</span>:</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="comment"># Schedule all pending jobs</span></span><br><span class="line">    <span class="keyword">for</span> job, jobstore <span class="keyword">in</span> self._pending_jobs: <span class="comment"># 将 scheduler 未运行时添加的 job，即在等待队列中的 job 添加到 jobstore 中</span></span><br><span class="line">        self._real_add_job(job, jobstore, <span class="keyword">False</span>)</span><br><span class="line">    <span class="keyword">del</span> self._pending_jobs[:]</span><br><span class="line"></span><br><span class="line">    self._stopped = <span class="keyword">False</span></span><br><span class="line">    <span class="keyword">if</span> self.standalone:</span><br><span class="line">        self._main_loop()</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        self._thread = Thread(target=self._main_loop, name=<span class="string">'APScheduler'</span>)</span><br><span class="line">        self._thread.setDaemon(self.daemonic)</span><br><span class="line">        self._thread.start()</span><br></pre></td></tr></table></figure>
+<p>在 scheduler 运行时，会先将所有的 job 加载到 jobstore 中，然后调用 <code>self._main_loop</code> ，如果 Standalone 为 True，则会一直阻塞知道没有 job 需要运行，看看 <code>self._main_loop</code> 做了啥：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_main_loop</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="string">"""Executes jobs on schedule."""</span></span><br><span class="line"></span><br><span class="line">    logger.info(<span class="string">'Scheduler started'</span>)</span><br><span class="line">    self._notify_listeners(SchedulerEvent(EVENT_SCHEDULER_START)) <span class="comment"># 事件通知 </span></span><br><span class="line"></span><br><span class="line">    self._wakeup.clear()</span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">not</span> self._stopped:</span><br><span class="line">        logger.debug(<span class="string">'Looking for jobs to run'</span>)</span><br><span class="line">        now = datetime.now()</span><br><span class="line">        next_wakeup_time = self._process_jobs(now) <span class="comment"># 计算下次唤醒时间</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> next_wakeup_time <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">            wait_seconds = time_difference(next_wakeup_time, now)</span><br><span class="line">            logger.debug(<span class="string">'Next wakeup is due at %s (in %f seconds)'</span>,</span><br><span class="line">                         next_wakeup_time, wait_seconds)</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                self._wakeup.wait(wait_seconds) <span class="comment"># 等待 Event flag</span></span><br><span class="line">            <span class="keyword">except</span> IOError:  <span class="comment"># Catch errno 514 on some Linux kernels</span></span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line">            self._wakeup.clear()</span><br><span class="line">        <span class="keyword">elif</span> self.standalone:</span><br><span class="line">            logger.debug(<span class="string">'No jobs left; shutting down scheduler'</span>)</span><br><span class="line">            self.shutdown() <span class="comment"># 若 scheduler standalone 为 True 且 jobs 为空，则停止 scheduler</span></span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            logger.debug(<span class="string">'No jobs; waiting until a job is added'</span>)</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                self._wakeup.wait() <span class="comment"># 等待 Event flag</span></span><br><span class="line">            <span class="keyword">except</span> IOError:  <span class="comment"># Catch errno 514 on some Linux kernels</span></span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line">            self._wakeup.clear()</span><br></pre></td></tr></table></figure>
+<p>还记得上面提到的 <code>Scheduler</code> 构造函数中的 <code>self._wakeup</code> 么，它实际上是 <code>threading.Event</code> ，它的 wait 方法会一直 block 直到 Event flag 为 True，也就是我们上面看到的 <code>self._wakeup.set()</code> ，那么我们可以知道在 <code>Scheduler</code> 中有几种场景会置为 True：</p>
+<ol>
+<li>Scheduler.shutdown</li>
+<li>Scheduler.add_jobstore</li>
+<li>Scheduler._real_add_job</li>
+</ol>
+<p>如果没有触发上述场景，则 <code>_main_loop</code> 会根据 jobs 的执行时间一直循环等待。</p>
+<h2 id="JobStore"><a href="#JobStore" class="headerlink" title="JobStore"></a>JobStore</h2><p>在 apscheduler 中，JobStore 只是单纯的实现了 Job 相关的方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">JobStore</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_job</span><span class="params">(self, job)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">update_job</span><span class="params">(self, job)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">remove_job</span><span class="params">(self, job)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">load_jobs</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">close</span><span class="params">(self)</span>:</span></span><br></pre></td></tr></table></figure>
+<p>其中，对 job 的操作会根据 JobStore 类型的不同，而采用不同的序列化方式，比如在 <code>MongoDBJobStore</code> 中采用的是 <code>bson.binary</code>，而在其他 JobStore 比如 <code>RedisJobStore</code> 中采用的都是 <code>pickle</code>。</p>
+<h2 id="Events"><a href="#Events" class="headerlink" title="Events"></a>Events</h2><p>在 <code>Scheduler</code> 中，我们已经看到通过 <code>threading.Event</code> 来实现事件通知的，那么我们通知的 <code>Event</code> 都是在 <code>apscheduler.events</code> 中定义好的，比如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">JobEvent</span><span class="params">(SchedulerEvent)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, code, job, scheduled_run_time, retval=None,</span></span></span><br><span class="line"><span class="function"><span class="params">                 exception=None, traceback=None)</span>:</span></span><br><span class="line">        SchedulerEvent.__init__(self, code)</span><br><span class="line">        self.job = job</span><br><span class="line">        self.scheduled_run_time = scheduled_run_time</span><br><span class="line">        self.retval = retval</span><br><span class="line">        self.exception = exception</span><br><span class="line">        self.traceback = traceback</span><br></pre></td></tr></table></figure>
+<p>在 <code>JobEvent</code> 中，我们能看到 job 的执行时间，返回值，异常捕获等信息。如果看过之前关于 <a href="https://zdyxry.github.io/2019/03/31/huey-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">huey 博客</a> 的同学应该知道，在 huey 中是可以直接通过 task id 获取 task 执行结果的，但是在 apscheduler 中，我们并没有直接获取该结果的方法，而是通过在 <code>Scheduler</code> 中的 <code>add_listener</code> 添加监听者，监控指定成功的 Job 获取该 Job 的返回值，感觉这里不太友好。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里我们基本上已经将 apscheduler 的流程走了一遍，具体的 Trigger 计算时间的方法之后有机会单独写一下关于 cron，interval，date 的计算方法。</p>
+<p>与 huey 相比，apscheduler 使用上要简单，但是简单也意味着功能的不足，比如获取 job 执行结果、job retry 机制等等。当然也有比较好的地方，apscheduler 在跟 web 框架比如 Flask，Django 集成的时候有一些第三方插件可以直接使用，不用像 Huey 一样要单独启动一个 consumer 进程，比较方便。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/04/02/记一次-Python-编码踩坑/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1642,172 +1815,6 @@ to the horrors that are OpenVPN and IPSec, it&#39;s a work of art.</code>  </p>
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/01/12/聊一聊-ISO-9660/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/12/聊一聊-ISO-9660/" itemprop="url">聊一聊 ISO 9660</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-12T22:06:45+08:00">
-                2019-01-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/01/12/聊一聊-ISO-9660/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/12/聊一聊-ISO-9660/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="ISO-9660"><a href="#ISO-9660" class="headerlink" title="ISO 9660"></a>ISO 9660</h2><blockquote>
-<p>ISO 9660，也被一些硬件和软件供应商称作CDFS（光盘文件系统），是一个由国际标准化组织（ISO）为光盘介质发布的文件系统。其目标是能够在不同的操作系统如Windows、Mac OS以及类Unix系统上交换数据。</p>
-</blockquote>
-<p>我们平时接触到的 ISO 格式文件均为 ISO 9660，我们可以通过 <code>file</code> 命令进行查看，以 RedHat 发行版为例：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node redhat]<span class="comment"># file rhel-server-7.6-x86_64-dvd.iso </span></span><br><span class="line">rhel-server-7.6-x86_64-dvd.iso: ISO 9660 CD-ROM filesystem data <span class="string">'RHEL-7.6 Server.x86_64         '</span> (bootable)</span><br></pre></td></tr></table></figure></p>
-<h3 id="用途"><a href="#用途" class="headerlink" title="用途"></a>用途</h3><ol>
-<li>安装操作系统，我们可以通过将 ISO 挂载到物理服务器/PC 上，从 ISO 启动进行操作系统的安装；</li>
-<li>作为软件安装源，比如红帽系列的版本，在 ISO 中，通常会有 <code>Packages</code> 路径，下面包含了当前版本完整的软件源，我们可以通过本地挂载的方式使用；</li>
-<li>作为软件发行方式，常见的有 VMware vmtools, KVM Virtio 等统一打包方式；</li>
-<li>…</li>
-</ol>
-<h3 id="制作方式"><a href="#制作方式" class="headerlink" title="制作方式"></a>制作方式</h3><ol>
-<li>genisoimage</li>
-<li>mkisofs</li>
-</ol>
-<p>第一种方式不常用，主要使用第二种方式进行使用，之前的文章中提到过 LiveCD 制作方式也是通过 <code>mkisofs</code> 命令继续构建的。</p>
-<p>这里我们可以参考 VMware 官方文档了解如何定制自己的 ISO。</p>
-<blockquote>
-<p>说一下何时需要定制我们自己的 ISO。当我们获取到各个发行版本的 ISO 后，我们可以正常使用进行安装，但是都是交互式安装，需要我们通过图形化界面/命令行交互的方式进行配置确认及参数设置。如果我们想要 ISO 支持静默安装，那么就需要我们自己定制属于自己的 KickStart 脚本，然后放置到 ISO 中并设置为默认执行项。<br>此场景对于 *nix 系统均适用。</p>
-</blockquote>
-<p>当前路径结构</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">test</span>/</span><br><span class="line">├── a.b00</span><br><span class="line">├── ata_liba.v00</span><br><span class="line">|...</span><br><span class="line">├── char_ran.v00</span><br><span class="line">├── efi</span><br><span class="line">│   └── boot</span><br><span class="line">│       ├── boot.cfg</span><br><span class="line">│       ├── bootia32.efi</span><br><span class="line">│       └── bootx64.efi</span><br><span class="line">├── efiboot.img</span><br><span class="line">├── hid_hid.v00</span><br><span class="line">|...</span><br></pre></td></tr></table></figure>
-<p>执行 mkisofs 命令，指定 ISO 源文件路径，指定目标 ISO 名称，即可构建。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">[root@installer mnt]<span class="comment"># mkisofs -relaxed-filenames -J -R -o custom_esxi.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table  test/</span></span><br><span class="line">Warning: creating filesystem that does not conform to ISO-9660.</span><br><span class="line">I: -input-charset not specified, using utf-8 (detected <span class="keyword">in</span> locale settings)</span><br><span class="line">Size of boot image is 4 sectors -&gt; No emulation</span><br><span class="line">  2.89% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line">  5.78% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line">  8.66% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 11.55% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 14.44% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 17.33% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 20.21% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 23.10% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 25.98% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 28.88% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 31.76% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 34.65% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 37.53% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 40.42% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 43.31% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 46.20% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 49.08% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 51.97% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 54.85% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 57.74% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 60.63% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 63.52% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 66.40% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 69.29% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 72.17% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 75.06% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 77.95% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 80.84% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 83.72% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 86.61% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 89.49% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 92.39% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 95.27% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 98.16% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line">Total translation table size: 2048</span><br><span class="line">Total rockridge attributes bytes: 14593</span><br><span class="line">Total directory bytes: 6144</span><br><span class="line">Path table size(bytes): 50</span><br><span class="line">Max brk space used 25000</span><br><span class="line">173203 extents written (338 MB)</span><br></pre></td></tr></table></figure>
-<p>使用 <code>file</code> 命令查看构建结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@installer mnt]<span class="comment"># file custom_esxi.iso </span></span><br><span class="line">custom_esxi.iso: <span class="comment"># ISO 9660 CD-ROM filesystem data 'CDROM' (bootable)</span></span><br></pre></td></tr></table></figure>
-<h3 id="定制-ISO-信息"><a href="#定制-ISO-信息" class="headerlink" title="定制 ISO 信息"></a>定制 ISO 信息</h3><p>通过上面的命令，我们构建了属于我们自己的 ISO，但是这时候出现一个需求，如果我们要对我们定制的 ISO 进行版本管理，要求可以通过 ISO 自动升级，那么我们在需要有渠道/方式获取 ISO 属性信息，比如：release date，size，dependency… 我们如何管理这些属性信息呢？ </p>
-<p>最简单的方式肯定是直接再编写一个文件，与 ISO 一一匹配，在文件中记录 ISO 相应信息，比如：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="attr">"md5"</span>: <span class="string">"04db3dc9d872c382b1f42c9741815138"</span>,</span><br><span class="line"><span class="attr">"size"</span>: <span class="number">354719744</span>,</span><br><span class="line"><span class="attr">"dependency"</span>: [<span class="string">"yiran1"</span>, <span class="string">"yiran2"</span>, <span class="string">"yiran3"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这样虽然简单实现了，但是很不方便管理，通过查看 ISO 9660 维基百科中的描述，可以看到有一个特性：</p>
-<blockquote>
-<p>最开始的32768字节没有被ISO 9660数据结构使用，因此可以有其他用处，例如：CD-ROM可以在此区包含一个替代文件系统描述信息块，通常被混合光盘(Hybrid CD)用于提供Mac OS特定的内容。此未用块后面跟着一连串卷描述符，详细记录了该磁盘上的内容和类型信息（类似被FAT和NTFS格式磁盘使用的BIOS参数块）。</p>
-</blockquote>
-<p>可以看到 ISO 前 32KiB 空间未被使用，Mac OS 早就利用这个空间来进行信息记录了，那么我们可以通过 <code>dd</code> 的方式来将二进制的信息写入 ISO 前 32KiB 空间中。<br>这样就避免了同时维护 ISO 及 ISO 对应 metadata 文件，管理起来更加方便。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://docs.vmware.com/en/VMware-vSphere/6.5/com.vmware.vsphere.upgrade.doc/GUID-C03EADEA-A192-4AB4-9B71-9256A9CB1F9C.html" target="_blank" rel="noopener">https://docs.vmware.com/en/VMware-vSphere/6.5/com.vmware.vsphere.upgrade.doc/GUID-C03EADEA-A192-4AB4-9B71-9256A9CB1F9C.html</a></li>
-<li><a href="https://zh.wikipedia.org/wiki/ISO_9660" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/ISO_9660</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1860,7 +1867,7 @@ to the horrors that are OpenVPN and IPSec, it&#39;s a work of art.</code>  </p>
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">82</span>
+                  <span class="site-state-item-count">83</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
