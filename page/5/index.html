@@ -275,6 +275,160 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/02/Libvirt-CPU-配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/02/Libvirt-CPU-配置/" itemprop="url">Libvirt CPU 配置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-02T19:40:20+08:00">
+                2019-03-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/02/Libvirt-CPU-配置/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/03/02/Libvirt-CPU-配置/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Libvirt-CPU-配置参数"><a href="#Libvirt-CPU-配置参数" class="headerlink" title="Libvirt CPU 配置参数"></a>Libvirt CPU 配置参数</h2><p>我们先来看下 Libvirt 关于虚拟机 CPU 配置项：</p>
+<ul>
+<li>match</li>
+<li>check</li>
+<li>mode</li>
+<li>model</li>
+<li>…</li>
+</ul>
+<p>具体配置解释可以去 Libvirt 官方文档中查看，这里主要说一下 <code>mode</code> 参数，看一下 <code>mode</code> 具体含义及可选配置：</p>
+<h3 id="host-passthrough"><a href="#host-passthrough" class="headerlink" title="host-passthrough"></a>host-passthrough</h3><p>Libvirt 通知 KVM 对 CPU 不做任何配置项修改，直通给虚拟机。因为虚拟机可以使用与物理主机相同 CPU 指令集，性能最好，相反，在虚拟机热迁移过程中，对目标主机 CPU 要求同型号同代。</p>
+<h3 id="host-model"><a href="#host-model" class="headerlink" title="host-model"></a>host-model</h3><p>本质上是根据物理主机 CPU 从 <code>cpu_map.xml</code> 文件中选择最匹配的 CPU 型号。由于CPU定义是在启动虚拟机之前复制的，因此可以在不同主机上使用完全相同的XML，同时仍然提供每个主机支持的最佳虚拟机 CPU。属于在功能与性能之间的平衡。</p>
+<h3 id="custom"><a href="#custom" class="headerlink" title="custom"></a>custom</h3><p>不指定 <code>mode</code> 属性时的默认值。此模式使得无论虚拟机启动哪个主机，虚拟机都将看到相同的硬件，兼容性最好。</p>
+<h2 id="最佳选择"><a href="#最佳选择" class="headerlink" title="最佳选择"></a>最佳选择</h2><p>在不考虑虚拟机兼容性（热迁移）情况下，优先选择 <code>host-passthrough</code> ，综合考虑选择 <code>host-model</code> 。  </p>
+<p>OpenStack 中如果检测到 hypervisor 是 kvm-qemu ，则默认值为 <code>host-model</code> ；在 hypervisor 是其他类型时，默认值为 <code>none</code>，即由 hypervisor 自己选择。</p>
+<p>我查看了自己两台 VPS 的 CPU 信息，如下：</p>
+<h3 id="Vultr"><a href="#Vultr" class="headerlink" title="Vultr"></a>Vultr</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@vultr ~]<span class="comment"># lscpu</span></span><br><span class="line">Architecture:          x86_64</span><br><span class="line">厂商 ID：           GenuineIntel</span><br><span class="line">CPU 系列：          6</span><br><span class="line">型号：              60</span><br><span class="line">型号名称：        Virtual CPU 71438xxxxxxx</span><br><span class="line">超管理器厂商：  KVM</span><br><span class="line">虚拟化类型：     完全</span><br><span class="line">Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx rdtscp lm constant_tsc rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm invpcid_single pti fsgsbase bmi1 avx2 smep bmi2 erms invpcid xsaveopt arat</span><br></pre></td></tr></table></figure>
+<h3 id="BWH"><a href="#BWH" class="headerlink" title="BWH"></a>BWH</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@bwh ~]<span class="comment"># lscpu</span></span><br><span class="line">Architecture:          x86_64</span><br><span class="line">厂商 ID：           GenuineIntel</span><br><span class="line">CPU 系列：          6</span><br><span class="line">型号：              13</span><br><span class="line">型号名称：        QEMU Virtual CPU version (cpu64-rhel6)</span><br><span class="line">超管理器厂商：  KVM</span><br><span class="line">虚拟化类型：     完全</span><br><span class="line">Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pse36 clflush mmx fxsr sse sse2 ss syscall nx pdpe1gb rdtscp lm rep_good nopl pni pclmulqdq ssse3 cx16 pcid sse4_1 sse4_2 x2apic popcnt aes xsave avx f16c rdrand hypervisor lahf_lm fsgsbase smep xsaveopt</span><br></pre></td></tr></table></figure>
+<p>可以看到 BWH 的 CPU 比 Vultr CPU 指令集少了很多，而且 CPU 型号是 <code>QEMU Virtual CPU version (cpu64-rhel6)</code> 推断物理机 libvirt 配置是 <code>custom</code> ，果然便宜无好货。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://docs.openstack.org/juno/config-reference/content/kvm.html" target="_blank" rel="noopener">https://docs.openstack.org/juno/config-reference/content/kvm.html</a></li>
+<li><a href="https://wiki.openstack.org/wiki/LibvirtXMLCPUModel" target="_blank" rel="noopener">https://wiki.openstack.org/wiki/LibvirtXMLCPUModel</a></li>
+<li><a href="https://patchwork.kernel.org/patch/9219601/" target="_blank" rel="noopener">https://patchwork.kernel.org/patch/9219601/</a></li>
+<li><a href="https://lists.gnu.org/archive/html/qemu-devel/2016-06/msg00634.html" target="_blank" rel="noopener">https://lists.gnu.org/archive/html/qemu-devel/2016-06/msg00634.html</a></li>
+<li><a href="http://wsfdl.com/openstack/2018/01/02/libvirt_cpu_mode.html" target="_blank" rel="noopener">http://wsfdl.com/openstack/2018/01/02/libvirt_cpu_mode.html</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/02/05/学会拒绝/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1601,137 +1755,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/05/剑指-Offer（五）/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/05/剑指-Offer（五）/" itemprop="url">剑指 Offer（五）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-05T20:25:38+08:00">
-                2018-12-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/12/05/剑指-Offer（五）/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/05/剑指-Offer（五）/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="调整数组顺序使奇数位于偶数前面"><a href="#调整数组顺序使奇数位于偶数前面" class="headerlink" title="调整数组顺序使奇数位于偶数前面"></a>调整数组顺序使奇数位于偶数前面</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">reorder</span><span class="params">(nums, func)</span>:</span></span><br><span class="line">    left, right = <span class="number">0</span>, len(nums) - <span class="number">1</span></span><br><span class="line">    <span class="keyword">while</span> left &lt; right:</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">not</span> func(nums[left]):</span><br><span class="line">            left += <span class="number">1</span></span><br><span class="line">        <span class="keyword">while</span> func(nums[right]):</span><br><span class="line">            right -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> left &lt; right:</span><br><span class="line">            nums[left], nums[right] = nums[right], nums[left]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">is_even</span><span class="params">(num)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> (num &amp; <span class="number">1</span>) == <span class="number">0</span></span><br></pre></td></tr></table></figure>
-<h2 id="调整数组顺序使奇数位于偶数前面，保持相对位置不变"><a href="#调整数组顺序使奇数位于偶数前面，保持相对位置不变" class="headerlink" title="调整数组顺序使奇数位于偶数前面，保持相对位置不变"></a>调整数组顺序使奇数位于偶数前面，保持相对位置不变</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">reorder2</span><span class="params">(nums)</span>:</span></span><br><span class="line">    left = [num <span class="keyword">for</span> num <span class="keyword">in</span> nums <span class="keyword">if</span> num &amp; <span class="number">1</span> != <span class="number">0</span>]</span><br><span class="line">    right = [num <span class="keyword">for</span> num <span class="keyword">in</span> nums <span class="keyword">if</span> num &amp; <span class="number">1</span> == <span class="number">0</span>]</span><br><span class="line">    <span class="keyword">return</span> left + right</span><br><span class="line"></span><br><span class="line">nums = [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>]</span><br><span class="line"><span class="keyword">print</span> reorder2(nums)</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1784,7 +1807,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">84</span>
+                  <span class="site-state-item-count">85</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

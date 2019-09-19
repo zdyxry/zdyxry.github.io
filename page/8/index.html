@@ -275,6 +275,178 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/07/28/RPM-常用构建方式/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/28/RPM-常用构建方式/" itemprop="url">RPM 常用构建方式</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-28T06:47:40+08:00">
+                2018-07-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/07/28/RPM-常用构建方式/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/07/28/RPM-常用构建方式/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>作为一个标准化的产品，需要提供简单快捷的软件安装方式，比如 Python pip、 Ubuntu apt-get、SUSE zypper 或者是 CentOS/RHEL yum。都可以让用户快速的安装产品并上手使用，极大的节省了软件安装的时间。因为工作中使用的发行版是 CentOS/RHEL 系列，常用的方式是 RPM。<br>本文介绍下常用的集中构建 RPM 软件包方式，便于快速上手构建属于自己的 RPM。</p>
+<h2 id="RPM-介绍"><a href="#RPM-介绍" class="headerlink" title="RPM 介绍"></a>RPM 介绍</h2><p>什么是 RPM？ RPM 全称为 RedHat Package Manager，也就是常见的以 <code>.rpm</code> 为后缀的软件包。属于 RedHat 系列发行版的通用软件包解决方式。<br>在安装 CentOS(RHEL，以下 CentOS 均可适用于 RHEL)操作系统时，我们可以选择要安装的软件包，默认系统安装为 Minimal 模式，只包含系统必要的 RPM。</p>
+<p>理论上操作系统上所有的软件都是通过 RPM 的方式安装的，比如常用的 Kernel、GCC、LS 等工具。</p>
+<h2 id="RPM-使用"><a href="#RPM-使用" class="headerlink" title="RPM 使用"></a>RPM 使用</h2><p>在进行 RPM 安装时，通常会遇到一个问题：依赖。由于某些特定的软件包在使用时，要求系统必须安装其所依赖的软件才可以正常工作，因此我们需要查看要安装的软件包的依赖。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:~/project/Blog</span><br><span class="line">master ✔ $ rpm -qR sos-3.2-35.el7.centos.3.noarch</span><br><span class="line">/usr/bin/python</span><br><span class="line">bzip2</span><br><span class="line">config(sos) = 3.2-35.el7.centos.3</span><br><span class="line">libxml2-python</span><br><span class="line">python(abi) = 2.7</span><br><span class="line">python-six</span><br><span class="line">rpmlib(CompressedFileNames) &lt;= 3.0.4-1</span><br><span class="line">rpmlib(FileDigests) &lt;= 4.6.0-1</span><br><span class="line">rpmlib(PartialHardlinkSets) &lt;= 4.0.4-1</span><br><span class="line">rpmlib(PayloadFilesHavePrefix) &lt;= 4.0-1</span><br><span class="line">xz</span><br><span class="line">rpmlib(PayloadIsXz) &lt;= 5.2-1</span><br></pre></td></tr></table></figure>
+<p>在安装之前博客提到的 sos 软件时，需要安装 Python、bzip、config 等软件包才可以正常使用 sos。</p>
+<p>此时遇到一个问题，如果 bzip 又依赖某些其他的 RPM，我们如何解决呢，当然可以继续使用 <code>rpm -qR</code> 来查看 bzip 的依赖，然后手动进行安装，但是 Duke University 团队提供了更好用的工具：Yum(Yellow dog Updater, Modified)。可以自动帮助我们解决 RPM 依赖问题。我们只需要在 <code>/etc/yum.repos.d/</code> 路径下配置合理的 yum repo 配置文件，就可以直接使用 <code>yum install sos</code> 的方式安装软件包。在 Fedora 22 版本之后，提供了新的工具叫做 DNF，标称为 Yum 下一代工具（但我没觉得有多好用。。。）。</p>
+<h2 id="RPM-构建方式"><a href="#RPM-构建方式" class="headerlink" title="RPM 构建方式"></a>RPM 构建方式</h2><p>简单介绍了 RPM 的基础使用，具体常用的操作比如：升级、卸载、强制安装、不检查依赖卸载等操作，需要大家自行 Google。</p>
+<p>下面介绍两种方式构建 RPM。</p>
+<h3 id="rpmbuild"><a href="#rpmbuild" class="headerlink" title="rpmbuild"></a>rpmbuild</h3><p>常规构建 RPM 方式是使用 rpmbuild 工具，我们需要自己编写好相应的 spec 文件，打包压缩好要构建的软件，完成 RPM 构建，下面讲解具体方式。</p>
+<h4 id="安装-rpm-build"><a href="#安装-rpm-build" class="headerlink" title="安装 rpm-build"></a>安装 rpm-build</h4><p>使用 yum 命令安装： <code>yum install rpm-build</code> 。会自动将 rpm-build 依赖软件安装，依赖包名如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">elfutils-libelf</span><br><span class="line">rpm</span><br><span class="line">rpm-libs</span><br><span class="line">rpm-python</span><br></pre></td></tr></table></figure>
+<h4 id="RPM-构建路径"><a href="#RPM-构建路径" class="headerlink" title="RPM 构建路径"></a>RPM 构建路径</h4><p>在 rpm-build 安装完成后，会自动在 /root/ 下创建相应 rpmbuild 文件夹，会包含构建 RPM 所必须的路径，你也可以之后构建时手动指定路径，但是不推荐新手这种方式，会增加 debug 成本，默认就好。</p>
+<h4 id="准备-tar-软件包"><a href="#准备-tar-软件包" class="headerlink" title="准备 tar 软件包"></a>准备 tar 软件包</h4><p>在准备工作完成后，我们需要准备软件包源文件，并放置 <code>/root/rpmbuild/SOURCES/</code> 路径下。开源软件包通常可以在晚上下载到，如果是本地 git 管理的仓库，也可以通过以下方式自动生成 Tar 包。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git archive --format=tar.gz --prefix=$RPM_VERSION HEAD &gt; /root/rpmbuild/SOURCES/</span><br></pre></td></tr></table></figure></p>
+<h4 id="创建-SPEC-文件"><a href="#创建-SPEC-文件" class="headerlink" title="创建 SPEC 文件"></a>创建 SPEC 文件</h4><p>接下来是最重要的一步，也是出错最多的一步，准备 SPEC 文件。</p>
+<p>SPEC 配置文件指定了在 RPM 构建时进行的操作，和 RPM 安装时执行的操作、拷贝对应源文件到哪个路径、要创建哪些文件夹等。</p>
+<p>我们仍以 sos 作为示例，sos 作为 RedHat 开源软件，在 Github 上是包含了对应的 <a href="https://github.com/sosreport/sos/blob/master/sos.spec" target="_blank" rel="noopener">sos.spec</a> 文件的。</p>
+<p>截取重要的部分：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line">%&#123;!?python_sitelib: %define python_sitelib %(%&#123;__python&#125; -c &quot;from distutils.sysconfig import get_python_lib; print get_python_lib()&quot;)&#125;</span><br><span class="line"></span><br><span class="line">Summary: A set of tools to gather troubleshooting information from a system   </span><br><span class="line"># rpm package summary info</span><br><span class="line">Name: sos                         											  </span><br><span class="line"># rpm package name</span><br><span class="line">Version: 3.6																  </span><br><span class="line"># rpm package version</span><br><span class="line">Release: 1%&#123;?dist&#125;															  </span><br><span class="line"># rpm release number</span><br><span class="line">Group: Applications/System     												  </span><br><span class="line"># rpm group name</span><br><span class="line">Source0: http://people.redhat.com/breeves/sos/releases/sos-%&#123;version&#125;.tar.gz  </span><br><span class="line"># rpm software tar package name, abs path</span><br><span class="line">License: GPLv2+																  </span><br><span class="line"># rpm license</span><br><span class="line">BuildRoot: %&#123;_tmppath&#125;/%&#123;name&#125;-%&#123;version&#125;-%&#123;release&#125;-buildroot                </span><br><span class="line"># rpm build path</span><br><span class="line">BuildArch: noarch   													      </span><br><span class="line"># rpm arch version: x86_64/noarch/i686</span><br><span class="line">Url: http://fedorahosted.org/sos</span><br><span class="line">BuildRequires: python-devel													  </span><br><span class="line"># rpm build dependency package</span><br><span class="line">BuildRequires: gettext														  </span><br><span class="line"># ...</span><br><span class="line">BuildRequires: python-six													  </span><br><span class="line"># ...</span><br><span class="line">Requires: libxml2-python													  </span><br><span class="line"># rpm install dependency package</span><br><span class="line">Requires: rpm-python														  </span><br><span class="line"># ...</span><br><span class="line">Requires: tar</span><br><span class="line">Requires: bzip2</span><br><span class="line">Requires: xz</span><br><span class="line">Requires: python-six</span><br><span class="line">Requires: python-futures</span><br><span class="line"></span><br><span class="line">%description																  </span><br><span class="line"># rpm package description</span><br><span class="line">Sos is a set of tools that gathers information about system</span><br><span class="line">hardware and configuration. The information can then be used for</span><br><span class="line">diagnostic purposes and debugging. Sos is commonly used to help</span><br><span class="line">support technicians and developers.</span><br><span class="line"></span><br><span class="line">%prep</span><br><span class="line">%setup -q</span><br><span class="line"></span><br><span class="line">%build</span><br><span class="line">make																		  </span><br><span class="line"># rpm build method: make/setup.py</span><br><span class="line"></span><br><span class="line">%install																	  </span><br><span class="line"># perform operations when the package is installed</span><br><span class="line">rm -rf $&#123;RPM_BUILD_ROOT&#125;</span><br><span class="line">make DESTDIR=$&#123;RPM_BUILD_ROOT&#125; install</span><br><span class="line">%find_lang %&#123;name&#125; || echo 0</span><br><span class="line"></span><br><span class="line">%clean 																		  </span><br><span class="line"># perform operations when rpm package build success</span><br><span class="line">rm -rf $&#123;RPM_BUILD_ROOT&#125;</span><br><span class="line"></span><br><span class="line">%files -f %&#123;name&#125;.lang     													  </span><br><span class="line"># rpm install software file path</span><br><span class="line">%defattr(-,root,root,-)</span><br><span class="line">%&#123;_sbindir&#125;/sosreport</span><br><span class="line">%&#123;_datadir&#125;/%&#123;name&#125;</span><br><span class="line">%&#123;python_sitelib&#125;/*</span><br><span class="line">%&#123;_mandir&#125;/man1/*</span><br><span class="line">%&#123;_mandir&#125;/man5/*</span><br><span class="line">%doc AUTHORS README.md LICENSE</span><br><span class="line">%doc /usr/share/doc/sos/html</span><br><span class="line">%config(noreplace) %&#123;_sysconfdir&#125;/sos.conf</span><br><span class="line"></span><br><span class="line">%changelog																	  </span><br><span class="line"># software changelog</span><br><span class="line">* Thu Nov 02 2017 Bryn M. Reeves &lt;bmr@redhat.com&gt; = 3.5</span><br><span class="line">- New upstream release</span><br></pre></td></tr></table></figure></p>
+<p>可以看到，SPEC 文件的编写要指定的东西还是很多的，我们需要配置好每一项所做的操作，才能保证软件正确安装。</p>
+<p><code>{_datadir}</code>, <code>{_mandir}</code> 等类似的宏定义，可以查看 <a href="https://fedoraproject.org/wiki/Packaging:RPMMacros" target="_blank" rel="noopener">Fedora 维基</a> 了解详情。</p>
+<h4 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h4><p>上述操作均完成后，我们可以进行真正的构建操作了，执行 <code>rpmbuild -ba sos.spec</code> ，如果构建成功后，我们可以再 <code>/root/rpmbuild/SRPMS/</code> <code>/root/rpmbuild/RPMS</code> 下看到对应的 RPM 源文件包和 RPM 软件包，SRPMS 内的软件包，可以让我们之后的构建更轻松，如果不更改 spec 时，我们可以直接 <code>rpm -ivh sos*src.rpm</code> 安装后，即可再次执行 <code>rpmbuild -ba sos.spec</code> 进行构建。</p>
+<h4 id="验证-RPM-正确性"><a href="#验证-RPM-正确性" class="headerlink" title="验证 RPM 正确性"></a>验证 RPM 正确性</h4><p>最简单的验证方式就是在测试环境中安装刚刚构建出的软件包，如果相应的配置、源文件已经在正确的路径下，则安装成功。</p>
+<h3 id="FPM"><a href="#FPM" class="headerlink" title="FPM"></a>FPM</h3><h4 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h4><p>什么是 FPM？ FPM 是一个命令行工具用于构建软件包，软件包来源支持的种类很多，如: dir/gem/rpm/python/pear 等等。<br>通过 FPM 我们可以很轻松的构建 RPM，不用再编写那一堆 spec 文件中的参数了。所有参数都可以通过命令行 option 的方式添加，方便快捷。</p>
+<h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><p>从 <a href="https://rubygems.org/" target="_blank" rel="noopener">https://rubygems.org/</a> 下载并安装 gem。也可以通过 yum install ruby-devel gcc 方式安装。<br>安装完成后，默认的 gem 源指定的是国外的，我们可以替换成 taobao ：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gem source --remove https://rubygems.org/</span><br><span class="line">gem source --add https://ruby.taobao.org</span><br></pre></td></tr></table></figure></p>
+<p>然后执行 gem install fpm 记了。</p>
+<h4 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h4><p>如果我们要构建一个 python 软件包，如 pyroute2。我们可以这样操作：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:~</span><br><span class="line"> $ fpm -s python -t rpm -a noarch -n python2-pyroute2 pyroute2</span><br><span class="line">Created package &#123;:path=&gt;&quot;python2-pyroute2-0.5.2-1.noarch.rpm&quot;&#125;</span><br><span class="line">root@yiran-30-250:~</span><br><span class="line"> $ ll -trh |grep python2-pyroute2</span><br><span class="line">-rw-r--r--  1 root root 208K 7月  28 07:50 python2-pyroute2-0.5.2-1.noarch.rpm</span><br></pre></td></tr></table></figure></p>
+<p>只需一条命令就可以自动从 pypi 上下载源软件包并构建出对应的 rpm。</p>
+<p>如果我们此时不止要构建 rpm，还要指定 rpm 的依赖关系，我们可以这样做：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:~</span><br><span class="line"> $ fpm -s python -t rpm -a x86_64 -n python2-crypto -v 2.6.1 --iteration 1.el7 --depends &quot;python-pycrypto&quot;</span><br><span class="line">Created package &#123;:path=&gt;&quot;python2-crypto-2.6.1-1.el7.x86_64.rpm&quot;&#125;</span><br><span class="line">root@yiran-30-250:~</span><br><span class="line"> $ ll -trh |grep python2-crypto</span><br><span class="line">-rw-r--r--  1 root root 1.5K 7月  28 07:52 python2-crypto-2.6.1-1.el7.x86_64.rpm</span><br><span class="line">root@yiran-30-250:~</span><br><span class="line"> $ rpm -qpR python2-crypto-2.6.1-1.el7.x86_64.rpm</span><br><span class="line">python-pycrypto</span><br><span class="line">rpmlib(PayloadFilesHavePrefix) &lt;= 4.0-1</span><br><span class="line">rpmlib(CompressedFileNames) &lt;= 3.0.4-1</span><br></pre></td></tr></table></figure></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>日常用到的 RPM，推荐还是 Google，基本上常见版本都会有。如果我们要构建自己需要的指定版本第三方 RPM，推荐使用 FPM 的方式，可以省去很多烦恼。<br>但是如果我们需要对自己编写、维护的软件进行 RPM 构建，那还是推荐 rpmbuild 方式，毕竟可以指定 RPM 安装前，安装时，安装后的所有操作，可以根据自己需求定义操作，很强大。</p>
+<h2 id="吐槽"><a href="#吐槽" class="headerlink" title="吐槽"></a>吐槽</h2><p>目前主要工作是使用 Python。在 Python 引入第三方依赖时，软件包名字很头疼，如果软件包名不同，但是源文件是相同的，RPM 安装时会提示软件包冲突，此时就需要自己去解决冲突，如果要安装的软件依赖于 A，系统已经安装了 B，目前我常用的方式有：</p>
+<ol>
+<li>rpm -ivh A –replacefiles # 强制安装 A</li>
+<li>rpm -e B –nodeps ; rpm -ivh A # 因为 A 与 B 源文件相同，在版本相同的情况下，这种方式是最快的解决办法</li>
+<li>Build 一个空的软件包，名字为 A，依赖于 B。 这样我们可以直接安装 A，因为 A 是空的，不做任何操作，安装完 A 后，系统同时存在 A &amp; B，此时再安装依赖于 A 的软件就可以正常安装了</li>
+</ol>
+<p>目前已经见过以下几种 Python RPM 命名方式了：</p>
+<ol>
+<li>python-pyroute2</li>
+<li>python2-pyroute2</li>
+<li>pyroute2</li>
+<li>…</li>
+</ol>
+<p>真是无力吐槽啊。。。。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/07/22/译-python-logging-最佳实践/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1629,136 +1801,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/05/29/Vim-配置/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/05/29/Vim-配置/" itemprop="url">Vim 配置</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-05-29T21:46:32+08:00">
-                2018-05-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/05/29/Vim-配置/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/05/29/Vim-配置/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="Vim-插件"><a href="#Vim-插件" class="headerlink" title="Vim 插件"></a>Vim 插件</h3><p><a href="https://github.com/zdyxry/Dotfiles/tree/master/vim" target="_blank" rel="noopener">待填坑</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1811,7 +1853,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">84</span>
+                  <span class="site-state-item-count">85</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
