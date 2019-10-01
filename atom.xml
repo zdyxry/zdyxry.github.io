@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://zdyxry.github.io/"/>
-  <updated>2019-09-19T11:59:18.627Z</updated>
+  <updated>2019-10-01T12:38:12.548Z</updated>
   <id>https://zdyxry.github.io/</id>
   
   <author>
@@ -15,6 +15,29 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Golang context 使用</title>
+    <link href="https://zdyxry.github.io/2019/09/30/Golang-context-%E4%BD%BF%E7%94%A8/"/>
+    <id>https://zdyxry.github.io/2019/09/30/Golang-context-使用/</id>
+    <published>2019-09-30T10:33:32.000Z</published>
+    <updated>2019-10-01T12:38:12.548Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>前段时间在写 Cluster API Provider 的时候，经常会使用 context 传递参数，当时只是按照其他项目中的方式快速的实现，并没有认真的了解 context 具体包含什么，为了解决什么问题，这次来聊一下。</p><p>P.S. 虽然写了一周的 Golang，但是对于标准库有什么还一无所知，找时间应该认真过一遍的。。</p><h2 id="定义与使用"><a href="#定义与使用" class="headerlink" title="定义与使用"></a>定义与使用</h2><p>先看定义：</p><blockquote><p>Package context defines the Context type, which carries deadlines, cancellation signals, and other request-scoped values across API boundaries and between processes.</p></blockquote><ul><li>当一个 goroutine 调用其他 goroutine，随着层级变多，我们想要在外层达到控制的效果</li><li>在必要场景下传递 <strong>必需</strong> 的数据</li></ul><p>其中 <code>Context</code> 这个 interface 中定义了 4 个方法，具体如下：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Context <span class="keyword">interface</span> &#123;</span><br><span class="line">Deadline() (deadline time.Time, ok <span class="keyword">bool</span>)</span><br><span class="line">Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line">Err() error</span><br><span class="line">Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>在 <code>context</code> 包中实现了4个函数，平时也都是使用这些函数：</p><ol><li>func WithCancel(parent Context) (ctx Context, cancel CancelFunc) </li><li>func WithDeadline(parent Context, d time.Time) (Context, CancelFunc)</li><li>func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)</li><li>func WithValue(parent Context, key, val interface{}) Context</li></ol><p>可以看到 Cancel,Deadline,Timeout 都会返回一个 CancelFunc 函数，哪怕我们设定的时间还没到，我们也可以直接使用 CancelFunc 去设置 Context。</p><p>在 context 使用上有官方文档，且有很多博主已经写过很详细的博客，这里只是列一个简单的例子：</p><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line"><span class="string">"context"</span></span><br><span class="line"><span class="string">"fmt"</span></span><br><span class="line"><span class="string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line"><span class="comment">// Pass a context with a timeout to tell a blocking function that it</span></span><br><span class="line"><span class="comment">// should abandon its work after the timeout elapses.</span></span><br><span class="line">ctx, cancel := context.WithTimeout(context.Background(), <span class="number">200</span>*time.Millisecond)</span><br><span class="line"><span class="keyword">defer</span> cancel()</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> &#123;</span><br><span class="line"><span class="keyword">case</span> &lt;-time.After(<span class="number">1</span> * time.Second): <span class="comment">// 等待 1s</span></span><br><span class="line">fmt.Println(<span class="string">"overslept"</span>)</span><br><span class="line"><span class="keyword">case</span> &lt;-ctx.Done():  <span class="comment">// 只有当 Channel 关闭时才会返回非空，也就是到了设定的 Timeout 数值</span></span><br><span class="line">fmt.Println(ctx.Err()) <span class="comment">// prints "context deadline exceeded"</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ol><li>不要把 Context 放到结构体中，以参数传递，在作为参数传递时，需要将其作为第一个参数传递</li><li>如果 Context 传递内容不确定，那么可以传递 <code>context.Background()</code> 或 <code>context.TODO()</code>，不要传递 nil</li><li>不建议使用 <code>context.Value</code> 传递数据</li><li>Context 是通过 <strong>通知</strong> 来达到 <strong>控制</strong> 目的</li><li>Context 并非是全局的，只查询自身及父context 的数据，同理在 Cancel 也是一样的</li></ol><h2 id="（可能存在的）问题"><a href="#（可能存在的）问题" class="headerlink" title="（可能存在的）问题"></a>（可能存在的）问题</h2><p>在搜索过程中，看到<a href="https://faiface.github.io/post/context-should-go-away-go2/" target="_blank" rel="noopener">一篇博客</a>提到了 context 的一些问题：</p><ul><li>传播性<ul><li>当我们有一个包含了100个函数的调用栈，当我们想要通过 context 来达到控制目的时，那么我们需要将 context 作为函数的第一个参数不断的传递下去。</li></ul></li><li>什么时候使用 <code>context.TODO</code> ？</li><li>context.Value 不该用<ul><li>非静态的</li><li>需要在指定功能上使用特定的 key/value</li><li>容易发生 key 冲突</li></ul></li><li>效率低下</li><li>…</li></ul><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>虽然上面说了那么多，比如上面提到的不应该用 <code>context.Value</code> ，在 ClusterAPI 中有很多使用 <code>context.Value</code> 传值的地方，该用还是用嘛。</p><h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul><li><a href="https://golang.org/pkg/context/#Background" target="_blank" rel="noopener">https://golang.org/pkg/context/#Background</a></li><li><a href="https://www.flysnow.org/2017/05/12/go-in-action-go-context.html" target="_blank" rel="noopener">https://www.flysnow.org/2017/05/12/go-in-action-go-context.html</a></li><li><a href="https://deepzz.com/post/golang-context-package-notes.html" target="_blank" rel="noopener">https://deepzz.com/post/golang-context-package-notes.html</a></li><li><a href="https://zhuanlan.zhihu.com/p/34417106" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/34417106</a></li><li><a href="http://imfox.io/2017/11/28/go-context-note/" target="_blank" rel="noopener">http://imfox.io/2017/11/28/go-context-note/</a></li><li><a href="https://faiface.github.io/post/context-should-go-away-go2/" target="_blank" rel="noopener">https://faiface.github.io/post/context-should-go-away-go2/</a></li></ul>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;前段时间在写 Cluster API Provider 的时候，经常会使用 context 传递参数，当时只是按照其他项目中的方式快速的实现
+      
+    
+    </summary>
+    
+    
+      <category term="Golang" scheme="https://zdyxry.github.io/tags/Golang/"/>
+    
+  </entry>
   
   <entry>
     <title>像虚拟机一样运行容器</title>
@@ -338,9 +361,9 @@
     </summary>
     
     
-      <category term="Python" scheme="https://zdyxry.github.io/tags/Python/"/>
-    
       <category term="Golang" scheme="https://zdyxry.github.io/tags/Golang/"/>
+    
+      <category term="Python" scheme="https://zdyxry.github.io/tags/Python/"/>
     
   </entry>
   
@@ -457,30 +480,6 @@
     
     
       <category term="Kubernetes" scheme="https://zdyxry.github.io/tags/Kubernetes/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>调整 arp 参数提高网络稳定性</title>
-    <link href="https://zdyxry.github.io/2019/06/17/%E8%B0%83%E6%95%B4-arp-%E5%8F%82%E6%95%B0%E6%8F%90%E9%AB%98%E7%BD%91%E7%BB%9C%E7%A8%B3%E5%AE%9A%E6%80%A7/"/>
-    <id>https://zdyxry.github.io/2019/06/17/调整-arp-参数提高网络稳定性/</id>
-    <published>2019-06-17T13:20:04.000Z</published>
-    <updated>2019-06-17T13:32:36.915Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。</p><h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。<br>今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">No buffer space available</span><br></pre></td></tr></table></figure><p>根据这个提示，感觉像是某些系统参数配置的小了，于是查了一下，发现跟 arp 有关。什么是 arp ？ </p><p>相信对网络稍微有些概念的同学都不陌生，这里我直接引用维基百科：</p><blockquote><p>地址解析协议（英语：Address Resolution Protocol，缩写：ARP）。在以太网协议中规定，同一局域网中的一台主机要和另一台主机进行直接通信，必须要知道目标主机的MAC地址。而在TCP/IP协议中，网络层和传输层只关心目标主机的IP地址。这就导致在以太网中使用IP协议时，数据链路层的以太网协议接到上层IP协议提供的数据中，只包含目的主机的IP地址。于是需要一种方法，根据目的主机的IP地址，获得其MAC地址。这就是ARP协议要做的事情。所谓地址解析（address resolution）就是主机在发送帧前将目标IP地址转换成目标MAC地址的过程。</p></blockquote><blockquote><p>另外，当发送主机和目的主机不在同一个局域网中时，即便知道对方的MAC地址，两者也不能直接通信，必须经过路由转发才可以。所以此时，发送主机通过ARP协议获得的将不是目的主机的真实MAC地址，而是一台可以通往局域网外的路由器的MAC地址。于是此后发送主机发往目的主机的所有帧，都将发往该路由器，通过它向外发送。这种情况称为委托ARP或ARP代理（ARP Proxy）。</p></blockquote><h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>知道了原因，那么我们来调整参数就好：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">gc_thresh1 (since Linux 2.2)</span><br><span class="line">The minimum number of entries to keep <span class="keyword">in</span> the ARP cache. The garbage collector will not run <span class="keyword">if</span> there are fewer than this number of entries <span class="keyword">in</span> the cache. Defaults to 128.</span><br><span class="line">gc_thresh2 (since Linux 2.2)</span><br><span class="line">The soft maximum number of entries to keep <span class="keyword">in</span> the ARP cache. The garbage collector will allow the number of entries to exceed this <span class="keyword">for</span> 5 seconds before collection will be performed. Defaults to 512.</span><br><span class="line">gc_thresh3 (since Linux 2.2)</span><br><span class="line">The hard maximum number of entries to keep <span class="keyword">in</span> the ARP cache. The garbage collector will always run <span class="keyword">if</span> there are more than this number of entries <span class="keyword">in</span> the cache. Defaults to 1024.</span><br></pre></td></tr></table></figure><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yiran@<span class="built_in">test</span>:~$ cat /etc/sysctl.conf |grep -v ^<span class="comment"># |grep -v ^$</span></span><br><span class="line">net.ipv4.tcp_congestion_control = bbr</span><br><span class="line">net.core.default_qdisc = fq</span><br><span class="line">net.ipv4.neigh.default.gc_thresh1 = 4096</span><br><span class="line">net.ipv4.neigh.default.gc_thresh2 = 8192</span><br><span class="line">net.ipv4.neigh.default.gc_thresh3 = 8192</span><br><span class="line">yiran@<span class="built_in">test</span>:~$ sudo sysctl -p</span><br><span class="line">net.ipv4.tcp_congestion_control = bbr</span><br><span class="line">net.core.default_qdisc = fq</span><br><span class="line">net.ipv4.neigh.default.gc_thresh1 = 4096</span><br><span class="line">net.ipv4.neigh.default.gc_thresh2 = 8192</span><br><span class="line">net.ipv4.neigh.default.gc_thresh3 = 8192</span><br></pre></td></tr></table></figure>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。&lt;/p&gt;
-&lt;h2 id=&quot;问题&quot;
-      
-    
-    </summary>
-    
-    
-      <category term="Linux" scheme="https://zdyxry.github.io/tags/Linux/"/>
     
   </entry>
   
