@@ -275,6 +275,167 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/11/18/Traceroute-简易实现/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/18/Traceroute-简易实现/" itemprop="url">Traceroute 简易实现</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T12:33:35+08:00">
+                2018-11-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/11/18/Traceroute-简易实现/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/11/18/Traceroute-简易实现/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在平时遇到网络问题时，我们通常会使用 <code>ping</code>,<code>route</code>,<code>ip</code> 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 <code>traceroute</code> 来判断网络走向。</p>
+<p>最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 <code>traceroute</code>，一直使用它却不知道是怎么工作的，研究了一下，作为总结。</p>
+<h2 id="Traceroute"><a href="#Traceroute" class="headerlink" title="Traceroute"></a>Traceroute</h2><p>先上维基百科的解释：</p>
+<blockquote>
+<p>traceroute，现代Linux系统称为tracepath，Windows系统称为tracert，是一种计算机网络工具。它可显示数据包在IP网络经过的路由器的IP地址。</p>
+</blockquote>
+<p>我们通常使用无需特殊配置，直接用 traceroute 加上我们的目标地址即可，如：  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-workstation:~ </span><br><span class="line"> $ traceroute 192.168.16.1</span><br><span class="line">traceroute to 192.168.16.1 (192.168.16.1), 30 hops max, 60 byte packets</span><br><span class="line"> 1  gateway (192.168.8.1)  19.469 ms  19.089 ms  18.911 ms</span><br><span class="line"> 2  192.168.1.201 (192.168.1.201)  11.539 ms  11.423 ms  11.307 ms</span><br><span class="line"> 3  192.168.16.1 (192.168.16.1)  18.289 ms  18.184 ms  18.064 ms</span><br></pre></td></tr></table></figure>
+<p>当我们想设置 TTL 数值时，我们可以使用 <code>-m</code> 参数:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-workstation:~ </span><br><span class="line"> $ traceroute 192.168.16.1 -m 2</span><br><span class="line">traceroute to 192.168.16.1 (192.168.16.1), 2 hops max, 60 byte packets</span><br><span class="line"> 1  gateway (192.168.8.1)  20.914 ms  20.700 ms  20.616 ms</span><br><span class="line"> 2  192.168.1.201 (192.168.1.201)  20.497 ms  20.465 ms  20.383 ms</span><br></pre></td></tr></table></figure></p>
+<p>实现原理：</p>
+<blockquote>
+<p>主叫方首先发出 TTL=1 的数据包，第一个路由器将 TTL 减1得0后就不再继续转发此数据包，而是返回一个 ICMP 逾时报文，主叫方从逾时报文中即可提取出数据包所经过的第一个网关地址。然后又发出一个 TTL=2 的 ICMP 数据包，可获得第二个网关地址，依次递增 TTL 便获取了沿途所有网关地址。</p>
+</blockquote>
+<blockquote>
+<p>需要注意的是，并不是所有网关都会如实返回 ICMP 超时报文。出于安全性考虑，大多数防火墙以及启用了防火墙功能的路由器缺省配置为不返回各种 ICMP 报文，其余路由器或交换机也可被管理员主动修改配置变为不返回 ICMP 报文。因此 Traceroute 程序不一定能拿全所有的沿途网关地址。所以，当某个 TTL 值的数据包得不到响应时，并不能停止这一追踪过程，程序仍然会把 TTL 递增而发出下一个数据包。一直达到默认或用参数指定的追踪限制（maximum_hops）才结束追踪。</p>
+</blockquote>
+<p>这里要说明一下，加入我们去 traceroute 最常用的 baidu.com，就会看到这个现象，traceroute 命令的结果中包含 <code>* * *</code> ，我也没有找到一个较为明确的解释，猜测这个节点禁止了 ping 或其他配置，无法返回 ICMP 超时报文，导致 traceroute 无法正常解析。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">master ✗ $ traceroute  baidu.com -m 20 </span><br><span class="line">traceroute to baidu.com (220.181.57.216), 20 hops max, 60 byte packets</span><br><span class="line"> 1  gateway (192.168.8.1)  18.535 ms  18.456 ms  29.185 ms</span><br><span class="line"> 2  10.1.1.1 (10.1.1.1)  6.599 ms  6.533 ms  6.378 ms</span><br><span class="line"> 3  106.38.14.1 (106.38.14.1)  28.707 ms  28.606 ms  28.514 ms</span><br><span class="line"> 4  5.0.142.219.broad.bj.bj.dynamic.163data.com.cn (219.142.0.5)  28.384 ms  28.305 ms  28.205 ms</span><br><span class="line"> 5  * * *</span><br><span class="line"> 6  36.110.244.46 (36.110.244.46)  37.131 ms  31.660 ms  31.489 ms</span><br><span class="line"> 7  * * *</span><br><span class="line"> 8  220.181.17.94 (220.181.17.94)  10.700 ms 220.181.17.146 (220.181.17.146)  10.511 ms 220.181.17.150 (220.181.17.150)  10.336 ms</span><br><span class="line"> 9  * * *</span><br><span class="line">10  * * *</span><br><span class="line">11  * * *</span><br><span class="line">12  * * *</span><br><span class="line">13  * * *</span><br><span class="line">14  * * *</span><br><span class="line">15  * * *</span><br><span class="line">16  * * *</span><br><span class="line">17  * * *</span><br><span class="line">18  * * *</span><br><span class="line">19  * * *</span><br><span class="line">20  * * *</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>依据上述原理，利用了 UDP 数据包的 Traceroute 程序在数据包到达真正的目的主机时，就可能因为该主机没有提供 UDP 服务而简单将数据包抛弃，并不返回任何信息。为了解决这个问题，Traceroute 故意使用了一个大于 30000 的端口号，因 UDP 协议规定端口号必须小于 30000 ，所以目标主机收到数据包后唯一能做的事就是返回一个“端口不可达”的 ICMP 报文，于是主叫方就将端口不可达报文当作跟踪结束的标志。</p>
+</blockquote>
+<h2 id="简易实现"><a href="#简易实现" class="headerlink" title="简易实现"></a>简易实现</h2><p>源地址： <a href="https://github.com/dnaeon/pytraceroute" target="_blank" rel="noopener">https://github.com/dnaeon/pytraceroute</a><br>对整个实现中最重要的部分做下注释：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Copyright (c) 2015 Marin Atanasov Nikolov &lt;dnaeon@gmail.com&gt;</span></span><br><span class="line"><span class="comment"># All rights reserved.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Redistribution and use in source and binary forms, with or without</span></span><br><span class="line"><span class="comment"># modification, are permitted provided that the following conditions</span></span><br><span class="line"><span class="comment"># are met:</span></span><br><span class="line"><span class="comment"># 1. Redistributions of source code must retain the above copyright</span></span><br><span class="line"><span class="comment">#    notice, this list of conditions and the following disclaimer</span></span><br><span class="line"><span class="comment">#    in this position and unchanged.</span></span><br><span class="line"><span class="comment"># 2. Redistributions in binary form must reproduce the above copyright</span></span><br><span class="line"><span class="comment">#    notice, this list of conditions and the following disclaimer in the</span></span><br><span class="line"><span class="comment">#    documentation and/or other materials provided with the distribution.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS'' AND ANY EXPRESS OR</span></span><br><span class="line"><span class="comment"># IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES</span></span><br><span class="line"><span class="comment"># OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span></span><br><span class="line"><span class="comment"># IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,</span></span><br><span class="line"><span class="comment"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT</span></span><br><span class="line"><span class="comment"># NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,</span></span><br><span class="line"><span class="comment"># DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY</span></span><br><span class="line"><span class="comment"># THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT</span></span><br><span class="line"><span class="comment"># (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF</span></span><br><span class="line"><span class="comment"># THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span></span><br><span class="line"></span><br><span class="line"><span class="string">"""</span></span><br><span class="line"><span class="string">Core module</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">"""</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> struct</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line">__all__ = [<span class="string">'Tracer'</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tracer</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, dst, hops=<span class="number">30</span>)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Initializes a new tracer object</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Args:</span></span><br><span class="line"><span class="string">            dst  (str): Destination host to probe</span></span><br><span class="line"><span class="string">            hops (int): Max number of hops to probe</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        self.dst = dst <span class="comment"># 目标地址：域名或 IPv4 地址</span></span><br><span class="line">        self.hops = hops </span><br><span class="line">        self.ttl = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># Pick up a random port in the range 33434-33534</span></span><br><span class="line">        <span class="comment"># 对应上述解释，随机选择一个 &gt; 30000 的端口用于连接</span></span><br><span class="line">        self.port = random.choice(range(<span class="number">33434</span>, <span class="number">33535</span>))</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Run the tracer</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Raises:</span></span><br><span class="line"><span class="string">            IOError</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            dst_ip = socket.gethostbyname(self.dst) <span class="comment"># 解析域名</span></span><br><span class="line">        <span class="keyword">except</span> socket.error <span class="keyword">as</span> e:</span><br><span class="line">            <span class="keyword">raise</span> IOError(<span class="string">'Unable to resolve &#123;&#125;: &#123;&#125;'</span>, self.dst, e)</span><br><span class="line"></span><br><span class="line">        text = <span class="string">'traceroute to &#123;&#125; (&#123;&#125;), &#123;&#125; hops max'</span>.format(</span><br><span class="line">            self.dst,</span><br><span class="line">            dst_ip,</span><br><span class="line">            self.hops</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        print(text)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">            startTimer = time.time()</span><br><span class="line">            receiver = self.create_receiver() <span class="comment"># 创建接收 socket 实例</span></span><br><span class="line">            sender = self.create_sender() <span class="comment"># 创建发送 socket 实例</span></span><br><span class="line">            sender.sendto(<span class="string">b''</span>, (self.dst, self.port)) <span class="comment"># 向目标地址指定端口发送报文</span></span><br><span class="line"></span><br><span class="line">            addr = <span class="keyword">None</span></span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                data, addr = receiver.recvfrom(<span class="number">1024</span>) <span class="comment"># 获取发送 ICMP 超时报文，并解析地址</span></span><br><span class="line">                entTimer = time.time()</span><br><span class="line">            <span class="keyword">except</span> socket.error:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line">                <span class="comment"># raise IOError('Socket error: &#123;&#125;'.format(e))</span></span><br><span class="line">            <span class="keyword">finally</span>:</span><br><span class="line">                receiver.close()</span><br><span class="line">                sender.close()</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> addr: <span class="comment"># 如果获取到地址，则打印相应信息及用时</span></span><br><span class="line">                timeCost = round((entTimer - startTimer) * <span class="number">1000</span>, <span class="number">2</span>)</span><br><span class="line">                print(<span class="string">'&#123;:&lt;4&#125; &#123;&#125; &#123;&#125; ms'</span>.format(self.ttl, addr[<span class="number">0</span>]), timeCost)</span><br><span class="line">                <span class="keyword">if</span> addr[<span class="number">0</span>] == dst_ip:</span><br><span class="line">                    <span class="keyword">break</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                print(<span class="string">'&#123;:&lt;4&#125; *'</span>.format(self.ttl))</span><br><span class="line"></span><br><span class="line">            self.ttl += <span class="number">1</span> <span class="comment"># 增加 TTL，获取下一跳地址</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> self.ttl &gt; self.hops:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">create_receiver</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Creates a receiver socket</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Returns:</span></span><br><span class="line"><span class="string">            A socket instance</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Raises:</span></span><br><span class="line"><span class="string">            IOError</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        s = socket.socket(</span><br><span class="line">            family=socket.AF_INET, <span class="comment"># 指定 proto family 为 IPv4</span></span><br><span class="line">            type=socket.SOCK_RAW, <span class="comment"># 指定接收 socket 类型为 raw，这里是因为普通的 socket 类型无法处理 ICMP 报文</span></span><br><span class="line">            proto=socket.IPPROTO_ICMP <span class="comment"># 指定 socket 协议为 ICMP 协议，type 与 proto 需要特定的组合，不允许任意配置</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        timeout = struct.pack(<span class="string">"ll"</span>, <span class="number">5</span>, <span class="number">0</span>)</span><br><span class="line">        s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, timeout)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            s.bind((<span class="string">''</span>, self.port))</span><br><span class="line">        <span class="keyword">except</span> socket.error <span class="keyword">as</span> e:</span><br><span class="line">            <span class="keyword">raise</span> IOError(<span class="string">'Unable to bind receiver socket: &#123;&#125;'</span>.format(e))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> s</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">create_sender</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Creates a sender socket</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Returns:</span></span><br><span class="line"><span class="string">            A socket instance</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        s = socket.socket(</span><br><span class="line">            family=socket.AF_INET, <span class="comment"># 指定 proto family 为 IPv4</span></span><br><span class="line">            type=socket.SOCK_DGRAM, <span class="comment"># 指定发送的类型为 UDP，即发送广播消息</span></span><br><span class="line">            proto=socket.IPPROTO_UDP <span class="comment"># 指定协议为 IP UDP </span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        s.setsockopt(socket.SOL_IP, socket.IP_TTL, self.ttl)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> s</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>了解了实现原理之后，希望之后排查网络问题应该也会得心应手一些吧。<br>也希望自己能更多的关注于 Why，而不是 How。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="http://dnaeon.github.io/traceroute-in-python/" target="_blank" rel="noopener">http://dnaeon.github.io/traceroute-in-python/</a></li>
+<li><a href="https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/" target="_blank" rel="noopener">https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/</a></li>
+<li><a href="https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required" target="_blank" rel="noopener">https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required</a></li>
+<li><a href="https://blog.csdn.net/newnewman80/article/details/8000404" target="_blank" rel="noopener">https://blog.csdn.net/newnewman80/article/details/8000404</a></li>
+<li><a href="http://www.zmonster.me/notes/tcp-ip-socket-in-c.html" target="_blank" rel="noopener">http://www.zmonster.me/notes/tcp-ip-socket-in-c.html</a></li>
+<li><a href="http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf" target="_blank" rel="noopener">http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/11/18/剑指-Offer（一）/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1625,146 +1786,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/08/11/Pure-Bash-Bible/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/08/11/Pure-Bash-Bible/" itemprop="url">Pure Bash Bible</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-11T11:06:55+08:00">
-                2018-08-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/08/11/Pure-Bash-Bible/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/08/11/Pure-Bash-Bible/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>逛 Github Trending 的时候，发现一个叫 <a href="https://github.com/dylanaraps/pure-bash-bible" target="_blank" rel="noopener">pure bash bible</a> 的项目，这个项目主要是介绍一些常用功能的 Bash 实现。<br>在日常使用中，Bash 作为大部分 Linux 发行版的默认 Shell 是使用最多的，尤其是进行一些简单的自动处理事件上很方便。但是我使用的时候通常会用 Bash、Sed、Awk、cut、timeout 等一些 Linux 命令相互配合使用。<br>如果你要维护的 Server 是一个比较少见的版本，比如：ESXi 5.0、XenServer 6.0 等版本，那么就会导致有些命令是缺失的，且无法安装，这时候就需要单独使用 Bash 来实现一些其他命令的功能。<br><code>pure bash bible</code> 这个项目列举了很多常用常用功能，有一些比较有借鉴意义，在此记录。</p>
-<h2 id="字符串"><a href="#字符串" class="headerlink" title="字符串"></a>字符串</h2><h3 id="删除字符串前后空格"><a href="#删除字符串前后空格" class="headerlink" title="删除字符串前后空格"></a>删除字符串前后空格</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">trim_string（）&#123; <span class="comment"># Ups：trim_string“example string” </span></span><br><span class="line">    ： “ $ &#123;1 ＃” $ &#123;1 %% [！[：space：]] * &#125; “ &#125; ”</span><br><span class="line">    ： “ $ &#123;_ ％” $ &#123;_ <span class="comment">## * [！[：space：]]&#125; “ &#125; ”</span></span><br><span class="line">     <span class="built_in">printf</span>  <span class="string">'％s \ n '</span>  “ $ _ ” &#125;</span><br><span class="line">$ trim_string “ Hello，World ” </span><br><span class="line">Hello, World</span><br><span class="line">$ name = “ John Black ” $ trim_string “ $ name ” John Black</span><br></pre></td></tr></table></figure>
-<h3 id="删除字符串中所有空格"><a href="#删除字符串中所有空格" class="headerlink" title="删除字符串中所有空格"></a>删除字符串中所有空格</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># shellcheck disable=SC2086,SC2048</span></span><br><span class="line"><span class="function"><span class="title">trim_all</span></span>() &#123;</span><br><span class="line">    <span class="comment"># Usage: trim_all "   example   string    "</span></span><br><span class="line">    <span class="built_in">set</span> -f</span><br><span class="line">    <span class="built_in">set</span> -- $*</span><br><span class="line">    <span class="built_in">printf</span> <span class="string">'%s\n'</span> <span class="string">"$*"</span></span><br><span class="line">    <span class="built_in">set</span> +f</span><br><span class="line">&#125;</span><br><span class="line">$ trim_all <span class="string">"    Hello,    World    "</span></span><br><span class="line">Hello, World</span><br><span class="line"></span><br><span class="line">$ name=<span class="string">"   John   Black  is     my    name.    "</span></span><br><span class="line">$ trim_all <span class="string">"<span class="variable">$name</span>"</span></span><br><span class="line">John Black is my name.</span><br></pre></td></tr></table></figure>
-<h3 id="根据指定分隔符分隔字符串"><a href="#根据指定分隔符分隔字符串" class="headerlink" title="根据指定分隔符分隔字符串"></a>根据指定分隔符分隔字符串</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">split() &#123;</span><br><span class="line">   # Usage: split &quot;string&quot; &quot;delimiter&quot;</span><br><span class="line">   IFS=$&apos;\n&apos; read -d &quot;&quot; -ra arr &lt;&lt;&lt; &quot;$&#123;1//$2/$&apos;\n&apos;&#125;&quot;</span><br><span class="line">   printf &apos;%s\n&apos; &quot;$&#123;arr[@]&#125;&quot;</span><br><span class="line">&#125;</span><br><span class="line">$ split &quot;apples,oranges,pears,grapes&quot; &quot;,&quot;</span><br><span class="line">apples</span><br><span class="line">oranges</span><br><span class="line">pears</span><br><span class="line">grapes</span><br><span class="line"></span><br><span class="line">$ split &quot;1, 2, 3, 4, 5&quot; &quot;, &quot;</span><br><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line"></span><br><span class="line"># Multi char delimiters work too!</span><br><span class="line">$ split &quot;hello---world---my---name---is---john&quot; &quot;---&quot;</span><br><span class="line">hello</span><br><span class="line">world</span><br><span class="line">my</span><br><span class="line">name</span><br><span class="line">is</span><br><span class="line">john</span><br></pre></td></tr></table></figure>
-<h2 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h2><h3 id="反转"><a href="#反转" class="headerlink" title="反转"></a>反转</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">reverse_array</span></span>() &#123;</span><br><span class="line">    <span class="comment"># Usage: reverse_array "array"</span></span><br><span class="line">    <span class="built_in">shopt</span> -s extdebug</span><br><span class="line">    f()(<span class="built_in">printf</span> <span class="string">'%s\n'</span> <span class="string">"<span class="variable">$&#123;BASH_ARGV[@]&#125;</span>"</span>); f <span class="string">"<span class="variable">$@</span>"</span></span><br><span class="line">    <span class="built_in">shopt</span> -u extdebug</span><br><span class="line">&#125;</span><br><span class="line">$ reverse_array 1 2 3 4 5</span><br><span class="line">5</span><br><span class="line">4</span><br><span class="line">3</span><br><span class="line">2</span><br><span class="line">1</span><br><span class="line"></span><br><span class="line">$ arr=(red blue green)</span><br><span class="line">$ reverse_array <span class="string">"<span class="variable">$&#123;arr[@]&#125;</span>"</span></span><br><span class="line">green</span><br><span class="line">blue</span><br><span class="line">red</span><br></pre></td></tr></table></figure>
-<h3 id="删除重复项"><a href="#删除重复项" class="headerlink" title="删除重复项"></a>删除重复项</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">remove_array_dups</span></span>() &#123;</span><br><span class="line">    <span class="comment"># Usage: remove_array_dups "array"</span></span><br><span class="line">    <span class="built_in">declare</span> -A tmp_array</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="string">"<span class="variable">$@</span>"</span>; <span class="keyword">do</span></span><br><span class="line">        [[ <span class="string">"<span class="variable">$i</span>"</span> ]] &amp;&amp; IFS=<span class="string">" "</span> tmp_array[<span class="string">"<span class="variable">$&#123;i:- &#125;</span>"</span>]=1</span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> <span class="string">'%s\n'</span> <span class="string">"<span class="variable">$&#123;!tmp_array[@]&#125;</span>"</span></span><br><span class="line">&#125;</span><br><span class="line">$ remove_array_dups 1 1 2 2 3 3 3 3 3 4 4 4 4 4 5 5 5 5 5 5</span><br><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line"></span><br><span class="line">$ arr=(red red green blue blue)</span><br><span class="line">$ remove_array_dups <span class="string">"<span class="variable">$&#123;arr[@]&#125;</span>"</span></span><br><span class="line">red</span><br><span class="line">green</span><br><span class="line">blue</span><br></pre></td></tr></table></figure>
-<h3 id="随机选择"><a href="#随机选择" class="headerlink" title="随机选择"></a>随机选择</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">random_array_element</span></span>() &#123;</span><br><span class="line">    <span class="comment"># Usage: random_array_element "array"</span></span><br><span class="line">    <span class="built_in">local</span> arr=(<span class="string">"<span class="variable">$@</span>"</span>)</span><br><span class="line">    <span class="built_in">printf</span> <span class="string">'%s\n'</span> <span class="string">"<span class="variable">$&#123;arr[RANDOM % $#]&#125;</span>"</span></span><br><span class="line">&#125;</span><br><span class="line">$ array=(red green blue yellow brown)</span><br><span class="line">$ random_array_element <span class="string">"<span class="variable">$&#123;array[@]&#125;</span>"</span></span><br><span class="line">yellow</span><br><span class="line"></span><br><span class="line"><span class="comment"># Multiple arguments can also be passed.</span></span><br><span class="line">$ random_array_element 1 2 3 4 5 6 7</span><br><span class="line">3</span><br></pre></td></tr></table></figure>
-<h2 id="文件"><a href="#文件" class="headerlink" title="文件"></a>文件</h2><h3 id="获取文件绝对路径"><a href="#获取文件绝对路径" class="headerlink" title="获取文件绝对路径"></a>获取文件绝对路径</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">dirname</span></span>() &#123;</span><br><span class="line">    <span class="comment"># Usage: dirname "path"</span></span><br><span class="line">    <span class="built_in">printf</span> <span class="string">'%s\n'</span> <span class="string">"<span class="variable">$&#123;1%/*&#125;</span>/"</span></span><br><span class="line">&#125;</span><br><span class="line">$ dirname ~/Pictures/Wallpapers/1.jpg</span><br><span class="line">/home/black/Pictures/Wallpapers/</span><br><span class="line"></span><br><span class="line">$ dirname ~/Pictures/Downloads/</span><br><span class="line">/home/black/Pictures/</span><br></pre></td></tr></table></figure>
-<h3 id="获取文件相对路径"><a href="#获取文件相对路径" class="headerlink" title="获取文件相对路径"></a>获取文件相对路径</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">basename</span></span>() &#123;</span><br><span class="line">    <span class="comment"># Usage: basename "path"</span></span><br><span class="line">    : <span class="string">"<span class="variable">$&#123;1%/&#125;</span>"</span></span><br><span class="line">    <span class="built_in">printf</span> <span class="string">'%s\n'</span> <span class="string">"<span class="variable">$&#123;_##*/&#125;</span>"</span></span><br><span class="line">&#125;</span><br><span class="line">$ basename ~/Pictures/Wallpapers/1.jpg</span><br><span class="line">1.jpg</span><br><span class="line"></span><br><span class="line">$ basename ~/Pictures/Downloads/</span><br><span class="line">Downloads</span><br></pre></td></tr></table></figure>
-<h2 id="进度条"><a href="#进度条" class="headerlink" title="进度条"></a>进度条</h2><h3 id="打印进度条"><a href="#打印进度条" class="headerlink" title="打印进度条"></a>打印进度条</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">bar</span></span>() &#123;</span><br><span class="line">    <span class="comment"># Usage: bar 1 10</span></span><br><span class="line">    <span class="comment">#            ^----- Elapsed Percentage (0-100).</span></span><br><span class="line">    <span class="comment">#               ^-- Total length in chars.</span></span><br><span class="line">    ((elapsed=<span class="variable">$1</span>*<span class="variable">$2</span>/100))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Create the bar with spaces.</span></span><br><span class="line">    <span class="built_in">printf</span> -v prog  <span class="string">"%<span class="variable">$&#123;elapsed&#125;</span>s"</span></span><br><span class="line">    <span class="built_in">printf</span> -v total <span class="string">"%<span class="variable">$(($2-elapsed)</span>)s"</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> <span class="string">'%s\r'</span> <span class="string">"[<span class="variable">$&#123;prog// /-&#125;</span><span class="variable">$&#123;total&#125;</span>]"</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> ((i=0;i&lt;=100;i++)); <span class="keyword">do</span></span><br><span class="line">    <span class="comment"># Pure bash micro sleeps (for the example).</span></span><br><span class="line">    (:;:) &amp;&amp; (:;:) &amp;&amp; (:;:) &amp;&amp; (:;:) &amp;&amp; (:;:)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Print the bar.</span></span><br><span class="line">    bar <span class="string">"<span class="variable">$i</span>"</span> <span class="string">"10"</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">printf</span> <span class="string">'\n'</span></span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>感觉平时很难用到这么诡异的 Bash 语法的。。。。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1817,7 +1838,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">87</span>
+                  <span class="site-state-item-count">88</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
