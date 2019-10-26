@@ -275,6 +275,184 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/07/13/Kubernetes-实战-踩坑记录（持续更新）/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/07/13/Kubernetes-实战-踩坑记录（持续更新）/" itemprop="url">Kubernetes 实战-踩坑记录（持续更新）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-13T09:34:45+08:00">
+                2019-07-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/07/13/Kubernetes-实战-踩坑记录（持续更新）/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/07/13/Kubernetes-实战-踩坑记录（持续更新）/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在对现有服务进行容器话改造的过程中，随着对 K8S 使用程度越来越深，也渐渐的遇到了一些坑，所以开一篇博客，记录自己所遇到的坑，应该会长期更新。</p>
+<h3 id="更新记录"><a href="#更新记录" class="headerlink" title="更新记录"></a>更新记录</h3><ul>
+<li>2019.07.13 02:00 来自加班中的 yiran</li>
+<li>2019.07.19 06:52 早起不想去公司的 yiran</li>
+</ul>
+<h2 id="coredns-无法解析域名"><a href="#coredns-无法解析域名" class="headerlink" title="coredns 无法解析域名"></a>coredns 无法解析域名</h2><p>在 Kubernetes 环境中，使用 kubeadm 工具部署的集群，会自动部署 coredns 作为集群的域名服务，每当我们创建了自己的 service，都可以通过域名直接访问，不用再考虑自己多个 Pod 的 IP 不同如何连接的问题。</p>
+<p>最近遇到多个环境出现无法解析域名的问题，具体现象如下：</p>
+<ol>
+<li>集群部署完成后，部署 daemonset 资源，每个节点均运行一个 busybox；</li>
+<li>在 busybox 中对 <code>kubernetes</code> 默认域名进行解析，查看解析结果。</li>
+</ol>
+<p>正常情况应该是所有的 busybox 都可以正常解析才对，但是最近几个环境中均出现了 3 个node 中1个node 上的 pod 无法解析的问题，示例代码如下：</p>
+<p>daemonset.yaml<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">"extensions/v1beta1"</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">"DaemonSet"</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">"ds"</span></span><br><span class="line"><span class="attr">  namespace:</span> <span class="string">"default"</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        app:</span> <span class="string">ds</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      tolerations:</span></span><br><span class="line"><span class="attr">      - key:</span> <span class="string">node-role.kubernetes.io/master</span></span><br><span class="line"><span class="attr">        effect:</span> <span class="string">NoSchedule</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">"apply-sysctl"</span></span><br><span class="line"><span class="attr">        image:</span> <span class="string">"busybox:1.28.4"</span></span><br><span class="line"><span class="attr">        imagePullPolicy:</span> <span class="string">IfNotPresent</span></span><br><span class="line"><span class="attr">        command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">"/bin/sh"</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">"-c"</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">|</span></span><br><span class="line"><span class="string">          set -o errexit</span></span><br><span class="line"><span class="string">          set -o xtrace</span></span><br><span class="line"><span class="string">          while true</span></span><br><span class="line"><span class="string">          do</span></span><br><span class="line"><span class="string">            sleep 2s</span></span><br><span class="line"><span class="string">            date</span></span><br><span class="line"><span class="string">            echo "diu~"</span></span><br><span class="line"><span class="string">          done</span></span><br></pre></td></tr></table></figure></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node11 21:28:40 ~]<span class="variable">$for</span> i <span class="keyword">in</span> `kubectl get pod  -o wide  |grep ds | awk <span class="string">'&#123;print $1&#125;'</span>`;<span class="keyword">do</span> kubectl <span class="built_in">exec</span> <span class="variable">$i</span> nslookup kubernetes;<span class="built_in">echo</span> ;<span class="keyword">done</span></span><br><span class="line">Server:    10.96.0.10</span><br><span class="line">Address 1: 10.96.0.10</span><br><span class="line"></span><br><span class="line">nslookup: can<span class="string">'t resolve '</span>kubernetes<span class="string">'</span></span><br><span class="line"><span class="string">command terminated with exit code 1</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Server:    10.96.0.10</span></span><br><span class="line"><span class="string">Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Name:      kubernetes</span></span><br><span class="line"><span class="string">Address 1: 10.96.0.1 kubernetes.default.svc.cluster.local</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Server:    10.96.0.10</span></span><br><span class="line"><span class="string">Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Name:      kubernetes</span></span><br><span class="line"><span class="string">Address 1: 10.96.0.1 kubernetes.default.svc.cluster.local</span></span><br></pre></td></tr></table></figure>
+<p>在第一个节点的 Pod 解析时失效，最后命令执行 1min 超时退出。</p>
+<p>经过查看发现节点的 NetFilter 相关系统配置未生效，导致 iptables 相关功能失效，具体可以参考 <a href="https://github.com/kubernetes/kubernetes/issues/21613" target="_blank" rel="noopener">issue</a>。</p>
+<p>解决方式：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">'1'</span> &gt; /proc/sys/net/bridge/bridge-nf-call-iptables</span><br></pre></td></tr></table></figure>
+<h2 id="Flannel-OOM"><a href="#Flannel-OOM" class="headerlink" title="Flannel OOM"></a>Flannel OOM</h2><p>在配置好集群业务后，发现业务时不时的出现中断情况，最开始排查业务自身问题，未发现 Pod 出现重启或异常的日志，开始排查 k8s 状态，发现在节点 <code>/var/log/messages</code> 日志中，Flannel 一直处于 OOM 状态，惨不忍睹。</p>
+<p>之前还略微惊奇，Flannel 默认的计算资源中，内存只要 50MiB，且上限也是 50MiB，没有给自己留一丝余地，看到 <a href="https://github.com/coreos/flannel/issues/963" target="_blank" rel="noopener">issue</a> 中的描述，感觉这个不是一个偶发事件，最终我将 Flannel 的内存调整为 250MiB 后，未出现 OOM 情况。</p>
+<p>issue 中提到的 <code>kubectl patch</code> 命令未自动生效，我通过更新 ds 配置，然后依次手动删除节点上的 Flannel Pod 使其生效。</p>
+<h2 id="Nginx-Ingress"><a href="#Nginx-Ingress" class="headerlink" title="Nginx Ingress"></a>Nginx Ingress</h2><p>Nginx Ingress 有多个版本，在编写 Ingress 规则的时候一定要看清自己集群中的 Nginx Ingress 版本，我最开始就是因为这个看错了文档。。</p>
+<p>主要的版本有： <code>kubernetes/ingress-nginx</code> , <code>nginxinc/kubernetes-ingress with NGINX</code> 和 <code>nginxinc/kubernetes-ingress with NGINX PLUS</code> ，具体的对比规则可以在 <a href="https://github.com/nginxinc/kubernetes-ingress/blob/master/docs/nginx-ingress-controllers.md" target="_blank" rel="noopener">Github</a> 中了解。</p>
+<p>在 <code>kubernetes/ingress-nginx</code> 中，默认 <code>ssl-redirect</code> 参数是 <code>true</code> ，如果自己的服务不支持 https，那么需要显示的声明该参数为 false 才可以，这里需要注意一下。</p>
+<p>在配置 nginx 参数的时候，要注意语法，正确的书写方式如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">extensions/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Ingress</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  annotations:</span></span><br><span class="line">    <span class="string">kubectl.kubernetes.io/last-applied-configuration:</span> <span class="string">|</span></span><br><span class="line"><span class="string">      &#123;"apiVersion":"networking.k8s.io/v1beta1","kind":"Ingress","metadata":&#123;"annotations":&#123;"kubernetes.io/ingress.class":"nginx","nginx.ingress.kubernetes.io/proxy-read-timeout":"3600","nginx.ingress.kubernetes.io/proxy-send-timeout":"3600","nginx.ingress.kubernetes.io/ssl-redirect":"true","nginx.ingress.kubernetes.io/use-regex":"true","nginx.org/websocket-services":"websockify"&#125;,"name":"websockify","namespace":"default"&#125;,"spec":&#123;"rules":[&#123;"http":&#123;"paths":[&#123;"backend":&#123;"serviceName":"websockify","servicePort":8000&#125;,"path":"/websockify"&#125;]&#125;&#125;]&#125;&#125;</span></span><br><span class="line"><span class="string">    kubernetes.io/ingress.class: nginx</span></span><br><span class="line"><span class="string">    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"</span></span><br><span class="line"><span class="string">    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"</span></span><br></pre></td></tr></table></figure>
+<p>相关 issue 链接： <a href="https://github.com/kubernetes/ingress-nginx/issues/2007" target="_blank" rel="noopener">https://github.com/kubernetes/ingress-nginx/issues/2007</a> </p>
+<h2 id="Docker-稳定性"><a href="#Docker-稳定性" class="headerlink" title="Docker 稳定性"></a>Docker 稳定性</h2><p>在修改 Docker 配置后，需要重启 Docker.service 使配置生效，在一次重启操作中，直接导致物理节点宕机，自动重启了。。。</p>
+<p>重启后观察物理节点日志，未发现异常日志，目前待复现调查，很坑很诡异。</p>
+<h2 id="Helm-values-为空更新错误"><a href="#Helm-values-为空更新错误" class="headerlink" title="Helm values 为空更新错误"></a>Helm values 为空更新错误</h2><p>今天在给应用编写 Helm Charts 的时候，在 Values 中通过 resources.requests.cpu 方式指定了 cpu 和内存，在测试的时候忘记填写具体数值了，像这面这样：</p>
+<p>values:<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Default values for test.</span></span><br><span class="line"><span class="comment"># This is a YAML-formatted file.</span></span><br><span class="line"><span class="comment"># Declare variables to be passed into your templates.</span></span><br><span class="line"></span><br><span class="line"><span class="attr">resources:</span></span><br><span class="line"><span class="attr">  limits:</span></span><br><span class="line"><span class="attr">   cpu:</span></span><br><span class="line"><span class="attr">   memory:</span></span><br><span class="line"><span class="attr">  requests:</span></span><br><span class="line"><span class="attr">   cpu:</span></span><br><span class="line"><span class="attr">   memory:</span></span><br></pre></td></tr></table></figure></p>
+<p>在 helm templates 中定义 daemonset，指定使用 resources 字段。</p>
+<p>直接执行 helm 命令安装成功了：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@node11 20:44:09 <span class="built_in">test</span>]<span class="variable">$helm</span> install . --name-template <span class="built_in">test</span></span><br><span class="line">NAME: <span class="built_in">test</span></span><br><span class="line">LAST DEPLOYED: 2019-07-15 20:44:18.151073881 +0800 CST m=+0.092592446</span><br><span class="line">NAMESPACE: default</span><br><span class="line">STATUS: deployed</span><br><span class="line"></span><br><span class="line">NOTES:</span><br><span class="line">1. Get the application URL by running these commands:</span><br><span class="line">  <span class="built_in">export</span> POD_NAME=$(kubectl get pods -l <span class="string">"app=test,release=test"</span> -o jsonpath=<span class="string">"&#123;.items[0].metadata.name&#125;"</span>)</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">"Visit http://127.0.0.1:8080 to use your application"</span></span><br><span class="line">  kubectl port-forward <span class="variable">$POD_NAME</span> 8080:80</span><br></pre></td></tr></table></figure>
+<p>我们查看创建出来的 daemonset 资源状态：</p>
+<p>daemonset/test</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">Name:</span>           <span class="string">test</span></span><br><span class="line"><span class="attr">Selector:</span>       <span class="string">app=test</span></span><br><span class="line"><span class="attr">Node-Selector:</span>  <span class="string">&lt;none&gt;</span></span><br><span class="line"><span class="string">Pods</span> <span class="attr">Status:</span>  <span class="number">3</span> <span class="string">Running</span> <span class="string">/</span> <span class="number">0</span> <span class="string">Waiting</span> <span class="string">/</span> <span class="number">0</span> <span class="string">Succeeded</span> <span class="string">/</span> <span class="number">0</span> <span class="string">Failed</span></span><br><span class="line"><span class="string">Pod</span> <span class="attr">Template:</span></span><br><span class="line"><span class="attr">  Labels:</span>  <span class="string">app=test</span></span><br><span class="line"><span class="attr">  Containers:</span></span><br><span class="line"><span class="attr">   test:</span></span><br><span class="line"><span class="attr">    Image:</span>      <span class="string">harbor.zdyxry.com/test/test:0.1.2</span></span><br><span class="line"><span class="attr">    Port:</span>       <span class="number">10402</span><span class="string">/TCP</span></span><br><span class="line">    <span class="string">Host</span> <span class="attr">Port:</span>  <span class="number">10402</span><span class="string">/TCP</span></span><br><span class="line"><span class="attr">    Command:</span></span><br><span class="line">      <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">      -</span><span class="string">c</span></span><br><span class="line"><span class="attr">    Args:</span></span><br><span class="line">      <span class="string">gunicorn</span> <span class="bullet">-b</span> <span class="string">:10402</span> <span class="bullet">-k</span> <span class="string">gevent</span> <span class="string">test.main:flask_app</span> <span class="bullet">-w</span> <span class="number">2</span> <span class="bullet">--timeout</span> <span class="number">40</span> <span class="bullet">--pid</span> <span class="string">/var/run/test.pid</span></span><br><span class="line"><span class="attr">    Limits:</span></span><br><span class="line"><span class="attr">      cpu:</span>     <span class="number">0</span></span><br><span class="line"><span class="attr">      memory:</span>  <span class="number">0</span></span><br><span class="line"><span class="attr">    Requests:</span></span><br><span class="line"><span class="attr">      cpu:</span>        <span class="number">0</span></span><br><span class="line"><span class="attr">      memory:</span>     <span class="number">0</span></span><br><span class="line"><span class="attr">    Environment:</span>  <span class="string">&lt;none&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这时候我在检查资源的时候发现自己忘记设置资源了，我计划通过更新 values 数值来更新 daemonset：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Default values for test.</span></span><br><span class="line"><span class="comment"># This is a YAML-formatted file.</span></span><br><span class="line"><span class="comment"># Declare variables to be passed into your templates.</span></span><br><span class="line"></span><br><span class="line"><span class="attr">resources:</span></span><br><span class="line"><span class="attr">  limits:</span></span><br><span class="line"><span class="attr">   cpu:</span> <span class="number">100</span><span class="string">m</span></span><br><span class="line"><span class="attr">   memory:</span> <span class="number">100</span><span class="string">Mi</span></span><br><span class="line"><span class="attr">  requests:</span></span><br><span class="line"><span class="attr">   cpu:</span> <span class="number">100</span><span class="string">m</span></span><br><span class="line"><span class="attr">   memory:</span> <span class="number">100</span><span class="string">Mi</span></span><br></pre></td></tr></table></figure>
+<p>执行 helm upgrade 时候报错：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node11 20:49:36 <span class="built_in">test</span>]<span class="variable">$helm</span> upgrade <span class="built_in">test</span> .</span><br><span class="line">Error: UPGRADE FAILED: error validating <span class="string">""</span>: error validating data: [unknown object <span class="built_in">type</span> <span class="string">"nil"</span> <span class="keyword">in</span> DaemonSet.spec.template.spec.containers[0].resources.limits.cpu, unknown object <span class="built_in">type</span> <span class="string">"nil"</span> <span class="keyword">in</span> DaemonSet.spec.template.spec.containers[0].resources.limits.memory, unknown object <span class="built_in">type</span> <span class="string">"nil"</span> <span class="keyword">in</span> DaemonSet.spec.template.spec.containers[0].resources.requests.cpu, unknown object <span class="built_in">type</span> <span class="string">"nil"</span> <span class="keyword">in</span> DaemonSet.spec.template.spec.containers[0].resources.requests.memory]</span><br></pre></td></tr></table></figure>
+<p>根据报错信息可以看到这个字段之前是 <code>nil</code> ，现在我们要更新为有效类型更新失败，只能通过 <code>helm uninstall</code> 卸载后再次安装修复该问题。</p>
+<p>这个问题只在 daemonset 类型下会出现。</p>
+<h2 id="Flannel-网卡丢失"><a href="#Flannel-网卡丢失" class="headerlink" title="Flannel 网卡丢失"></a>Flannel 网卡丢失</h2><p>在通常情况下，我们的 k8s 节点都只有单一的网络环境，也就是有一块网卡，在部署 Flannel 插件的时候，默认会找默认路由所在的网卡，并将其绑定在上面。</p>
+<p>由于内部测试环境较为特殊，我将其绑定在一个 ovs port 上，这个具体配置在 flannel yaml 中：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">containers:</span></span><br><span class="line"><span class="attr">- name:</span> <span class="string">kube-flannel</span></span><br><span class="line"><span class="attr">  image:</span> <span class="string">quay.io/coreos/flannel:v0.11.0-amd64</span></span><br><span class="line"><span class="attr">  command:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">/opt/bin/flanneld</span></span><br><span class="line"><span class="attr">  args:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="bullet">--ip-masq</span></span><br><span class="line"><span class="bullet">  -</span> <span class="bullet">--kube-subnet-mgr</span></span><br><span class="line"><span class="bullet">  -</span> <span class="bullet">--iface=port-storage</span>  <span class="comment"># 在这里我强制指定了 iface</span></span><br></pre></td></tr></table></figure>
+<p>正常运行时时没有问题的，但是对 ovs port 进行了 <code>ifdown</code> 操作后，在 OS 层面就无法找到这个 ovs port 了，flannel 默认的 <code>flannel.1</code> 这个 link 也丢失了，当我尝试 <code>ifup</code> ovs port，这个 port 正常恢复工作了，但是 <code>flannel.1</code> 无法自动恢复，目前找到的办法是手动重建 flannel pod。</p>
+<p>猜测这个动作在 flannel 的init 相关步骤执行的，在之后 container 正常运行时没有考虑 <code>flannel.1</code> 不存在的情况。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>使用经验通常是踩了一个又一个坑过来的~ </p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/07/05/关于Ansible的一点经验/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2004,193 +2182,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/05/17/Kubernetes-实战-日志处理/" itemprop="url">Kubernetes 实战-日志处理</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-17T08:50:44+08:00">
-                2019-05-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/05/17/Kubernetes-实战-日志处理/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/17/Kubernetes-实战-日志处理/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="基础日志处理"><a href="#基础日志处理" class="headerlink" title="基础日志处理"></a>基础日志处理</h2><p>在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 <code>kuberctl logs</code> 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 <code>/var/lib/docker/</code> 路径下，下面我们来看一个例子：</p>
-<p>在 k8s 中创建一个 Pod，Pod 中指定打印当前时间到标准输出中：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">            <span class="string">'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
-<p>运行该 Pod，通过 <code>kubectl logs</code> 获取当前 Pod 日志：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># kubectl get pod |grep counter</span></span><br><span class="line">counter            1/1     Running   0          9s</span><br><span class="line">[root@node1 blog]<span class="comment"># kubectl logs counter</span></span><br><span class="line">0: Fri May 17 00:34:01 UTC 2019</span><br><span class="line">1: Fri May 17 00:34:02 UTC 2019</span><br><span class="line">2: Fri May 17 00:34:03 UTC 2019</span><br><span class="line">3: Fri May 17 00:34:04 UTC 2019</span><br><span class="line">4: Fri May 17 00:34:05 UTC 2019</span><br><span class="line">5: Fri May 17 00:34:06 UTC 2019</span><br><span class="line">6: Fri May 17 00:34:07 UTC 2019</span><br><span class="line">7: Fri May 17 00:34:08 UTC 2019</span><br><span class="line">8: Fri May 17 00:34:09 UTC 2019</span><br><span class="line">9: Fri May 17 00:34:10 UTC 2019</span><br><span class="line">10: Fri May 17 00:34:11 UTC 2019</span><br><span class="line">11: Fri May 17 00:34:12 UTC 2019</span><br><span class="line">12: Fri May 17 00:34:13 UTC 2019</span><br></pre></td></tr></table></figure>
-<p>这里如果使用 <code>-f</code> 选项，可以持续输出该 Pod 日志。</p>
-<p>那么我们如何找到该容器对应的实际日志文件呢？</p>
-<p>我们可以现在 Docker 中找到该容器信息：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># docker ps |grep count</span></span><br><span class="line">012e0352b193        busybox                                             <span class="string">"/bin/sh -c 'i=0; wh…"</span>   2 minutes ago       Up 2 minutes                            k8s_count_counter_default_75792a2a-783b-11e9-a3d9-525400aea01a_0</span><br></pre></td></tr></table></figure>
-<p>可以看到在 Docker 中该容器名称为    <code>k8s_count_counter_default_75792a2a-783b-11e9-a3d9-525400aea01a_0</code>  ，我们先不去管最后的 UUID 是什么含义，先看前几个字段，跟集群信息关联可以看到，分别是：k8s，容器名称，Pod 名称，namespaces 名称。那么我们来看下这个容器在 Docker 中的配置文件：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 containers]<span class="comment"># pwd</span></span><br><span class="line">/var/lib/docker/containers</span><br><span class="line">[root@node1 containers]<span class="comment"># ls</span></span><br><span class="line">012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2  </span><br><span class="line">...</span><br><span class="line">5c9e765f68a15d5510870179160c59d45d0287b9f92265687d6c37a3557a1017  c563c36b0d3d28ea611b270bc1609ae9c0e720c1c1f85ba669cdab5f7099b77b</span><br></pre></td></tr></table></figure>
-<p>在 Docker 容器路径下，我们看到了很多以不知道什么 ID 明明的子目录，最开始以为是我们 <code>docker ps</code> 中看到的最后 uuid，但是发现对不上，那么我们可以查看下 Pod 的详细信息来试图获取:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 containers]<span class="comment"># kubectl describe pod counter</span></span><br><span class="line">Name:         counter</span><br><span class="line">Namespace:    default</span><br><span class="line">Node:         192.168.27.231/192.168.27.231</span><br><span class="line">Start Time:   Fri, 17 May 2019 08:33:58 +0800</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  &lt;none&gt;</span><br><span class="line">Status:       Running</span><br><span class="line">IP:           172.20.2.13</span><br><span class="line">Containers:</span><br><span class="line">  count:</span><br><span class="line">    Container ID:  docker://012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2</span><br><span class="line">    Image:         busybox</span><br><span class="line">    Image ID:      docker-pullable://busybox@sha256:4b6ad3a68d34da29bf7c8ccb5d355ba8b4babcad1f99798204e7abb43e54ee3d</span><br></pre></td></tr></table></figure>
-<p>忽略掉无关信息，我们可以看到 <code>Container ID</code> 字段，这里对应的 ID 就是在 <code>/var/lib/docker/containers/</code> 下的 ID，找到了 ID，我们可以来看看具体的配置：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2]# tree .</span><br><span class="line">.</span><br><span class="line">├── 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2-json.log</span><br><span class="line">├── checkpoints</span><br><span class="line">├── config.v2.json</span><br><span class="line">├── hostconfig.json</span><br><span class="line">└── mounts</span><br><span class="line"></span><br><span class="line">2 directories, 3 files</span><br></pre></td></tr></table></figure>
-<p>可以看到有配置文件和日志文件，我们今天只来讨论日志，那么我们看下这个日志文件的内容：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2]<span class="comment"># tail 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2-json.log</span></span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"706: Fri May 17 00:45:48 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:48.913451073Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"707: Fri May 17 00:45:49 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:49.915605471Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"708: Fri May 17 00:45:50 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:50.917823388Z"</span>&#125;,</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"713: Fri May 17 00:45:55 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:55.928645971Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"714: Fri May 17 00:45:56 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:56.930660054Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"715: Fri May 17 00:45:57 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:57.932763561Z"</span>&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到这里日志输出是 JSON 格式的，这里跟 <code>kubectl logs</code> 输出不一致啊，为啥这里是 JSON 呢？ 其实这跟你的 Docker 配置有关，具体的配置可以在 Docker 配置中看到，比如：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 docker]<span class="comment"># pwd</span></span><br><span class="line">/etc/docker</span><br><span class="line">[root@node1 docker]<span class="comment"># cat daemon.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">"registry-mirrors"</span>: [</span><br><span class="line">    <span class="string">"https://dockerhub.azk8s.cn"</span>,</span><br><span class="line">    <span class="string">"https://docker.mirrors.ustc.edu.cn"</span>,</span><br><span class="line">    <span class="string">"http://hub-mirror.c.163.com"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="string">"max-concurrent-downloads"</span>: 10,</span><br><span class="line">  <span class="string">"log-driver"</span>: <span class="string">"json-file"</span>,</span><br><span class="line">  <span class="string">"log-level"</span>: <span class="string">"warn"</span>,</span><br><span class="line">  <span class="string">"log-opts"</span>: &#123;</span><br><span class="line">    <span class="string">"max-size"</span>: <span class="string">"10m"</span>,</span><br><span class="line">    <span class="string">"max-file"</span>: <span class="string">"3"</span></span><br><span class="line">    &#125;,</span><br><span class="line">  <span class="string">"data-root"</span>: <span class="string">"/var/lib/docker"</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p>  Docker 默认的日志格式是 JSON，这里我猜测是 k8s 通过 Docker 接口获取日志类型，然后进行相应的解析输出（希望之后对 k8s 更深入的了解来验证猜想）。</p>
-<p>  在了解了标准日志处理，那么我们来看下节点级别的日志处理是怎样的。</p>
-<h2 id="节点级别日志"><a href="#节点级别日志" class="headerlink" title="节点级别日志"></a>节点级别日志</h2><h3 id="标准处理"><a href="#标准处理" class="headerlink" title="标准处理"></a>标准处理</h3><p>我们现在知道了 Pod 的日志其实是存放在容器真正运行所在节点上的，那么如果 Pod 一直运行，日志会不断增大，占用很多的日志空间，这个在节点上是怎么控制的呢？</p>
-<p>因为这种方式不是 k8s 推荐的方式，这里并没有采用集群级别的控制方式，而是以节点为粒度的，各个节点通过 logrotate 自己处理日志轮询，logrotate 相信大部分同学都使用过，这里不详细说了。</p>
-<h3 id="特殊处理"><a href="#特殊处理" class="headerlink" title="特殊处理"></a>特殊处理</h3><p>如果我们不想将应用日志都输出到标准输出，想将日志打印到 <code>/var/log/</code> 下的自定义路径下怎么办？我们可以在 Pod 启动时挂载一个 Volume，这个 Volume 就是Pod 所在的节点真实路径，这样我们在容器中就可以直接将日志打印到该路径下，哪怕 Pod 被销毁，日志也会一直存在。</p>
-<p>我们创建一个 Deployment 类型的资源，在创建之前，我们需要先创建出指定的挂载路径: <code>/var/log/yiran/</code>，资源配置如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[root@node1</span> <span class="string">blog]#</span> <span class="string">cat</span> <span class="string">log.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        run:</span> <span class="string">helloworldanilhostpath</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">        image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">        args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">              <span class="string">'i=0; while true; do echo "$i: $(date)" &gt;&gt; /var/log/yiran/test.log; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br><span class="line"><span class="attr">        volumeMounts:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">          mountPath:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">      volumes:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">        hostPath:</span></span><br><span class="line"><span class="attr">          path:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">          type:</span> <span class="string">Directory</span></span><br></pre></td></tr></table></figure>
-<p>创建完成后，我们来查看下该 Pod 的日志：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># kubectl get pod</span></span><br><span class="line">NAME                       READY   STATUS    RESTARTS   AGE</span><br><span class="line">counter-76b584fd8f-7fq99   1/1     Running   0          2m30s</span><br><span class="line">testlog-rs-lwxts           1/1     Running   0          2d1h</span><br><span class="line">[root@node1 blog]<span class="comment"># kubectl logs counter-76b584fd8f-7fq99</span></span><br></pre></td></tr></table></figure>
-<p>可以看到没有标准日志输出，我们按照上面描述，去看下容器对应的 Docker 日志是否为空：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node2 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2]<span class="comment"># pwd</span></span><br><span class="line">/var/lib/docker/containers/166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2</span><br><span class="line">[root@node2 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2]<span class="comment"># ll</span></span><br><span class="line">total 12</span><br><span class="line">-rw-r-----. 1 root root    0 May 18 17:39 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2-json.log</span><br><span class="line">drwx------. 2 root root    6 May 18 17:39 checkpoints</span><br><span class="line">-rw-------. 1 root root 5173 May 18 17:39 config.v2.json</span><br><span class="line">-rw-r--r--. 1 root root 2064 May 18 17:39 hostconfig.json</span><br><span class="line">drwx------. 2 root root    6 May 18 17:39 mounts</span><br></pre></td></tr></table></figure>
-<p>这里是符合预期的，因为我们将所有的日志输出到指定日志： <code>/var/log/yiran/test.log</code> 中了，我们去看看节点日志是否存在：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node2 yiran]<span class="comment"># pwd</span></span><br><span class="line">/var/<span class="built_in">log</span>/yiran</span><br><span class="line">[root@node2 yiran]<span class="comment"># tailf test.log</span></span><br><span class="line">327: Sat May 18 09:45:23 UTC 2019</span><br><span class="line">328: Sat May 18 09:45:24 UTC 2019</span><br><span class="line">329: Sat May 18 09:45:25 UTC 2019</span><br><span class="line">330: Sat May 18 09:45:26 UTC 2019</span><br></pre></td></tr></table></figure>
-<p>可以看到这里已经按照预期打印在 Pod 所在节点上了，满足我们的需求。</p>
-<p>接下来是重头戏，集群级别的日志控制。</p>
-<h2 id="集群级别日志"><a href="#集群级别日志" class="headerlink" title="集群级别日志"></a>集群级别日志</h2><p>我们为什么需要日志？对于开发者，可以通过日志进行快速的错误排查；对于运维同学可以根据日志来了解程序运行状态。一句话就是日志非常重要。</p>
-<p>那么既然日志这么重要，那么在 k8s 上如何处理日志，尤其是 k8s 提供了 ReplicaSet/DeploymentSet 这类可以自动缩扩容，自动 ha 的资源，我们如果仅仅通过节点级别的日志管理，集群规模小还好，当集群规模变大之后，对于使用日志的同学简直是灾难。</p>
-<p>在看过了标准日志处理和节点日志处理后，我们来看看一个标准的 k8s 集群是如何处理服务日志和应用日志的。</p>
-<p>这里的前提是，我们有一个日志中心（如 ES)去处理日志，有几种配置方式可以选择：</p>
-<h3 id="节点级别日志代理"><a href="#节点级别日志代理" class="headerlink" title="节点级别日志代理"></a>节点级别日志代理</h3><p>在 k8s 集群中运行一个 DaemonSet，启动的容器运行日志转发器，用于将节点上的日志转发到日志中心，日志转发器可以根据各自资源情况和需求自由选择，如 Logstash,Fluentd,Fluent-bit 等等。</p>
-<p>k8s 标准配置中推荐该方案，无论是从资源使用还是从配置管理上都是最佳方案。</p>
-<p>对应配置在 <code>kubernetes/cluster/addons/fluentd-elasticsearch</code> 路径下，我们可以直接创建部署，部署后状态如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get rs |grep kibana</span></span><br><span class="line">kibana-logging-f4d99b69f          1         1         1       2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get ds |grep fluent</span></span><br><span class="line">fluentd-es-v2.4.0       3         3         3       3            3           &lt;none&gt;                          2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get statefulset</span></span><br><span class="line">NAME                    READY   AGE</span><br><span class="line">elasticsearch-logging   2/2     2d6h</span><br></pre></td></tr></table></figure>
-<p>可以看到 Fluentd 是以 DaemonSet 方式运行的；ElasticSearch 是以 StatefulSet 方式运行的；Kibana 是以 ReplicaSet 方式运行的。</p>
-<p>其中 Fluentd 配置文件中监控的是 <code>/var/log/container</code> 路径下的所有日志，所以我们理论上可以在 ES 中看到所有应用的日志，那么看到日志之后，我们如何与实际的应用对应呢？这里可以看下具体示例：</p>
-<p>创建 ReplicaSet 类型资源，指定 replica 为 1：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[root@node1</span> <span class="string">~]#</span> <span class="string">cat</span> <span class="string">log.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ReplicaSet</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">testlog-rs</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">  selector:</span></span><br><span class="line"><span class="attr">    matchLabels:</span></span><br><span class="line"><span class="attr">      app:</span> <span class="string">testlog-label</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        app:</span> <span class="string">testlog-label</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">testlog-container-name</span></span><br><span class="line"><span class="attr">          image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">          args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">                 <span class="string">'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
-<p>我们将涉及到名称的字段均加上对应 key，便于在 ES 中查看对应关系，那么接下来看看在 ES 中该容器对应的日志是什么形式的：</p>
-<img src="/2019/05/17/Kubernetes-实战-日志处理/log1.png" title="log1">
-<p>根据上述对应关系，哪怕 Pod 重建了，我们仍可以通过 container_name 字段来查看对应应用日志，便于调试。</p>
-<h3 id="节点级别日志代理配合伴生容器"><a href="#节点级别日志代理配合伴生容器" class="headerlink" title="节点级别日志代理配合伴生容器"></a>节点级别日志代理配合伴生容器</h3><p>我们知道，标准容器日志应该输出到 stdout 和 stderr 中，那么如果我们一个 Pod 中输出多份日志怎么办？虽然这种情况是我们应该极度避免的，我们应该始终保证一个 Pod 只做一件事情。但是我们有时候迫于代码结构或者其他因素，导致我们会遇到这种情况，那么此时我们需要伴生容器配合使用。</p>
-<p>示例如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">admin/logging/two-files-counter-pod-streaming-sidecar.yaml</span> </span><br><span class="line"></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">    -</span> <span class="bullet">-c</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">&gt;</span></span><br><span class="line"><span class="string">      i=0;</span></span><br><span class="line"><span class="string">      while true;</span></span><br><span class="line"><span class="string">      do</span></span><br><span class="line"><span class="string">        echo "$i: $(date)" &gt;&gt; /var/log/1.log;</span></span><br><span class="line"><span class="string">        echo "$(date) INFO $i" &gt;&gt; /var/log/2.log;</span></span><br><span class="line"><span class="string">        i=$((i+1));</span></span><br><span class="line"><span class="string">        sleep 1;</span></span><br><span class="line"><span class="string">      done</span></span><br><span class="line"><span class="string"></span><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-1</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/1.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-2</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/2.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">    emptyDir:</span> <span class="string">&#123;&#125;</span></span><br></pre></td></tr></table></figure>
-<p>这种方法是极度不推荐的，如果我们配置了 EFK，那么我们 1 份日志相当于写了 3 份，如果我们 ES 的后端存储是一个副本机制的分布式存储，那么我们 1 份日志相当于写了 3 * 2(或 3，存储副本数)份，这是极大的浪费了存储资源的，且会大大影响 SSD 磁盘寿命。</p>
-<h3 id="Pod-级别日志代理"><a href="#Pod-级别日志代理" class="headerlink" title="Pod 级别日志代理"></a>Pod 级别日志代理</h3><p>如果觉得节点级别日志代理粒度太粗，我们也可以选择 Pod 级别，在每个 Pod 中都启动一个伴生容器作为日志代理，将日志直接转发到日志中心。</p>
-<p>若以该形式部署，则我们的应用程序配置不仅要配置应用自身，还要考虑日志处理策略；节点计算能力现在大幅提升，每个节点的 Pod 数量很大，浪费了大量的计算资源。</p>
-<h3 id="应用自处理日志代理"><a href="#应用自处理日志代理" class="headerlink" title="应用自处理日志代理"></a>应用自处理日志代理</h3><p>如标题，我们当然可以在应用中直接将日志转发到指定的日志中心，这种情况也是极度糟糕的， <code>Make each program do one thing well.</code>。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里我们关于日志部分的介绍就到这里，总的来说我们需要集中式的日志中心，且推荐以节点级别日志代理方式配置，前提是我们能够预留足够的计算资源和存储资源。后续有机会我们可以了解下日志与事件审计关联使用。</p>
-<p>下一篇我们来看下 Kubernetes 中镜像相关管理与使用。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2243,7 +2234,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">89</span>
+                  <span class="site-state-item-count">90</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

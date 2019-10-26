@@ -275,6 +275,193 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/17/Kubernetes-实战-日志处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/17/Kubernetes-实战-日志处理/" itemprop="url">Kubernetes 实战-日志处理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-17T08:50:44+08:00">
+                2019-05-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/17/Kubernetes-实战-日志处理/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/17/Kubernetes-实战-日志处理/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="基础日志处理"><a href="#基础日志处理" class="headerlink" title="基础日志处理"></a>基础日志处理</h2><p>在 Kubernetes（简称 k8s）中，所有应用在 Pod（k8s 管理容器最小单位）中运行，标准处理方式为将日志打印到标准日志输出和标准错误输出，这样我们可以通过 <code>kuberctl logs</code> 关键字获取容器运行时日志，根据容器运行时的类型不同，日志保存路径也不同，以 Docker 为例，所有真实日志均在 <code>/var/lib/docker/</code> 路径下，下面我们来看一个例子：</p>
+<p>在 k8s 中创建一个 Pod，Pod 中指定打印当前时间到标准输出中：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">            <span class="string">'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
+<p>运行该 Pod，通过 <code>kubectl logs</code> 获取当前 Pod 日志：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># kubectl get pod |grep counter</span></span><br><span class="line">counter            1/1     Running   0          9s</span><br><span class="line">[root@node1 blog]<span class="comment"># kubectl logs counter</span></span><br><span class="line">0: Fri May 17 00:34:01 UTC 2019</span><br><span class="line">1: Fri May 17 00:34:02 UTC 2019</span><br><span class="line">2: Fri May 17 00:34:03 UTC 2019</span><br><span class="line">3: Fri May 17 00:34:04 UTC 2019</span><br><span class="line">4: Fri May 17 00:34:05 UTC 2019</span><br><span class="line">5: Fri May 17 00:34:06 UTC 2019</span><br><span class="line">6: Fri May 17 00:34:07 UTC 2019</span><br><span class="line">7: Fri May 17 00:34:08 UTC 2019</span><br><span class="line">8: Fri May 17 00:34:09 UTC 2019</span><br><span class="line">9: Fri May 17 00:34:10 UTC 2019</span><br><span class="line">10: Fri May 17 00:34:11 UTC 2019</span><br><span class="line">11: Fri May 17 00:34:12 UTC 2019</span><br><span class="line">12: Fri May 17 00:34:13 UTC 2019</span><br></pre></td></tr></table></figure>
+<p>这里如果使用 <code>-f</code> 选项，可以持续输出该 Pod 日志。</p>
+<p>那么我们如何找到该容器对应的实际日志文件呢？</p>
+<p>我们可以现在 Docker 中找到该容器信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># docker ps |grep count</span></span><br><span class="line">012e0352b193        busybox                                             <span class="string">"/bin/sh -c 'i=0; wh…"</span>   2 minutes ago       Up 2 minutes                            k8s_count_counter_default_75792a2a-783b-11e9-a3d9-525400aea01a_0</span><br></pre></td></tr></table></figure>
+<p>可以看到在 Docker 中该容器名称为    <code>k8s_count_counter_default_75792a2a-783b-11e9-a3d9-525400aea01a_0</code>  ，我们先不去管最后的 UUID 是什么含义，先看前几个字段，跟集群信息关联可以看到，分别是：k8s，容器名称，Pod 名称，namespaces 名称。那么我们来看下这个容器在 Docker 中的配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 containers]<span class="comment"># pwd</span></span><br><span class="line">/var/lib/docker/containers</span><br><span class="line">[root@node1 containers]<span class="comment"># ls</span></span><br><span class="line">012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2  </span><br><span class="line">...</span><br><span class="line">5c9e765f68a15d5510870179160c59d45d0287b9f92265687d6c37a3557a1017  c563c36b0d3d28ea611b270bc1609ae9c0e720c1c1f85ba669cdab5f7099b77b</span><br></pre></td></tr></table></figure>
+<p>在 Docker 容器路径下，我们看到了很多以不知道什么 ID 明明的子目录，最开始以为是我们 <code>docker ps</code> 中看到的最后 uuid，但是发现对不上，那么我们可以查看下 Pod 的详细信息来试图获取:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 containers]<span class="comment"># kubectl describe pod counter</span></span><br><span class="line">Name:         counter</span><br><span class="line">Namespace:    default</span><br><span class="line">Node:         192.168.27.231/192.168.27.231</span><br><span class="line">Start Time:   Fri, 17 May 2019 08:33:58 +0800</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  &lt;none&gt;</span><br><span class="line">Status:       Running</span><br><span class="line">IP:           172.20.2.13</span><br><span class="line">Containers:</span><br><span class="line">  count:</span><br><span class="line">    Container ID:  docker://012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2</span><br><span class="line">    Image:         busybox</span><br><span class="line">    Image ID:      docker-pullable://busybox@sha256:4b6ad3a68d34da29bf7c8ccb5d355ba8b4babcad1f99798204e7abb43e54ee3d</span><br></pre></td></tr></table></figure>
+<p>忽略掉无关信息，我们可以看到 <code>Container ID</code> 字段，这里对应的 ID 就是在 <code>/var/lib/docker/containers/</code> 下的 ID，找到了 ID，我们可以来看看具体的配置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2]# tree .</span><br><span class="line">.</span><br><span class="line">├── 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2-json.log</span><br><span class="line">├── checkpoints</span><br><span class="line">├── config.v2.json</span><br><span class="line">├── hostconfig.json</span><br><span class="line">└── mounts</span><br><span class="line"></span><br><span class="line">2 directories, 3 files</span><br></pre></td></tr></table></figure>
+<p>可以看到有配置文件和日志文件，我们今天只来讨论日志，那么我们看下这个日志文件的内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2]<span class="comment"># tail 012e0352b19387170b903aff7c73c02fcd023c2f53cbe5b908392ff4e1a126e2-json.log</span></span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"706: Fri May 17 00:45:48 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:48.913451073Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"707: Fri May 17 00:45:49 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:49.915605471Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"708: Fri May 17 00:45:50 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:50.917823388Z"</span>&#125;,</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"713: Fri May 17 00:45:55 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:55.928645971Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"714: Fri May 17 00:45:56 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:56.930660054Z"</span>&#125;</span><br><span class="line">&#123;<span class="string">"log"</span>:<span class="string">"715: Fri May 17 00:45:57 UTC 2019\n"</span>,<span class="string">"stream"</span>:<span class="string">"stdout"</span>,<span class="string">"time"</span>:<span class="string">"2019-05-17T00:45:57.932763561Z"</span>&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到这里日志输出是 JSON 格式的，这里跟 <code>kubectl logs</code> 输出不一致啊，为啥这里是 JSON 呢？ 其实这跟你的 Docker 配置有关，具体的配置可以在 Docker 配置中看到，比如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 docker]<span class="comment"># pwd</span></span><br><span class="line">/etc/docker</span><br><span class="line">[root@node1 docker]<span class="comment"># cat daemon.json</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">"registry-mirrors"</span>: [</span><br><span class="line">    <span class="string">"https://dockerhub.azk8s.cn"</span>,</span><br><span class="line">    <span class="string">"https://docker.mirrors.ustc.edu.cn"</span>,</span><br><span class="line">    <span class="string">"http://hub-mirror.c.163.com"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="string">"max-concurrent-downloads"</span>: 10,</span><br><span class="line">  <span class="string">"log-driver"</span>: <span class="string">"json-file"</span>,</span><br><span class="line">  <span class="string">"log-level"</span>: <span class="string">"warn"</span>,</span><br><span class="line">  <span class="string">"log-opts"</span>: &#123;</span><br><span class="line">    <span class="string">"max-size"</span>: <span class="string">"10m"</span>,</span><br><span class="line">    <span class="string">"max-file"</span>: <span class="string">"3"</span></span><br><span class="line">    &#125;,</span><br><span class="line">  <span class="string">"data-root"</span>: <span class="string">"/var/lib/docker"</span></span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>  Docker 默认的日志格式是 JSON，这里我猜测是 k8s 通过 Docker 接口获取日志类型，然后进行相应的解析输出（希望之后对 k8s 更深入的了解来验证猜想）。</p>
+<p>  在了解了标准日志处理，那么我们来看下节点级别的日志处理是怎样的。</p>
+<h2 id="节点级别日志"><a href="#节点级别日志" class="headerlink" title="节点级别日志"></a>节点级别日志</h2><h3 id="标准处理"><a href="#标准处理" class="headerlink" title="标准处理"></a>标准处理</h3><p>我们现在知道了 Pod 的日志其实是存放在容器真正运行所在节点上的，那么如果 Pod 一直运行，日志会不断增大，占用很多的日志空间，这个在节点上是怎么控制的呢？</p>
+<p>因为这种方式不是 k8s 推荐的方式，这里并没有采用集群级别的控制方式，而是以节点为粒度的，各个节点通过 logrotate 自己处理日志轮询，logrotate 相信大部分同学都使用过，这里不详细说了。</p>
+<h3 id="特殊处理"><a href="#特殊处理" class="headerlink" title="特殊处理"></a>特殊处理</h3><p>如果我们不想将应用日志都输出到标准输出，想将日志打印到 <code>/var/log/</code> 下的自定义路径下怎么办？我们可以在 Pod 启动时挂载一个 Volume，这个 Volume 就是Pod 所在的节点真实路径，这样我们在容器中就可以直接将日志打印到该路径下，哪怕 Pod 被销毁，日志也会一直存在。</p>
+<p>我们创建一个 Deployment 类型的资源，在创建之前，我们需要先创建出指定的挂载路径: <code>/var/log/yiran/</code>，资源配置如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[root@node1</span> <span class="string">blog]#</span> <span class="string">cat</span> <span class="string">log.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        run:</span> <span class="string">helloworldanilhostpath</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">        image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">        args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">              <span class="string">'i=0; while true; do echo "$i: $(date)" &gt;&gt; /var/log/yiran/test.log; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br><span class="line"><span class="attr">        volumeMounts:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">          mountPath:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">      volumes:</span></span><br><span class="line"><span class="attr">      - name:</span> <span class="string">yiran-test-log</span></span><br><span class="line"><span class="attr">        hostPath:</span></span><br><span class="line"><span class="attr">          path:</span> <span class="string">/var/log/yiran</span></span><br><span class="line"><span class="attr">          type:</span> <span class="string">Directory</span></span><br></pre></td></tr></table></figure>
+<p>创建完成后，我们来查看下该 Pod 的日志：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 blog]<span class="comment"># kubectl get pod</span></span><br><span class="line">NAME                       READY   STATUS    RESTARTS   AGE</span><br><span class="line">counter-76b584fd8f-7fq99   1/1     Running   0          2m30s</span><br><span class="line">testlog-rs-lwxts           1/1     Running   0          2d1h</span><br><span class="line">[root@node1 blog]<span class="comment"># kubectl logs counter-76b584fd8f-7fq99</span></span><br></pre></td></tr></table></figure>
+<p>可以看到没有标准日志输出，我们按照上面描述，去看下容器对应的 Docker 日志是否为空：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node2 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2]<span class="comment"># pwd</span></span><br><span class="line">/var/lib/docker/containers/166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2</span><br><span class="line">[root@node2 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2]<span class="comment"># ll</span></span><br><span class="line">total 12</span><br><span class="line">-rw-r-----. 1 root root    0 May 18 17:39 166103275a89df918b3240ede911192357f7256c1f23b4311b6db44c0f800cc2-json.log</span><br><span class="line">drwx------. 2 root root    6 May 18 17:39 checkpoints</span><br><span class="line">-rw-------. 1 root root 5173 May 18 17:39 config.v2.json</span><br><span class="line">-rw-r--r--. 1 root root 2064 May 18 17:39 hostconfig.json</span><br><span class="line">drwx------. 2 root root    6 May 18 17:39 mounts</span><br></pre></td></tr></table></figure>
+<p>这里是符合预期的，因为我们将所有的日志输出到指定日志： <code>/var/log/yiran/test.log</code> 中了，我们去看看节点日志是否存在：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node2 yiran]<span class="comment"># pwd</span></span><br><span class="line">/var/<span class="built_in">log</span>/yiran</span><br><span class="line">[root@node2 yiran]<span class="comment"># tailf test.log</span></span><br><span class="line">327: Sat May 18 09:45:23 UTC 2019</span><br><span class="line">328: Sat May 18 09:45:24 UTC 2019</span><br><span class="line">329: Sat May 18 09:45:25 UTC 2019</span><br><span class="line">330: Sat May 18 09:45:26 UTC 2019</span><br></pre></td></tr></table></figure>
+<p>可以看到这里已经按照预期打印在 Pod 所在节点上了，满足我们的需求。</p>
+<p>接下来是重头戏，集群级别的日志控制。</p>
+<h2 id="集群级别日志"><a href="#集群级别日志" class="headerlink" title="集群级别日志"></a>集群级别日志</h2><p>我们为什么需要日志？对于开发者，可以通过日志进行快速的错误排查；对于运维同学可以根据日志来了解程序运行状态。一句话就是日志非常重要。</p>
+<p>那么既然日志这么重要，那么在 k8s 上如何处理日志，尤其是 k8s 提供了 ReplicaSet/DeploymentSet 这类可以自动缩扩容，自动 ha 的资源，我们如果仅仅通过节点级别的日志管理，集群规模小还好，当集群规模变大之后，对于使用日志的同学简直是灾难。</p>
+<p>在看过了标准日志处理和节点日志处理后，我们来看看一个标准的 k8s 集群是如何处理服务日志和应用日志的。</p>
+<p>这里的前提是，我们有一个日志中心（如 ES)去处理日志，有几种配置方式可以选择：</p>
+<h3 id="节点级别日志代理"><a href="#节点级别日志代理" class="headerlink" title="节点级别日志代理"></a>节点级别日志代理</h3><p>在 k8s 集群中运行一个 DaemonSet，启动的容器运行日志转发器，用于将节点上的日志转发到日志中心，日志转发器可以根据各自资源情况和需求自由选择，如 Logstash,Fluentd,Fluent-bit 等等。</p>
+<p>k8s 标准配置中推荐该方案，无论是从资源使用还是从配置管理上都是最佳方案。</p>
+<p>对应配置在 <code>kubernetes/cluster/addons/fluentd-elasticsearch</code> 路径下，我们可以直接创建部署，部署后状态如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get rs |grep kibana</span></span><br><span class="line">kibana-logging-f4d99b69f          1         1         1       2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get ds |grep fluent</span></span><br><span class="line">fluentd-es-v2.4.0       3         3         3       3            3           &lt;none&gt;                          2d6h</span><br><span class="line">[root@node1 fluentd-elasticsearch]<span class="comment"># kubectl -n kube-system get statefulset</span></span><br><span class="line">NAME                    READY   AGE</span><br><span class="line">elasticsearch-logging   2/2     2d6h</span><br></pre></td></tr></table></figure>
+<p>可以看到 Fluentd 是以 DaemonSet 方式运行的；ElasticSearch 是以 StatefulSet 方式运行的；Kibana 是以 ReplicaSet 方式运行的。</p>
+<p>其中 Fluentd 配置文件中监控的是 <code>/var/log/container</code> 路径下的所有日志，所以我们理论上可以在 ES 中看到所有应用的日志，那么看到日志之后，我们如何与实际的应用对应呢？这里可以看下具体示例：</p>
+<p>创建 ReplicaSet 类型资源，指定 replica 为 1：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[root@node1</span> <span class="string">~]#</span> <span class="string">cat</span> <span class="string">log.yaml</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ReplicaSet</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">testlog-rs</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">  selector:</span></span><br><span class="line"><span class="attr">    matchLabels:</span></span><br><span class="line"><span class="attr">      app:</span> <span class="string">testlog-label</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        app:</span> <span class="string">testlog-label</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">testlog-container-name</span></span><br><span class="line"><span class="attr">          image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">          args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span></span><br><span class="line">                 <span class="string">'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'</span><span class="string">]</span></span><br></pre></td></tr></table></figure>
+<p>我们将涉及到名称的字段均加上对应 key，便于在 ES 中查看对应关系，那么接下来看看在 ES 中该容器对应的日志是什么形式的：</p>
+<img src="/2019/05/17/Kubernetes-实战-日志处理/log1.png" title="log1">
+<p>根据上述对应关系，哪怕 Pod 重建了，我们仍可以通过 container_name 字段来查看对应应用日志，便于调试。</p>
+<h3 id="节点级别日志代理配合伴生容器"><a href="#节点级别日志代理配合伴生容器" class="headerlink" title="节点级别日志代理配合伴生容器"></a>节点级别日志代理配合伴生容器</h3><p>我们知道，标准容器日志应该输出到 stdout 和 stderr 中，那么如果我们一个 Pod 中输出多份日志怎么办？虽然这种情况是我们应该极度避免的，我们应该始终保证一个 Pod 只做一件事情。但是我们有时候迫于代码结构或者其他因素，导致我们会遇到这种情况，那么此时我们需要伴生容器配合使用。</p>
+<p>示例如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">admin/logging/two-files-counter-pod-streaming-sidecar.yaml</span> </span><br><span class="line"></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">counter</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/bin/sh</span></span><br><span class="line"><span class="bullet">    -</span> <span class="bullet">-c</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">&gt;</span></span><br><span class="line"><span class="string">      i=0;</span></span><br><span class="line"><span class="string">      while true;</span></span><br><span class="line"><span class="string">      do</span></span><br><span class="line"><span class="string">        echo "$i: $(date)" &gt;&gt; /var/log/1.log;</span></span><br><span class="line"><span class="string">        echo "$(date) INFO $i" &gt;&gt; /var/log/2.log;</span></span><br><span class="line"><span class="string">        i=$((i+1));</span></span><br><span class="line"><span class="string">        sleep 1;</span></span><br><span class="line"><span class="string">      done</span></span><br><span class="line"><span class="string"></span><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-1</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/1.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">count-log-2</span></span><br><span class="line"><span class="attr">    image:</span> <span class="string">busybox</span></span><br><span class="line"><span class="attr">    args:</span> <span class="string">[/bin/sh,</span> <span class="bullet">-c,</span> <span class="string">'tail -n+1 -f /var/log/2.log'</span><span class="string">]</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">      mountPath:</span> <span class="string">/var/log</span></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">varlog</span></span><br><span class="line"><span class="attr">    emptyDir:</span> <span class="string">&#123;&#125;</span></span><br></pre></td></tr></table></figure>
+<p>这种方法是极度不推荐的，如果我们配置了 EFK，那么我们 1 份日志相当于写了 3 份，如果我们 ES 的后端存储是一个副本机制的分布式存储，那么我们 1 份日志相当于写了 3 * 2(或 3，存储副本数)份，这是极大的浪费了存储资源的，且会大大影响 SSD 磁盘寿命。</p>
+<h3 id="Pod-级别日志代理"><a href="#Pod-级别日志代理" class="headerlink" title="Pod 级别日志代理"></a>Pod 级别日志代理</h3><p>如果觉得节点级别日志代理粒度太粗，我们也可以选择 Pod 级别，在每个 Pod 中都启动一个伴生容器作为日志代理，将日志直接转发到日志中心。</p>
+<p>若以该形式部署，则我们的应用程序配置不仅要配置应用自身，还要考虑日志处理策略；节点计算能力现在大幅提升，每个节点的 Pod 数量很大，浪费了大量的计算资源。</p>
+<h3 id="应用自处理日志代理"><a href="#应用自处理日志代理" class="headerlink" title="应用自处理日志代理"></a>应用自处理日志代理</h3><p>如标题，我们当然可以在应用中直接将日志转发到指定的日志中心，这种情况也是极度糟糕的， <code>Make each program do one thing well.</code>。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里我们关于日志部分的介绍就到这里，总的来说我们需要集中式的日志中心，且推荐以节点级别日志代理方式配置，前提是我们能够预留足够的计算资源和存储资源。后续有机会我们可以了解下日志与事件审计关联使用。</p>
+<p>下一篇我们来看下 Kubernetes 中镜像相关管理与使用。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/14/Kubernetes-实战-微服务/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1840,166 +2027,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/03/29/LVM-使用总结/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/29/LVM-使用总结/" itemprop="url">LVM 使用总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-29T22:42:27+08:00">
-                2019-03-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/03/29/LVM-使用总结/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/03/29/LVM-使用总结/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>全称 Logical Volume Manager，逻辑卷管理，简单的说就是能将物理磁盘统一管理，在现在这个满大街都在谈论分布式存储的年代，已经很少有人关注和使用它了，毕竟如果买个公有云上的虚拟机，挂载磁盘都已经得到 TP999+ 的稳定性加持，扩容什么的也只是一句话的事，完全没必要使用 LVM 了。<br>那么我今天为啥要写 LVM 呢，首先肯定是最近要使用它（清理它），其次，现在 RedHat 系列发行版仍将 LVM 作为系统安装的默认磁盘处理方式，对于我这种安装系统家常便饭的人，还是要了解下的。</p>
-<p>本文不会包含 LVM 命令的使用。</p>
-<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>LVM 中有 3 个最重要的概念，分别是 PV，VG，LV，下面我分别来说一下：</p>
-<h3 id="PV"><a href="#PV" class="headerlink" title="PV"></a>PV</h3><p>Physical Volumes，物理卷，属于 LVM 中最底层的单元，通常介质为磁盘，或者磁盘上的某个分区，多个 PV 可以组成 VG（卷组）。</p>
-<h3 id="VG"><a href="#VG" class="headerlink" title="VG"></a>VG</h3><p>Volume Group，卷组，也是我们通常说的“池化”具体表现形式，VG 可以存在多个，我们可以根据具体的用途来划分 VG，来提供相应的性能保证，比如我们可以对 IO 密集型应用使用全 SSD 组成的 VG。</p>
-<h3 id="LV"><a href="#LV" class="headerlink" title="LV"></a>LV</h3><p>Logical Volume，逻辑卷，也就是 <code>LVM</code> 中的 <code>LV</code>，LVM 暴露出来供我们使用的逻辑（虚拟）卷。我们可以将其当做一个普通的磁盘使用，可以在其上进行分区，格式化，磁盘读写等操作。</p>
-<h2 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h2><p>简单的介绍了 LVM 的概念，那么我们来说下 LVM 的优缺点：</p>
-<h3 id="优点："><a href="#优点：" class="headerlink" title="优点："></a>优点：</h3><ul>
-<li>随意扩（缩）容</li>
-<li>在线迁移 LV（平时用处不多，主要在 P2V 场景下使用，也就是通常文章中提到的“企业上云”必要的操作）</li>
-<li>快照，RAID 等高级功能</li>
-</ul>
-<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><p>管理复杂，通常服务器上磁盘数量多，且磁盘类型未必能够统一（考虑大量公司中的利旧场景），那么我们管理起来就比较麻烦了，要针对所有磁盘创建 PV，然后加入到对应的 VG 中，最后再对外提供 LV，往往我们需要维护相应的功能来提供简单的借口供上层应用使用。</p>
-<h2 id="LVM-RAID-vs-mdadm"><a href="#LVM-RAID-vs-mdadm" class="headerlink" title="LVM RAID vs mdadm"></a>LVM RAID vs mdadm</h2><p>在上述的优点中，我们提到了 RAID 功能。相信大部分同学都了解 RAID 的概念，通常我们提到的 RAID 都是由相应硬件（存储控制器）来提供，如果没有硬件怎么办呢？我们可以通过 <code>mdadm</code> 来实现软 RAID， 可以达到相应的效果，只是根据 OS 版本不同，软 RAID 的稳定性堪忧（Ubuntu 18.04 存在 Bug）。</p>
-<p>那么同样都提供了软 RAID 功能，LVM 与 mdadm 相比，有什么不同呢？</p>
-<p>首先，LVM 实现了完整的 RAID 功能，且 RedHat 也提供了完整的文档来描述各个功能的使用，是可以确定获得了官方支持的，那么社区里是怎么评论的呢？</p>
-<p>从使用上来说，LVM 作为一款逻辑卷管理软件，虽然支持完成的软 RAID 功能，但是社区支持并不好，大家还是习惯于（信任）mdadm，毕竟 <code>Do One Thing and Do It Well</code> 准没错。mdadm 虽然我在使用上觉得很糟糕，但是在线上环境的表现，还是很完美的，目前 RAID1 还没出过问题，稳。</p>
-<p>而且从性能上说，有人对 LVM 和 mdadm 进行过<a href="https://www.fibrevillage.com/storage/429-performance-comparison-of-mdadm-raid0-and-lvm-striped-mapping" target="_blank" rel="noopener">性能对比</a>，总体来说 mdadm 综合表现还是要比 LVM 好一些的。</p>
-<p>（最近在对 nvme 磁盘进行分区 raid1 时经常遇到失败的情况，现象是mdadm 进程自己退出，再次执行又 ok，还没仔细调研。）</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>虽然现在分布式存储大火，各家云产品都在使用，但是单机磁盘管理上，LVM 还是很好用的，RedHat 也一直在单机磁盘管理上有所投入，比如在 RedHat7.5 上推出的 <a href="https://github.com/dm-vdo/vdo" target="_blank" rel="noopener">VDO 功能</a>，还是要持续关注了解的。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://github.com/dm-vdo/vdo" target="_blank" rel="noopener">https://github.com/dm-vdo/vdo</a></li>
-<li><a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/logical_volume_manager_administration/" target="_blank" rel="noopener">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/logical_volume_manager_administration/</a></li>
-<li><a href="https://serverfault.com/questions/217666/what-is-better-lvm-on-raid-or-raid-on-lvm" target="_blank" rel="noopener">https://serverfault.com/questions/217666/what-is-better-lvm-on-raid-or-raid-on-lvm</a></li>
-<li><a href="https://www.fibrevillage.com/storage/429-performance-comparison-of-mdadm-raid0-and-lvm-striped-mapping" target="_blank" rel="noopener">https://www.fibrevillage.com/storage/429-performance-comparison-of-mdadm-raid0-and-lvm-striped-mapping</a></li>
-<li><a href="https://www.reddit.com/r/linux/comments/2pkqh2/is_it_better_to_use_mdadm_raid_lvm_or_just/" target="_blank" rel="noopener">https://www.reddit.com/r/linux/comments/2pkqh2/is_it_better_to_use_mdadm_raid_lvm_or_just/</a></li>
-<li><a href="http://www.cyberphoton.com/questions/question/what-is-the-difference-between-lvm-and-raid" target="_blank" rel="noopener">http://www.cyberphoton.com/questions/question/what-is-the-difference-between-lvm-and-raid</a></li>
-<li><a href="https://unix.stackexchange.com/questions/140321/mixed-raid-types/140325#140325" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/140321/mixed-raid-types/140325#140325</a></li>
-<li><a href="https://serverfault.com/questions/126851/linux-lvm-mirror-vs-md-mirror" target="_blank" rel="noopener">https://serverfault.com/questions/126851/linux-lvm-mirror-vs-md-mirror</a></li>
-<li><a href="https://unix.stackexchange.com/questions/150644/raiding-with-lvm-vs-mdraid-pros-and-cons" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/150644/raiding-with-lvm-vs-mdraid-pros-and-cons</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2052,7 +2079,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">89</span>
+                  <span class="site-state-item-count">90</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
