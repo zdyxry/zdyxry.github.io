@@ -275,6 +275,147 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/01/Exponential-backoff/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/01/Exponential-backoff/" itemprop="url">Exponential backoff</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-01T20:26:02+08:00">
+                2018-12-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/12/01/Exponential-backoff/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/01/Exponential-backoff/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>昨天看到 Ansible 关于 Linux reboot plugin  <a href="https://www.ansible.com/blog/reboot-plugin-for-linux-in-ansible-2-7?utm_medium=Email&amp;utm_campaign=weekly&amp;sc_cid=701f2000000RRCNAA4" target="_blank" rel="noopener">相关文章</a> 时，看到了它关于重试等待的设计，了解了下 Exponential backoff，特此记录。</p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>假设存在需求：</p>
+<ol>
+<li>获取服务器 A 启动时间</li>
+<li>重启服务器 A</li>
+<li>获取服务器 A 当前时间</li>
+</ol>
+<p>其中第 2 点，我一般会重启服务器 A 后，不断的重连服务器 A 来判断服务器 A 是否正常启动，每次重连后等待，再次重试，设置一个最大超时时间，超过最大超时时间认为服务器 A 启动失败，任务失败。</p>
+<p>那么什么是 Exponential backoff 呢？ 中文应该叫“指数退避”，意思就是每次重连失败后，等待的时候随着重试次数的增加而成指数增长，如果我们第1次重试等待时间为2s，则第2次重试等待时间为4s，第三次重试等待时间为8s，以此类推。</p>
+<p>我理解最大的好处就是防止短时间内大量的重复错误，有时候当你知道你的操作是短时间无法完成的（比如重启服务器 A），那么该操作执行过程中，短时间内重试多次是没有意义的。当然我们也不能让重试等待时间无限的增长，我们可以设置一个最大的重试时间（不是最大超时时间），如果大于等于最大重试时间，则等待最大重试时间后再次重试。</p>
+<h2 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h2><h3 id="伪代码"><a href="#伪代码" class="headerlink" title="伪代码"></a>伪代码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">Do some asynchronous operation.</span><br><span class="line"></span><br><span class="line">retries = 0</span><br><span class="line"></span><br><span class="line">DO</span><br><span class="line">    wait for (2^retries * 100) milliseconds</span><br><span class="line"></span><br><span class="line">    status = Get the result of the asynchronous operation.</span><br><span class="line"></span><br><span class="line">    IF status = SUCCESS</span><br><span class="line">        retry = false</span><br><span class="line">    ELSE IF status = NOT_READY</span><br><span class="line">        retry = true</span><br><span class="line">    ELSE IF status = THROTTLED</span><br><span class="line">        retry = true</span><br><span class="line">    ELSE</span><br><span class="line">        Some other error occurred, so stop calling the API.</span><br><span class="line">        retry = false</span><br><span class="line">    END IF</span><br><span class="line"></span><br><span class="line">    retries = retries + 1</span><br><span class="line"></span><br><span class="line">WHILE (retry AND (retries &lt; MAX_RETRIES))</span><br></pre></td></tr></table></figure>
+<h3 id="Ansible-linux-reboot-plugin"><a href="#Ansible-linux-reboot-plugin" class="headerlink" title="Ansible linux reboot  plugin"></a>Ansible linux reboot  plugin</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">fail_count = 0</span><br><span class="line">max_fail_sleep = 12</span><br><span class="line"></span><br><span class="line">while datetime.utcnow() &lt; max_end_time:</span><br><span class="line">    try:</span><br><span class="line">        action()</span><br><span class="line">        if action_desc:</span><br><span class="line">            display.debug(&apos;%s: %s success&apos; % (self._task.action, action_desc))</span><br><span class="line">        return</span><br><span class="line">    except Exception as e:</span><br><span class="line">        # Use exponential backoff with a max timout, plus a little bit of randomness</span><br><span class="line">        random_int = random.randint(0, 1000) / 1000</span><br><span class="line">        fail_sleep = 2 ** fail_count + random_int</span><br><span class="line">        if fail_sleep &gt; max_fail_sleep:</span><br><span class="line">            fail_sleep = max_fail_sleep + random_int</span><br><span class="line">        if action_desc:</span><br><span class="line">            display.debug(&quot;&#123;0&#125;: &#123;1&#125; fail &apos;&#123;2&#125;&apos;, retrying in &#123;3:.4&#125; seconds...&quot;.format(self._task.action, action_desc, to_text(e), fail_sleep))</span><br><span class="line">        fail_count += 1</span><br><span class="line">        time.sleep(fail_sleep)</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/11/25/剑指-Offer（三）/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1654,148 +1795,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/09/24/OpenvSwitch-Active-Backup-failback-验证/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/24/OpenvSwitch-Active-Backup-failback-验证/" itemprop="url">OpenvSwitch Active-Backup failback 验证</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-09-24T17:36:22+08:00">
-                2018-09-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/09/24/OpenvSwitch-Active-Backup-failback-验证/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/09/24/OpenvSwitch-Active-Backup-failback-验证/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在虚拟化场景下，我们经常使用  OpenvSwitch 进行虚拟网络配置，最近看到有人问，Open vSwitch 的 bonding 模式 Avtice-Backup ，是否支持 failback 功能？ 虽然一直经常使用该模式，但是不知道当故障恢复后，是否会出现故障恢复？<br>看官方文档中描述感觉有些模糊，来验证下。</p>
-<h2 id="验证方式"><a href="#验证方式" class="headerlink" title="验证方式"></a>验证方式</h2><h3 id="配置-VDS"><a href="#配置-VDS" class="headerlink" title="配置 VDS"></a>配置 VDS</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@node 17:14:54 ~]<span class="variable">$ovs</span>-vsctl show</span><br><span class="line">b9956069-4101-4aab-a8a2-86db4f5ae390</span><br><span class="line">    Bridge ovsbr-mgt</span><br><span class="line">        Port bond-mgt</span><br><span class="line">            Interface <span class="string">"eno2"</span></span><br><span class="line">            Interface <span class="string">"eno1"</span></span><br><span class="line">        Port port-mgt</span><br><span class="line">            tag: 0</span><br><span class="line">            Interface port-mgt</span><br><span class="line">                <span class="built_in">type</span>: internal</span><br><span class="line">        Port ovsbr-mgt</span><br><span class="line">            Interface ovsbr-mgt</span><br><span class="line">                <span class="built_in">type</span>: internal</span><br><span class="line">    ovs_version: <span class="string">"2.3.1"</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node 17:14:59 ~]<span class="variable">$ovs</span>-appctl bond/list</span><br><span class="line">bond	<span class="built_in">type</span>	recircID	slaves</span><br><span class="line">bond-mgt	active-backup	0	eno1, eno2</span><br></pre></td></tr></table></figure>
-<h3 id="故障前流量检测"><a href="#故障前流量检测" class="headerlink" title="故障前流量检测"></a>故障前流量检测</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node 17:15:58 ~]<span class="variable">$ifconfig</span> eno1</span><br><span class="line">eno1: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet6 fe80::ec4:7aff:fe0f:8f68  prefixlen 64  scopeid 0x20&lt;link&gt;</span><br><span class="line">        ether 0c:c4:7a:0f:8f:68  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 10046643  bytes 1131705628 (1.0 GiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 4182418  bytes 443990895 (423.4 MiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line">        device memory 0xdfd20000-dfd3ffff</span><br><span class="line"></span><br><span class="line">[root@node 17:16:45 ~]<span class="variable">$ifconfig</span> eno2</span><br><span class="line">eno2: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500</span><br><span class="line">        ether 0c:c4:7a:0f:8f:69  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 100  bytes 10240 (100 KiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 100  bytes 10240 (100 KiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line">        device memory 0xdfd00000-dfd1ffff</span><br></pre></td></tr></table></figure>
-<h3 id="故障后流量检测"><a href="#故障后流量检测" class="headerlink" title="故障后流量检测"></a>故障后流量检测</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node 17:15:58 ~]<span class="variable">$ifconfig</span> eno1</span><br><span class="line">eno1: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet6 fe80::ec4:7aff:fe0f:8f68  prefixlen 64  scopeid 0x20&lt;link&gt;</span><br><span class="line">        ether 0c:c4:7a:0f:8f:68  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 10046643  bytes 1131705628 (1.0 GiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 4182418  bytes 443990895 (423.4 MiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line">        device memory 0xdfd20000-dfd3ffff</span><br><span class="line"></span><br><span class="line">[root@node 17:16:45 ~]<span class="variable">$ifconfig</span> eno2</span><br><span class="line">eno2: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500</span><br><span class="line">        ether 0c:c4:7a:0f:8f:69  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 22222222  bytes 2231705628 (1.0 GiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 2231705628  bytes 2231705628 (1.0 GiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line">        device memory 0xdfd00000-dfd1ffff</span><br></pre></td></tr></table></figure>
-<h3 id="故障恢复后流量检测"><a href="#故障恢复后流量检测" class="headerlink" title="故障恢复后流量检测"></a>故障恢复后流量检测</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@node 17:15:58 ~]<span class="variable">$ifconfig</span> eno1</span><br><span class="line">eno1: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet6 fe80::ec4:7aff:fe0f:8f68  prefixlen 64  scopeid 0x20&lt;link&gt;</span><br><span class="line">        ether 0c:c4:7a:0f:8f:68  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 10046643  bytes 1131705628 (1.0 GiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 4182418  bytes 443990895 (423.4 MiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line">        device memory 0xdfd20000-dfd3ffff</span><br><span class="line"></span><br><span class="line">[root@node 17:16:45 ~]<span class="variable">$ifconfig</span> eno2</span><br><span class="line">eno2: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500</span><br><span class="line">        ether 0c:c4:7a:0f:8f:69  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 33333333  bytes 3331705628 (1.0 GiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 3331705628  bytes 3331705628 (1.0 GiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line">        device memory 0xdfd00000-dfd1ffff</span><br></pre></td></tr></table></figure>
-<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>可以看到整体流程中流量占用网口情况，主要看 RX 和 TX packets 数量：</p>
-<ol>
-<li>故障前：eno1</li>
-<li>故障后：eno2</li>
-<li>故障恢复后：eno2</li>
-</ol>
-<p>在 OpenvSwitch Active-Backup 场景下，未支持 failback 功能，我理解是因为这两块网卡完全等价，failback 在 Master-Slave 场景下更有用一些。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1848,7 +1847,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">91</span>
+                  <span class="site-state-item-count">92</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
