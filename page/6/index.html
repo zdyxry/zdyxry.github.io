@@ -275,6 +275,172 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/01/12/聊一聊-ISO-9660/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/12/聊一聊-ISO-9660/" itemprop="url">聊一聊 ISO 9660</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-12T22:06:45+08:00">
+                2019-01-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/12/聊一聊-ISO-9660/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/12/聊一聊-ISO-9660/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="ISO-9660"><a href="#ISO-9660" class="headerlink" title="ISO 9660"></a>ISO 9660</h2><blockquote>
+<p>ISO 9660，也被一些硬件和软件供应商称作CDFS（光盘文件系统），是一个由国际标准化组织（ISO）为光盘介质发布的文件系统。其目标是能够在不同的操作系统如Windows、Mac OS以及类Unix系统上交换数据。</p>
+</blockquote>
+<p>我们平时接触到的 ISO 格式文件均为 ISO 9660，我们可以通过 <code>file</code> 命令进行查看，以 RedHat 发行版为例：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@node redhat]<span class="comment"># file rhel-server-7.6-x86_64-dvd.iso </span></span><br><span class="line">rhel-server-7.6-x86_64-dvd.iso: ISO 9660 CD-ROM filesystem data <span class="string">'RHEL-7.6 Server.x86_64         '</span> (bootable)</span><br></pre></td></tr></table></figure></p>
+<h3 id="用途"><a href="#用途" class="headerlink" title="用途"></a>用途</h3><ol>
+<li>安装操作系统，我们可以通过将 ISO 挂载到物理服务器/PC 上，从 ISO 启动进行操作系统的安装；</li>
+<li>作为软件安装源，比如红帽系列的版本，在 ISO 中，通常会有 <code>Packages</code> 路径，下面包含了当前版本完整的软件源，我们可以通过本地挂载的方式使用；</li>
+<li>作为软件发行方式，常见的有 VMware vmtools, KVM Virtio 等统一打包方式；</li>
+<li>…</li>
+</ol>
+<h3 id="制作方式"><a href="#制作方式" class="headerlink" title="制作方式"></a>制作方式</h3><ol>
+<li>genisoimage</li>
+<li>mkisofs</li>
+</ol>
+<p>第一种方式不常用，主要使用第二种方式进行使用，之前的文章中提到过 LiveCD 制作方式也是通过 <code>mkisofs</code> 命令继续构建的。</p>
+<p>这里我们可以参考 VMware 官方文档了解如何定制自己的 ISO。</p>
+<blockquote>
+<p>说一下何时需要定制我们自己的 ISO。当我们获取到各个发行版本的 ISO 后，我们可以正常使用进行安装，但是都是交互式安装，需要我们通过图形化界面/命令行交互的方式进行配置确认及参数设置。如果我们想要 ISO 支持静默安装，那么就需要我们自己定制属于自己的 KickStart 脚本，然后放置到 ISO 中并设置为默认执行项。<br>此场景对于 *nix 系统均适用。</p>
+</blockquote>
+<p>当前路径结构</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">test</span>/</span><br><span class="line">├── a.b00</span><br><span class="line">├── ata_liba.v00</span><br><span class="line">|...</span><br><span class="line">├── char_ran.v00</span><br><span class="line">├── efi</span><br><span class="line">│   └── boot</span><br><span class="line">│       ├── boot.cfg</span><br><span class="line">│       ├── bootia32.efi</span><br><span class="line">│       └── bootx64.efi</span><br><span class="line">├── efiboot.img</span><br><span class="line">├── hid_hid.v00</span><br><span class="line">|...</span><br></pre></td></tr></table></figure>
+<p>执行 mkisofs 命令，指定 ISO 源文件路径，指定目标 ISO 名称，即可构建。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">[root@installer mnt]<span class="comment"># mkisofs -relaxed-filenames -J -R -o custom_esxi.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table  test/</span></span><br><span class="line">Warning: creating filesystem that does not conform to ISO-9660.</span><br><span class="line">I: -input-charset not specified, using utf-8 (detected <span class="keyword">in</span> locale settings)</span><br><span class="line">Size of boot image is 4 sectors -&gt; No emulation</span><br><span class="line">  2.89% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line">  5.78% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line">  8.66% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 11.55% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 14.44% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 17.33% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 20.21% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 23.10% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 25.98% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 28.88% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 31.76% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 34.65% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 37.53% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 40.42% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 43.31% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 46.20% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 49.08% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 51.97% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 54.85% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 57.74% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 60.63% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 63.52% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 66.40% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 69.29% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 72.17% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 75.06% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 77.95% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 80.84% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 83.72% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 86.61% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 89.49% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 92.39% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 95.27% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line"> 98.16% <span class="keyword">done</span>, estimate finish Sat Jan 12 21:56:27 2019</span><br><span class="line">Total translation table size: 2048</span><br><span class="line">Total rockridge attributes bytes: 14593</span><br><span class="line">Total directory bytes: 6144</span><br><span class="line">Path table size(bytes): 50</span><br><span class="line">Max brk space used 25000</span><br><span class="line">173203 extents written (338 MB)</span><br></pre></td></tr></table></figure>
+<p>使用 <code>file</code> 命令查看构建结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@installer mnt]<span class="comment"># file custom_esxi.iso </span></span><br><span class="line">custom_esxi.iso: <span class="comment"># ISO 9660 CD-ROM filesystem data 'CDROM' (bootable)</span></span><br></pre></td></tr></table></figure>
+<h3 id="定制-ISO-信息"><a href="#定制-ISO-信息" class="headerlink" title="定制 ISO 信息"></a>定制 ISO 信息</h3><p>通过上面的命令，我们构建了属于我们自己的 ISO，但是这时候出现一个需求，如果我们要对我们定制的 ISO 进行版本管理，要求可以通过 ISO 自动升级，那么我们在需要有渠道/方式获取 ISO 属性信息，比如：release date，size，dependency… 我们如何管理这些属性信息呢？ </p>
+<p>最简单的方式肯定是直接再编写一个文件，与 ISO 一一匹配，在文件中记录 ISO 相应信息，比如：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="attr">"md5"</span>: <span class="string">"04db3dc9d872c382b1f42c9741815138"</span>,</span><br><span class="line"><span class="attr">"size"</span>: <span class="number">354719744</span>,</span><br><span class="line"><span class="attr">"dependency"</span>: [<span class="string">"yiran1"</span>, <span class="string">"yiran2"</span>, <span class="string">"yiran3"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样虽然简单实现了，但是很不方便管理，通过查看 ISO 9660 维基百科中的描述，可以看到有一个特性：</p>
+<blockquote>
+<p>最开始的32768字节没有被ISO 9660数据结构使用，因此可以有其他用处，例如：CD-ROM可以在此区包含一个替代文件系统描述信息块，通常被混合光盘(Hybrid CD)用于提供Mac OS特定的内容。此未用块后面跟着一连串卷描述符，详细记录了该磁盘上的内容和类型信息（类似被FAT和NTFS格式磁盘使用的BIOS参数块）。</p>
+</blockquote>
+<p>可以看到 ISO 前 32KiB 空间未被使用，Mac OS 早就利用这个空间来进行信息记录了，那么我们可以通过 <code>dd</code> 的方式来将二进制的信息写入 ISO 前 32KiB 空间中。<br>这样就避免了同时维护 ISO 及 ISO 对应 metadata 文件，管理起来更加方便。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://docs.vmware.com/en/VMware-vSphere/6.5/com.vmware.vsphere.upgrade.doc/GUID-C03EADEA-A192-4AB4-9B71-9256A9CB1F9C.html" target="_blank" rel="noopener">https://docs.vmware.com/en/VMware-vSphere/6.5/com.vmware.vsphere.upgrade.doc/GUID-C03EADEA-A192-4AB4-9B71-9256A9CB1F9C.html</a></li>
+<li><a href="https://zh.wikipedia.org/wiki/ISO_9660" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/ISO_9660</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/01/05/Shell-cat-保存文件方式/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1560,157 +1726,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/02/个人常用工具/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/02/个人常用工具/" itemprop="url">个人常用工具</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-02T16:35:54+08:00">
-                2018-12-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/12/02/个人常用工具/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/02/个人常用工具/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>公司标配 Thinkpad，也曾经折腾过 Linux，最终因为舍不得 Windows 下的各种软件，就老老实实用 Windows 。<br>周五的时候电脑故障，趁着重新配置开发环境的机会，整理下自己常用的软件|工具。</p>
-<h2 id="开发工具"><a href="#开发工具" class="headerlink" title="开发工具"></a>开发工具</h2><h3 id="编辑器"><a href="#编辑器" class="headerlink" title="编辑器"></a>编辑器</h3><h4 id="VIM"><a href="#VIM" class="headerlink" title="VIM"></a>VIM</h4><p>主力编辑器，因为平时写 Python 比较多，所以安装的插件并不多，主要用到的就是函数之间的跳转，具体配置在 <a href="https://github.com/zdyxry/Dotfiles" target="_blank" rel="noopener">github</a> 。</p>
-<h4 id="VScode"><a href="#VScode" class="headerlink" title="VScode"></a>VScode</h4><p>在写代码的时候通常使用 vim ，但是看代码还是习惯于 VScode，主要是看代码用鼠标控制比较方便。<br>偶尔会碰到编写配置文件，比如 JSON/YAML 的时候，vim 写起来还是有些吃力，可能是我用的不到家吧。</p>
-<h3 id="终端"><a href="#终端" class="headerlink" title="终端"></a>终端</h3><h4 id="XShell"><a href="#XShell" class="headerlink" title="XShell"></a>XShell</h4><p>在 Windows 用的比较多的应该是 XShell，同时管理多台服务器简单高效，且有配套的 XSFTP，上传/下载文件很方便。</p>
-<h4 id="Tmux"><a href="#Tmux" class="headerlink" title="Tmux"></a>Tmux</h4><p>在 Linux 上主要用系统自带的 Terminal 配合 Tmux 使用，主要原因是 Tmux 可以在多平台使用，不用针对不同平台记不同的快捷键（没错，说的就是 Jetbrains）。  </p>
-<p>并没有对 tmux 做太多定制化配置，因为有时候服务器上面不会允许你修改默认配置文件的，所以大部分用的默认配置，平时用的比较多的应该就是 Window &amp; Panel 配合使用。</p>
-<h4 id="Hyper"><a href="#Hyper" class="headerlink" title="Hyper"></a>Hyper</h4><p>好看。</p>
-<h3 id="周边工具"><a href="#周边工具" class="headerlink" title="周边工具"></a>周边工具</h3><h4 id="Wox"><a href="#Wox" class="headerlink" title="Wox"></a>Wox</h4><p>作为 Windows 下的 alfred， Wox 无疑是一个合格的软件，可以极大的提高效率。</p>
-<h4 id="Sumatra-PDF"><a href="#Sumatra-PDF" class="headerlink" title="Sumatra PDF"></a>Sumatra PDF</h4><p>一款极小的 PDF 阅读器，该有的功能都有，比福昕好用，无广告。</p>
-<h4 id="Ditto"><a href="#Ditto" class="headerlink" title="Ditto"></a>Ditto</h4><p>Windows 下的一款剪切板软件，可以记录复制粘贴的历史情况，提供搜索等功能。</p>
-<h3 id="个人管理"><a href="#个人管理" class="headerlink" title="个人管理"></a>个人管理</h3><h4 id="有道云笔记"><a href="#有道云笔记" class="headerlink" title="有道云笔记"></a>有道云笔记</h4><p>笔记这类工具用上一款之后，随着使用时间的增加，切换成本是成正比的，所以就要选一块稳定可靠的。像近来流行的 Bear，为知，Notion，说实在的，就是担心哪天公司突然倒闭了。  </p>
-<p>有道现在支持 Markdown，部分功能需要开通会员才可以，比如 Markdown 中上传图片。不过对于我来说还是够用了。</p>
-<h4 id="Trello"><a href="#Trello" class="headerlink" title="Trello"></a>Trello</h4><p>由于现在工作内容每天变动很大，随时有可能调整任务优先级，所以平时记录 Todo 类型内容基本上靠着 Markdown 上的 <code>- [ ]</code> 过活。但是对于个人管理而言，还是使用 Trello ，便于管理和记录，方便观察自我成长。</p>
-<h4 id="Pocket"><a href="#Pocket" class="headerlink" title="Pocket"></a>Pocket</h4><p>稍后阅读工具，配合 Chrome 上的插件使用很完美，多平台同步很快。<br>缺点就是分类较为痛苦，要管理自己的 tag。</p>
-<h4 id="Inoreader"><a href="#Inoreader" class="headerlink" title="Inoreader"></a>Inoreader</h4><p>RSS 阅读器。 随着微信/微博等社交公众号的推广，生活中充斥着一些片段信息，有些公众号发的内容毫无营养，极大的浪费时间，这时候关注自己想关注的就比较重要了。</p>
-<p>个人比较喜欢 RSS 订阅的方式订阅自己感兴趣的内容，无论是博客，还是公众号，都可以通过 RSS 的方式订阅，如果没有提供 RSS，也可以通过 RSSHub 来订阅。之后找时间把我订阅的一些博客/网站整理分享出来。</p>
-<h4 id="记账"><a href="#记账" class="headerlink" title="记账"></a>记账</h4><p>一直想找一款账本类工具，多平台，简单易用的，但是没找到，随着第三方支付的便捷性，很多账本都没办法去自动同步，如果手动同步的话又特别麻烦，很容易遗漏。  </p>
-<p>我个人的解决方案简单粗暴：支付宝。 所有个人支出全部通过支付宝支付，利用支付宝的账单统计了解个人消费情况。</p>
-<h3 id="时间管理"><a href="#时间管理" class="headerlink" title="时间管理"></a>时间管理</h3><h4 id="RescueTime"><a href="#RescueTime" class="headerlink" title="RescueTime"></a>RescueTime</h4><p>支持多平台，且会自动统计工作内容及相应软件使用时间，最终形成以天/周/月为单位的报告。</p>
-<h4 id="ManicTime"><a href="#ManicTime" class="headerlink" title="ManicTime"></a>ManicTime</h4><p>同样支持多平台，相比于 RescueTime ，ManicTime 记录的内容更细，具体到你每天工作的起始/终止时间，中间电脑待机时间等等，每款软件的使用时间及使用频率，最终报告也会精确到每款软件的总使用时间。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>把日常使用最多的软件列举了一下，基本上我每天清醒的时间都是在使用上述软件，想想还是很恐怖的。</p>
-<p>最后的时间管理软件其实我中断使用过一段时间，那段时间我认为自己能够控制自己的工作内容分配，时间分配都在自己的计划中，应该不会出现 <code>时间去哪了</code> 之类的问题。结果最近随着工作内容的增加，每天感觉都有做不完的事情，又不清楚自己的时间都用来做什么了，就又安装回来观察下，结果很震惊：工作分配真的变多了 ( º﹃º )</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1763,7 +1778,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">92</span>
+                  <span class="site-state-item-count">93</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
