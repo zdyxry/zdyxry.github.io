@@ -275,6 +275,154 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/11/29/Cloud-init-无需重启执行/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/11/29/Cloud-init-无需重启执行/" itemprop="url">Cloud-init 无需重启执行配置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-11-29T21:35:26+08:00">
+                2019-11-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/11/29/Cloud-init-无需重启执行/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/11/29/Cloud-init-无需重启执行/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近在折腾 Cluster API 的时候，因为目前社区中比较成熟的方案是通过 Cloud-init 执行 kubeadm 命令部署 k8s ，因此需要使用 Cloud-init 进行功能验证，但是 Cloud-init 通常执行的前提条件是系统初次启动时，自动执行配置，这点对于调试很不友好，因此需要找到一个无需重启即可执行 Cloud-init 配置的方式。</p>
+<h2 id="Cloud-init"><a href="#Cloud-init" class="headerlink" title="Cloud-init"></a>Cloud-init</h2><p>使用过公有云或者私有云的同学应该都知道在创建虚拟机的时候可以传递一个脚本用于在机器置备的时候执行某些动作，尤其在批量执行的时候，通常会很方便。这个其实就是 Cloud-init 所做的工作，就跟它的名字一样，针对 Cloud 场景执行 init 动作。</p>
+<p>引用官网介绍：</p>
+<blockquote>
+<p>Cloud-init is the industry standard multi-distribution method for cross-platform cloud instance initialization. It is supported across all major public cloud providers, provisioning systems for private cloud infrastructure, and bare-metal installations. </p>
+</blockquote>
+<h2 id="NoCloud"><a href="#NoCloud" class="headerlink" title="NoCloud"></a>NoCloud</h2><p>Cloud-init 官方支持云平台种类很多常见的公有云如 Aliyun、AWS、Azure，常见的私有云解决方案如 OpenStack、ZStack、OVF 等都有支持。</p>
+<p>但是如果我不使用已经支持的私有云，而是自己通过 Libvirt 配合 Ceph 实现了一套虚拟化平台，想要使用 Cloud-init，则可以使用 ConfigDrive 或者 NoCloud 方式。本文采用的是 NoCloud 方式。</p>
+<h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><p>使用默认配置就好，Cloud-init 在没有指定 Datasource 的情况下，会自己依次尝试：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cat /etc/cloud/cloud.cfg</span></span><br><span class="line">users:</span><br><span class="line"> - default</span><br><span class="line"></span><br><span class="line">disable_root: 1</span><br><span class="line">ssh_pwauth:   0</span><br><span class="line"></span><br><span class="line">mount_default_fields: [~, ~, <span class="string">'auto'</span>, <span class="string">'defaults,nofail,x-systemd.requires=cloud-init.service'</span>, <span class="string">'0'</span>, <span class="string">'2'</span>]</span><br><span class="line">resize_rootfs_tmp: /dev</span><br><span class="line">ssh_deletekeys:   0</span><br><span class="line">ssh_genkeytypes:  ~</span><br><span class="line">syslog_fix_perms: ~</span><br><span class="line">disable_vmware_customization: <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+<h3 id="Metadata"><a href="#Metadata" class="headerlink" title="Metadata"></a>Metadata</h3><p>这里我们指定 NoCloud 的路径，并配置 Metadata 文件：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost nocloud]# pwd</span><br><span class="line">/var/lib/cloud/seed/nocloud</span><br><span class="line">[root@localhost nocloud]# cat meta-data</span><br><span class="line">instance-id: yiran</span><br><span class="line">hostname: yiran</span><br></pre></td></tr></table></figure>
+<h3 id="Userdata"><a href="#Userdata" class="headerlink" title="Userdata"></a>Userdata</h3><p>我们在 Cloud-init 自动配置时，执行命令 echo 保存信息到文件中</p>
+<figure class="highlight plain"><figcaption><span>l l</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost nocloud]# pwd</span><br><span class="line">/var/lib/cloud/seed/nocloud</span><br><span class="line">[root@localhost nocloud]# cat user-data</span><br><span class="line">## template: jinja</span><br><span class="line">#cloud-config</span><br><span class="line"></span><br><span class="line">runcmd:</span><br><span class="line">  - &apos;echo yiran test cloud-init with nocloud &gt; /root/file&apos;</span><br></pre></td></tr></table></figure>
+<h2 id="手动执行-Cloud-init"><a href="#手动执行-Cloud-init" class="headerlink" title="手动执行 Cloud-init"></a>手动执行 Cloud-init</h2><p>在了解 Cloud-init 工作流程后执行比较简单，因此这里直接贴出操作步骤：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# pwd</span><br><span class="line">/root</span><br><span class="line">[root@localhost ~]# ls</span><br><span class="line">anaconda-ks.cfg</span><br><span class="line">[root@localhost ~]# cloud-init init</span><br><span class="line">Cloud-init v. 18.5 running 'init' at Fri, 29 Nov 2019 14:02:10 +0000. Up 635.10 seconds.</span><br><span class="line">ci-info: +++++++++++++++++++++++++++++++++++++++Net device info+++++++++++++++++++++++++++++++++++++++</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: | Device |  Up  |           Address            |      Mask     | Scope  |     Hw-Address    |</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: |  eth0  | True |        192.168.77.158        | 255.255.240.0 | global | 52:54:00:2f:d9:44 |</span><br><span class="line">ci-info: |  eth0  | True | fe80::108b:ab9c:1a1a:9ab8/64 |       .       |  link  | 52:54:00:2f:d9:44 |</span><br><span class="line">ci-info: |   lo   | True |          127.0.0.1           |   255.0.0.0   |  host  |         .         |</span><br><span class="line">ci-info: |   lo   | True |           ::1/128            |       .       |  host  |         .         |</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: +++++++++++++++++++++++++++++++Route IPv4 info+++++++++++++++++++++++++++++++</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: | Route | Destination  |    Gateway     |    Genmask    | Interface | Flags |</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: |   0   |   0.0.0.0    | 192.168.64.215 |    0.0.0.0    |    eth0   |   UG  |</span><br><span class="line">ci-info: |   1   | 192.168.64.0 |    0.0.0.0     | 255.255.240.0 |    eth0   |   U   |</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: +++++++++++++++++++Route IPv6 info+++++++++++++++++++</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">ci-info: | Route | Destination | Gateway | Interface | Flags |</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">ci-info: |   9   |  fe80::/64  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: |   10  |  fe80::/64  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: |   14  |   ff00::/8  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">[root@localhost ~]# cloud-init modules -m config</span><br><span class="line">Cloud-init v. 18.5 running 'modules:config' at Fri, 29 Nov 2019 14:02:18 +0000. Up 643.31 seconds.</span><br><span class="line">[root@localhost ~]# cloud-init modules -m final</span><br><span class="line">Cloud-init v. 18.5 running 'modules:final' at Fri, 29 Nov 2019 14:02:21 +0000. Up 646.27 seconds.</span><br><span class="line">ci-info: no authorized ssh keys fingerprints found for user centos.</span><br><span class="line">Cloud-init v. 18.5 finished at Fri, 29 Nov 2019 14:02:21 +0000. Datasource DataSourceNoCloudNet [seed=/var/lib/cloud/seed/nocloud][dsmode=net].  Up 646.44 seconds</span><br><span class="line">[root@localhost ~]# ls</span><br><span class="line">anaconda-ks.cfg  file</span><br><span class="line">[root@localhost ~]# cat file</span><br><span class="line">yiran test cloud-init with nocloud</span><br></pre></td></tr></table></figure>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://cloudinit.readthedocs.io/en/latest/" target="_blank" rel="noopener">https://cloudinit.readthedocs.io/en/latest/</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/11/23/如何捕捉-Ctrl-C-指令/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2007,189 +2155,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/09/30/Golang-context-使用/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/09/30/Golang-context-使用/" itemprop="url">Golang context 使用</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-30T18:33:32+08:00">
-                2019-09-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/09/30/Golang-context-使用/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/09/30/Golang-context-使用/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>前段时间在写 Cluster API Provider 的时候，经常会使用 context 传递参数，当时只是按照其他项目中的方式快速的实现，并没有认真的了解 context 具体包含什么，为了解决什么问题，这次来聊一下。</p>
-<p>P.S. 虽然写了一周的 Golang，但是对于标准库有什么还一无所知，找时间应该认真过一遍的。。</p>
-<h2 id="定义与使用"><a href="#定义与使用" class="headerlink" title="定义与使用"></a>定义与使用</h2><p>先看定义：</p>
-<blockquote>
-<p>Package context defines the Context type, which carries deadlines, cancellation signals, and other request-scoped values across API boundaries and between processes.</p>
-</blockquote>
-<ul>
-<li>当一个 goroutine 调用其他 goroutine，随着层级变多，我们想要在外层达到控制的效果</li>
-<li>在必要场景下传递 <strong>必需</strong> 的数据</li>
-</ul>
-<p>其中 <code>Context</code> 这个 interface 中定义了 4 个方法，具体如下：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Context <span class="keyword">interface</span> &#123;</span><br><span class="line">	Deadline() (deadline time.Time, ok <span class="keyword">bool</span>)</span><br><span class="line">	Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line">	Err() error</span><br><span class="line">	Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在 <code>context</code> 包中实现了4个函数，平时也都是使用这些函数：</p>
-<ol>
-<li>func WithCancel(parent Context) (ctx Context, cancel CancelFunc) </li>
-<li>func WithDeadline(parent Context, d time.Time) (Context, CancelFunc)</li>
-<li>func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)</li>
-<li>func WithValue(parent Context, key, val interface{}) Context</li>
-</ol>
-<p>可以看到 Cancel,Deadline,Timeout 都会返回一个 CancelFunc 函数，哪怕我们设定的时间还没到，我们也可以直接使用 CancelFunc 去设置 Context。</p>
-<p>在 context 使用上有官方文档，且有很多博主已经写过很详细的博客，这里只是列一个简单的例子：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"context"</span></span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">	<span class="string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// Pass a context with a timeout to tell a blocking function that it</span></span><br><span class="line">	<span class="comment">// should abandon its work after the timeout elapses.</span></span><br><span class="line">	ctx, cancel := context.WithTimeout(context.Background(), <span class="number">200</span>*time.Millisecond)</span><br><span class="line">	<span class="keyword">defer</span> cancel()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">select</span> &#123;</span><br><span class="line">	<span class="keyword">case</span> &lt;-time.After(<span class="number">1</span> * time.Second): <span class="comment">// 等待 1s</span></span><br><span class="line">		fmt.Println(<span class="string">"overslept"</span>)</span><br><span class="line">	<span class="keyword">case</span> &lt;-ctx.Done():  <span class="comment">// 只有当 Channel 关闭时才会返回非空，也就是到了设定的 Timeout 数值</span></span><br><span class="line">		fmt.Println(ctx.Err()) <span class="comment">// prints "context deadline exceeded"</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ol>
-<li>不要把 Context 放到结构体中，以参数传递，在作为参数传递时，需要将其作为第一个参数传递</li>
-<li>如果 Context 传递内容不确定，那么可以传递 <code>context.Background()</code> 或 <code>context.TODO()</code>，不要传递 nil</li>
-<li>不建议使用 <code>context.Value</code> 传递数据</li>
-<li>Context 是通过 <strong>通知</strong> 来达到 <strong>控制</strong> 目的</li>
-<li>Context 并非是全局的，只查询自身及父context 的数据，同理在 Cancel 也是一样的</li>
-</ol>
-<h2 id="（可能存在的）问题"><a href="#（可能存在的）问题" class="headerlink" title="（可能存在的）问题"></a>（可能存在的）问题</h2><p>在搜索过程中，看到<a href="https://faiface.github.io/post/context-should-go-away-go2/" target="_blank" rel="noopener">一篇博客</a>提到了 context 的一些问题：</p>
-<ul>
-<li>传播性<ul>
-<li>当我们有一个包含了100个函数的调用栈，当我们想要通过 context 来达到控制目的时，那么我们需要将 context 作为函数的第一个参数不断的传递下去。</li>
-</ul>
-</li>
-<li>什么时候使用 <code>context.TODO</code> ？</li>
-<li>context.Value 不该用<ul>
-<li>非静态的</li>
-<li>需要在指定功能上使用特定的 key/value</li>
-<li>容易发生 key 冲突</li>
-</ul>
-</li>
-<li>效率低下</li>
-<li>…</li>
-</ul>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>虽然上面说了那么多，比如上面提到的不应该用 <code>context.Value</code> ，在 ClusterAPI 中有很多使用 <code>context.Value</code> 传值的地方，该用还是用嘛。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://golang.org/pkg/context/#Background" target="_blank" rel="noopener">https://golang.org/pkg/context/#Background</a></li>
-<li><a href="https://www.flysnow.org/2017/05/12/go-in-action-go-context.html" target="_blank" rel="noopener">https://www.flysnow.org/2017/05/12/go-in-action-go-context.html</a></li>
-<li><a href="https://deepzz.com/post/golang-context-package-notes.html" target="_blank" rel="noopener">https://deepzz.com/post/golang-context-package-notes.html</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/34417106" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/34417106</a></li>
-<li><a href="http://imfox.io/2017/11/28/go-context-note/" target="_blank" rel="noopener">http://imfox.io/2017/11/28/go-context-note/</a></li>
-<li><a href="https://faiface.github.io/post/context-should-go-away-go2/" target="_blank" rel="noopener">https://faiface.github.io/post/context-should-go-away-go2/</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2242,7 +2207,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">95</span>
+                  <span class="site-state-item-count">96</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

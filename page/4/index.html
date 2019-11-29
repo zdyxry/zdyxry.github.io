@@ -275,6 +275,149 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/06/17/调整-arp-参数提高网络稳定性/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/06/17/调整-arp-参数提高网络稳定性/" itemprop="url">调整 arp 参数提高网络稳定性</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-17T21:20:04+08:00">
+                2019-06-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/06/17/调整-arp-参数提高网络稳定性/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/06/17/调整-arp-参数提高网络稳定性/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。<br>今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">No buffer space available</span><br></pre></td></tr></table></figure>
+<p>根据这个提示，感觉像是某些系统参数配置的小了，于是查了一下，发现跟 arp 有关。什么是 arp ？ </p>
+<p>相信对网络稍微有些概念的同学都不陌生，这里我直接引用维基百科：</p>
+<blockquote>
+<p>地址解析协议（英语：Address Resolution Protocol，缩写：ARP）。在以太网协议中规定，同一局域网中的一台主机要和另一台主机进行直接通信，必须要知道目标主机的MAC地址。而在TCP/IP协议中，网络层和传输层只关心目标主机的IP地址。这就导致在以太网中使用IP协议时，数据链路层的以太网协议接到上层IP协议提供的数据中，只包含目的主机的IP地址。于是需要一种方法，根据目的主机的IP地址，获得其MAC地址。这就是ARP协议要做的事情。所谓地址解析（address resolution）就是主机在发送帧前将目标IP地址转换成目标MAC地址的过程。</p>
+</blockquote>
+<blockquote>
+<p>另外，当发送主机和目的主机不在同一个局域网中时，即便知道对方的MAC地址，两者也不能直接通信，必须经过路由转发才可以。所以此时，发送主机通过ARP协议获得的将不是目的主机的真实MAC地址，而是一台可以通往局域网外的路由器的MAC地址。于是此后发送主机发往目的主机的所有帧，都将发往该路由器，通过它向外发送。这种情况称为委托ARP或ARP代理（ARP Proxy）。</p>
+</blockquote>
+<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>知道了原因，那么我们来调整参数就好：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">gc_thresh1 (since Linux 2.2)</span><br><span class="line">The minimum number of entries to keep <span class="keyword">in</span> the ARP cache. The garbage collector will not run <span class="keyword">if</span> there are fewer than this number of entries <span class="keyword">in</span> the cache. Defaults to 128.</span><br><span class="line">gc_thresh2 (since Linux 2.2)</span><br><span class="line">The soft maximum number of entries to keep <span class="keyword">in</span> the ARP cache. The garbage collector will allow the number of entries to exceed this <span class="keyword">for</span> 5 seconds before collection will be performed. Defaults to 512.</span><br><span class="line">gc_thresh3 (since Linux 2.2)</span><br><span class="line">The hard maximum number of entries to keep <span class="keyword">in</span> the ARP cache. The garbage collector will always run <span class="keyword">if</span> there are more than this number of entries <span class="keyword">in</span> the cache. Defaults to 1024.</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yiran@<span class="built_in">test</span>:~$ cat /etc/sysctl.conf |grep -v ^<span class="comment"># |grep -v ^$</span></span><br><span class="line">net.ipv4.tcp_congestion_control = bbr</span><br><span class="line">net.core.default_qdisc = fq</span><br><span class="line">net.ipv4.neigh.default.gc_thresh1 = 4096</span><br><span class="line">net.ipv4.neigh.default.gc_thresh2 = 8192</span><br><span class="line">net.ipv4.neigh.default.gc_thresh3 = 8192</span><br><span class="line">yiran@<span class="built_in">test</span>:~$ sudo sysctl -p</span><br><span class="line">net.ipv4.tcp_congestion_control = bbr</span><br><span class="line">net.core.default_qdisc = fq</span><br><span class="line">net.ipv4.neigh.default.gc_thresh1 = 4096</span><br><span class="line">net.ipv4.neigh.default.gc_thresh2 = 8192</span><br><span class="line">net.ipv4.neigh.default.gc_thresh3 = 8192</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/06/15/Kubernetes-实战-高可用集群部署/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1923,174 +2066,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/04/27/PySnooper-源码阅读/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/27/PySnooper-源码阅读/" itemprop="url">PySnooper 源码阅读</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-27T20:14:28+08:00">
-                2019-04-27
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/04/27/PySnooper-源码阅读/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/04/27/PySnooper-源码阅读/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在 18 年的时候 jiajun 同学发过一篇<a href="https://jiajunhuang.com/articles/2018_05_08-how_to_debug.md.html" target="_blank" rel="noopener">博客</a>，讲如何调试相关的总结。结合最近自己的经验，紧靠 logging 和 print 就能解决日常的 80%问题，剩下的 20% 也都可以通过review 代码来解决，我只有当确实没什么思路的时候，才会采用 pdb 的方式去调试。之所以先 review 代码再采用 pdb 的方式是想确认自己已经理清了相关代码的上下文和逻辑，不至于在单步调试的时候出现 <code>恍然大悟</code> （贬义） 的状况。</p>
-<p>最近两天 Github 上关于 Python 的项目最火的就是 PySnooper，这个项目的 Slogan 就是 <code>Never use print for debugging again</code> ，这里的 print 替换为 logging 也没啥差。整个代码在初步可用阶段代码量很少，也确实能够给平时写些小脚本带来便利，便抽时间看了看具体的实现。</p>
-<h2 id="PySnooper"><a href="#PySnooper" class="headerlink" title="PySnooper"></a>PySnooper</h2><p>先来看下目录结构：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/PySnooper</span><br><span class="line">3d0d051 ✗ $ tree .</span><br><span class="line">.</span><br><span class="line">├── LICENSE</span><br><span class="line">├── MANIFEST.in</span><br><span class="line">├── README.md</span><br><span class="line">├── make_release.sh</span><br><span class="line">├── misc</span><br><span class="line">│   └── IDE\ files</span><br><span class="line">│       └── PySnooper.wpr</span><br><span class="line">├── pysnooper</span><br><span class="line">│   ├── __init__.py</span><br><span class="line">│   ├── pycompat.py</span><br><span class="line">│   ├── pysnooper.py</span><br><span class="line">│   ├── tracer.py</span><br><span class="line">│   └── utils.py</span><br><span class="line">├── requirements.in</span><br><span class="line">├── requirements.txt</span><br><span class="line">├── setup.py</span><br><span class="line">├── test_requirements.txt</span><br><span class="line">└── tests</span><br><span class="line">    ├── __init__.py</span><br><span class="line">    ├── test_pysnooper.py</span><br><span class="line">    └── utils.py</span><br></pre></td></tr></table></figure>
-<p>可以看到最核心部分都在 pysnooper 部分，我们以官方示例来了解具体是如何工作的:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">root@yiran30250:~/backup/PySnooper</span><br><span class="line">master ✗ $ cat a.py</span><br><span class="line"><span class="keyword">import</span> pysnooper</span><br><span class="line"></span><br><span class="line"><span class="meta">@pysnooper.snoop('/var/log/test.log')</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">number_to_bits</span><span class="params">(number)</span>:</span></span><br><span class="line">    print(<span class="string">'func starting...'</span>)</span><br><span class="line">    <span class="keyword">if</span> number:</span><br><span class="line">        bits = []</span><br><span class="line">        <span class="keyword">while</span> number:</span><br><span class="line">            number, remainder = divmod(number, <span class="number">2</span>)</span><br><span class="line">            bits.insert(<span class="number">0</span>, remainder)</span><br><span class="line">        <span class="keyword">return</span> bits</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> [<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">print(number_to_bits(<span class="number">6</span>))</span><br></pre></td></tr></table></figure>
-<p>从示例中可以看到， <code>pysnooper.snoop</code> 作为一个装饰器，装饰所需要调试的函数，并可以再装饰器参数中添加对应的输出目的，比如标准输出，或者指定日志等。</p>
-<p>我们看下 <code>snoop</code> 的实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">snoop</span><span class="params">(output=None, variables=<span class="params">()</span>, depth=<span class="number">1</span>, prefix=<span class="string">''</span>, overwrite=False)</span>:</span></span><br><span class="line">    write, truncate = get_write_and_truncate_functions(output) <span class="comment"># 通过输出目标获取 write 函数</span></span><br><span class="line">    <span class="keyword">if</span> truncate <span class="keyword">is</span> <span class="keyword">None</span> <span class="keyword">and</span> overwrite:</span><br><span class="line">        <span class="keyword">raise</span> Exception(<span class="string">"`overwrite=True` can only be used when writing "</span></span><br><span class="line">                        <span class="string">"content to file."</span>)</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">decorate</span><span class="params">(function)</span>:</span></span><br><span class="line">        target_code_object = function.__code__ <span class="comment"># 函数在 python 解释器编译后的字节码对象</span></span><br><span class="line">        tracer = Tracer(target_code_object=target_code_object, write=write,</span><br><span class="line">                        truncate=truncate, variables=variables, depth=depth,</span><br><span class="line">                        prefix=prefix, overwrite=overwrite)</span><br><span class="line">        <span class="comment"># 实例化 Tracer，将现有参数全部传递</span></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">inner</span><span class="params">(function_, *args, **kwargs)</span>:</span></span><br><span class="line">            <span class="keyword">with</span> tracer: <span class="comment"># 通过 with 关键字调用 tracer，那么 Tracer 内应该实现了上下文管理器的 `__enter__` 和 `__exit__` 方法</span></span><br><span class="line">                <span class="keyword">return</span> function(*args, **kwargs) <span class="comment">#</span></span><br><span class="line">        <span class="keyword">return</span> decorator.decorate(function, inner)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> decorate</span><br></pre></td></tr></table></figure>
-<p>主要功能应该在 Trancer 中实现的，我们看下 Trancer 中做了什么？</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__enter__</span><span class="params">(self)</span>:</span></span><br><span class="line">    self.original_trace_function = sys.gettrace()</span><br><span class="line">    sys.settrace(self.trace)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__exit__</span><span class="params">(self, exc_type, exc_value, exc_traceback)</span>:</span></span><br><span class="line">    sys.settrace(self.original_trace_function)</span><br></pre></td></tr></table></figure>
-<p>先忽略其他的，我们先看实现上下文管理器的方法:</p>
-<ul>
-<li>进入上下文环境<ul>
-<li>获取当前跟踪器并记录</li>
-<li>设置追踪器为 <code>self.trace</code></li>
-</ul>
-</li>
-<li>退出上下文环境<ul>
-<li>将追踪器设置为原有值</li>
-</ul>
-</li>
-</ul>
-<p>注意：</p>
-<p><code>sys.settrace</code> 官方文档中描述它只用来做调试类工具，不建议在内部实现复杂逻辑。<br>The gettrace() function is intended only for implementing debuggers, profilers, coverage tools and the like.</p>
-<p>其中追踪器要接受 3 个参数，分别是：frame，event 和 arg。我们先记住 frame就是当前的栈帧就好。</p>
-<p>看一下 <code>self.trace</code> 具体是如何工作的，先看第一部分：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">trace</span><span class="params">(self, frame, event, arg)</span>:</span></span><br><span class="line">    <span class="comment"># 这里的注释写的很清楚了，根据当前 frame 是否为指定的函数字节码对象，如果不是且深度为 1，则直接返回 trace，如果指定了追踪深度，则不断循环，直到追踪到指定函数字节码对象</span></span><br><span class="line">    <span class="keyword">if</span> frame.f_code <span class="keyword">is</span> <span class="keyword">not</span> self.target_code_object:</span><br><span class="line">        <span class="keyword">if</span> self.depth == <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">return</span> self.trace</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            _frame_candidate = frame</span><br><span class="line">            <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1</span>, self.depth):</span><br><span class="line">                _frame_candidate = _frame_candidate.f_back <span class="comment"># f_back 为当前栈帧的上一个栈帧，便于在当前代码执行完成后可以调回之前代码继续执行</span></span><br><span class="line">                <span class="keyword">if</span> _frame_candidate <span class="keyword">is</span> <span class="keyword">None</span>:</span><br><span class="line">                    <span class="keyword">return</span> self.trace</span><br><span class="line">                <span class="keyword">elif</span> _frame_candidate.f_code <span class="keyword">is</span> self.target_code_object:</span><br><span class="line">                    indent = <span class="string">' '</span> * <span class="number">4</span> * i</span><br><span class="line">                    <span class="keyword">break</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                <span class="keyword">return</span> self.trace</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        indent = <span class="string">''</span></span><br></pre></td></tr></table></figure>
-<p>找到了具体的执行对象，我们看下如何获取环境变量的：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">trace</span><span class="params">(self, frame, event, arg)</span>:</span></span><br><span class="line">    ...</span><br><span class="line">    self.frame_to_old_local_reprs[frame] = old_local_reprs = \</span><br><span class="line">                                           self.frame_to_local_reprs[frame] <span class="comment"># 标记当前变量为现有变量</span></span><br><span class="line">    self.frame_to_local_reprs[frame] = local_reprs = \</span><br><span class="line">                           get_local_reprs(frame, variables=self.variables) <span class="comment"># 获取当前变量</span></span><br><span class="line"></span><br><span class="line">    modified_local_reprs = &#123;&#125;</span><br><span class="line">    newish_local_reprs = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> key, value <span class="keyword">in</span> local_reprs.items(): <span class="comment"># 遍历当前本地变量，将其分别放置为新变量和修改变量列表中</span></span><br><span class="line">        <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> old_local_reprs:</span><br><span class="line">            newish_local_reprs[key] = value</span><br><span class="line">        <span class="keyword">elif</span> old_local_reprs[key] != value:</span><br><span class="line">            modified_local_reprs[key] = value</span><br><span class="line">    <span class="comment"># 将变量通过 write 函数输出到对应的目标中</span></span><br><span class="line">    newish_string = (<span class="string">'Starting var:.. '</span> <span class="keyword">if</span> event == <span class="string">'call'</span> <span class="keyword">else</span></span><br><span class="line">                                                        <span class="string">'New var:....... '</span>)</span><br><span class="line">    <span class="keyword">for</span> name, value_repr <span class="keyword">in</span> sorted(newish_local_reprs.items()):</span><br><span class="line">        self.write(<span class="string">'&#123;indent&#125;&#123;newish_string&#125;&#123;name&#125; = &#123;value_repr&#125;'</span>.format(</span><br><span class="line">                                                               **locals()))</span><br><span class="line">    <span class="keyword">for</span> name, value_repr <span class="keyword">in</span> sorted(modified_local_reprs.items()):</span><br><span class="line">        self.write(<span class="string">'&#123;indent&#125;Modified var:.. &#123;name&#125; = &#123;value_repr&#125;'</span>.format(</span><br><span class="line">                                                               **locals()))</span><br></pre></td></tr></table></figure>
-<p>在上面可以看到大部分都是判断逻辑，看一下 <code>get_local_reprs</code> 中是如何获取当前变量的：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_local_reprs</span><span class="params">(frame, variables=<span class="params">()</span>)</span>:</span></span><br><span class="line">    result = &#123;key: get_shortish_repr(value) <span class="keyword">for</span> key, value</span><br><span class="line">                                                     <span class="keyword">in</span> frame.f_locals.items()&#125;</span><br><span class="line">    <span class="keyword">for</span> variable <span class="keyword">in</span> variables:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            result[variable] = get_shortish_repr(</span><br><span class="line">                eval(variable, frame.f_globals, frame.f_locals)</span><br><span class="line">            )</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
-<p>是通过调用 <code>frame.f_locals.items()</code> 获取当前栈帧所具有的本地变量。<br>剩下的部分是对于调试函数为装饰器时，需要特殊处理：跳过装饰器函数，直到找到函数定义部分。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>主题功能就通过上述代码来实现，简单高效，我们再来回顾一下：</p>
-<ol>
-<li>通过 settrace 来设置追踪器<br> a. settrace 的行为是先执行追踪器部分，执行完成后执行函数字节码对应行</li>
-<li>在追踪器中，通过 frame 相关属性来获取所需值，如 f_locals, f_code, f_globals</li>
-<li>打印相关信息到目标中，退出上下文管理器，重新设置外层追踪器</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2143,7 +2118,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">95</span>
+                  <span class="site-state-item-count">96</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

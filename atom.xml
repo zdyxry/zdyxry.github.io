@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://zdyxry.github.io/"/>
-  <updated>2019-11-23T13:43:11.109Z</updated>
+  <updated>2019-11-29T14:04:35.964Z</updated>
   <id>https://zdyxry.github.io/</id>
   
   <author>
@@ -15,6 +15,29 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Cloud-init 无需重启执行配置</title>
+    <link href="https://zdyxry.github.io/2019/11/29/Cloud-init-%E6%97%A0%E9%9C%80%E9%87%8D%E5%90%AF%E6%89%A7%E8%A1%8C/"/>
+    <id>https://zdyxry.github.io/2019/11/29/Cloud-init-无需重启执行/</id>
+    <published>2019-11-29T13:35:26.000Z</published>
+    <updated>2019-11-29T14:04:35.964Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近在折腾 Cluster API 的时候，因为目前社区中比较成熟的方案是通过 Cloud-init 执行 kubeadm 命令部署 k8s ，因此需要使用 Cloud-init 进行功能验证，但是 Cloud-init 通常执行的前提条件是系统初次启动时，自动执行配置，这点对于调试很不友好，因此需要找到一个无需重启即可执行 Cloud-init 配置的方式。</p><h2 id="Cloud-init"><a href="#Cloud-init" class="headerlink" title="Cloud-init"></a>Cloud-init</h2><p>使用过公有云或者私有云的同学应该都知道在创建虚拟机的时候可以传递一个脚本用于在机器置备的时候执行某些动作，尤其在批量执行的时候，通常会很方便。这个其实就是 Cloud-init 所做的工作，就跟它的名字一样，针对 Cloud 场景执行 init 动作。</p><p>引用官网介绍：</p><blockquote><p>Cloud-init is the industry standard multi-distribution method for cross-platform cloud instance initialization. It is supported across all major public cloud providers, provisioning systems for private cloud infrastructure, and bare-metal installations. </p></blockquote><h2 id="NoCloud"><a href="#NoCloud" class="headerlink" title="NoCloud"></a>NoCloud</h2><p>Cloud-init 官方支持云平台种类很多常见的公有云如 Aliyun、AWS、Azure，常见的私有云解决方案如 OpenStack、ZStack、OVF 等都有支持。</p><p>但是如果我不使用已经支持的私有云，而是自己通过 Libvirt 配合 Ceph 实现了一套虚拟化平台，想要使用 Cloud-init，则可以使用 ConfigDrive 或者 NoCloud 方式。本文采用的是 NoCloud 方式。</p><h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><p>使用默认配置就好，Cloud-init 在没有指定 Datasource 的情况下，会自己依次尝试：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cat /etc/cloud/cloud.cfg</span></span><br><span class="line">users:</span><br><span class="line"> - default</span><br><span class="line"></span><br><span class="line">disable_root: 1</span><br><span class="line">ssh_pwauth:   0</span><br><span class="line"></span><br><span class="line">mount_default_fields: [~, ~, <span class="string">'auto'</span>, <span class="string">'defaults,nofail,x-systemd.requires=cloud-init.service'</span>, <span class="string">'0'</span>, <span class="string">'2'</span>]</span><br><span class="line">resize_rootfs_tmp: /dev</span><br><span class="line">ssh_deletekeys:   0</span><br><span class="line">ssh_genkeytypes:  ~</span><br><span class="line">syslog_fix_perms: ~</span><br><span class="line">disable_vmware_customization: <span class="literal">false</span></span><br></pre></td></tr></table></figure><h3 id="Metadata"><a href="#Metadata" class="headerlink" title="Metadata"></a>Metadata</h3><p>这里我们指定 NoCloud 的路径，并配置 Metadata 文件：</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost nocloud]# pwd</span><br><span class="line">/var/lib/cloud/seed/nocloud</span><br><span class="line">[root@localhost nocloud]# cat meta-data</span><br><span class="line">instance-id: yiran</span><br><span class="line">hostname: yiran</span><br></pre></td></tr></table></figure><h3 id="Userdata"><a href="#Userdata" class="headerlink" title="Userdata"></a>Userdata</h3><p>我们在 Cloud-init 自动配置时，执行命令 echo 保存信息到文件中</p><figure class="highlight plain"><figcaption><span>l l</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost nocloud]# pwd</span><br><span class="line">/var/lib/cloud/seed/nocloud</span><br><span class="line">[root@localhost nocloud]# cat user-data</span><br><span class="line">## template: jinja</span><br><span class="line">#cloud-config</span><br><span class="line"></span><br><span class="line">runcmd:</span><br><span class="line">  - &apos;echo yiran test cloud-init with nocloud &gt; /root/file&apos;</span><br></pre></td></tr></table></figure><h2 id="手动执行-Cloud-init"><a href="#手动执行-Cloud-init" class="headerlink" title="手动执行 Cloud-init"></a>手动执行 Cloud-init</h2><p>在了解 Cloud-init 工作流程后执行比较简单，因此这里直接贴出操作步骤：</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# pwd</span><br><span class="line">/root</span><br><span class="line">[root@localhost ~]# ls</span><br><span class="line">anaconda-ks.cfg</span><br><span class="line">[root@localhost ~]# cloud-init init</span><br><span class="line">Cloud-init v. 18.5 running 'init' at Fri, 29 Nov 2019 14:02:10 +0000. Up 635.10 seconds.</span><br><span class="line">ci-info: +++++++++++++++++++++++++++++++++++++++Net device info+++++++++++++++++++++++++++++++++++++++</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: | Device |  Up  |           Address            |      Mask     | Scope  |     Hw-Address    |</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: |  eth0  | True |        192.168.77.158        | 255.255.240.0 | global | 52:54:00:2f:d9:44 |</span><br><span class="line">ci-info: |  eth0  | True | fe80::108b:ab9c:1a1a:9ab8/64 |       .       |  link  | 52:54:00:2f:d9:44 |</span><br><span class="line">ci-info: |   lo   | True |          127.0.0.1           |   255.0.0.0   |  host  |         .         |</span><br><span class="line">ci-info: |   lo   | True |           ::1/128            |       .       |  host  |         .         |</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: +++++++++++++++++++++++++++++++Route IPv4 info+++++++++++++++++++++++++++++++</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: | Route | Destination  |    Gateway     |    Genmask    | Interface | Flags |</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: |   0   |   0.0.0.0    | 192.168.64.215 |    0.0.0.0    |    eth0   |   UG  |</span><br><span class="line">ci-info: |   1   | 192.168.64.0 |    0.0.0.0     | 255.255.240.0 |    eth0   |   U   |</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: +++++++++++++++++++Route IPv6 info+++++++++++++++++++</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">ci-info: | Route | Destination | Gateway | Interface | Flags |</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">ci-info: |   9   |  fe80::/64  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: |   10  |  fe80::/64  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: |   14  |   ff00::/8  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">[root@localhost ~]# cloud-init modules -m config</span><br><span class="line">Cloud-init v. 18.5 running 'modules:config' at Fri, 29 Nov 2019 14:02:18 +0000. Up 643.31 seconds.</span><br><span class="line">[root@localhost ~]# cloud-init modules -m final</span><br><span class="line">Cloud-init v. 18.5 running 'modules:final' at Fri, 29 Nov 2019 14:02:21 +0000. Up 646.27 seconds.</span><br><span class="line">ci-info: no authorized ssh keys fingerprints found for user centos.</span><br><span class="line">Cloud-init v. 18.5 finished at Fri, 29 Nov 2019 14:02:21 +0000. Datasource DataSourceNoCloudNet [seed=/var/lib/cloud/seed/nocloud][dsmode=net].  Up 646.44 seconds</span><br><span class="line">[root@localhost ~]# ls</span><br><span class="line">anaconda-ks.cfg  file</span><br><span class="line">[root@localhost ~]# cat file</span><br><span class="line">yiran test cloud-init with nocloud</span><br></pre></td></tr></table></figure><h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul><li><a href="https://cloudinit.readthedocs.io/en/latest/" target="_blank" rel="noopener">https://cloudinit.readthedocs.io/en/latest/</a></li></ul>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;最近在折腾 Cluster API 的时候，因为目前社区中比较成熟的方案是通过 Cloud-init 执行 kubeadm 命令部署 k8s
+      
+    
+    </summary>
+    
+    
+      <category term="Linux" scheme="https://zdyxry.github.io/tags/Linux/"/>
+    
+  </entry>
   
   <entry>
     <title>如何捕捉 Ctrl+C 指令</title>
@@ -60,9 +83,9 @@
     </summary>
     
     
-      <category term="Linux" scheme="https://zdyxry.github.io/tags/Linux/"/>
-    
       <category term="Ansible" scheme="https://zdyxry.github.io/tags/Ansible/"/>
+    
+      <category term="Linux" scheme="https://zdyxry.github.io/tags/Linux/"/>
     
   </entry>
   
@@ -450,29 +473,6 @@
       
       
         &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;上一篇博客讲了 Cluster-API 的相关概念，现在我们来找一个 provider 实现看看具体里面做了啥，因为对 vmware 产品中
-      
-    
-    </summary>
-    
-    
-      <category term="Kubernetes" scheme="https://zdyxry.github.io/tags/Kubernetes/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Kubernetes 实战-Cluster API</title>
-    <link href="https://zdyxry.github.io/2019/08/09/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API/"/>
-    <id>https://zdyxry.github.io/2019/08/09/Kubernetes-实战-Cluster-API/</id>
-    <published>2019-08-09T11:41:49.000Z</published>
-    <updated>2019-08-09T11:46:26.927Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在当前 Kubernetes 生态中，生命周期管理相关工具官方的有 kubeadm、kubespray（部署集群部分通过 kubeadm） ，开源社区还有很多其他的实现，我们可以通过这类工具来实现 k8s 集群的部署，升级，增删节点，但是使用一个工具的前提是：基础设施已经准备完成。只有当基础设施准备完成后，kubeadm 之类工具才可以正常工作。</p><p>当我们在部署 Kubernetes 集群时，节点可能在任何环境上，比如 AWS、OpenStack、Vsphere、Azure 等，那么想要自动化配置基础设施，通常我们根据自己的环境不同，编写不通的代码来支持我们的虚拟化（or 服务器）场景。</p><p>基础设施包括不限于：</p><ul><li>OS 安装</li><li>Load Balance 配置</li><li>网络配置</li><li>IP 分配</li><li>…</li></ul><h2 id="Cluster-API"><a href="#Cluster-API" class="headerlink" title="Cluster-API"></a>Cluster-API</h2><p>Kubernetes 社区针对基础设施问题，发起了一个项目：cluster-api，目前处于 alpha1 版本，项目目标：</p><ol><li>使用声明式API管理 Kubernetes 集群的生命周期</li><li>支持多种环境，私有云或公有云</li><li>使用社区中现有的工具完成相应功能</li><li>…</li></ol><h3 id="功能简述"><a href="#功能简述" class="headerlink" title="功能简述"></a>功能简述</h3><ol><li>无需创建额外基础设施前提下创建 bootstrap cluster</li><li>通过 bootstrap cluster 创建目标 k8s 集群</li></ol><h3 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h3><ol><li>cluster-api 使用声明式 API 管理 k8s 集群，需要环境中先存在一个 k8s 集群，通常成为 bootstrap cluster，若不存在，也可通过提供的命令行工具 clusterctl 创建 bootstrap cluster</li><li>在 bootstrap cluster 中，部署 CRD 及相应的 cluster api 控制器及 provider 控制器</li><li>在 bootstrap cluster 中，开始创建我们真正想要创建的资源：k8s 集群<br>创建资源类型为 Cluster、Machine 或 MachineDeployment ，对应的控制器会自动为我们创建好虚拟机</li><li>在虚拟机创建完成后，通过 kubeadm 创建 k8s 集群</li></ol><h3 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h3><h4 id="虚拟机创建"><a href="#虚拟机创建" class="headerlink" title="虚拟机创建"></a>虚拟机创建</h4><p>目前看到的几个 Cluster-API Provider 项目实现，虚拟机均通过克隆的方式创建出来的。</p><h4 id="虚拟机创建失败处理"><a href="#虚拟机创建失败处理" class="headerlink" title="虚拟机创建失败处理"></a>虚拟机创建失败处理</h4><p>百度：每次等待 30s 查询一次，重试10次，若仍未成功，则创建失败</p><p>腾讯：每 2s 查询一次，若不成功，则一直循环</p><p>vsphere：提交虚拟机创建任务后未检查是否正确创建，未发现重试逻辑</p><p>OpenStack：每 10s 检测一次，若超过设定 timeout ，则创建失败</p><h4 id="虚拟机控制方式"><a href="#虚拟机控制方式" class="headerlink" title="虚拟机控制方式"></a>虚拟机控制方式</h4><p>如果虚拟化平台支持 Cloud-init（或类似功能），后续 k8s 部署通过 Cloud-init 实现；</p><p>若虚拟化平台不支持，则 bootstrap cluster 中的 Pod 通过 ssh 方式进入倒虚拟机内部执行命令。</p><p>通过 Clout-init 实现的好处是Controller 只需要控制虚拟机开机即可，后续无需再主动与虚拟机进行通信，由 Cloud-init 自行触发部署 k8s集群任务；若没有 Cloud-init，则 Controller 在提交虚拟机创建任务后，需要循环等待虚拟机是否正常，等待正常后还需通过 ssh 主动与虚拟机进行连接控制，过于繁琐。</p><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Cluster API 目前还处于 Alpha1 版本，但是已经有很多厂家对其进行适配了，目前看到完成度比较高的公有云是 AWS，私有云是 Vsphere，之后好好读一下 Vsphere 的代码，了解下具体实现。</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h2&gt;&lt;p&gt;在当前 Kubernetes 生态中，生命周期管理相关工具官方的有 kubeadm、kubespray（部署集群部分通过 kubeadm） 
       
     
     </summary>
