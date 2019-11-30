@@ -275,6 +275,227 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/10/12/Podman-初次体验/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/10/12/Podman-初次体验/" itemprop="url">Podman 初次体验</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-12T21:40:30+08:00">
+                2019-10-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/10/12/Podman-初次体验/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/10/12/Podman-初次体验/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>CentOS8 在9月24号正式 Release 了，比 RHEL8 要推迟了4个月。这次的更新感觉比 CentOS7 的更新要来的重要，内核更新到了4.x，网络管理彻底替换了 network.service，防火墙管理等等，还包括去除了 Docker 作为默认的容器化管理工具，使用 Podman、Buildah、Skopeo 进行了替换，这里来体验下 Podman。</p>
+<p>容器工具体验系列：</p>
+<ul>
+<li><a href="https://zdyxry.github.io/2019/10/12/Podman-%E5%88%9D%E6%AC%A1%E4%BD%93%E9%AA%8C/">Podman 初次体验</a></li>
+<li><a href="https://zdyxry.github.io/2019/10/19/Buildah-%E5%88%9D%E6%AC%A1%E4%BD%93%E9%AA%8C/">Buildah 初次体验</a></li>
+<li><a href="https://zdyxry.github.io/2019/10/26/Skopeo-初次体验/">Skopeo 初次体验</a></li>
+</ul>
+<p>本篇文章所有环境基于 CentOS8。</p>
+<h2 id="Podman"><a href="#Podman" class="headerlink" title="Podman"></a>Podman</h2><p>为啥不用 Docker 了？我个人觉得 Docker 目前使用上最大的问题就是需要运行一个守护进程，虽然需要 root 用户也是一个问题，但是对于我个人来说还好。随着 K8S 定义 CRI 标准，且 Docker 的稳定性一直是个问题（虽然最近有在往好的趋势发展），但越来越多人使用 CRI-O 来替代 Docker，Docker 在被大家所抛弃（- - </p>
+<p>Podman 创建的容器不需要守护进程，且可以用普通用户创建容器。Podman 中的大部分命令的使用方式与 Docker 相同，可以看左 <code>alias docker=podman</code> 。</p>
+<p>Podman 的缺点：</p>
+<ol>
+<li>仅在 Linux 下支持，无法像 Docker 一样支持 Windows 和 MacOS</li>
+<li>缺少 docker-compose 工具替代品，哪怕有 k8s Pod 概念（虽然有 <a href="https://github.com/containers/podman-compose" target="_blank" rel="noopener">podman-compose</a>，但是他还没有release 1.0版本，使用需谨慎</li>
+<li>更新频繁（使用这类工具是有些心累的。。</li>
+</ol>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>Podman 可以直接使用 <code>dnf</code> 继续安装，需要注意的是，在 CentOS 中 Podman 依赖于 containers-common，这里会附带很多配置信息到 <code>/etc/containers</code>，后续会用到：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo dnf install podman                      </span><br><span class="line">Last metadata expiration check: 0:03:31 ago on Wed 02 Oct 2019 11:57:25 AM CST.</span><br><span class="line">Package podman-1.0.0-2.git921f98f.module_el8.0.0+58+91b614e7.x86_64 is already installed.</span><br><span class="line">Dependencies resolved.</span><br><span class="line">Nothing to <span class="keyword">do</span>.</span><br><span class="line">Complete!</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ dnf info podman        </span><br><span class="line">Installed Packages</span><br><span class="line">Name         : podman</span><br><span class="line">Version      : 1.0.0</span><br><span class="line">Release      : 2.git921f98f.module_el8.0.0+58+91b614e7</span><br><span class="line">Arch         : x86_64</span><br><span class="line">Size         : 37 M</span><br><span class="line">Source       : podman-1.0.0-2.git921f98f.module_el8.0.0+58+91b614e7.src.rpm</span><br><span class="line">Repo         : @System</span><br><span class="line">From repo    : AppStream</span><br><span class="line">Summary      : Manage Pods, Containers and Container Images</span><br><span class="line">URL          : https://github.com/containers/libpod</span><br><span class="line">License      : ASL 2.0</span><br><span class="line">Description  : Manage Pods, Containers and Container Images</span><br><span class="line">             : libpod provides a library <span class="keyword">for</span> applications looking to use</span><br><span class="line">             : the Container Pod concept popularized by Kubernetes.</span><br></pre></td></tr></table></figure>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>安装完成后，来看下 Podman RPM 中附带了些什么文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ rpm -ql podman  |grep -v <span class="string">'/usr/share/man/'</span>  <span class="comment"># 去除 man 手册中内容</span></span><br><span class="line">/etc/cni/net.d/87-podman-bridge.conflist</span><br><span class="line">/usr/bin/podman</span><br><span class="line">/usr/lib/.build-id</span><br><span class="line">/usr/lib/.build-id/37</span><br><span class="line">/usr/lib/.build-id/37/e7f04d352e5dbde603e9701baedb0b1be6bc37</span><br><span class="line">/usr/lib/.build-id/9a</span><br><span class="line">/usr/lib/.build-id/9a/2b43332ca5756f9e2a086bae9b953009ef5a37</span><br><span class="line">/usr/lib/systemd/system/io.podman.service</span><br><span class="line">/usr/lib/systemd/system/io.podman.socket</span><br><span class="line">/usr/lib/tmpfiles.d/podman.conf</span><br><span class="line">/usr/libexec/podman/conmon</span><br><span class="line">/usr/share/bash-completion/completions/podman</span><br><span class="line">/usr/share/containers/libpod.conf</span><br><span class="line">/usr/share/licenses/podman</span><br><span class="line">/usr/share/licenses/podman/LICENSE</span><br></pre></td></tr></table></figure>
+<p>可以看到只有一个配置文件是在 <code>/etc/cni</code> 路径下的，与 Bridge 的配置有关：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ cat /etc/cni/net.d/87-podman-bridge.conflist</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"cniVersion"</span>: <span class="string">"0.3.0"</span>,</span><br><span class="line">    <span class="string">"name"</span>: <span class="string">"podman"</span>,</span><br><span class="line">    <span class="string">"plugins"</span>: [</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="string">"type"</span>: <span class="string">"bridge"</span>,</span><br><span class="line">        <span class="string">"bridge"</span>: <span class="string">"cni0"</span>,</span><br><span class="line">        <span class="string">"isGateway"</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="string">"ipMasq"</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="string">"ipam"</span>: &#123;</span><br><span class="line">            <span class="string">"type"</span>: <span class="string">"host-local"</span>,</span><br><span class="line">            <span class="string">"subnet"</span>: <span class="string">"10.88.0.0/16"</span>,</span><br><span class="line">            <span class="string">"routes"</span>: [</span><br><span class="line">                &#123; <span class="string">"dst"</span>: <span class="string">"0.0.0.0/0"</span> &#125;</span><br><span class="line">            ]</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="string">"type"</span>: <span class="string">"portmap"</span>,</span><br><span class="line">        <span class="string">"capabilities"</span>: &#123;</span><br><span class="line">          <span class="string">"portMappings"</span>: <span class="literal">true</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上面我们有提到，Podman 依赖的 containers-common RPM 中包含了很多配置文件，我们一个一个的来看一下：</p>
+<h4 id="registries-conf"><a href="#registries-conf" class="headerlink" title="registries.conf"></a>registries.conf</h4><p>/etc/containers/registries.conf 用于保存 registries 相关配置：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ cat /etc/containers/registries.conf         </span><br><span class="line"><span class="comment"># This is a system-wide configuration file used to</span></span><br><span class="line"><span class="comment"># keep track of registries for various container backends.</span></span><br><span class="line"><span class="comment"># It adheres to TOML format and does not support recursive</span></span><br><span class="line"><span class="comment"># lists of registries.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># The default location for this configuration file is /etc/containers/registries.conf.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># The only valid categories are: 'registries.search', 'registries.insecure', </span></span><br><span class="line"><span class="comment"># and 'registries.block'.</span></span><br><span class="line"></span><br><span class="line">[registries.search]</span><br><span class="line">registries = [<span class="string">'registry.redhat.io'</span>, <span class="string">'quay.io'</span>, <span class="string">'docker.io'</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># If you need to access insecure registries, add the registry's fully-qualified name.</span></span><br><span class="line"><span class="comment"># An insecure registry is one that does not have a valid SSL certificate or only does HTTP.</span></span><br><span class="line">[registries.insecure]</span><br><span class="line">registries = []</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># If you need to block pull access from a registry, uncomment the section below</span></span><br><span class="line"><span class="comment"># and add the registries fully-qualified name.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Docker only</span></span><br><span class="line">[registries.block]</span><br><span class="line">registries = []</span><br></pre></td></tr></table></figure>
+<h4 id="mounts-conf"><a href="#mounts-conf" class="headerlink" title="mounts.conf"></a>mounts.conf</h4><p><code>/usr/share/containers/mounts.conf</code> 在执行 <code>podman run</code> 或者 <code>podman build</code> 命令时自动挂载的路径，该路径只会在容器运行时挂载，不会提交到容器镜像中。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ cat /usr/share/containers/mounts.conf                               </span><br><span class="line">/usr/share/rhel/secrets:/run/secrets</span><br></pre></td></tr></table></figure>
+<h4 id="seccomp-json"><a href="#seccomp-json" class="headerlink" title="seccomp.json"></a>seccomp.json</h4><p><code>/usr/share/containers/seccomp.json</code> 是容器内允许的 seccomp 规则白名单。 seccomp（secure computing）是一种安全保护机制，一般情况下，程序可以使用所有的 syscall，但是为了避免安全问题发生，通常会指定相应的规则来保证。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ cat /usr/share/containers/seccomp.json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">	<span class="string">"defaultAction"</span>: <span class="string">"SCMP_ACT_ERRNO"</span>,</span><br><span class="line">	<span class="string">"archMap"</span>: [...],</span><br><span class="line">	<span class="string">"syscalls"</span>: [...]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="policy-json"><a href="#policy-json" class="headerlink" title="policy.json"></a>policy.json</h4><p><code>/etc/containers/policy.json</code>  证书安全相关配置：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ cat /etc/containers/policy.json      </span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">"default"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">"type"</span>: <span class="string">"insecureAcceptAnything"</span></span><br><span class="line">        &#125;</span><br><span class="line">    ],</span><br><span class="line">    <span class="string">"transports"</span>:</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">"docker-daemon"</span>:</span><br><span class="line">                &#123;</span><br><span class="line">                    <span class="string">""</span>: [&#123;<span class="string">"type"</span>:<span class="string">"insecureAcceptAnything"</span>&#125;]</span><br><span class="line">                &#125;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><h4 id="镜像"><a href="#镜像" class="headerlink" title="镜像"></a>镜像</h4><h5 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~/podman/hello </span><br><span class="line"> $ <span class="built_in">pwd</span>                                                                                                                                  1 ↵</span><br><span class="line">/home/yiran/podman/hello</span><br><span class="line">yiran@yiran-centos8:~/podman/hello </span><br><span class="line"> $ cat Dockerfile </span><br><span class="line">FROM docker.io/library/centos:latest</span><br><span class="line"></span><br><span class="line">RUN <span class="built_in">echo</span> <span class="string">'hello'</span></span><br><span class="line">yiran@yiran-centos8:~/podman/hello </span><br><span class="line"> $ podman build -t hello:1.0 .    </span><br><span class="line">STEP 1: FROM docker.io/library/centos:latest</span><br><span class="line">STEP 2: RUN <span class="built_in">echo</span> <span class="string">'hello'</span></span><br><span class="line">hello</span><br><span class="line">--&gt; 895ce449f0b3f1f2d8a0d2dca280cb46f4c69bb2824c93bb0e72eb49987c9050</span><br><span class="line">STEP 3: COMMIT hello:1.0</span><br><span class="line">--&gt; 618f931bc244f2eaff53d9f2bcb1df97c5ddac501088d5919450a57f995173af</span><br><span class="line">yiran@yiran-centos8:~/podman/hello </span><br><span class="line"> $ podman images               </span><br><span class="line">REPOSITORY                             TAG      IMAGE ID       CREATED          SIZE</span><br><span class="line">localhost/hello                        1.0      618f931bc244   8 seconds ago    210 MB</span><br><span class="line">&lt;none&gt;                                 &lt;none&gt;   895ce449f0b3   13 seconds ago   210 MB</span><br><span class="line">docker.io/library/nginx                latest   f949e7d76d63   2 weeks ago      130 MB</span><br><span class="line">docker.io/library/centos               latest   67fa590cfc1c   7 weeks ago      210 MB</span><br><span class="line">registry.fedoraproject.org/f27/httpd   latest   18f01f6f77ef   15 months ago    426 MB</span><br></pre></td></tr></table></figure>
+<h5 id="搜索"><a href="#搜索" class="headerlink" title="搜索"></a>搜索</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman search mongo |head -n 5</span><br><span class="line">INDEX       NAME                                                 DESCRIPTION                                       STARS   OFFICIAL   AUTOMATED</span><br><span class="line">quay.io     quay.io/hellofresh/delete-old-ahoy-mongo-dbs                                                           0                  </span><br><span class="line">quay.io     quay.io/ukhomeofficedigital/mongo-34                                                                   0                  </span><br><span class="line">quay.io     quay.io/utilitywarehouse/mongo-burs                                                                    0                  </span><br><span class="line">quay.io     quay.io/ukhomeofficedigital/mongo                                                                      0</span><br></pre></td></tr></table></figure>
+<h5 id="拉取"><a href="#拉取" class="headerlink" title="拉取"></a>拉取</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman image pull nginx</span><br><span class="line">Trying to pull registry.redhat.io/nginx:latest...Failed</span><br><span class="line">Trying to pull quay.io/nginx:latest...Failed</span><br><span class="line">Trying to pull docker.io/nginx:latest...Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob b8f262c62ec6: 25.84 MiB / 25.84 MiB [=========================] 13s</span><br><span class="line">Copying blob e9218e8f93b1: 22.48 MiB / 22.48 MiB [=========================] 13s</span><br><span class="line">Copying blob 7acba7289aa3: 202 B / 202 B [=================================] 13s</span><br><span class="line">Copying config f949e7d76d63: 6.51 KiB / 6.51 KiB [==========================] 0s</span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">f949e7d76d63befffc8eec2cbf8a6f509780f96fb3bacbdc24068d594a77f043</span><br></pre></td></tr></table></figure>
+<p>除了像 Docker 一样从网络拉取镜像，Podman 为了方便用户从 Docker 迁移过来，Podman 支持从本地的 docker daemon 中直接拉取镜像，如果没有 domain 的话，目前会自动补全 <code>docker.io/library/</code> 前缀。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ docker images |grep yiran</span><br><span class="line">harbor.yiran.com/yiran_tuna/leader-elector                                   0.5                           129c97fdb20d        3 years ago         169MB</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman pull docker-daemon:harbor.yiran.com/yiran_tuna/leader-elector:0.5</span><br><span class="line">Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob bf87964bccfd <span class="keyword">done</span></span><br><span class="line">Copying blob 5f70bf18a086 <span class="keyword">done</span></span><br><span class="line">Copying blob 3efb68385a82 <span class="keyword">done</span></span><br><span class="line">Copying blob 5f70bf18a086 <span class="keyword">done</span></span><br><span class="line">Copying blob 42755cf4ee95 <span class="keyword">done</span></span><br><span class="line">Copying blob ce31f2e01592 <span class="keyword">done</span></span><br><span class="line">Copying blob 5f70bf18a086 skipped: already exists</span><br><span class="line">Copying config 129c97fdb2 <span class="keyword">done</span></span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">129c97fdb20d5fb7a0c569994f710c2b0d5292219f189f4f66c313f7bed9f434</span><br></pre></td></tr></table></figure>
+<p>看上去一切都很美好，但是要注意下面这种错误：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ERRO[0005] Error pulling image ref //testimg:latest: Error committing the finished image: error adding layer with blob &quot;sha256:caed8f108bf6721dc2709407ecad964c83a31c8008a6a21826aa4ab995df5502&quot;: Error processing tar file(exit status 1): there might not be enough IDs available in the namespace (requested 4000000:4000000 for /testfile): lchown /testfile: invalid argument</span><br></pre></td></tr></table></figure>
+<p>因为 Podman 可以用普通用户运行容器，平时操作时也都是普通用户，这时候我们就面临一个UID &amp; GID 映射的问题，默认的 subuid 的上限是 65536，这个可以自己做相应的调整：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~/podman/hello </span><br><span class="line"> $ cat /etc/subuid</span><br><span class="line">yiran:100000:65536</span><br><span class="line">yiran@yiran-centos8:~/podman/hello </span><br><span class="line"> $ cat /etc/subgid</span><br><span class="line">yiran:100000:65536</span><br></pre></td></tr></table></figure>
+<p>不只是在镜像拉取过程中，在操作文件时，也需要关注 UID &amp; GID 的问题，这个是之前使用 Docker 忽略的点。</p>
+<h5 id="列出"><a href="#列出" class="headerlink" title="列出"></a>列出</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman images</span><br><span class="line">REPOSITORY                 TAG      IMAGE ID       CREATED       SIZE</span><br><span class="line">docker.io/library/nginx    latest   f949e7d76d63   7 days ago    130 MB</span><br><span class="line">docker.io/library/centos   latest   67fa590cfc1c   6 weeks ago   210 MB</span><br></pre></td></tr></table></figure>
+<h5 id="检查"><a href="#检查" class="headerlink" title="检查"></a>检查</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman image inspect docker.io/library/nginx |head -n 10</span><br><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">"Id"</span>: <span class="string">"f949e7d76d63befffc8eec2cbf8a6f509780f96fb3bacbdc24068d594a77f043"</span>,</span><br><span class="line">        <span class="string">"Digest"</span>: <span class="string">"sha256:066edc156bcada86155fd80ae03667cf3811c499df73815a2b76e43755ebbc76"</span>,</span><br><span class="line">        <span class="string">"RepoTags"</span>: [</span><br><span class="line">            <span class="string">"docker.io/library/nginx:latest"</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="string">"RepoDigests"</span>: [</span><br><span class="line">            <span class="string">"docker.io/library/nginx@sha256:066edc156bcada86155fd80ae03667cf3811c499df73815a2b76e43755ebbc76"</span></span><br><span class="line">        ],</span><br></pre></td></tr></table></figure>
+<h5 id="删除"><a href="#删除" class="headerlink" title="删除"></a>删除</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman image rm docker.io/library/nginx                 </span><br><span class="line">f949e7d76d63befffc8eec2cbf8a6f509780f96fb3bacbdc24068d594a77f043</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman images                          </span><br><span class="line">REPOSITORY                 TAG      IMAGE ID       CREATED       SIZE</span><br><span class="line">docker.io/library/centos   latest   67fa590cfc1c   6 weeks ago   210 MB</span><br></pre></td></tr></table></figure>
+<h4 id="容器"><a href="#容器" class="headerlink" title="容器"></a>容器</h4><h5 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman images                             </span><br><span class="line">REPOSITORY                 TAG      IMAGE ID       CREATED       SIZE</span><br><span class="line">docker.io/library/centos   latest   67fa590cfc1c   6 weeks ago   210 MB</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman run -it docker.io/library/centos sh</span><br><span class="line">sh-4.2<span class="comment"># cat /etc/centos-release</span></span><br><span class="line">CentOS Linux release 7.6.1810 (Core) </span><br><span class="line">sh-4.2<span class="comment"># exit</span></span><br></pre></td></tr></table></figure>
+<h5 id="停止"><a href="#停止" class="headerlink" title="停止"></a>停止</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman ps                                                                                               </span><br><span class="line">[sudo] password <span class="keyword">for</span> yiran: </span><br><span class="line">CONTAINER ID  IMAGE                                        COMMAND               CREATED        STATUS            PORTS                   NAMES</span><br><span class="line">af3d9001ad32  registry.fedoraproject.org/f27/httpd:latest  container-entrypo...  8 minutes ago  Up 8 minutes ago  0.0.0.0:8080-&gt;8080/tcp  elastic_goldwasser</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman stop af3d9001ad32</span><br><span class="line">af3d9001ad3211f5503742ca3cca8ddca542e27d7b9e54099c56ab7e04778503</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman ps               </span><br><span class="line">CONTAINER ID  IMAGE  COMMAND  CREATED  STATUS  PORTS  NAMES</span><br></pre></td></tr></table></figure>
+<h5 id="删除-1"><a href="#删除-1" class="headerlink" title="删除"></a>删除</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman ps -a</span><br><span class="line">CONTAINER ID  IMAGE                                        COMMAND               CREATED        STATUS                     PORTS                   NAMES</span><br><span class="line">af3d9001ad32  registry.fedoraproject.org/f27/httpd:latest  container-entrypo...  8 minutes ago  Exited (0) 29 seconds ago  0.0.0.0:8080-&gt;8080/tcp  elastic_goldwasser</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman rm af3d9001ad32                                                                                       </span><br><span class="line">af3d9001ad3211f5503742ca3cca8ddca542e27d7b9e54099c56ab7e04778503</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman ps -a          </span><br><span class="line">CONTAINER ID  IMAGE  COMMAND  CREATED  STATUS  PORTS  NAMES</span><br></pre></td></tr></table></figure>
+<h5 id="checkpoint-restore"><a href="#checkpoint-restore" class="headerlink" title="checkpoint/restore"></a>checkpoint/restore</h5><p>Podman 提供了类似于 git 的功能，能够对 container 进行 checkpoint(commit)，并且可以 restore(checkout)，虽然 <a href="https://podman.io/blogs/2018/10/10/checkpoint-restore.html" target="_blank" rel="noopener">demo 视频</a> 很美好，但是我本地想通过快照（虚拟化功能）的方式来验证，却发现因为 CRIU 的版本过低不支持该功能，等后续深度使用后再研究下这个功能的原理。</p>
+<h5 id="健康检查"><a href="#健康检查" class="headerlink" title="健康检查"></a>健康检查</h5><p>Podman 1.2.0 版本提供了 healthcheck 功能，我们在运行容器时，可以通过参数 <code>--healthcheck-command</code> 来指定健康检查的方式，然后通过 <code>podman healthcheck</code> 命令来检测：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ sudo podman run -dt --name hc1 --healthcheck-command <span class="string">'CMD-SHELL curl http://localhost || exit 1'</span> --healthcheck-interval=0 quay.io/libpod/alpine_nginx:latest</span><br><span class="line">d25ee6faaf6e5e12c09e734b1ac675385fe4d4e8b52504dd01a60e1b726e3edb</span><br><span class="line">$ sudo podman healthcheck run hc1</span><br><span class="line">Healthy</span><br><span class="line">$ <span class="built_in">echo</span> $?</span><br><span class="line">0</span><br></pre></td></tr></table></figure>
+<p><code>--healthcheck-command</code> 命令是在容器内执行的，所以我们需要保证容器镜像中存在相应命令； <code>--healthcheck-interval</code> 如果设置为 0 则不自动检查。</p>
+<h5 id="systemd"><a href="#systemd" class="headerlink" title="systemd"></a>systemd</h5><p>由于 Podman 没有 daemon ，所以没办法像 docker 一样通过指定参数 <code>--restart=always</code> 在 docker 进程启动时自动拉起镜像。 Podman 通过 systemd 来支持该功能。</p>
+<p>首先，我们需要准备一个已经可以正常运行的容器：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ podman ps </span><br><span class="line">CONTAINER ID  IMAGE                                  COMMAND               CREATED                 STATUS                     PORTS  NAMES</span><br><span class="line">cf6b656d4ab0  docker.io/library/envoy:latest  /usr/bin/mongod -...  Less than a second ago  Up Less than a second ago         smtx-mongodb</span><br></pre></td></tr></table></figure>
+<p>编写 systemd 配置文件，通常默认路径为： /usr/lib/systemd/system/</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ cat /usr/lib/systemd/system/envoy.service </span><br><span class="line">[Unit]</span><br><span class="line">After=network.target</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Restart=always</span><br><span class="line">ExecStart=/usr/bin/podman start -a envoy</span><br><span class="line">ExecStop=/usr/bin/podman stop -t 10 envoy</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+<p>编写完成后，我们需要执行下 <code>systemctl daemon-reload</code> 重新加载一次配置，然后就可以通过 <code>systemctl</code> 来控制容器的启停、开机自启动了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ systemctl start envoy</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ systemctl <span class="built_in">enable</span> envoy</span><br><span class="line">Created symlink from /etc/systemd/system/multi-user.target.wants/envoy.service to /usr/lib/systemd/system/envoy.service.</span><br><span class="line">[root@node99 16:28:12 ~]<span class="variable">$systemctl</span> status envoy</span><br><span class="line">● envoy.service</span><br><span class="line">   Loaded: loaded (/usr/lib/systemd/system/envoy.service; enabled; vendor preset: disabled)</span><br><span class="line">  Drop-In: /etc/systemd/system/envoy.service.d</span><br><span class="line">           └─cgroup.conf</span><br><span class="line">   Active: active (running) since Sat 2019-10-12 20:09:34 CST; 3h 41min left</span><br><span class="line"> Main PID: 47684 (podman)</span><br><span class="line">   CGroup: /system.slice/system-zbs.slice/system-zbs-others.slice/envoy.service</span><br><span class="line">           └─47684 /usr/bin/podman start -a envoy</span><br></pre></td></tr></table></figure>
+<h4 id="Pod"><a href="#Pod" class="headerlink" title="Pod"></a>Pod</h4><h5 id="创建及使用"><a href="#创建及使用" class="headerlink" title="创建及使用"></a>创建及使用</h5><p>Podman 除了像 Docker 一样提供基本的容器管理，还提供了 K8S 中的 Pod 功能（得对的起名字啊）。<br>对于最终要运行在 k8s 环境的同学来说，Podman 非常适合，可以很大的减少环境不通导致的工作量：Podman 的 YAML 和 k8s pod yaml 文件格式是兼容的。</p>
+<p>首先，我们来创建一个 Pod：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod create --name postgresql -p 5432 -p 9187</span><br><span class="line">error adding Infra Container: unable to pull k8s.gcr.io/pause:3.1: unable to pull image: Error determining manifest MIME <span class="built_in">type</span> <span class="keyword">for</span> docker://k8s.gcr.io/pause:3.1: pinging docker registry returned: Get https://k8s.gcr.io/v2/: dial tcp 64.233.189.82:443: i/o timeout</span><br></pre></td></tr></table></figure>
+<p>了解 K8S Pod 的同学应该知道 <code>google_containers/pause</code>容器，它主要的作用是 namespace  控制和启动 init 进程，即 PID 为1。在 Podman 中也是如此，这里需要 pull pause 镜像，但是喜闻乐见的 timeout。。。。</p>
+<p>（此处开始折腾网络）</p>
+<p>我们重新来走一次 demo ：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod create --name postgresql -p 5432 -p 9187  <span class="comment"># 创建 Pod，并映射端口</span></span><br><span class="line">17020cd16ae689f5d4e0f17468c67c3f9d3b8aa424d9e463dc8b187bb80bd328</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod ls                                      </span><br><span class="line">POD ID         NAME         STATUS    CREATED         <span class="comment"># OF CONTAINERS   INFRA ID</span></span><br><span class="line">17020cd16ae6   postgresql   Running   7 seconds ago   1                 5f38e2d70484</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod ps </span><br><span class="line">POD ID         NAME         STATUS    CREATED          <span class="comment"># OF CONTAINERS   INFRA ID</span></span><br><span class="line">17020cd16ae6   postgresql   Running   23 seconds ago   1                 5f38e2d70484</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman run -d --pod postgresql -e POSTGRES_PASSWORD=password postgres:latest <span class="comment"># 运行 postgresql</span></span><br><span class="line">bb00b1087b3e86f5f8915deb9a826875f4a1f063b30ef6eb743c3ad6b155a823</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman run -d --pod postgresql -e DATA_SOURCE_NAME=<span class="string">"postgresql://postgres:password@localhost:5432/postgres?sslmode=disable"</span>  wrouesnel/postgres_exporter <span class="comment"># 运行 postgres exporter</span></span><br><span class="line">f1197be2aa8be6169e0a0cf3b235b951dafdc4e98afe6753c661a9871038c17c</span><br></pre></td></tr></table></figure>
+<p>首先我们创建了一个 Pod，端口映射是在 Pod 这个级别配置的，然后在这个 Pod 中，我们创建了两个 container，分别是：postgres 和 postgres_exporter ，其中 postgres_exporter 主要是暴露 metrics 用于 Prometheus 抓取进行监控。</p>
+<p>我们可以通过 curl 相应端口来验证是否正常工作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">iran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman ps -a              </span><br><span class="line">CONTAINER ID  IMAGE                                                          COMMAND               CREATED        STATUS            PORTS                                           NAMES</span><br><span class="line">f1197be2aa8b  docker.io/wrouesnel/postgres_exporter:latest                   /postgres_exporte...  4 minutes ago  Up 4 minutes ago                                                  quizzical_mcclintock</span><br><span class="line">bb00b1087b3e  docker.io/library/postgres:latest                              docker-entrypoint...  4 minutes ago  Up 4 minutes ago                                                  kind_spence</span><br><span class="line">5f38e2d70484  registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.1                        5 minutes ago  Up 5 minutes ago  0.0.0.0:5432-&gt;5432/tcp, 0.0.0.0:9187-&gt;9187/tcp  17020cd16ae6-infra</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ curl localhost:9187/metrics                                                                                                                                 </span><br><span class="line"><span class="comment"># HELP go_gc_duration_seconds A summary of the GC invocation durations.</span></span><br><span class="line"><span class="comment"># TYPE go_gc_duration_seconds summary</span></span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"0"</span>&#125; 0</span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"0.25"</span>&#125; 0</span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"0.5"</span>&#125; 0</span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"0.75"</span>&#125; 0</span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"1"</span>&#125; 0</span><br><span class="line">go_gc_duration_seconds_sum 0</span><br></pre></td></tr></table></figure>
+<p>可以看到已经正确的获取到了相应 metrics 数值，可以通过 <code>podman pod top</code> 来获取当前进程状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod top postgresql             </span><br><span class="line">USER                PID   PPID   %CPU    ELAPSED           TTY   TIME   COMMAND</span><br><span class="line">0                   1     0      0.000   6m15.74147022s    ?     0s     /pause </span><br><span class="line">postgres            1     0      0.000   5m45.755275073s   ?     0s     postgres </span><br><span class="line">postgres            51    1      0.000   5m44.755304824s   ?     0s     postgres: checkpointer    </span><br><span class="line">postgres            52    1      0.000   5m44.755329093s   ?     0s     postgres: background writer    </span><br><span class="line">postgres            53    1      0.000   5m44.755350888s   ?     0s     postgres: walwriter    </span><br><span class="line">postgres            54    1      0.000   5m44.75537351s    ?     0s     postgres: logical replication launcher    </span><br><span class="line">postgres_exporter   1     0      0.000   5m34.767207535s   ?     0s     /postgres_exporter</span><br></pre></td></tr></table></figure>
+<p>在 Podman 中，可以简单的将 Pod 理解为 docker-compose 中的一组容器，并且可以通过 <code>podman pod start/stop</code> 来控制这组容器的启停：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod stop postgresql                                                                      </span><br><span class="line">17020cd16ae689f5d4e0f17468c67c3f9d3b8aa424d9e463dc8b187bb80bd328</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod ls              </span><br><span class="line">POD ID         NAME         STATUS   CREATED         <span class="comment"># OF CONTAINERS   INFRA ID</span></span><br><span class="line">17020cd16ae6   postgresql   Exited   8 minutes ago   3                 5f38e2d70484</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod ps </span><br><span class="line">POD ID         NAME         STATUS   CREATED         <span class="comment"># OF CONTAINERS   INFRA ID</span></span><br><span class="line">17020cd16ae6   postgresql   Exited   8 minutes ago   3                 5f38e2d70484</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ curl localhost:9187/metrics</span><br><span class="line">curl: (7) Failed to connect to localhost port 9187: Connection refused</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman pod start postgresql                                                                                                                                                                            7 ↵</span><br><span class="line">17020cd16ae689f5d4e0f17468c67c3f9d3b8aa424d9e463dc8b187bb80bd328</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ curl localhost:9187/metrics      </span><br><span class="line"><span class="comment"># HELP go_gc_duration_seconds A summary of the GC invocation durations.</span></span><br><span class="line"><span class="comment"># TYPE go_gc_duration_seconds summary</span></span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"0"</span>&#125; 0</span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"0.25"</span>&#125; 0</span><br><span class="line">go_gc_duration_seconds&#123;quantile=<span class="string">"0.5"</span>&#125; 0</span><br></pre></td></tr></table></figure>
+<h5 id="k8s-联动"><a href="#k8s-联动" class="headerlink" title="k8s 联动"></a>k8s 联动</h5><p>通过 <code>podman generate</code> 命令可以生成 k8s 可用的 YAML 文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">020cd16ae689f5d4e0f17468c67c3f9d3b8aa424d9e463dc8b187bb80bd328</span><br><span class="line">yiran@yiran-centos8:~ </span><br><span class="line"> $ sudo podman generate kube postgresql &gt; postgresql.yaml</span><br><span class="line">no matching entries <span class="keyword">in</span> passwd file</span><br></pre></td></tr></table></figure>
+<p>嗯，又遇到了一个错误，在 Github 上有看到相关 issue，先忽略吧。</p>
+<p>使用 <code>podman play</code> 命令可以直接创建完整的 Pod 及其所拥有的容器：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">podman play kube postgresql.yaml</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>如果从 Docker 迁移过来，有以下几点很纠结：</p>
+<ol>
+<li>说好的 rootless，但是如果你想要进行端口映射，那么还是要老老实实 sudo 的</li>
+<li>虽然 systemd 大法好，但是如果 container 直接被删除了，我要单独的管理 systemd service 配置文件（貌似可以通过 OCI hook 实现</li>
+<li>更新真的太快了</li>
+<li>…</li>
+</ol>
+<p>很多同学都在说 <code>学不动了</code>，纠结归纠结，学还是要学的，说不定最后 <strong>真香</strong> 了呢。</p>
+<p>上述所有功能示例都可以通过官方 Demo 项目运行：<a href="https://github.com/containers/Demos/blob/master/podman_cli/README.md。" target="_blank" rel="noopener">https://github.com/containers/Demos/blob/master/podman_cli/README.md。</a></p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://podman.io/blogs/" target="_blank" rel="noopener">https://podman.io/blogs/</a></li>
+<li><a href="https://podman.io/blogs/2018/10/03/podman-remove-content-homedir.html" target="_blank" rel="noopener">https://podman.io/blogs/2018/10/03/podman-remove-content-homedir.html</a></li>
+<li><a href="https://www.redhat.com/sysadmin/rootless-podman" target="_blank" rel="noopener">https://www.redhat.com/sysadmin/rootless-podman</a></li>
+<li><a href="https://mkdev.me/en/posts/dockerless-part-3-moving-development-environment-to-containers-with-podman" target="_blank" rel="noopener">https://mkdev.me/en/posts/dockerless-part-3-moving-development-environment-to-containers-with-podman</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/09/30/Golang-context-使用/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2150,190 +2371,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/08/16/cluster-api-provider-vsphere-源码阅读/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/08/16/cluster-api-provider-vsphere-源码阅读/" itemprop="url">cluster-api-provider-vsphere 源码阅读</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-16T20:57:25+08:00">
-                2019-08-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/08/16/cluster-api-provider-vsphere-源码阅读/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/08/16/cluster-api-provider-vsphere-源码阅读/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>上一篇博客讲了 Cluster-API 的相关概念，现在我们来找一个 provider 实现看看具体里面做了啥，因为对 vmware 产品中的概念比较熟悉，就找了 cluster-api-provider-vsphere 。</p>
-<p>以下内容均对应 clusterapi v1alpha1 版本。</p>
-<h2 id="clusterctl-命令"><a href="#clusterctl-命令" class="headerlink" title="clusterctl 命令"></a>clusterctl 命令</h2><p>cluster-api provider 提供了命令行 <code>clusterctl</code> 用于给我们快速创建 bootstrap 集群用于创建目标 k8s 集群，我们来执行一下看看具体做了哪些工作：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-workstation:~/go/src/github.com/kubernetes-sigs/cluster-api-provider-vsphere </span><br><span class="line">master ✗ $ clusterctl create cluster \                                                       </span><br><span class="line">  --provider vsphere \</span><br><span class="line">  --bootstrap-type kind \</span><br><span class="line">  --cluster ./out/management-cluster/cluster.yaml \</span><br><span class="line">  --machines ./out/management-cluster/machines.yaml \</span><br><span class="line">  --provider-components ./out/management-cluster/provider-components.yaml \</span><br><span class="line">  --addon-components ./out/management-cluster/addons.yaml \</span><br><span class="line">  --kubeconfig-out ./out/management-cluster/kubeconfig</span><br><span class="line">I0816 17:28:05.815156   14562 createbootstrapcluster.go:27] Preparing bootstrap cluster</span><br><span class="line">I0816 17:29:15.292547   14562 clusterdeployer.go:78] Applying Cluster API stack to bootstrap cluster</span><br><span class="line">I0816 17:29:15.292619   14562 applyclusterapicomponents.go:26] Applying Cluster API Provider Components</span><br><span class="line">I0816 17:29:16.492405   14562 clusterdeployer.go:83] Provisioning target cluster via bootstrap cluster</span><br><span class="line">I0816 17:29:16.505317   14562 applycluster.go:36] Creating cluster object management-cluster in namespace &quot;default&quot;</span><br><span class="line">I0816 17:29:16.518456   14562 clusterdeployer.go:92] Creating control plane machine in namespace &quot;default&quot;</span><br><span class="line">I0816 17:29:16.548814   14562 applymachines.go:36] Creating machines in namespace &quot;default&quot; # 因为众所周知的“网络”问题，导致我的 Pod image 无法拉取，所以就卡在这里了。。。</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>可以看到这个命令一共做了如下的事情：</p>
-<ol>
-<li>创建 bootstrap 集群</li>
-<li>安装 Provider 组件</li>
-<li>创建目标 k8s 集群，创建 Cluster CR，Machine CR</li>
-<li>…</li>
-</ol>
-<p>这里因为“网络”问题我无法继续下去了，那么我们来看下命令行的具体实现。</p>
-<p>这个命令最终是由 provider 提供的，在 provider 中需要实现 2个接口来辅助信息的获取：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Deployer <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// <span class="doctag">TODO:</span> This requirement can be removed once after: https://github.com/kubernetes-sigs/cluster-api/issues/158</span></span><br><span class="line">	GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (<span class="keyword">string</span>, error)</span><br><span class="line">	<span class="comment">// <span class="doctag">TODO:</span> This requirement can be removed after: https://github.com/kubernetes-sigs/cluster-api/issues/160</span></span><br><span class="line">	GetKubeConfig(cluster *clusterv1.Cluster, master *clusterv1.Machine) (<span class="keyword">string</span>, error)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在 Bootstrap 集群中，会运行 2个 StatefulSet ，分别对应的是 Cluster-api-control-manager 和 provider-control-manager。其中跟 Hypervisor 打交道的逻辑全部在 provider-control-manager 中实现。</p>
-<h2 id="Cluster"><a href="#Cluster" class="headerlink" title="Cluster"></a>Cluster</h2><p>创建流程：<br><img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/cluster_create.png" title="cluster_create"></p>
-<p>删除流程：<br><img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/cluster_delete.png" title="cluster_delete"></p>
-<p>在 Cluster Controller 中，最终所有的调度任务都会通过 actuator 完成，actuator 需要实现以下接口：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Actuator <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// Reconcile creates or applies updates to the cluster.</span></span><br><span class="line">	Reconcile(*clusterv1.Cluster) error</span><br><span class="line">	<span class="comment">// Delete the cluster.</span></span><br><span class="line">	Delete(*clusterv1.Cluster) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>来看下 vsphere 的实现：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(a *Actuator)</span> <span class="title">Reconcile</span><span class="params">(cluster *clusterv1.Cluster)</span> <span class="params">(opErr error)</span></span> &#123;</span><br><span class="line">	ctx, err := context.NewClusterContext(&amp;context.ClusterContextParams&#123;</span><br><span class="line">		Cluster:          cluster,</span><br><span class="line">		Client:           a.client,</span><br><span class="line">		CoreClient:       a.coreClient,</span><br><span class="line">		ControllerClient: a.controllerClient,</span><br><span class="line">		Logger:           klogr.New().WithName(<span class="string">"[cluster-actuator]"</span>),</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		opErr = actuators.PatchAndHandleError(ctx, <span class="string">"Reconcile"</span>, opErr)</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	ctx.Logger.V(<span class="number">6</span>).Info(<span class="string">"reconciling cluster"</span>)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := a.reconcilePKI(ctx); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := a.reconcileCloudConfigSecret(ctx); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := a.reconcileReadyState(ctx); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果在 actuator 中遇到需要等待或重新调度的情况，比如目标虚拟机未创建完成，目标集群未 ready 的情况，需要返回 <code>clusterErr.RequeueAfterError</code> ，从而重新调度。比如在配置 secret 时，如果无法获取目标集群的 k8s client，那么表示集群还未配置完成：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(a *Actuator)</span> <span class="title">reconcileCloudConfigSecret</span><span class="params">(ctx *context.ClusterContext)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	client, err := kubeclient.New(ctx)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		ctx.Logger.Error(err, <span class="string">"target cluster is not ready"</span>)</span><br><span class="line">		<span class="keyword">return</span> &amp;clusterErr.RequeueAfterError&#123;RequeueAfter: config.DefaultRequeue&#125;</span><br><span class="line">	&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<h2 id="machine"><a href="#machine" class="headerlink" title="machine"></a>machine</h2><p>创建流程：</p>
-<img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/machine_create.png" title="machine_create">
-<p>删除流程：</p>
-<img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/machine_delete.png" title="machine_delete">
-<p>在 v1alpha1 版本中，machine actuator 负责 2件事情：</p>
-<ol>
-<li>虚拟机构建；</li>
-<li>k8s 集群构建（cloud-init 或 ssh）</li>
-</ol>
-<p>在 vsphere 中，创建虚拟机和 k8s 集群构建两件事情时一起完成的，大概流程如下：</p>
-<ol>
-<li>生成配置信息，如证书</li>
-<li>判断目标 k8s 集群是否需要初始化（kubeadm init）</li>
-<li>根据是否需要初始化及是否为 controlplane，生成对应 cloud-init 配置文件</li>
-<li>克隆虚拟机，并将 cloud-init 配置文件作为 <code>guestinfo.userdata</code> 放入虚拟机配置参数中</li>
-<li>虚拟机开机，通过 <code>vmtoolsd</code> 获取 <code>guestinfo.userdata</code> 信息，并作为 cloud-init 参数进行配置</li>
-<li>k8s 集群构建完成（我在实际测试中，发现并没有自动创建 CNI 插件，不知道是不是 bug）</li>
-<li>vsphere 克隆虚拟机为异步任务，提交克隆虚拟机任务后，得到 task id，后续判断虚拟机是否存在会用到；</li>
-</ol>
-<h2 id="Cloud-init-or-SSH"><a href="#Cloud-init-or-SSH" class="headerlink" title="Cloud-init or SSH"></a>Cloud-init or SSH</h2><h3 id="Cloud-init"><a href="#Cloud-init" class="headerlink" title="Cloud-init"></a>Cloud-init</h3><p>在 vsphere provider 中，k8s 部署是通过 cloud-init 实现的，因为之前对 cloud-init 并不了解，这里大概看了下实现方式。</p>
-<p>首先在克隆虚拟机时，给目标虚拟机添加了 <code>guestinfo.userdata</code> 字段作为虚拟机配置参数，这个参数是配置在 Hypervisor 层面的，理论上存在虚拟机隔离性，那么虚拟机内部应该无法感知这个参数，这时候就需要一个工具：vmtools。各个虚拟化平台都会提供一个 vmtools 或类似的工具，用于给虚拟机提供一些高级功能，如：获取 IP、设置主机名、配置 NTP/DNS Server、执行特定命令等等。这些都是根据 vmtools 的实现方式不同支持的功能也不同。</p>
-<p>vmware vmtools 在安装后，vsphere 可以获取到虚拟机的 IP 等信息，同时，在虚拟机内部会安装一些命令，比如：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"> $ <span class="built_in">which</span> vmtoolsd     </span><br><span class="line">/usr/bin/vmtoolsd</span><br><span class="line">root@yiran-workstation:~/project/cluster-api-provider-vsphere </span><br><span class="line">7d21730f ✔ $ vmware-*</span><br><span class="line">vmware-checkvm             vmware-hgfsclient          vmware-toolbox-cmd         vmware-vgauth-cmd        </span><br><span class="line">vmware-config-tools.pl     vmware-namespace-cmd       vmware-uninstall-tools.pl  vmware-vmblock-fuse      </span><br><span class="line">vmware-guestproxycerttool  vmware-rpctool             vmware-user-suid-wrapper   vmware-xferlogs</span><br></pre></td></tr></table></figure>
-<p>vsphere provider 代码中并没有很明确的给出参数是如何传递的，通过不断的寻找，我找到了这个项目： <a href="https://github.com/vmware/cloud-init-vmware-guestinfo" target="_blank" rel="noopener">https://github.com/vmware/cloud-init-vmware-guestinfo</a> ，在这里我们可以看到获取 Hypervisor 层面虚拟机的额外配置：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_guestinfo_value</span><span class="params">(key)</span>:</span></span><br><span class="line">    <span class="string">'''</span></span><br><span class="line"><span class="string">    Returns a guestinfo value for the specified key.</span></span><br><span class="line"><span class="string">    '''</span></span><br><span class="line">    LOG.debug(<span class="string">"Getting guestinfo value for key %s"</span>, key)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        (stdout, stderr) = util.subp(</span><br><span class="line">            [VMTOOLSD, <span class="string">"--cmd"</span>, <span class="string">"info-get guestinfo."</span> + key])</span><br></pre></td></tr></table></figure>
-<p>那么后续的步骤就可以想象的到了，全靠 cloud-init ，这里因为对 cloud-init 了解不多，之后有机会去学习下。</p>
-<h3 id="SSH"><a href="#SSH" class="headerlink" title="SSH"></a>SSH</h3><p>SSH 是我们日常远程连接服务器最常用的方式了，通过用户名，密码（或密钥）来进行 SSH 连接，之后都是通过 Shell 脚本的方式实现 k8s 集群部署，当然 Shell 脚本最终调用的命令是 kubeadm。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过阅读 vsphere provider 代码，我们大概了解了实现一个 Cluster-API provider 需要做哪些事情，最主要的资源控制工作都是在 Cluster-API 实现的，而 provider 主要根据各个场景不同，通过 actuator 实现对应工作，代码量和实现方式上也是千差万别。比如 aws 全部代码可能要 2w 行，而 IBM 的加一起可能不到2k，全看各家的重视程度了。</p>
-<p>在写这篇博客的间隙，Cluster-API 开始了 alpha2 的实质性工作： <a href="https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/developer/v1alpha1-compared-to-v1alpha2.md" target="_blank" rel="noopener">https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/developer/v1alpha1-compared-to-v1alpha2.md</a> ，还没有了解具体的改动，等 beta 之后再看吧。</p>
-<hr>
-<p>吐槽：</p>
-<p>因为 Cluster-API 处于 v1alpha1 阶段，master 分支代码改动非常大，前几天看的代码今天再看就跟记忆中对不上了，之后看代码的时候一定要注意去一个稳定分支上看，免得费时费力。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2386,7 +2423,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">96</span>
+                  <span class="site-state-item-count">97</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
