@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景工作上使用的电脑因为各种各样的原因，被我安装为 Ubuntu 19.04，平时使用上没什么问题，但是最近发现它默认的 SSH 配置随着版本升级发生了变化，known_hosts 文件中记录的不再是 IP 地址，而是一串字符，这导致了当我想要删除某个主机的 key 时，无法准确的找到，因此想办法解决这个事情。 SSH我们使用 Linux 系统的一个最基本的服务应该就是 SSH 了，除了偶尔我们通">
+<meta name="keywords" content="Linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SSH known_hosts 显示 IP 地址">
+<meta property="og:url" content="https://zdyxry.github.io/2019/12/06/SSH-known-hosts-显示-IP-地址/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景工作上使用的电脑因为各种各样的原因，被我安装为 Ubuntu 19.04，平时使用上没什么问题，但是最近发现它默认的 SSH 配置随着版本升级发生了变化，known_hosts 文件中记录的不再是 IP 地址，而是一串字符，这导致了当我想要删除某个主机的 key 时，无法准确的找到，因此想办法解决这个事情。 SSH我们使用 Linux 系统的一个最基本的服务应该就是 SSH 了，除了偶尔我们通">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-12-06T15:11:12.640Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SSH known_hosts 显示 IP 地址">
+<meta name="twitter:description" content="背景工作上使用的电脑因为各种各样的原因，被我安装为 Ubuntu 19.04，平时使用上没什么问题，但是最近发现它默认的 SSH 配置随着版本升级发生了变化，known_hosts 文件中记录的不再是 IP 地址，而是一串字符，这导致了当我想要删除某个主机的 key 时，无法准确的找到，因此想办法解决这个事情。 SSH我们使用 Linux 系统的一个最基本的服务应该就是 SSH 了，除了偶尔我们通">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2019/12/06/SSH-known-hosts-显示-IP-地址/">
+
+
+
+
+
+  <title>SSH known_hosts 显示 IP 地址 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/12/06/SSH-known-hosts-显示-IP-地址/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">SSH known_hosts 显示 IP 地址</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-06T21:54:25+08:00">
+                2019-12-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/06/SSH-known-hosts-显示-IP-地址/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/12/06/SSH-known-hosts-显示-IP-地址/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>工作上使用的电脑因为各种各样的原因，被我安装为 Ubuntu 19.04，平时使用上没什么问题，但是最近发现它默认的 SSH 配置随着版本升级发生了变化，known_hosts 文件中记录的不再是 IP 地址，而是一串字符，这导致了当我想要删除某个主机的 key 时，无法准确的找到，因此想办法解决这个事情。</p>
+<h2 id="SSH"><a href="#SSH" class="headerlink" title="SSH"></a>SSH</h2><p>我们使用 Linux 系统的一个最基本的服务应该就是 SSH 了，除了偶尔我们通过 VNC 或者 KVM(Keyboard Virtual Manager)连接控制主机外，都是通过 SSH 到 Linux 主机上进行某些操作。那么 SSH 就是 Secure Shell，安全外壳协议。可在不安全的网络中为网络服务提供安全的传输环境。SSH 通过在网络中建立安全隧道来实现SSH客户端与服务器之间的连接。</p>
+<p>SSH 最重要的就是安全，采用的是非对称加密，关于加密相关的部分，可以看我之前写的一篇<a href="https://zdyxry.github.io/2019/09/14/%E3%80%8A%E5%9B%BE%E8%A7%A3%E5%AF%86%E7%A0%81%E6%8A%80%E6%9C%AF%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">《图解密码技术》读书笔记
+</a> 里面有比较完整的相关知识。</p>
+<p>这里主要说一下使用密码登陆和密钥登陆的流程。</p>
+<h3 id="密码登陆"><a href="#密码登陆" class="headerlink" title="密码登陆"></a>密码登陆</h3><ol>
+<li>客户端向服务端发起连接请求</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# ssh 192.168.67.90</span><br><span class="line">The authenticity of host '192.168.67.90 (192.168.67.90)' can't be established.</span><br><span class="line">ECDSA key fingerprint is SHA256:ca9Zk/7pR4f6rrNP3wi1WK+CQMtG4Ka+kkouwQYU0nY.</span><br><span class="line">Are you sure you want to continue connecting (yes/no)?</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>客户端会提示，知道服务端的唯一标示，确认连接么</li>
+<li>确认连接，输入 yes</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# ssh 192.168.67.90</span><br><span class="line">The authenticity of host '192.168.67.90 (192.168.67.90)' can't be established.</span><br><span class="line">ECDSA key fingerprint is SHA256:ca9Zk/7pR4f6rrNP3wi1WK+CQMtG4Ka+kkouwQYU0nY.</span><br><span class="line">Are you sure you want to continue connecting (yes/no)? yes</span><br><span class="line">Warning: Permanently added '192.168.67.90' (ECDSA) to the list of known hosts.</span><br><span class="line">root@192.168.67.90's password:</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>服务端传输公钥给客户端，客户端输入密码，使用服务端公钥加密并发送给服务端</li>
+<li>服务端使用私钥解密，验证密码正确，登陆成功</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# ssh 192.168.67.90</span><br><span class="line">The authenticity of host '192.168.67.90 (192.168.67.90)' can't be established.</span><br><span class="line">ECDSA key fingerprint is SHA256:ca9Zk/7pR4f6rrNP3wi1WK+CQMtG4Ka+kkouwQYU0nY.</span><br><span class="line">Are you sure you want to continue connecting (yes/no)? yes</span><br><span class="line">Warning: Permanently added '192.168.67.90' (ECDSA) to the list of known hosts.</span><br><span class="line">root@192.168.67.90's password:</span><br><span class="line">Last login: Fri Dec  6 21:51:00 2019 from 192.168.73.54</span><br><span class="line">[root@node90 22:30:29 ~]$</span><br></pre></td></tr></table></figure>
+<h3 id="密钥登陆"><a href="#密钥登陆" class="headerlink" title="密钥登陆"></a>密钥登陆</h3><ol>
+<li>客户端向服务端发起连接请求</li>
+<li>服务端收到客户端的请求，找到对应客户端的公钥，生成随机数</li>
+<li>服务端使用客户端的公钥对随机数进行加密，发送给客户端</li>
+<li>客户端使用私钥进行解密，得到随机数，并将随机数与 session key 拼接，并将结果通过 MD5 算出散列值</li>
+<li>服务端同样使用随机数与 session key 拼接，并将结果通过 MD5 算出散列值</li>
+<li>服务端对两个散列值进行校验，如果想通，则登陆成功</li>
+</ol>
+<h2 id="相关文件"><a href="#相关文件" class="headerlink" title="相关文件"></a>相关文件</h2><h3 id="ssh-id-rsa"><a href="#ssh-id-rsa" class="headerlink" title="~/.ssh/id_rsa"></a>~/.ssh/id_rsa</h3><p>当前节点生成的私钥，使用 RSA 算法。</p>
+<h3 id="ssh-id-rsa-pub"><a href="#ssh-id-rsa-pub" class="headerlink" title="~/.ssh/id_rsa.pub"></a>~/.ssh/id_rsa.pub</h3><p>当前节点生成的公钥，使用 RSA 算法，与 id_rsa 成对出现。</p>
+<h3 id="ssh-authorized-keys"><a href="#ssh-authorized-keys" class="headerlink" title="~/.ssh/authorized_keys"></a>~/.ssh/authorized_keys</h3><p>用于保存已经授权（信任）的客户端公钥。</p>
+<h3 id="ssh-known-hosts"><a href="#ssh-known-hosts" class="headerlink" title="~/.ssh/known_hosts"></a>~/.ssh/known_hosts</h3><p>known_hosts 中存放 SSH 自动维护并检查的一个数据库，该数据库包含曾经连接过的所有主机的标识。</p>
+<p>这个文件也是今天的主角。</p>
+<h2 id="known-hosts"><a href="#known-hosts" class="headerlink" title="known_hosts"></a>known_hosts</h2><p>当我们客户端尝试连接服务端，会有一条提示，服务端主机的唯一标示是xxx，确认连接么，如果输入yes，那么这个主机的标示就会记录到 known_hosts，一般我们的 known_hosts 会长这样：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# cat .ssh/known_hosts</span><br><span class="line">|1|+YgY28AEikbKxdosHK1Cxb6zJqs=|yEi41f2MIl6hU9uQOvXyzK0hByM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHJscGQ4nUV7b7+nUtHVFPgm38JrUJwMapVqkq+oF1RR7mniCGhrkIGpb2cqKINrcZFyKFRqWhuAgYtMyFALOrM=</span><br></pre></td></tr></table></figure>
+<p>或者长这样：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:~</span><br><span class="line">   head -n 1 .ssh/known_hosts</span><br><span class="line">192.168.70.250 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHNWt8CDe7sPvATsqx5zH5v9wJzYrFhu9fmYnshIYLEnuoXmCmVu2cGU8s/IjK2jU8hnFad4T1gMhst7cXLmqAo=</span><br></pre></td></tr></table></figure>
+<p>了解 https 相关知识的同学应该知道，证书的重要性。在 SSH 场景下，我们没有证书，那么就需要我们自己人为的确保我们要连接的服务端是可信的。如果我们第一次登陆 192.168.1.1 后，系统保存了主机唯一标示到了 ~/.ssh/known_hosts，如果我们下一次登陆 192.168.1.1 客户端发现主机唯一标示产生了变化，那么就会禁止我们登陆了。</p>
+<p>在工作中经常遇到这种场景，可能的原因有很多：系统重装、快照回滚、IP 冲突等等。通常我们的做法就是闭着眼睛删除 known_hosts 里面的对应主机信息，然后重新登陆就可以了。</p>
+<p>但是最近发现 Ubuntu 19.04 中记录的 known_hosts 是这样的：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# cat .ssh/known_hosts</span><br><span class="line">|1|+YgY28AEikbKxdosHK1Cxb6zJqs=|yEi41f2MIl6hU9uQOvXyzK0hByM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHJscGQ4nUV7b7+nUtHVFPgm38JrUJwMapVqkq+oF1RR7mniCGhrkIGpb2cqKINrcZFyKFRqWhuAgYtMyFALOrM=</span><br></pre></td></tr></table></figure>
+<p>是的，我们无法在一堆看似乱码中找到我们想要的主机并删掉它，这其实是 OpenSSH 新版本中的一项安全改进。</p>
+<p>在 <a href="https://zdyxry.github.io/2019/10/25/%E8%AE%B0%E4%B8%80%E6%AC%A1%E7%B3%BB%E7%BB%9F%E8%A2%AB%E5%85%A5%E4%BE%B5%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B/">记一次系统被入侵分析过程</a> 博客中有提到，现在好多病毒在入侵之后都是通过 SSH 相关信息进行横向扩散的，所以我们应该尽可能的少在系统中保存明文的 IP 地址相关信息。</p>
+<p>但是对我测试环境来说，是没什么关系的，因此我需要禁止这个安全配置，来达到我的目的。</p>
+<p>正确的姿势是修改 SSH 客户端的配置，将 <code>HashKnownHosts</code> 置为 no ，清空 known_hosts 文件，再连接服务端，就可以看到 known_hosts 已经显示 IP 地址了。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# cat /etc/ssh/ssh_config |grep -i hash</span><br><span class="line">    HashKnownHosts no</span><br><span class="line">root@test-hostname-ubuntu-s-1804:~# cat .ssh/known_hosts</span><br><span class="line">192.168.67.90 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHJscGQ4nUV7b7+nUtHVFPgm38JrUJwMapVqkq+oF1RR7mniCGhrkIGpb2cqKINrcZFyKFRqWhuAgYtMyFALOrM=</span><br></pre></td></tr></table></figure>
+<p>当然如果你想搞破坏，可以尝试下这篇<a href="https://blog.rootshell.be/2010/11/03/bruteforcing-ssh-known_hosts-files/" target="_blank" rel="noopener">博客</a>中提供的脚本：<a href="https://blog.rootshell.be/wp-content/uploads/2010/11/known_hosts_bruteforcer.pl.txt" target="_blank" rel="noopener">https://blog.rootshell.be/wp-content/uploads/2010/11/known_hosts_bruteforcer.pl.txt</a> （谨慎使用）</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://zh.wikipedia.org/wiki/Secure_Shell" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/Secure_Shell</a></li>
+<li><a href="https://blog.rootshell.be/2010/11/03/bruteforcing-ssh-known_hosts-files/" target="_blank" rel="noopener">https://blog.rootshell.be/2010/11/03/bruteforcing-ssh-known_hosts-files/</a></li>
+<li><a href="https://unix.stackexchange.com/questions/31549/is-it-possible-to-find-out-the-hosts-in-the-known-hosts-file" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/31549/is-it-possible-to-find-out-the-hosts-in-the-known-hosts-file</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/01/Linux-引导那些事儿/" rel="next" title="Linux 引导那些事儿">
+                <i class="fa fa-chevron-left"></i> Linux 引导那些事儿
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">98</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSH"><span class="nav-number">2.</span> <span class="nav-text">SSH</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#密码登陆"><span class="nav-number">2.1.</span> <span class="nav-text">密码登陆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#密钥登陆"><span class="nav-number">2.2.</span> <span class="nav-text">密钥登陆</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#相关文件"><span class="nav-number">3.</span> <span class="nav-text">相关文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ssh-id-rsa"><span class="nav-number">3.1.</span> <span class="nav-text">~/.ssh/id_rsa</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ssh-id-rsa-pub"><span class="nav-number">3.2.</span> <span class="nav-text">~/.ssh/id_rsa.pub</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ssh-authorized-keys"><span class="nav-number">3.3.</span> <span class="nav-text">~/.ssh/authorized_keys</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ssh-known-hosts"><span class="nav-number">3.4.</span> <span class="nav-text">~/.ssh/known_hosts</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#known-hosts"><span class="nav-number">4.</span> <span class="nav-text">known_hosts</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">5.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2019/12/06/SSH-known-hosts-显示-IP-地址/';
+          this.page.identifier = '2019/12/06/SSH-known-hosts-显示-IP-地址/';
+          this.page.title = 'SSH known_hosts 显示 IP 地址';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
