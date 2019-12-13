@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,Network,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。 邻居发现协议（NDP）引用维基百科的介绍：  The Neighbor Discovery Protocol (NDP, ND)[1] is a protocol in the Internet protocol suite used with Int">
+<meta name="keywords" content="Linux,Network">
+<meta property="og:type" content="article">
+<meta property="og:title" content="邻居发现协议（NDP）简易实现">
+<meta property="og:url" content="https://zdyxry.github.io/2019/12/11/邻居发现协议（NDP）简易实现/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。 邻居发现协议（NDP）引用维基百科的介绍：  The Neighbor Discovery Protocol (NDP, ND)[1] is a protocol in the Internet protocol suite used with Int">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-12-13T12:22:13.182Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="邻居发现协议（NDP）简易实现">
+<meta name="twitter:description" content="背景在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。 邻居发现协议（NDP）引用维基百科的介绍：  The Neighbor Discovery Protocol (NDP, ND)[1] is a protocol in the Internet protocol suite used with Int">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2019/12/11/邻居发现协议（NDP）简易实现/">
+
+
+
+
+
+  <title>邻居发现协议（NDP）简易实现 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/12/11/邻居发现协议（NDP）简易实现/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">邻居发现协议（NDP）简易实现</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-11T21:29:59+08:00">
+                2019-12-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/11/邻居发现协议（NDP）简易实现/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/12/11/邻居发现协议（NDP）简易实现/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。</p>
+<h2 id="邻居发现协议（NDP）"><a href="#邻居发现协议（NDP）" class="headerlink" title="邻居发现协议（NDP）"></a>邻居发现协议（NDP）</h2><p>引用维基百科的介绍：</p>
+<blockquote>
+<p>The Neighbor Discovery Protocol (NDP, ND)[1] is a protocol in the Internet protocol suite used with Internet Protocol Version 6 (IPv6). It operates at the link layer of the Internet model (RFC 1122), and is responsible for gathering various information required for internet communication, including the configuration of local connections and the domain name servers and gateways used to communicate with more distant systems.[2]</p>
+</blockquote>
+<p>这里有两点需要关注：</p>
+<ol>
+<li>与 IPv6 一起使用</li>
+<li>工作在数据链路层（link layer）</li>
+</ol>
+<h3 id="IPv6-地址"><a href="#IPv6-地址" class="headerlink" title="IPv6 地址"></a>IPv6 地址</h3><p>在 IPv6 中，无论我们的网络环境是否存在 DHCP Server，我们只要配置网卡启动 IPv6 选项，将网卡置为 active 状态，就能获取到对应的 IPv6 地址，这是因为 IPv6中支持 IP 自动配置，大概流程如下：</p>
+<ol>
+<li>根据 MAC 地址产生链路本地地址（link-local address）</li>
+<li>发出邻居发现请求，进行重复地址检测，如果重复，则停止配置</li>
+<li>链路本地地址生效，发送路由请求报文（RS）</li>
+</ol>
+<h4 id="单播地址"><a href="#单播地址" class="headerlink" title="单播地址"></a>单播地址</h4><p>单播地址中又分为三类：</p>
+<ol>
+<li>可聚合的全局单播地址，相当于公网 IPv4 地址</li>
+<li>链路本地地址，相当于IPv4里面的169.254.0.0/16地址，一般自动生成</li>
+<li>独特本地单播地址</li>
+</ol>
+<h4 id="组播地址"><a href="#组播地址" class="headerlink" title="组播地址"></a>组播地址</h4><table>
+<thead>
+<tr>
+<th>IPv6 常用组播地址</th>
+<th>IPv4 常用组播地址</th>
+<th>组播组</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>节点-本地范围</td>
+<td>节点-本地范围</td>
+<td>节点-本地范围</td>
+</tr>
+<tr>
+<td>FF01::1</td>
+<td>224.0.0.1</td>
+<td>所有-节点地址</td>
+</tr>
+<tr>
+<td>FF01::2</td>
+<td>224.0.0.2</td>
+<td>所有-路由器地址</td>
+</tr>
+<tr>
+<td>链路-本地范围</td>
+<td>链路-本地范围</td>
+<td>链路-本地范围</td>
+</tr>
+<tr>
+<td>FF02::1</td>
+<td>224.0.0.1</td>
+<td>所有-节点地址</td>
+</tr>
+<tr>
+<td>FF02::2</td>
+<td>224.0.0.2</td>
+<td>所有-路由器地址</td>
+</tr>
+<tr>
+<td>FF02::5</td>
+<td>224.0.0.5</td>
+<td>OSPF IGP</td>
+</tr>
+<tr>
+<td>FF02::6</td>
+<td>224.0.0.6</td>
+<td>OSPF IGP DR</td>
+</tr>
+</tbody>
+</table>
+<h4 id="任播地址"><a href="#任播地址" class="headerlink" title="任播地址"></a>任播地址</h4><p>在 IPv6 中，没有广播的概念，而是使用任播代替。在任播中，网络地址与网络节点之前存在一对多的关系：每一个地址对应一群接收节点，但是在任何给定时间，只有其中之一可以接收到传送端发来的信息。</p>
+<p>邻居发现协议 NDP 是 IPv6 协议体系中一个重要的基础协议，替代了IPv4的 ARP 和 ICMP 路由器发现，定义了使用 ICMPv6 报文实现地址解析、跟踪邻居状态、重复地址检测、路由器发现以及重定向等功能。</p>
+<h2 id="IPv6-地址发现"><a href="#IPv6-地址发现" class="headerlink" title="IPv6 地址发现"></a>IPv6 地址发现</h2><p>因为我本人也没有完整阅读过相应 RFC 文档，在这里也不详细描述每个报文的具体格式及每个字段是什么意思了，直接看看怎么实现。</p>
+<h3 id="ping6-amp-组播"><a href="#ping6-amp-组播" class="headerlink" title="ping6 &amp; 组播"></a>ping6 &amp; 组播</h3><p>如果我们知道了一个主机的 IPv6 地址，我们可以通过 <code>ping6</code> 来检测是否联通：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ping6 fe80::5054:ff:fe80:95d9%eth0</span></span><br><span class="line">PING fe80::5054:ff:fe80:95d9%eth0(fe80::5054:ff:fe80:95d9%eth0) 56 data bytes</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=2 ttl=64 time=0.055 ms</span><br><span class="line">^C</span><br><span class="line">--- fe80::5054:ff:fe80:95d9%eth0 ping statistics ---</span><br><span class="line">2 packets transmitted, 2 received, 0% packet loss, time 999ms</span><br><span class="line">rtt min/avg/max/mdev = 0.045/0.050/0.055/0.005 ms</span><br></pre></td></tr></table></figure>
+<p>那么有了这个 <code>ping6</code> 命令和上面提到的组播地址，我们就可以通过 <code>ping6</code> 直接 ping 组播地址就能知道那些地址可以联通了，那么应该选择哪个？应该选择 <code>FF01::1</code> ，因为我们想要实现的是获取 IPv6 地址：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ping6 -c1 -I eth0 <span class="string">'ff02::1%eth0'</span></span></span><br><span class="line">PING ff02::1%eth0(ff02::1%eth0) from fe80::5054:ff:fe80:95d9%eth0 eth0: 56 data bytes</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms</span><br><span class="line"></span><br><span class="line">--- ff02::1%eth0 ping statistics ---</span><br><span class="line">1 packets transmitted, 1 received, 0% packet loss, time 0ms</span><br><span class="line">rtt min/avg/max/mdev = 0.045/0.045/0.045/0.000 ms</span><br></pre></td></tr></table></figure>
+<p>因为我的实验环境里节点太多，这里使用 <code>-c</code> 参数限制发送 ECHO_REQUEST 包的数量为 1。</p>
+<p>在发送组播之后，如果能够联通，那么系统会记录对应的 ARP 信息，我们可以通过 <code>ip</code> 命令直接获取：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ip -6 neighbor show dev eth0 | head -n 5</span></span><br><span class="line">fe80::8c6e:a0ff:fe19:f146 lladdr 8e:6e:a0:19:f1:46 DELAY</span><br><span class="line">fe80::8010:f1ff:fe02:af40 lladdr 82:10:f1:02:af:40 DELAY</span><br><span class="line">fe80::baca:3aff:feec:fdac lladdr b8:ca:3a:ec:fd:ac DELAY</span><br><span class="line">fe80::f11c:e35a:912:dbc9 lladdr 52:54:00:0a:b3:fc DELAY</span><br><span class="line">fe80::570d:aa51:dc3b:1f02 lladdr 00:50:56:9b:f6:6c DELAY</span><br></pre></td></tr></table></figure>
+<p>这样就拿到了自己节点在二层联通的所有 IPv6 地址了。</p>
+<h4 id="Nmap"><a href="#Nmap" class="headerlink" title="Nmap"></a>Nmap</h4><p>既然已经使用了 <code>ping6</code>，那么可以使用一些更高级的工具，比如 Nmap，Nmap可以检测目标主机是否在线、端口开放情况、侦测运行的服务类型及版本信息、侦测操作系统与设备类型等信息。 它通常用来评估网络系统安全。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> nmap -6 <span class="string">"--script=targets-ipv6-multicast-*"</span> | head -n 10</span></span><br><span class="line"></span><br><span class="line">Starting Nmap 6.40 ( http://nmap.org ) at 2019-12-12 07:22 CST</span><br><span class="line">Pre-scan script results:</span><br><span class="line">| targets-ipv6-multicast-echo:</span><br><span class="line">|   IP: fe80::e4a5:4fff:fea7:79af  MAC: e6:a5:4f:a7:79:af  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe85:647e   MAC: 00:50:56:85:64:7e  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9e:2473   MAC: 00:50:56:9e:24:73  IFACE: eth0</span><br><span class="line">|   IP: fe80::ae53:a418:ca0:83e8   MAC: 00:50:56:9f:43:ca  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9e:bcb6   MAC: 00:50:56:9e:bc:b6  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9f:6153   MAC: 00:50:56:9f:61:53  IFACE: eth0</span><br><span class="line">WARNING: No targets were specified, so 0 hosts scanned.</span><br></pre></td></tr></table></figure>
+<h2 id="更进一步"><a href="#更进一步" class="headerlink" title="更进一步"></a>更进一步</h2><p>往往我们的需求不只是获取到 IP 这么简单，我们现在更进一步，我们要求扫描的结果中与我们预期的版本相同，那么此时就需要与对应节点进行通信了。</p>
+<h3 id="HTTP"><a href="#HTTP" class="headerlink" title="HTTP"></a>HTTP</h3><p>一个比较简单的实现，就是在目标节点开机的时候自动启动一个 API server，提供一个 Entrypoint，比如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> jsonify</span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route('/api/v1/version')</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">version</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> jsonify(&#123;<span class="string">"version"</span>:<span class="string">"v1.0.0"</span>&#125;)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    app.run(host=<span class="string">'::'</span>, port=<span class="number">5000</span>, debug=<span class="keyword">True</span>) <span class="comment"># 要兼容 IPv6</span></span><br></pre></td></tr></table></figure>
+<p>然后我们可以在得到 IPv6 地址后，通过 curl 或者 Python urllib2 来发送对应的请求：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> curl -g -6 <span class="string">'http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version'</span></span></span><br><span class="line">&#123;</span><br><span class="line">  "version": "v1.0.0"</span><br><span class="line">&#125;#</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> urllib2</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>res = urllib2.urlopen(<span class="string">"http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>res.read()</span><br><span class="line"><span class="string">'&#123;\n  "version": "v1.0.0"\n&#125;'</span></span><br></pre></td></tr></table></figure>
+<p>这样虽然可以达到我们想要的效果，但是效率太低了，要先后进行2次操作，一次是扫描对应的 IPv6 地址，一次是得到地址后进行 HTTP 请求。</p>
+<h3 id="Socket"><a href="#Socket" class="headerlink" title="Socket"></a>Socket</h3><p>我们可以通过 socket 通信来达到类似的效果，与 HTTP 不同的是，我们可以直接使用 socket 发送组播，来进行消息传递，这样上面的两步就可以通过一步来解决了，这里给出对应的 server 和 client 代码示例：</p>
+<h4 id="Server"><a href="#Server" class="headerlink" title="Server"></a>Server</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> select</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">server</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, <span class="number">1</span>)</span><br><span class="line">        s.bind((<span class="string">''</span>, <span class="number">30000</span>))</span><br><span class="line">        s.setblocking(<span class="keyword">False</span>)</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">            rlist, _, _ = select.select([s], [], [s], <span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> rlist:</span><br><span class="line">                string, address = s.recvfrom(<span class="number">20000</span>)</span><br><span class="line">                <span class="keyword">print</span> string, address</span><br><span class="line">                <span class="keyword">try</span>:</span><br><span class="line">                    data = json.loads(string)</span><br><span class="line">                <span class="keyword">except</span> Exception:</span><br><span class="line">                    <span class="keyword">pass</span></span><br><span class="line">                owner = data.get(<span class="string">"owner"</span>)</span><br><span class="line">                <span class="keyword">if</span> owner == <span class="string">"yiran"</span>:</span><br><span class="line">                    info = &#123;<span class="string">"version"</span>: <span class="string">"v1.0"</span>,</span><br><span class="line">                            <span class="string">"owner"</span>: <span class="string">"yiran"</span>,</span><br><span class="line">                            <span class="string">"nic"</span>: address[<span class="number">0</span>].split(<span class="string">"%"</span>, <span class="number">1</span>)[<span class="number">1</span>]&#125;</span><br><span class="line">                    s.sendto(json.dumps(info), address)</span><br><span class="line">    <span class="keyword">except</span> Exception:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    server()</span><br></pre></td></tr></table></figure>
+<h4 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> select</span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pprint <span class="keyword">import</span> pprint</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">client</span><span class="params">()</span>:</span></span><br><span class="line">    s= socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">    s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, <span class="number">5000000</span>)</span><br><span class="line">    nics = socket.getaddrinfo(<span class="string">"%s%%%s"</span> % (<span class="string">'ff02::1'</span>, <span class="string">'eth0'</span>), <span class="number">30000</span>, socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">    data = &#123;<span class="string">"owner"</span>: <span class="string">"yiran"</span>&#125;</span><br><span class="line">    string = json.dumps(data)</span><br><span class="line">    results = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>):</span><br><span class="line">        <span class="keyword">for</span> nic <span class="keyword">in</span> nics:</span><br><span class="line">            _, _, _, _, address = nic</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                s.sendto(string, address)</span><br><span class="line">            <span class="keyword">except</span> Exception:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">        rlist, _, _ = select.select([s], [], [s], <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> rlist:</span><br><span class="line">            json_string, address = s.recvfrom(<span class="number">10000</span>)</span><br><span class="line">            results[address] = json_string</span><br><span class="line"></span><br><span class="line">    s.close()</span><br><span class="line">    ips = []</span><br><span class="line">    <span class="keyword">for</span> address, json_test <span class="keyword">in</span> results.iteritems():</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            data = json.loads(json_test)</span><br><span class="line">            <span class="keyword">if</span> data.get(<span class="string">"version"</span>, <span class="keyword">None</span>) == <span class="string">"v1.0"</span>:</span><br><span class="line">                info = &#123;&#125;</span><br><span class="line">                info[<span class="string">'ipv6_address'</span>] = address[<span class="number">0</span>]</span><br><span class="line">                info[<span class="string">'test'</span>] = data</span><br><span class="line"></span><br><span class="line">                ips.append(info)</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ips</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    pprint(client())</span><br></pre></td></tr></table></figure>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="http://www.ruijie.com.cn/fa/xw-hlw/83116/" target="_blank" rel="noopener">http://www.ruijie.com.cn/fa/xw-hlw/83116/</a></li>
+<li><a href="https://tools.ietf.org/html/rfc4861" target="_blank" rel="noopener">https://tools.ietf.org/html/rfc4861</a></li>
+<li><a href="https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses" target="_blank" rel="noopener">https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+            <a href="/tags/Network/" rel="tag"># Network</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/09/2019年读书记录/" rel="next" title="2019年读书记录">
+                <i class="fa fa-chevron-left"></i> 2019年读书记录
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">100</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#邻居发现协议（NDP）"><span class="nav-number">2.</span> <span class="nav-text">邻居发现协议（NDP）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#IPv6-地址"><span class="nav-number">2.1.</span> <span class="nav-text">IPv6 地址</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#单播地址"><span class="nav-number">2.1.1.</span> <span class="nav-text">单播地址</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#组播地址"><span class="nav-number">2.1.2.</span> <span class="nav-text">组播地址</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#任播地址"><span class="nav-number">2.1.3.</span> <span class="nav-text">任播地址</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IPv6-地址发现"><span class="nav-number">3.</span> <span class="nav-text">IPv6 地址发现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ping6-amp-组播"><span class="nav-number">3.1.</span> <span class="nav-text">ping6 &amp; 组播</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Nmap"><span class="nav-number">3.1.1.</span> <span class="nav-text">Nmap</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更进一步"><span class="nav-number">4.</span> <span class="nav-text">更进一步</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HTTP"><span class="nav-number">4.1.</span> <span class="nav-text">HTTP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Socket"><span class="nav-number">4.2.</span> <span class="nav-text">Socket</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Server"><span class="nav-number">4.2.1.</span> <span class="nav-text">Server</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Client"><span class="nav-number">4.2.2.</span> <span class="nav-text">Client</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">5.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2019/12/11/邻居发现协议（NDP）简易实现/';
+          this.page.identifier = '2019/12/11/邻居发现协议（NDP）简易实现/';
+          this.page.title = '邻居发现协议（NDP）简易实现';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
