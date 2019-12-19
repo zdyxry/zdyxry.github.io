@@ -275,6 +275,208 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/09/06/httprunner-源码阅读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/09/06/httprunner-源码阅读/" itemprop="url">httprunner 源码阅读</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-06T19:50:27+08:00">
+                2019-09-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/09/06/httprunner-源码阅读/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/09/06/httprunner-源码阅读/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近工作上每天疲于应付各种事情，周末实在不想继续做工作相关的事情，想起一直想了解的自动化测试框架 <a href="https://github.com/httprunner/httprunner" target="_blank" rel="noopener">httprunner</a>，就阅读下。之前一直有关注作者 <a href="https://debugtalk.com/" target="_blank" rel="noopener">debugtalk</a> 的博客，收获很多。</p>
+<p>随着公司的发展，自己也做过很多的工作，其中就包含测试，但是自己当时大部分都是手工测试，虽然会针对其中的部分进行代码编写，但是不成体系。虽然后来就没有继续负责测试工作了，但是对于测试还是很感兴趣，平时开发过程中，最多也就是使用 unittest 或 pytest 来编写单测，这次通过阅读 httprunner 代码来感受下测试框架。</p>
+<p>P.S. 在使用及了解 httprunner 之前，最好先了解下 unittest。</p>
+<h2 id="httprunner"><a href="#httprunner" class="headerlink" title="httprunner"></a>httprunner</h2><blockquote>
+<p>HttpRunner 是一款面向 HTTP(S) 协议的通用测试框架，只需编写维护一份 YAML/JSON 脚本，即可实现自动化测试、性能测试、线上监控、持续集成等多种测试需求。</p>
+</blockquote>
+<p>一句话总结就是 api 自动化测试，其中用到了以下的开源项目：</p>
+<ol>
+<li>requests</li>
+<li>locust</li>
+<li>unittest</li>
+<li>…</li>
+</ol>
+<p>requests 和 unittest 可以说是 python 开发者用的比较多的两个项目。locust 是一个 api 压力测试，这个我们公司也有用到。</p>
+<p>介绍完了项目，我们来跟着官方文档了解运行流程。</p>
+<h2 id="执行流程"><a href="#执行流程" class="headerlink" title="执行流程"></a>执行流程</h2><p>文档中的 <a href="https://cn.httprunner.org/quickstart/" target="_blank" rel="noopener">快速上手</a> 章节与章节名称很配，真心是 <strong>快速上手</strong> ，通过一个又一个的示例来了解具体的功能使用，循序渐进，简直完美。不过又一点不好的地方是 demo 示例的代码不再 httprunner 中，而是在 docs 项目中，使用起来不是很方便，如果有 Dockerfile 来支撑，就更好了。</p>
+<p>在 httprunner 项目中，项目的包管理是通过 <strong>poetry</strong> 进行的，比 setuptools 要清晰很多。</p>
+<p>首先来看命令，httprunner 随着项目的演进，支持的命令行有 4个，其中 3 个是重复的，1个是压力测试：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[tool.poetry.scripts]</span></span><br><span class="line"><span class="string">hrun</span> <span class="string">=</span> <span class="string">"httprunner.cli:main_hrun"</span></span><br><span class="line"><span class="string">ate</span> <span class="string">=</span> <span class="string">"httprunner.cli:main_hrun"</span></span><br><span class="line"><span class="string">httprunner</span> <span class="string">=</span> <span class="string">"httprunner.cli:main_hrun"</span></span><br><span class="line"><span class="string">locusts</span> <span class="string">=</span> <span class="string">"httprunner.cli:main_locust"</span></span><br></pre></td></tr></table></figure>
+<p>我们以 <code>hrun</code> 为例，从 argparse 接收到的参数均作为参数传递给 HttpRunner，然后执行实例化 HttpRunner，通过 <code>HttpRunner.run</code> 进行用例的执行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">runner = HttpRunner(</span><br><span class="line">    failfast=args.failfast,</span><br><span class="line">    save_tests=args.save_tests,</span><br><span class="line">    report_template=args.report_template,</span><br><span class="line">    report_dir=args.report_dir,</span><br><span class="line">    log_level=args.log_level,</span><br><span class="line">    log_file=args.log_file</span><br><span class="line">)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="keyword">for</span> path <span class="keyword">in</span> args.testcase_paths:</span><br><span class="line">        runner.run(path, dot_env_path=args.dot_env_path)</span><br><span class="line"><span class="keyword">except</span> Exception:</span><br><span class="line">    color_print(<span class="string">"!!!!!!!!!! exception stage: &#123;&#125; !!!!!!!!!!"</span>.format(runner.exception_stage), <span class="string">"YELLOW"</span>)</span><br><span class="line">    <span class="keyword">raise</span></span><br></pre></td></tr></table></figure>
+<p>我们来看下 <code>runner.run</code> 做了啥：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(self, path_or_tests, dot_env_path=None, mapping=None)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> validator.is_testcase_path(path_or_tests):</span><br><span class="line">        <span class="keyword">return</span> self.run_path(path_or_tests, dot_env_path, mapping)</span><br><span class="line">    <span class="keyword">elif</span> validator.is_testcases(path_or_tests):</span><br><span class="line">        <span class="keyword">return</span> self.run_tests(path_or_tests)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> exceptions.ParamsError(<span class="string">"Invalid testcase path or testcases: &#123;&#125;"</span>.format(path_or_tests))</span><br></pre></td></tr></table></figure>
+<p>这里只是进行了一层判断，判断传入的参数是一个路径还是具体的用例，因为我们主要是了解整个执行流程，所以我们直接假设传入的是测试用例，来看看 <code>self.run_tests</code> ：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run_tests</span><span class="params">(self, tests_mapping)</span>:</span></span><br><span class="line">    <span class="string">""" run testcase/testsuite data</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    project_mapping = tests_mapping.get(<span class="string">"project_mapping"</span>, &#123;&#125;)</span><br><span class="line">    <span class="keyword">if</span> self.save_tests:</span><br><span class="line">        utils.dump_logs(tests_mapping, project_mapping, <span class="string">"loaded"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># parse tests</span></span><br><span class="line">    self.exception_stage = <span class="string">"parse tests"</span></span><br><span class="line">    parsed_testcases = parser.parse_tests(tests_mapping)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> self.save_tests:</span><br><span class="line">        utils.dump_logs(parsed_testcases, project_mapping, <span class="string">"parsed"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># add tests to test suite</span></span><br><span class="line">    self.exception_stage = <span class="string">"add tests to test suite"</span></span><br><span class="line">    test_suite = self._add_tests(parsed_testcases)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># run test suite</span></span><br><span class="line">    self.exception_stage = <span class="string">"run test suite"</span></span><br><span class="line">    results = self._run_suite(test_suite)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># aggregate results</span></span><br><span class="line">    self.exception_stage = <span class="string">"aggregate results"</span></span><br><span class="line">    self._summary = self._aggregate(results)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># generate html report</span></span><br><span class="line">    self.exception_stage = <span class="string">"generate html report"</span></span><br><span class="line">    report.stringify_summary(self._summary)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> self.save_tests:</span><br><span class="line">        utils.dump_logs(self._summary, project_mapping, <span class="string">"summary"</span>)</span><br><span class="line"></span><br><span class="line">    report_path = report.render_html_report(</span><br><span class="line">        self._summary,</span><br><span class="line">        self.report_template,</span><br><span class="line">        self.report_dir</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> report_path</span><br></pre></td></tr></table></figure>
+<p>先来看下具体的执行函数 <code>self._run_suite</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_run_suite</span><span class="params">(self, test_suite)</span>:</span></span><br><span class="line">    tests_results = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> testcase <span class="keyword">in</span> test_suite:</span><br><span class="line">        testcase_name = testcase.config.get(<span class="string">"name"</span>)</span><br><span class="line">        logger.log_info(<span class="string">"Start to run testcase: &#123;&#125;"</span>.format(testcase_name))</span><br><span class="line"></span><br><span class="line">        result = self.unittest_runner.run(testcase)</span><br><span class="line">        tests_results.append((testcase, result))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> tests_results</span><br></pre></td></tr></table></figure>
+<p>真正执行用例执行的是 <code>self.unittest_runner</code> ，而 <code>self.unittest_runner = unittest.TextTestRunner(**kwargs)</code>，也就是说这里的 <code>testcase</code> 其实是 <code>unittest.suite.TestSuite</code> 或者 <code>unittest.case.TestCase</code>。</p>
+<p>这里跟预想中的出现了偏差，我以为这里是自己实现的测试执行及结果比对的方法，没想到调用的是 <code>unittest</code>，那么怎么从一个 testcase 变为 <code>unittest</code> 可执行对象的，应该就是在 <code>self._add_tests</code> 中实现的了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_add_tests</span><span class="params">(self, testcases)</span>:</span></span><br><span class="line">    <span class="string">""" initialize testcase with Runner() and add to test suite.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        testcases (list): testcases list.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        unittest.TestSuite()</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    """</span></span><br></pre></td></tr></table></figure>
+<p>这个函数略长，这里分开说，从注释中可以知道，最终 unittest 执行的是 <code>unittest.TestSuite</code> ，看下具体的逻辑：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">test_suite = unittest.TestSuite() <span class="comment">#定义 test_suite 返回值</span></span><br><span class="line"><span class="keyword">for</span> testcase <span class="keyword">in</span> testcases:</span><br><span class="line">    config = testcase.get(<span class="string">"config"</span>, &#123;&#125;)</span><br><span class="line">    test_runner = runner.Runner(config) <span class="comment"># 实例化 Runner，后续主要执行逻辑都在 Runner 中</span></span><br><span class="line">    TestSequense = type(<span class="string">'TestSequense'</span>, (unittest.TestCase,), &#123;&#125;) <span class="comment"># 通过 type 声明一个 `unittest.TestCase` 的子类</span></span><br><span class="line"></span><br><span class="line">    tests = testcase.get(<span class="string">"teststeps"</span>, [])</span><br><span class="line">    <span class="keyword">for</span> index, test_dict <span class="keyword">in</span> enumerate(tests):</span><br><span class="line">        times = test_dict.get(<span class="string">"times"</span>, <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            times = int(times)</span><br><span class="line">        <span class="keyword">except</span> ValueError:</span><br><span class="line">            <span class="keyword">raise</span> exceptions.ParamsError(</span><br><span class="line">                <span class="string">"times should be digit, given: &#123;&#125;"</span>.format(times))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> times_index <span class="keyword">in</span> range(times):</span><br><span class="line">            <span class="comment"># suppose one testcase should not have more than 9999 steps,</span></span><br><span class="line">            <span class="comment"># and one step should not run more than 999 times.</span></span><br><span class="line">            test_method_name = <span class="string">'test_&#123;:04&#125;_&#123;:03&#125;'</span>.format(index, times_index)</span><br><span class="line">            test_method = _add_test(test_runner, test_dict) </span><br><span class="line">            setattr(TestSequense, test_method_name, test_method) <span class="comment"># 将上面的 test_method 定义为 TestSequense 属性</span></span><br><span class="line"></span><br><span class="line">    loaded_testcase = self.test_loader.loadTestsFromTestCase(TestSequense) <span class="comment"># 利用 TestLoader 来找到符合条件的方法，默认 TestLoader 寻找前缀为 `test` </span></span><br><span class="line">    setattr(loaded_testcase, <span class="string">"config"</span>, config)</span><br><span class="line">    setattr(loaded_testcase, <span class="string">"teststeps"</span>, tests)</span><br><span class="line">    setattr(loaded_testcase, <span class="string">"runner"</span>, test_runner)</span><br><span class="line">    test_suite.addTest(loaded_testcase) <span class="comment"># 将 `TestLoader.loadTestsFromTestCase` 找到的 testcase 添加到 `test_suite` 中，并最终返回</span></span><br></pre></td></tr></table></figure>
+<p>看完上面这里，有一个比较重要的就是 <code>_add_test</code> 做了啥：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_add_test</span><span class="params">(test_runner, test_dict)</span>:</span></span><br><span class="line">    <span class="string">""" add test to testcase.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">test</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            test_runner.run_test(test_dict)</span><br><span class="line">        <span class="keyword">except</span> exceptions.MyBaseFailure <span class="keyword">as</span> ex:</span><br><span class="line">            self.fail(str(ex))</span><br><span class="line">        <span class="keyword">finally</span>:</span><br><span class="line">            self.meta_datas = test_runner.meta_datas</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">return</span> test</span><br></pre></td></tr></table></figure>
+<p>先忽略其他代码，可以看到 <code>_add_test</code> 最终返回的是一个函数，这个函数名称是 <code>test</code> ，结合上面的 <code>self.test_loader.loadTestsFromTestCase</code> ，可以知道这个函数就是最终执行的方法。</p>
+<p>看完这里，回到 <code>run_tests</code> 中，在 <code>self._run_suite</code> 执行完之后，就进行结果汇总、生成报告了，那么具体的请求是怎么发送出去的，结果又是怎么校验的？猜测是在 <code>runner.Runner</code> 中实现的，接着来看。</p>
+<h2 id="用例请求及校验"><a href="#用例请求及校验" class="headerlink" title="用例请求及校验"></a>用例请求及校验</h2><p>在上面提到，最终 <code>_add_test</code> 返回的函数中，执行的内容只有一个，就是 <code>test_runner.run_test</code> ，那么我们来看看 <code>run_test</code> ：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run_test</span><span class="params">(self, test_dict)</span>:</span></span><br><span class="line">        <span class="string">""" run single teststep of testcase.</span></span><br><span class="line"><span class="string">            test_dict may be in 3 types.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Args:</span></span><br><span class="line"><span class="string">            test_dict (dict):</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">                # teststep</span></span><br><span class="line"><span class="string">                &#123;</span></span><br><span class="line"><span class="string">                    "name": "teststep description",</span></span><br><span class="line"><span class="string">                    "variables": [],        # optional</span></span><br><span class="line"><span class="string">                    "request": &#123;</span></span><br><span class="line"><span class="string">                        "url": "http://127.0.0.1:5000/api/users/1000",</span></span><br><span class="line"><span class="string">                        "method": "GET"</span></span><br><span class="line"><span class="string">                    &#125;</span></span><br><span class="line"><span class="string">                &#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">                # nested testcase</span></span><br><span class="line"><span class="string">                &#123;</span></span><br><span class="line"><span class="string">                    "config": &#123;...&#125;,</span></span><br><span class="line"><span class="string">                    "teststeps": [</span></span><br><span class="line"><span class="string">                        &#123;...&#125;,</span></span><br><span class="line"><span class="string">                        &#123;...&#125;</span></span><br><span class="line"><span class="string">                    ]</span></span><br><span class="line"><span class="string">                &#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">                # TODO: function</span></span><br><span class="line"><span class="string">                &#123;</span></span><br><span class="line"><span class="string">                    "name": "exec function",</span></span><br><span class="line"><span class="string">                    "function": "$&#123;func()&#125;"</span></span><br><span class="line"><span class="string">                &#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        self.meta_datas = <span class="keyword">None</span></span><br><span class="line">        <span class="keyword">if</span> <span class="string">"teststeps"</span> <span class="keyword">in</span> test_dict:</span><br><span class="line">            <span class="comment"># nested testcase</span></span><br><span class="line">            test_dict.setdefault(<span class="string">"config"</span>, &#123;&#125;).setdefault(<span class="string">"variables"</span>, &#123;&#125;)</span><br><span class="line">            test_dict[<span class="string">"config"</span>][<span class="string">"variables"</span>].update(</span><br><span class="line">                self.session_context.session_variables_mapping)</span><br><span class="line">            self._run_testcase(test_dict)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="comment"># api</span></span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                self._run_test(test_dict)</span><br><span class="line">            <span class="keyword">except</span> Exception:</span><br><span class="line">                <span class="comment"># log exception request_type and name for locust stat</span></span><br><span class="line">                self.exception_request_type = test_dict[<span class="string">"request"</span>][<span class="string">"method"</span>]</span><br><span class="line">                self.exception_name = test_dict.get(<span class="string">"name"</span>)</span><br><span class="line">                <span class="keyword">raise</span></span><br><span class="line">            <span class="keyword">finally</span>:</span><br><span class="line">                self.meta_datas = self.__get_test_data()</span><br></pre></td></tr></table></figure>
+<p>这里的注释虽然很长，但是很清晰的告诉我们这个函数做了什么，他允许传递的参数是嵌套的，所以这里先做了层判断，我们以最简单的来假设，直接看 <code>self._run_test</code> ：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_run_test</span><span class="params">(self, test_dict)</span>:</span></span><br><span class="line">        <span class="comment"># clear meta data first to ensure independence for each test</span></span><br><span class="line">        self.__clear_test_data() <span class="comment"># 清空测试结果及 session 信息</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># check skip</span></span><br><span class="line">        self._handle_skip_feature(test_dict) <span class="comment"># 根据测试用例关键字执行相应跳过逻辑</span></span><br><span class="line"></span><br><span class="line">        ... <span class="comment"># N 多准备工作</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># setup hooks</span></span><br><span class="line">        setup_hooks = test_dict.get(<span class="string">"setup_hooks"</span>, [])</span><br><span class="line">        <span class="keyword">if</span> setup_hooks:</span><br><span class="line">            self.do_hook_actions(setup_hooks, <span class="string">"setup"</span>) <span class="comment"># 与大部分框架一样，支持 pre hook</span></span><br><span class="line"></span><br><span class="line">        ... <span class="comment"># N 多准备工作</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># request</span></span><br><span class="line">        resp = self.http_client_session.request( <span class="comment"># 根据用例发出请求</span></span><br><span class="line">            method,</span><br><span class="line">            parsed_url,</span><br><span class="line">            name=(group_name <span class="keyword">or</span> test_name),</span><br><span class="line">            **parsed_test_request</span><br><span class="line">        )</span><br><span class="line">        resp_obj = response.ResponseObject(resp)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># teardown hooks</span></span><br><span class="line">        teardown_hooks = test_dict.get(<span class="string">"teardown_hooks"</span>, []) <span class="comment"># 支持 post hook</span></span><br><span class="line">        <span class="keyword">if</span> teardown_hooks:</span><br><span class="line">            self.session_context.update_test_variables(<span class="string">"response"</span>, resp_obj)</span><br><span class="line">            self.do_hook_actions(teardown_hooks, <span class="string">"teardown"</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># extract</span></span><br><span class="line">        extractors = test_dict.get(<span class="string">"extract"</span>, &#123;&#125;)</span><br><span class="line">        extracted_variables_mapping = resp_obj.extract_response(extractors)</span><br><span class="line">        self.session_context.update_session_variables(extracted_variables_mapping)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># validate</span></span><br><span class="line">        validators = test_dict.get(<span class="string">"validate"</span>) <span class="keyword">or</span> test_dict.get(<span class="string">"validators"</span>) <span class="keyword">or</span> []</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            self.session_context.validate(validators, resp_obj) <span class="comment"># 结果校验</span></span><br><span class="line">        <span class="keyword">except</span> (exceptions.ParamsError, exceptions.ValidationFailure, exceptions.ExtractFailure):</span><br><span class="line">            err_msg = <span class="string">"&#123;&#125; DETAILED REQUEST &amp; RESPONSE &#123;&#125;\n"</span>.format(<span class="string">"*"</span> * <span class="number">32</span>, <span class="string">"*"</span> * <span class="number">32</span>)</span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">            <span class="keyword">raise</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">finally</span>:</span><br><span class="line">            self.validation_results = self.session_context.validation_results</span><br></pre></td></tr></table></figure>
+<p>具体的 http 请求时通过 <code>self.http_client_session.request</code> 发送的，通过 <code>self.session_context.validate</code> 进行结果校验，来看下具体的校验方式：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> validator <span class="keyword">in</span> validators:</span><br><span class="line">    <span class="comment"># validator should be LazyFunction object</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> isinstance(validator, parser.LazyFunction):</span><br><span class="line">        <span class="keyword">raise</span> exceptions.ValidationFailure(</span><br><span class="line">            <span class="string">"validator should be parsed first: &#123;&#125;"</span>.format(validators))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># evaluate validator args with context variable mapping.</span></span><br><span class="line">    validator_args = validator.get_args()</span><br><span class="line">    check_item, expect_item = validator_args</span><br><span class="line">    check_value = self.__eval_validator_check( <span class="comment"># 准备参数</span></span><br><span class="line">        check_item,</span><br><span class="line">        resp_obj</span><br><span class="line">    )</span><br><span class="line">    expect_value = self.__eval_validator_expect(expect_item) <span class="comment"># 准备参数</span></span><br><span class="line">    validator.update_args([check_value, expect_value])</span><br><span class="line"></span><br><span class="line">    comparator = validator.func_name</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        validator.to_value(self.test_variables_mapping) <span class="comment"># 执行校验</span></span><br><span class="line">        validator_dict[<span class="string">"check_result"</span>] = <span class="string">"pass"</span></span><br><span class="line">        validate_msg += <span class="string">"\t==&gt; pass"</span></span><br><span class="line">        logger.log_debug(validate_msg)</span><br><span class="line">    <span class="keyword">except</span> (AssertionError, TypeError):</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">    self.validation_results.append(validator_dict)</span><br></pre></td></tr></table></figure>
+<p>前面都是在准备参数，最终执行完 <code>validator.to_value</code> 如果没有异常，就直接标记 <code>check_result</code> 为 <code>pass</code> 了，那么我们需要看看这里的 <code>to_value</code> 做了什么，感觉这个方法名称不太好，跟实际做的事情感觉不匹配。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">to_value</span><span class="params">(self, variables_mapping=None)</span>:</span></span><br><span class="line">    <span class="string">""" parse lazy data with evaluated variables mapping.</span></span><br><span class="line"><span class="string">        Notice: variables_mapping should not contain any variable or function.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    variables_mapping = variables_mapping <span class="keyword">or</span> &#123;&#125;</span><br><span class="line">    args = parse_lazy_data(self._args, variables_mapping)</span><br><span class="line">    kwargs = parse_lazy_data(self._kwargs, variables_mapping)</span><br><span class="line">    self.cache_key = self.__prepare_cache_key(args, kwargs)</span><br><span class="line">    <span class="keyword">return</span> self._func(*args, **kwargs)</span><br></pre></td></tr></table></figure>
+<p>看到这里可能会感觉迷糊下，咦，为什么这里执行了 <code>self._func</code> ，<code>self._func</code> 是什么时候定义的，它做了啥？<br>我们在编写测试用例的时候 <code>validate</code> 通常是<code>eq</code>,<code>gt</code>,<code>lt</code> 等字段，如果把他们直接当作函数执行肯定不行的，那么一定存在一个映射关系将这些关键字转换为对应的函数。</p>
+<p>看到这里其实我们漏掉了一个比较重要的步骤，就是 <code>run_tests</code> 中的 <code>parse_tests</code> 。其实很多时候默认的配置是不足以支撑我们真正逻辑的运行的，往往我们需要根据已有配置来扩充信息，达到满足执行要求的状态，接下来我们来看下测试用例准备工作。</p>
+<h2 id="用例解析"><a href="#用例解析" class="headerlink" title="用例解析"></a>用例解析</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">parse_tests</span><span class="params">(tests_mapping)</span>:</span></span><br><span class="line">    </span><br><span class="line">    project_mapping = tests_mapping.get(<span class="string">"project_mapping"</span>, &#123;&#125;)</span><br><span class="line">    testcases = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> test_type <span class="keyword">in</span> tests_mapping:</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> test_type == <span class="string">"testsuites"</span>:</span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">        <span class="keyword">elif</span> test_type == <span class="string">"testcases"</span>:</span><br><span class="line">            <span class="keyword">for</span> testcase <span class="keyword">in</span> tests_mapping[<span class="string">"testcases"</span>]:</span><br><span class="line">                parsed_testcase = _parse_testcase(testcase, project_mapping)</span><br><span class="line">                testcases.append(parsed_testcase)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">elif</span> test_type == <span class="string">"apis"</span>:</span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> testcases</span><br></pre></td></tr></table></figure>
+<p>这里同样对 <code>test_type</code> 进行了判断，如果不是 <code>testcases</code> ，则会进行处理，我们还是假设最简单的 <code>testcases</code>，可以看到调用了 <code>_parse_testcase</code> 方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_parse_testcase</span><span class="params">(testcase, project_mapping, session_variables_set=None)</span>:</span></span><br><span class="line">    testcase.setdefault(<span class="string">"config"</span>, &#123;&#125;)</span><br><span class="line">    prepared_config = __prepare_config(</span><br><span class="line">        testcase[<span class="string">"config"</span>],</span><br><span class="line">        project_mapping,</span><br><span class="line">        session_variables_set</span><br><span class="line">    )</span><br><span class="line">    prepared_testcase_tests = __prepare_testcase_tests(</span><br><span class="line">        testcase[<span class="string">"teststeps"</span>],</span><br><span class="line">        prepared_config,</span><br><span class="line">        project_mapping,</span><br><span class="line">        session_variables_set</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">"config"</span>: prepared_config,</span><br><span class="line">        <span class="string">"teststeps"</span>: prepared_testcase_tests</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>从官方文档可以知道，每个 testcase 中的 config 其实是全局配置，所以这里先解析了 config，然后将其作为参数传递给了 <code>__prepare_testcase_tests</code> 用来准备对应的 testcase，最终返回准备好的测试用例及配置，那么跟着看下 <code>__prepare_testcase_tests</code>，这个函数很长很长，先忽略其他部分，先来看这段：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># unify validators' format</span></span><br><span class="line"><span class="keyword">if</span> <span class="string">"validate"</span> <span class="keyword">in</span> test_dict:</span><br><span class="line">    ref_raw_validators = test_dict.pop(<span class="string">"validate"</span>, [])</span><br><span class="line">    test_dict[<span class="string">"validate"</span>] = [</span><br><span class="line">        validator.uniform_validator(_validator)</span><br><span class="line">        <span class="keyword">for</span> _validator <span class="keyword">in</span> ref_raw_validators</span><br><span class="line">    ]</span><br></pre></td></tr></table></figure>
+<p>如果存在 <code>validate</code> ，那么将其转换为 <code>validator.uniform_validator</code> 组成的列表，彷佛抓到了什么，我们来看下 <code>validator.uniform_validator</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">uniform_validator</span><span class="params">(validator)</span>:</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="comment"># uniform comparator, e.g. lt =&gt; less_than, eq =&gt; equals</span></span><br><span class="line">    comparator = get_uniform_comparator(comparator)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">"check"</span>: check_item,</span><br><span class="line">        <span class="string">"expect"</span>: expect_value,</span><br><span class="line">        <span class="string">"comparator"</span>: comparator</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>最终返回的是一个字典，其中的 <code>comparator</code> 是 <code>get_uniform_comparator</code> 返回值，继续看：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_uniform_comparator</span><span class="params">(comparator)</span>:</span></span><br><span class="line">    <span class="string">""" convert comparator alias to uniform name</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">if</span> comparator <span class="keyword">in</span> [<span class="string">"eq"</span>, <span class="string">"equals"</span>, <span class="string">"=="</span>, <span class="string">"is"</span>]:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"equals"</span></span><br><span class="line">    <span class="keyword">elif</span> comparator <span class="keyword">in</span> [<span class="string">"lt"</span>, <span class="string">"less_than"</span>]:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"less_than"</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> comparator</span><br></pre></td></tr></table></figure>
+<p>终于找到了校验关键字的映射关键字，那么我们继续回头看 <code>__prepare_testcase_tests</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># convert validators to lazy function</span></span><br><span class="line">validators = test_dict.pop(<span class="string">"validate"</span>, [])</span><br><span class="line">prepared_validators = []</span><br><span class="line"><span class="keyword">for</span> _validator <span class="keyword">in</span> validators:</span><br><span class="line">    function_meta = &#123;</span><br><span class="line">        <span class="string">"func_name"</span>: _validator[<span class="string">"comparator"</span>],</span><br><span class="line">        <span class="string">"args"</span>: [</span><br><span class="line">            _validator[<span class="string">"check"</span>],</span><br><span class="line">            _validator[<span class="string">"expect"</span>]</span><br><span class="line">        ],</span><br><span class="line">        <span class="string">"kwargs"</span>: &#123;&#125;</span><br><span class="line">    &#125;</span><br><span class="line">    prepared_validators.append(</span><br><span class="line">        LazyFunction(</span><br><span class="line">            function_meta,</span><br><span class="line">            functions,</span><br><span class="line">            teststep_variables_set</span><br><span class="line">        )</span><br><span class="line">    )</span><br><span class="line">test_dict[<span class="string">"validate"</span>] = prepared_validators</span><br><span class="line"></span><br><span class="line"><span class="comment"># convert variables and functions to lazy object.</span></span><br><span class="line"><span class="comment"># raises VariableNotFound if undefined variable exists in test_dict</span></span><br><span class="line">prepared_test_dict = prepare_lazy_data(</span><br><span class="line">    test_dict,</span><br><span class="line">    functions,</span><br><span class="line">    teststep_variables_set</span><br><span class="line">)</span><br><span class="line">prepared_testcase_tests.append(prepared_test_dict)</span><br></pre></td></tr></table></figure>
+<p>在这里针对刚刚得到的关键字对应函数名称又进行了一次封装，现在的 <code>test_dict[&quot;validate&quot;]</code> 就是一个 <code>LazyFunction</code> 组成的列表了，回想最开始我们为啥要看用例解析这部分的代码，因为我们发现在函数校验那里没找到真正执行的函数，我们来看下 <code>LazyFunction</code> 的构造函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, function_meta, functions_mapping=None, check_variables_set=None)</span>:</span></span><br><span class="line">    <span class="string">""" init LazyFunction object with function_meta</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        function_meta (dict): function name, args and kwargs.</span></span><br><span class="line"><span class="string">            &#123;</span></span><br><span class="line"><span class="string">                "func_name": "func",</span></span><br><span class="line"><span class="string">                "args": [1, 2]</span></span><br><span class="line"><span class="string">                "kwargs": &#123;"a": 3, "b": 4&#125;</span></span><br><span class="line"><span class="string">            &#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    self.functions_mapping = functions_mapping <span class="keyword">or</span> &#123;&#125;</span><br><span class="line">    self.check_variables_set = check_variables_set <span class="keyword">or</span> set()</span><br><span class="line">    self.cache_key = <span class="keyword">None</span></span><br><span class="line">    self.__parse(function_meta)</span><br></pre></td></tr></table></figure>
+<p>重点在最后一个行，<code>self.__parse(function_meta)</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__parse</span><span class="params">(self, function_meta)</span>:</span></span><br><span class="line">    <span class="string">""" init func as lazy functon instance</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        function_meta (dict): function meta including name, args and kwargs</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    self._func = get_mapping_function(</span><br><span class="line">        function_meta[<span class="string">"func_name"</span>],</span><br><span class="line">        self.functions_mapping</span><br><span class="line">    )</span><br><span class="line">    self.func_name = self._func.__name__</span><br><span class="line">    self._args = prepare_lazy_data(</span><br><span class="line">        function_meta.get(<span class="string">"args"</span>, []),</span><br><span class="line">        self.functions_mapping,</span><br><span class="line">        self.check_variables_set</span><br><span class="line">    )</span><br><span class="line">    self._kwargs = prepare_lazy_data(</span><br><span class="line">        function_meta.get(<span class="string">"kwargs"</span>, &#123;&#125;),</span><br><span class="line">        self.functions_mapping,</span><br><span class="line">        self.check_variables_set</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p>在这里找到了我们一直想找的 <code>self._func</code> 定义，看函数名是通过 <code>func_name</code> 从一个 map 中返回真正的函数，来看看是不是这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_mapping_function</span><span class="params">(function_name, functions_mapping)</span>:</span></span><br><span class="line">    </span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="comment"># check if HttpRunner builtin functions</span></span><br><span class="line">        <span class="keyword">from</span> httprunner <span class="keyword">import</span> loader</span><br><span class="line">        built_in_functions = loader.load_builtin_functions()</span><br><span class="line">        <span class="keyword">return</span> built_in_functions[function_name]</span><br><span class="line">    <span class="keyword">except</span> KeyError:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> httprunner <span class="keyword">import</span> built_in, exceptions, logger, parser, utils, validator</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load_builtin_functions</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="string">""" load built_in module functions</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    <span class="keyword">return</span> load_module_functions(built_in)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load_module_functions</span><span class="params">(module)</span>:</span></span><br><span class="line">    module_functions = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> name, item <span class="keyword">in</span> vars(module).items():</span><br><span class="line">        <span class="keyword">if</span> validator.is_function(item):</span><br><span class="line">            module_functions[name] = item</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> module_functions</span><br></pre></td></tr></table></figure>
+<p>一路追下来，具体的实现应该在 <code>built_in.py</code> 没跑：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">equals</span><span class="params">(check_value, expect_value)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> check_value == expect_value</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">less_than</span><span class="params">(check_value, expect_value)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> check_value &lt; expect_value</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>Ok，到这里我们终于了解了用例的解析工作做了什么，同时也解答了我们上面遗留下来的疑问，结果校验执行的是什么。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在公司内部同样有着测试框架，是基于 Robot Framework 进行开发的，但是我被 Robot 的代码量劝退了。。。httprunner 项目整体来看代码量不大，很适合作为初步了解自动化测试的框架来阅读。</p>
+<p>根据作者自述，项目起源于大疆内部的测试需求，之后转为开源项目，不知道作者现在是否是因为离开了大疆还是其他原因，现在 httprunner 的社区感觉很差，明明是有公司使用的，但是并没有积极参与，作者一个人承担了几乎100% 的代码开发任务，感觉是一个不健康的社区。</p>
+<p>希望自己有机会的话也参与进去，不希望这样一个项目 <code>死</code> 掉。</p>
+<h2 id="P-S"><a href="#P-S" class="headerlink" title="P.S."></a>P.S.</h2><p>其实这篇博客应该是在周五晚上完成的，但是写着写着发现自己对于项目中的整体流程无法理顺，今天又用了大半天的时间重新读了代码，一点一点记录下来。</p>
+<p>嗯，写博客的好处之一。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/08/31/Linux-下常用故障模拟方式/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1730,156 +1932,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/07/21/CentOS定制-软件源错误/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/07/21/CentOS定制-软件源错误/" itemprop="url">CentOS定制-软件源错误</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-21T19:58:43+08:00">
-                2019-07-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/07/21/CentOS定制-软件源错误/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/07/21/CentOS定制-软件源错误/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我一直在维护一个公司内部的 OS 发行版，是基于 CentOS 的，最近接到了一个需求，是需要更新 Kernel 及一些软件包，但是遇到了无法安装 OS 的问题，记录一下解决方式。</p>
-<h2 id="定制-OS"><a href="#定制-OS" class="headerlink" title="定制 OS"></a>定制 OS</h2><p>关于定制 OS，在之前的博客中已经提到过几次了，CentOS 是比较容易改动的一个发行版，因为有着 RHEL 红（爸）帽（爸），有着完善的文档可以参考。</p>
-<p>主要需要注意的是两点：  </p>
-<ol>
-<li>分区方式</li>
-<li>软件包选择</li>
-</ol>
-<p>今天遇到的问题是第二点。</p>
-<p>先说下前提，由于是 2B 产品，所以对于每次的 BaseOS 版本升级都非常谨慎，每次 BaseOS 版本都会进行各种测试。但是如果仅仅是升级部分所需要的软件包，就不用这么麻烦了，我们可以定制自己所需要的软件组（group），来进行安装/升级。</p>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>这次接到的需要是升级 Kernel、libiscsi、qemu 三个软件，后两个是虚拟化相关的，相关依赖较少；kernel 是跟 BaseOS 版本关联性很大的。</p>
-<p>比如 CentOS 7.6 中，kernel 版本为：kernel-3.10.0-957.el7.x86_64.rpm，这个版本对 selinux 等相关软件是有依赖要求的，我在这里翻车了。</p>
-<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>像往常一样，将对应的 rpm 放置到了对应的 yum 源中，更新 yum 源，制作 ISO，在安装过程中报错：</p>
-<img src="/2019/07/21/CentOS定制-软件源错误/os1.png" title="OS1">
-<p>报错显示是软件源出了问题，但是没有更多的信息了，这时候我们可以通过 console 连接到其他的 pty 中，查看对应的日志，比如 CentOS 默认的日志在： <code>/tmp/packaging.log</code> 中：</p>
-<img src="/2019/07/21/CentOS定制-软件源错误/os2.png" title="OS2">
-<p>我们可以看到日志中提示 kernel 与当前软件源中的 selinux-policy-targeted 冲突，因为安装 OS 所用的软件源就是 ISO ，所以这里肯定是我们打包 ISO 时遗漏了依赖关系导致的，我们将对应的 Kernel 所需依赖更新，重新构建 ISO 就可以了。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/11/">11</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1927,7 +1984,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">100</span>
+                  <span class="site-state-item-count">101</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
