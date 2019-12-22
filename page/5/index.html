@@ -275,6 +275,171 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/26/BIOS-vs-UEFI/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/26/BIOS-vs-UEFI/" itemprop="url">BIOS vs UEFI</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-26T08:46:23+08:00">
+                2019-05-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/26/BIOS-vs-UEFI/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/26/BIOS-vs-UEFI/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>大家应该都安装过操作系统，PC 或者服务器上。那么我们在安装操作系统时通常需要进入到 BIOS 或 UEFI 界面去安装。之前维护的一个 ISO 版本只支持 BIOS，最近有了支持 UEFI 安装的需求，今天来了解一下其中的差异，之后尝试编写一个支持 UEFI 的 KickStart 配置。</p>
+<h2 id="Legacy-BIOS"><a href="#Legacy-BIOS" class="headerlink" title="Legacy BIOS"></a>Legacy BIOS</h2><p>按照惯例，引用维基百科中（不同语言对于名词解释信息可能是完全不同的，最好直接看英文）的解释：</p>
+<blockquote>
+<p>BIOS (/ˈbaɪɒs/ BY-oss; an acronym for Basic Input/Output System and also known as the System BIOS, ROM BIOS or PC BIOS) is non-volatile firmware used to perform hardware initialization during the booting process (power-on startup), and to provide runtime services for operating systems and programs.[1] The BIOS firmware comes pre-installed on a personal computer’s system board, and it is the first software to run when powered on. The name originates from the Basic Input/Output System used in the CP/M operating system in 1975.[2][3] The BIOS originally proprietary to the IBM PC has been reverse engineered by companies looking to create compatible systems. The interface of that original system serves as a de facto standard.</p>
+</blockquote>
+<p>主要功能有：</p>
+<ul>
+<li>POST - 在加载操作系统之前， 检测硬件确保没有错误</li>
+<li>Bootstrap Loader - 寻找引导加载程序，并将控制权转</li>
+<li>BIOS 驱动程序 - 低级驱动程序，使计算机可以对计算机硬件进行基本操作控制</li>
+<li>BIOS/CMOS 设置 - 允许配置硬件设置，包括系统设置，如计算机密码，硬件时钟等</li>
+</ul>
+<h3 id="BIOS-vs-CMOS"><a href="#BIOS-vs-CMOS" class="headerlink" title="BIOS vs CMOS"></a>BIOS vs CMOS</h3><p>更改BIOS配置时，设置不会存储在BIOS芯片本身。相反，它们存储在一个特殊的存储芯片上，称为<code>CMOS</code>。</p>
+<p>与大多数RAM芯片一样，存储BIOS设置的芯片使用CMOS工艺制造。它包含少量数据，通常为256 个字节。CMOS 芯片上的信息包括计算机上安装的磁盘驱动器类型，系统时钟的当前日期和时间以及计算机的引导顺序。</p>
+<p>BIOS是非易失性的：即使计算机没电也会保留其信息，因为即使计算机已关闭，计算机也需要记住其BIOS设置。这就是为什么CMOS有自己的专用电源，即CMOS电池。 通常我们在使用电脑的时候，如果忘记了 BIOS 密码，无法更改 BIOS 设置时， 那么可以通过拔掉 CMOS 电池，再安装即可恢复。</p>
+<h2 id="U-EFI"><a href="#U-EFI" class="headerlink" title="(U)EFI"></a>(U)EFI</h2><blockquote>
+<p>The Unified Extensible Firmware Interface (UEFI) is a specification that defines a software interface between an operating system and platform firmware. UEFI replaces the Basic Input/Output System (BIOS) firmware interface originally present in all IBM PC-compatible personal computers,[1][2] with most UEFI firmware implementations providing legacy support for BIOS services. UEFI can support remote diagnostics and repair of computers, even with no operating system installed.[3]</p>
+</blockquote>
+<p>Intel 为了解决 BIOS 的一些缺点，提出了 EFI ，后来由于各种历史原因，EFI 转变为了 UEFI，其中的 U 是 <code>Unified</code> 。</p>
+<p>那么 BIOS 有啥缺点呢？ 对于服务器级别来说，最大的缺点可能就是不支持 2TiB 以上空间的磁盘引导，关于为什么不支持大家可以自己查阅下 MBR vs GPT 相关资料，这里不详细解释。</p>
+<p>那么老大哥提出了 UEFI，除了解决了引导磁盘的容量限制，还有如下优点（这几点看上去就跟普通用户没啥关系）：</p>
+<ul>
+<li>独立于CPU的架构</li>
+<li>独立于CPU的驱动程序</li>
+<li>灵活的pre-OS环境，包括网络功能</li>
+<li>模块化设计</li>
+<li>向后和向前兼容性</li>
+</ul>
+<h2 id="Linux-安装识别"><a href="#Linux-安装识别" class="headerlink" title="Linux 安装识别"></a>Linux 安装识别</h2><p>了解了大概的概念，那么我们来实际看看 Linux 分别从 BIOS 启动和 UEFI 启动安装有什么不同吧，接下来示例以 CentOS 为例。</p>
+<p>首先我们看下 CentOS ISO 中的目录结构：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@dell-r720xd-1 CentOS-7.4]<span class="comment"># tree . -d 1</span></span><br><span class="line">.</span><br><span class="line">├── EFI <span class="comment"># EFI 模式下引导程序路径</span></span><br><span class="line">│   └── BOOT</span><br><span class="line">│       └── fonts</span><br><span class="line">├── images <span class="comment"># 系统启动镜像</span></span><br><span class="line">│   └── pxeboot</span><br><span class="line">├── isolinux   <span class="comment"># 默认引导程序路径，包括引导选项配置，引导背景图片，引导内核镜像等</span></span><br><span class="line">├── LiveOS    <span class="comment"># 临时加载镜像</span></span><br><span class="line">├── Packages   <span class="comment"># ISO 附带所有软件包，以 RPM 形式存放</span></span><br><span class="line">└── repodata    <span class="comment"># ISO 中 YUM Repo 配置文件，保存了在只做 YUM Repo 时指定的软件组，支持语言等信息</span></span><br><span class="line">1 [error opening dir]</span><br><span class="line"></span><br><span class="line">9 directories</span><br></pre></td></tr></table></figure>
+<h3 id="BIOS"><a href="#BIOS" class="headerlink" title="BIOS"></a>BIOS</h3><p>我们来看下在 BIOS 下如何指定安装 KickStart 配置：</p>
+<p>在 <code>isolinux/isolinux.cfg</code> 中指定即可<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">label linux</span><br><span class="line">  menu label ^Install yiran&apos;OS</span><br><span class="line">  menu default</span><br><span class="line">  kernel vmlinuz</span><br><span class="line">  append initrd=initrd.img inst.stage2=hd:LABEL=YIRANOS-2 ks=hd:LABEL=YIRANOS-2:/ks_yiranos.cfg quiet</span><br></pre></td></tr></table></figure></p>
+<h3 id="UEFI"><a href="#UEFI" class="headerlink" title="UEFI"></a>UEFI</h3><p>跟 BIOS 一样，只是换了一个配置位置，只需要在 <code>EFI/BOOT/grub.cfg</code> 中指定 KS 配置即可。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">### BEGIN /etc/grub.d/10_linux ###</span><br><span class="line">menuentry &apos;Install CentOS 7&apos; --class fedora --class gnu-linux --class gnu --class os &#123;</span><br><span class="line">        linuxefi /images/pxeboot/vmlinuz inst.stage2=hd:LABEL=CentOS\x207\x20x86_64 inst.ks=hd:LABEL=YIRANOS-2:/ks_yiranos.cfg quiet</span><br><span class="line">        initrdefi /images/pxeboot/initrd.img</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>随着越来越多服务器厂商将 UEFI 设置为默认模式，哪怕我们没有用到 UEFI 的高级功能，也最好将自己的 ISO 支持到 UEFI，避免因为 BIOS 的一些历史遗留问题导致后续技术支持出现困难。后续找时间写一下关于 UEFI 的 KickStart 配置文件。主要变化应该是在 <code>/boot</code> 分区部分有些变化，之后再说啦。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/24/Kubernetes-实战-镜像管理/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1889,145 +2054,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/04/02/记一次-Python-编码踩坑/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/02/记一次-Python-编码踩坑/" itemprop="url">记一次 Python 编码踩坑</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-02T07:37:59+08:00">
-                2019-04-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/04/02/记一次-Python-编码踩坑/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/04/02/记一次-Python-编码踩坑/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>一直知道 Python 容易踩编码的坑，尤其是 Python2，昨天第一次遇到，记一下。</p>
-<h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>产品中有一个账号关联的功能，需要的参数大概有 host,port,user,passwd 这么几个参数，昨天发现一个环境中账号关联失败，看请求应该还没到账号认证那里就失败了，查看 rest-server 日志，并没有发现错误异常，api 也是正常返回的，通过其他方式验证账号是有效的，当时觉得很奇怪，没什么想法。</p>
-<h2 id="调查"><a href="#调查" class="headerlink" title="调查"></a>调查</h2><p>既然 rest-server 中日志没有报错，那么看看服务是否有什么异常。<br>这里特意说名下，如果服务使用的是 gunicorn 或者 celery 等第三方库作为守护进程，有一些系统报错是不会记录到你的服务中的，而是会直接打印到系统中（messages or systemd）。</p>
-<p>发现 <code>systemctl status</code> 和 <code>journal -u</code> 有报错，报错内容如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">4月 02 06:20:00 SCVM70 gunicorn[31225]: Traceback (most recent call last):</span><br><span class="line">4月 02 06:20:00 SCVM70 gunicorn[31225]: File <span class="string">"/usr/lib64/python2.7/site-packages/gevent/threadpool.py"</span>, line 207, <span class="keyword">in</span> _worker</span><br><span class="line">4月 02 06:20:00 SCVM70 gunicorn[31225]: value = func(*args, **kwargs)</span><br><span class="line">4月 02 06:20:00 SCVM70 gunicorn[31225]: error: getaddrinfo() argument 2 must be <span class="built_in">integer</span> or string</span><br><span class="line">4月 02 06:20:00 SCVM70 gunicorn[31225]: (&lt;ThreadPool at 0x120ae50 0/5/10&gt;, &lt;built-in <span class="keyword">function</span> getaddrinfo&gt;) failed with error</span><br></pre></td></tr></table></figure>
-<p>字面意思是传递参数的类型不对，必须为 int 或者 string。</p>
-<p>在 Chrome 中查看当时 API 请求参数，所有参数均为 string，我也实际用 int 或者 str 类型进行验证，账号验证都是可以成功的，感觉进入了死胡同。</p>
-<h2 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h2><p>最后发现是编码的问题，传递的 port 参数是 unicode 编码，而 <code>getaddrinfo()</code> 需要的是 int 或者 string。</p>
-<p>在 python2中，str 其实是 bytes，而不是 unicode，在代码中声明了编码方式为 <code>utf-8</code>，并将该参数存入到了 DB 中，导致下次请求传递的还是 DB 中的 <code>utf-8</code> 类型的 port，而不是 int 或者 string。</p>
-<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>这里解决的方式很简单，直接将 port 强制转换为 int 或者 string 就好。根本解决方式应该是在之后的代码编写过程中，规范变量类型，比如 port 就使用 int，而不是 str（unicode），防止出现未知错误。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2080,7 +2106,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">101</span>
+                  <span class="site-state-item-count">102</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

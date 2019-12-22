@@ -275,6 +275,173 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/09/12/Kubernetes-实战-Leader-选举/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/09/12/Kubernetes-实战-Leader-选举/" itemprop="url">Kubernetes 实战-Leader 选举</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-12T22:05:22+08:00">
+                2019-09-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/09/12/Kubernetes-实战-Leader-选举/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/09/12/Kubernetes-实战-Leader-选举/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近手头上的 Cluster-API 的项目要告一段落， Cluster-API 发布了 <a href="https://github.com/kubernetes-sigs/cluster-api/releases/tag/v0.2.1" target="_blank" rel="noopener">v0.2.1 版本</a> ，正式放出了 YAML 配置文件，看到了点有意思的事情，觉得需要记录一下。</p>
+<h2 id="K8S-Leader"><a href="#K8S-Leader" class="headerlink" title="K8S Leader"></a>K8S Leader</h2><p>看过之前 K8S 实战系列的朋友应该记得我写过一篇 <a href="https://zdyxry.github.io/2019/06/15/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">K8S 高可用部署</a>的文章，在文章中只是讲了具体的操作步骤，没有提到 k8s 是如何保证自己多个组件之间协作的。</p>
+<p>我们这里有一个 3 个master 节点的集群：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@node70 21:01:01 ~]$kubectl get node</span><br><span class="line">NAME     STATUS   ROLES    AGE   VERSION</span><br><span class="line">node70   Ready    master   64d   v1.15.0</span><br><span class="line">node71   Ready    master   64d   v1.15.0</span><br><span class="line">node72   Ready    master   64d   v1.15.0</span><br></pre></td></tr></table></figure>
+<p>我们都知道 k8s 核心组件，其中 apiserver 只用于接收 api 请求，不会主动进行各种动作，所以他们在每个节点都运行并且都可以接收请求，不会造成异常；kube-proxy 也是一样，只用于做端口转发，不会主动进行动作执行。</p>
+<p>但是 scheduler, controller-manager 不同，他们参与了 Pod 的调度及具体的各种资源的管控，如果同时有多个 controller-manager 来对 Pod 资源进行调度，结果太美不敢看，那么 k8s 是如何做到正确运转的呢？</p>
+<p>k8s 所有功能都是通过 <code>services</code> 对外暴露接口，而 <code>services</code> 对应的是具体的 <code>endpoints</code> ，那么来看下 scheduler 和 controller-manager 的 <code>endpoints</code> 是什么：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@node70 21:04:46 ~]$kubectl -n kube-system describe endpoints kube-scheduler</span><br><span class="line">Name:         kube-scheduler</span><br><span class="line">Namespace:    kube-system</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  control-plane.alpha.kubernetes.io/leader:</span><br><span class="line">                &#123;"holderIdentity":"node70_ed12bf09-7aa3-47d6-9546-97752bb589b5","leaseDurationSeconds":15,"acquireTime":"2019-09-11T05:31:58Z","renewTime"...</span><br><span class="line">Subsets:</span><br><span class="line">Events:  &lt;none&gt;</span><br><span class="line">[root@node70 21:05:25 ~]$kubectl -n kube-system describe endpoints kube-controller-manager</span><br><span class="line">Name:         kube-controller-manager</span><br><span class="line">Namespace:    kube-system</span><br><span class="line">Labels:       &lt;none&gt;</span><br><span class="line">Annotations:  control-plane.alpha.kubernetes.io/leader:</span><br><span class="line">                &#123;"holderIdentity":"node71_c8deeaea-2d66-4459-90ee-65c28563062f","leaseDurationSeconds":15,"acquireTime":"2019-09-12T12:44:15Z","renewTime"...</span><br><span class="line">Subsets:</span><br><span class="line">Events:</span><br><span class="line">  Type    Reason          Age   From                     Message</span><br><span class="line">  ----    ------          ----  ----                     -------</span><br><span class="line">  Normal  LeaderElection  22m   kube-controller-manager  node71_c8deeaea-2d66-4459-90ee-65c28563062f became leader</span><br></pre></td></tr></table></figure>
+<p>  可以看到关键字 <code>control-plane.alpha.kubernetes.io/leader</code> ，这两个组件是通过 leader 选举来从集群中多个节点选择一个执行具体动作，如果我们去看 <code>/etc/kubernetes/manifests/</code> 下的配置文件，会看到这行配置：</p>
+  <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  creationTimestamp:</span> <span class="literal">null</span></span><br><span class="line"><span class="attr">  labels:</span></span><br><span class="line"><span class="attr">    component:</span> <span class="string">kube-controller-manager</span></span><br><span class="line"><span class="attr">    tier:</span> <span class="string">control-plane</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">kube-controller-manager</span></span><br><span class="line"><span class="attr">  namespace:</span> <span class="string">kube-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  containers:</span></span><br><span class="line"><span class="attr">  - command:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">kube-controller-manager</span></span><br><span class="line"><span class="bullet">    -</span> <span class="bullet">--allocate-node-cidrs=true</span></span><br><span class="line"><span class="string">...</span></span><br><span class="line"><span class="bullet">    -</span> <span class="bullet">--leader-elect=true</span></span><br></pre></td></tr></table></figure>
+<p>通过在 YAML 中添加 <code>leader-elect=true</code> 来决定是否进行选主逻辑。而这个参数也是在执行 <code>kubeadm</code> 部署集群时就自动配置好了，无需手动配置。</p>
+<h2 id="Deployment-Leader"><a href="#Deployment-Leader" class="headerlink" title="Deployment Leader"></a>Deployment Leader</h2><p>我们先来说说 Deployment，Deployment 是从 ReplicaSet 进化来的，主要增加的功能有滚动更新、回滚、扩容所容等，可以说是我们日常使用 K8S 最常见的资源类型了。</p>
+<p>那么当我们通过创建 Deployment 间接创建 ReplicaSet 时，我们有时候并不想所有的 ReplicaSet 中的 Pod 运行统一的逻辑。这时候我们就需要一种方式来选择（通知）某一个 Pod ，来确定这个 Pod 提供特殊功能，其他的 Pod 提供普通功能，也就是跟上述 k8s 实现方式一样，通过Leader 选举完成需求。</p>
+<p>Leader 选举有很多方式，或是代码中内嵌选举逻辑，或者通过第三方服务，但是有两个的特点：</p>
+<ol>
+<li>Leader 在同一时间内是唯一的</li>
+<li>当 Leader 所在 Pod 发生异常时，其他 Pod 要可以随时变为 Leader 。</li>
+</ol>
+<h2 id="Leader-选举实现方式"><a href="#Leader-选举实现方式" class="headerlink" title="Leader 选举实现方式"></a>Leader 选举实现方式</h2><h3 id="代码内嵌选主逻辑"><a href="#代码内嵌选主逻辑" class="headerlink" title="代码内嵌选主逻辑"></a>代码内嵌选主逻辑</h3><p>在 Golang 中，k8s client-go 这个package 针对 Leader 相关功能进行了封装，支持3种锁资源，endpoint，configmap，lease，方便使用。</p>
+<p>代码仓库：<a href="https://github.com/kubernetes/client-go/tree/master/tools/leaderelection" target="_blank" rel="noopener">https://github.com/kubernetes/client-go/tree/master/tools/leaderelection</a></p>
+<p>因为这次主要不是说具体实现，再加上我也没看过代码，这里先掠过。</p>
+<h3 id="SideCar"><a href="#SideCar" class="headerlink" title="SideCar"></a>SideCar</h3><p>相比于代码中内嵌选主逻辑，使用 sidecar 就不用担心跨语言的问题了，使用起来也简单许多，我们现在用的这个项目实现：<a href="https://github.com/kubernetes-retired/contrib/blob/master/election/README.md" target="_blank" rel="noopener">https://github.com/kubernetes-retired/contrib/blob/master/election/README.md</a></p>
+<p>使用方式：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">extensions/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">DaemonSet</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  creationTimestamp:</span> <span class="string">"2019-07-12T07:35:32Z"</span></span><br><span class="line"><span class="attr">  generation:</span> <span class="number">6</span></span><br><span class="line"><span class="attr">  labels:</span></span><br><span class="line"><span class="attr">    app:</span> <span class="string">yiran-test</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">yiran-test</span></span><br><span class="line"><span class="attr">  namespace:</span> <span class="string">default</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  selector:</span></span><br><span class="line"><span class="attr">    matchLabels:</span></span><br><span class="line"><span class="attr">      app:</span> <span class="string">yiran-test</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      annotations:</span></span><br><span class="line">        <span class="string">kubectl.kubernetes.io/restartedAt:</span> <span class="string">"2019-09-09T10:58:51+08:00"</span></span><br><span class="line"><span class="attr">      creationTimestamp:</span> <span class="literal">null</span></span><br><span class="line"><span class="attr">      labels:</span></span><br><span class="line"><span class="attr">        app:</span> <span class="string">yiran-test</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">      - args:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="bullet">--election=elect-yiran-test</span></span><br><span class="line"><span class="bullet">        -</span> <span class="bullet">--http=0.0.0.0:4444</span></span><br><span class="line"><span class="attr">        image:</span> <span class="attr">leader-elector:0.5</span></span><br><span class="line"><span class="attr">        imagePullPolicy:</span> <span class="string">IfNotPresent</span></span><br><span class="line"><span class="attr">        name:</span> <span class="string">leader-elector</span></span><br><span class="line"><span class="attr">      - args:</span></span><br><span class="line">        <span class="string">...</span></span><br></pre></td></tr></table></figure>
+<p>在 Deployment 或 DaemonSet 中，添加 sidecar 指定端口，最终会在所有的 Pod 中选择一个 Leader 。<br>在业务代码中，只需要访问端口 4444 ，即可获取当前 Pod 中 Leader 信息，目前是通过 hostname 作为唯一标示的。</p>
+<p>如果看了这个项目的代码，会发现它也是使用的 client go 中的实现，只是增加了一层 http server：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">getCurrentLeader</span><span class="params">(electionId, namespace <span class="keyword">string</span>, c client.Interface)</span> <span class="params">(<span class="keyword">string</span>, *api.Endpoints, error)</span></span> &#123;</span><br><span class="line">	endpoints, err := c.Endpoints(namespace).Get(electionId)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">""</span>, <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	val, found := endpoints.Annotations[leaderelection.LeaderElectionRecordAnnotationKey]</span><br><span class="line">	<span class="keyword">if</span> !found &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">""</span>, endpoints, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	electionRecord := leaderelection.LeaderElectionRecord&#123;&#125;</span><br><span class="line">	<span class="keyword">if</span> err := json.Unmarshal([]<span class="keyword">byte</span>(val), &amp;electionRecord); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">""</span>, <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> electionRecord.HolderIdentity, endpoints, err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	flags.Parse(os.Args)</span><br><span class="line">	validateFlags()</span><br><span class="line"></span><br><span class="line">	kubeClient, err := makeClient()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		glog.Fatalf(<span class="string">"error connecting to the client: %v"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	fn := <span class="function"><span class="keyword">func</span><span class="params">(str <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">		leader.Name = str</span><br><span class="line">		fmt.Printf(<span class="string">"%s is the leader\n"</span>, leader.Name)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	e, err := election.NewElection(*name, *id, *namespace, *ttl, fn, kubeClient)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		glog.Fatalf(<span class="string">"failed to create election: %v"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">go</span> election.RunElection(e)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(*addr) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		http.HandleFunc(<span class="string">"/"</span>, webHandler)</span><br><span class="line">		http.ListenAndServe(*addr, <span class="literal">nil</span>)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="keyword">select</span> &#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="是否开启选举参数"><a href="#是否开启选举参数" class="headerlink" title="是否开启选举参数"></a>是否开启选举参数</h2><p>那么我们说了这么多，在实际使用中是否应该开启选举参数呢？<br>这里要说一下我在文章开头提到的有意思的事情，我们来看下cluster-api 的 YAML 文件：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="string">...</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="string">...</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line">      <span class="string">...</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line"><span class="attr">      - args:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="bullet">--enable-leader-election</span></span><br><span class="line"><span class="attr">        command:</span></span><br><span class="line"><span class="bullet">        -</span> <span class="string">/manager</span></span><br><span class="line"><span class="attr">        image:</span> <span class="string">us.gcr.io/k8s-artifacts-prod/cluster-api/cluster-api-controller:v0.2.1</span></span><br><span class="line"><span class="attr">        name:</span> <span class="string">manager</span></span><br><span class="line">        <span class="string">...</span></span><br></pre></td></tr></table></figure>
+<p>创建的资源类型是 Deployment，replicas 设置为1，传递了参数 <code>--enable-leader-election</code>，当时我觉得有些奇怪，replicas是1 啊，也就是说一共只有1个 Pod，为啥还要开启 Leader 选举逻辑呢？如果说是为了之后的扩容那可以理解，但是在这份配置文件里，应该完全没必要。把这段配置发给 <a href="https://liqiang.io/" target="_blank" rel="noopener">liqiang同学</a> 看，他也觉得有些怪怪的。</p>
+<p>秉着不懂就问的精神，我去 Slack #cluster-api 中提出了我的疑问，得到了以下回复，我格式化一下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">@cha： </span><br><span class="line">it&apos;s mostly set for best practice. If you scale up the system will still work. If you don&apos;t enable leader election and scale up you will have race conditions</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">@cha：</span><br><span class="line">but you&apos;re right. If you&apos;re running a single manager you don&apos;t need to enable leader election</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">@jdetiber:</span><br><span class="line">With a Deployment you do, because on rolling out a change it will spin up the new RS in parallel with the other so there will be 2 pods running at the same time for a short while</span><br></pre></td></tr></table></figure>
+<p>其中 @cha 的回复跟我预想的差不多，主要处于之后的扩容考虑，需要防止竞争情况出现。但是 @jdetiber 提到了一点很关键，当 Deployment 进行滚动升级的时候，哪怕设置了 Replicas 为1，也会存在短时间同时存在 2 个 Pod 的情况，那么肯定会导致我们的代码逻辑错误，很重要（感叹号）。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实今天这篇文章主要是想记录下上面这段话的，自己在平时使用 k8s 过程中，貌似也仅仅是知道这些功能并使用，真正要开发部分功能时，考虑的边界条件太少了。虽然知道 Deployment 滚动升级会有同时存在 2 个 Pod 的情况，却完全没有想到需要配置 Leader 选举参数来保证代码正确运行，涨知识了。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" target="_blank" rel="noopener">https://kubernetes.io/docs/concepts/workloads/controllers/deployment/</a> </li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/09/06/httprunner-源码阅读/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1783,155 +1950,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/07/28/Heap-In-Python-Golang/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/07/28/Heap-In-Python-Golang/" itemprop="url">Heap In Python & Golang</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-28T12:11:45+08:00">
-                2019-07-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/07/28/Heap-In-Python-Golang/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/07/28/Heap-In-Python-Golang/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近使用到了 heap 这个数据结构，记录一下在 Python 和 Golang 中最基本的使用方法～ </p>
-<blockquote>
-<p>堆（英语：Heap）是计算机科学中的一種特別的樹狀数据结构。若是滿足以下特性，即可稱為堆積：「給定堆積中任意節點P和C，若P是C的母節點，那麼P的值會小於等於（或大於等於）C的值」。若母節點的值恆小於等於子節點的值，此堆積稱為最小堆積（min heap）；反之，若母節點的值恆大於等於子節點的值，此堆積稱為最大堆積（max heap）。在堆積中最頂端的那一個節點，稱作根節點（root node），根節點本身沒有母節點（parent node）。</p>
-</blockquote>
-<h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><h3 id="create"><a href="#create" class="headerlink" title="create"></a>create</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: <span class="keyword">import</span> heapq</span><br><span class="line"></span><br><span class="line">In [<span class="number">2</span>]: a = [<span class="number">1</span>,<span class="number">3</span>,<span class="number">2</span>,<span class="number">5</span>,<span class="number">4</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">3</span>]: heapq.heapify(a)</span><br><span class="line"></span><br><span class="line">In [<span class="number">4</span>]: a</span><br><span class="line">Out[<span class="number">4</span>]: [<span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">4</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">5</span>]: b = []</span><br><span class="line"></span><br><span class="line">In [<span class="number">6</span>]: heapq.heappu</span><br><span class="line">heapq.heappush     heapq.heappushpop</span><br><span class="line"></span><br><span class="line">In [<span class="number">6</span>]: heapq.heappush(b, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">7</span>]: heapq.heappush(b, <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">8</span>]: heapq.heappush(b, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">9</span>]: heapq.heappush(b, <span class="number">5</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">10</span>]: heapq.heappush(b, <span class="number">4</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">11</span>]: b</span><br><span class="line">Out[<span class="number">11</span>]: [<span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">4</span>]</span><br></pre></td></tr></table></figure>
-<h3 id="read"><a href="#read" class="headerlink" title="read"></a>read</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">28</span>]: b</span><br><span class="line">Out[<span class="number">28</span>]: [<span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">4</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">29</span>]: heapq.nlargest(<span class="number">3</span>, b)</span><br><span class="line">Out[<span class="number">29</span>]: [<span class="number">5</span>, <span class="number">4</span>, <span class="number">3</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">30</span>]: heapq.nsmallest(<span class="number">2</span>, b)</span><br><span class="line">Out[<span class="number">30</span>]: [<span class="number">1</span>, <span class="number">2</span>]</span><br></pre></td></tr></table></figure>
-<h3 id="update"><a href="#update" class="headerlink" title="update"></a>update</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">32</span>]: heapq.heappush(b, <span class="number">6</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">33</span>]: b</span><br><span class="line">Out[<span class="number">33</span>]: [<span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">6</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">39</span>]: heapq.heapreplace(b, <span class="number">7</span>)</span><br><span class="line">Out[<span class="number">39</span>]: <span class="number">1</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">40</span>]: b</span><br><span class="line">Out[<span class="number">40</span>]: [<span class="number">2</span>, <span class="number">3</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">7</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">41</span>]: a = [<span class="number">6</span>,<span class="number">8</span>,<span class="number">7</span>,<span class="number">9</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">42</span>]: heapq.heapify(a)</span><br><span class="line"></span><br><span class="line">In [<span class="number">43</span>]: b</span><br><span class="line">Out[<span class="number">43</span>]: [<span class="number">2</span>, <span class="number">3</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">7</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">45</span>]: c = heapq.merge(a,b)</span><br><span class="line"></span><br><span class="line">In [<span class="number">46</span>]: list(c)</span><br><span class="line">Out[<span class="number">46</span>]: [<span class="number">2</span>, <span class="number">3</span>, <span class="number">6</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">7</span>, <span class="number">9</span>]</span><br></pre></td></tr></table></figure>
-<h3 id="delete"><a href="#delete" class="headerlink" title="delete"></a>delete</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">50</span>]: b</span><br><span class="line">Out[<span class="number">50</span>]: [<span class="number">2</span>, <span class="number">3</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">7</span>]</span><br><span class="line"></span><br><span class="line">In [<span class="number">51</span>]: heapq.heappop(b)</span><br><span class="line">Out[<span class="number">51</span>]: <span class="number">2</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">52</span>]: b</span><br><span class="line">Out[<span class="number">52</span>]: [<span class="number">3</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">6</span>]</span><br></pre></td></tr></table></figure>
-<h2 id="Golang"><a href="#Golang" class="headerlink" title="Golang"></a>Golang</h2><p>Golang 中没有 heapq 这种封装好的库可以直接使用，不过有 <code>container/heap</code> ，提供了同样的方法，只是我们需要先对我们的操作对象实现搜有的 <code>heap.Interface</code>  方法。</p>
-<h2 id="Constructor"><a href="#Constructor" class="headerlink" title="Constructor"></a>Constructor</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// This example demonstrates an integer heap built using the heap interface.</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"container/heap"</span></span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// An IntHeap is a min-heap of ints.</span></span><br><span class="line"><span class="keyword">type</span> IntHeap []<span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h IntHeap)</span> <span class="title">Len</span><span class="params">()</span> <span class="title">int</span></span>           &#123; <span class="keyword">return</span> <span class="built_in">len</span>(h) &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h IntHeap)</span> <span class="title">Less</span><span class="params">(i, j <span class="keyword">int</span>)</span> <span class="title">bool</span></span> &#123; <span class="keyword">return</span> h[i] &lt; h[j] &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h IntHeap)</span> <span class="title">Swap</span><span class="params">(i, j <span class="keyword">int</span>)</span></span>      &#123; h[i], h[j] = h[j], h[i] &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h *IntHeap)</span> <span class="title">Push</span><span class="params">(x <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Push and Pop use pointer receivers because they modify the slice's length,</span></span><br><span class="line">	<span class="comment">// not just its contents.</span></span><br><span class="line">	*h = <span class="built_in">append</span>(*h, x.(<span class="keyword">int</span>))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 取最后一个元素，在 `container/heap.Pop` 中，将堆顶的元素放置在最后，然后调用 `container/heap.Down` 将当前堆顶元素下沉到适当位置。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h *IntHeap)</span> <span class="title">Pop</span><span class="params">()</span> <span class="title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">	old := *h</span><br><span class="line">	n := <span class="built_in">len</span>(old)</span><br><span class="line">	x := old[n<span class="number">-1</span>]</span><br><span class="line">	*h = old[<span class="number">0</span> : n<span class="number">-1</span>]</span><br><span class="line">	<span class="keyword">return</span> x</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// // An IntHeap is a max-heap of ints.</span></span><br><span class="line"><span class="keyword">type</span> MaxHeap <span class="keyword">struct</span> &#123;</span><br><span class="line">	IntHeap</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h MaxHeap)</span> <span class="title">Less</span><span class="params">(i, j <span class="keyword">int</span>)</span> <span class="title">bool</span></span> &#123; <span class="keyword">return</span> h.IntHeap[i] &gt; h.IntHeap[j] &#125;</span><br></pre></td></tr></table></figure>
-<h3 id="create-1"><a href="#create-1" class="headerlink" title="create"></a>create</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// This example demonstrates an integer heap built using the heap interface.</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"container/heap"</span></span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// This example inserts several ints into an IntHeap, checks the minimum,</span></span><br><span class="line"><span class="comment">// and removes them in order of priority.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	h := &amp;IntHeap&#123;<span class="number">2</span>, <span class="number">1</span>, <span class="number">5</span>&#125;</span><br><span class="line">	heap.Init(h)</span><br><span class="line">	heap.Push(h, <span class="number">3</span>)</span><br><span class="line">	fmt.Printf(<span class="string">"minimum: %d\n"</span>, (*h)[<span class="number">0</span>])</span><br><span class="line">	<span class="keyword">for</span> h.Len() &gt; <span class="number">0</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">"%d "</span>, heap.Pop(h))</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="read-1"><a href="#read-1" class="headerlink" title="read"></a>read</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"container/heap"</span></span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	h := &amp;IntHeap&#123;<span class="number">2</span>, <span class="number">1</span>, <span class="number">5</span>&#125;</span><br><span class="line">	heap.Init(h)</span><br><span class="line">	heap.Push(h, <span class="number">3</span>)</span><br><span class="line">	fmt.Printf(<span class="string">"minimum: %d\n"</span>, (*h)[<span class="number">0</span>])</span><br><span class="line">	<span class="keyword">for</span> h.Len() &gt; <span class="number">0</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">"%d "</span>, heap.Pop(h))</span><br><span class="line">	&#125;</span><br><span class="line">	fmt.Println()</span><br><span class="line"></span><br><span class="line">	h1 := &amp;MaxHeap&#123;[]<span class="keyword">int</span>&#123;<span class="number">2</span>, <span class="number">1</span>, <span class="number">5</span>&#125;&#125;</span><br><span class="line">	heap.Init(h1)</span><br><span class="line">	heap.Push(h1, <span class="number">3</span>)</span><br><span class="line">	fmt.Printf(<span class="string">"maximum: %d\n"</span>, h1.IntHeap[<span class="number">0</span>])</span><br><span class="line">	<span class="keyword">for</span> h1.Len() &gt; <span class="number">0</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">"%d "</span>, heap.Pop(h1))</span><br><span class="line">	&#125;</span><br><span class="line">	fmt.Println()</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="update-1"><a href="#update-1" class="headerlink" title="update"></a>update</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"container/heap"</span></span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	h := &amp;IntHeap&#123;<span class="number">2</span>, <span class="number">1</span>, <span class="number">5</span>&#125;</span><br><span class="line">	heap.Init(h)</span><br><span class="line">	heap.Push(h, <span class="number">3</span>)</span><br><span class="line">	<span class="keyword">for</span> h.Len() &gt; <span class="number">0</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">"%d "</span>, heap.Pop(h))</span><br><span class="line">	&#125;</span><br><span class="line">	fmt.Println()</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="delete-1"><a href="#delete-1" class="headerlink" title="delete"></a>delete</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// This example demonstrates an integer heap built using the heap interface.</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"container/heap"</span></span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// An IntHeap is a min-heap of ints.</span></span><br><span class="line"><span class="keyword">type</span> IntHeap []<span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h IntHeap)</span> <span class="title">Len</span><span class="params">()</span> <span class="title">int</span></span>           &#123; <span class="keyword">return</span> <span class="built_in">len</span>(h) &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h IntHeap)</span> <span class="title">Less</span><span class="params">(i, j <span class="keyword">int</span>)</span> <span class="title">bool</span></span> &#123; <span class="keyword">return</span> h[i] &lt; h[j] &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h IntHeap)</span> <span class="title">Swap</span><span class="params">(i, j <span class="keyword">int</span>)</span></span>      &#123; h[i], h[j] = h[j], h[i] &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h *IntHeap)</span> <span class="title">Push</span><span class="params">(x <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Push and Pop use pointer receivers because they modify the slice's length,</span></span><br><span class="line">	<span class="comment">// not just its contents.</span></span><br><span class="line">	*h = <span class="built_in">append</span>(*h, x.(<span class="keyword">int</span>))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h *IntHeap)</span> <span class="title">Pop</span><span class="params">()</span> <span class="title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">	old := *h</span><br><span class="line">	n := <span class="built_in">len</span>(old)</span><br><span class="line">	x := old[n<span class="number">-1</span>]</span><br><span class="line">	*h = old[<span class="number">0</span> : n<span class="number">-1</span>]</span><br><span class="line">	<span class="keyword">return</span> x</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// This example inserts several ints into an IntHeap, checks the minimum,</span></span><br><span class="line"><span class="comment">// and removes them in order of priority.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	h := &amp;IntHeap&#123;<span class="number">2</span>, <span class="number">1</span>, <span class="number">5</span>&#125;</span><br><span class="line">	heap.Init(h)</span><br><span class="line">	heap.Push(h, <span class="number">3</span>)</span><br><span class="line">	fmt.Println(h)</span><br><span class="line">	heap.Remove(h, <span class="number">2</span>)</span><br><span class="line">	<span class="keyword">for</span> h.Len() &gt; <span class="number">0</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">"%d "</span>, heap.Pop(h))</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Heap 的使用场景有：优先级队列、TopK 等等。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://godoc.org/container/heap" target="_blank" rel="noopener">https://godoc.org/container/heap</a></li>
-<li><a href="https://docs.python.org/3.7/library/heapq.html" target="_blank" rel="noopener">https://docs.python.org/3.7/library/heapq.html</a></li>
-<li><a href="https://ieevee.com/tech/2018/01/29/go-heap.html" target="_blank" rel="noopener">https://ieevee.com/tech/2018/01/29/go-heap.html</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1984,7 +2002,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">101</span>
+                  <span class="site-state-item-count">102</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

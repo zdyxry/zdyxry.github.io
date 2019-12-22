@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Kubernetes,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的升级工具，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。 cluster-api-upgrade-tool项目地址：https://github.com/vmware/cluster-api-upgrade-t">
+<meta name="keywords" content="Kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 实战-Cluster API 升级流程">
+<meta property="og:url" content="https://zdyxry.github.io/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的升级工具，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。 cluster-api-upgrade-tool项目地址：https://github.com/vmware/cluster-api-upgrade-t">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-12-22T08:54:32.839Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes 实战-Cluster API 升级流程">
+<meta name="twitter:description" content="背景之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的升级工具，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。 cluster-api-upgrade-tool项目地址：https://github.com/vmware/cluster-api-upgrade-t">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/">
+
+
+
+
+
+  <title>Kubernetes 实战-Cluster API 升级流程 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kubernetes 实战-Cluster API 升级流程</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-22T16:53:55+08:00">
+                2019-12-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/12/22/Kubernetes-实战-Cluster-API-升级流程/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的<a href="https://github.com/vmware/cluster-api-upgrade-tool" target="_blank" rel="noopener">升级工具</a>，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。</p>
+<h2 id="cluster-api-upgrade-tool"><a href="#cluster-api-upgrade-tool" class="headerlink" title="cluster-api-upgrade-tool"></a>cluster-api-upgrade-tool</h2><p>项目地址：<a href="https://github.com/vmware/cluster-api-upgrade-tool" target="_blank" rel="noopener">https://github.com/vmware/cluster-api-upgrade-tool</a></p>
+<p>因为这只是一个单独的工具，因此代码结构比较简单：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">yiran@t480:~/go/src/github.com/vmware/cluster-api-upgrade-tool </span><br><span class="line">master ✔ $ tree .</span><br><span class="line">.</span><br><span class="line">├── CODE-OF-CONDUCT.md</span><br><span class="line">├── CONTRIBUTING.md</span><br><span class="line">├── Dockerfile</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── hack</span><br><span class="line">│   └── tools</span><br><span class="line">│       ├── go.mod</span><br><span class="line">│       ├── go.sum</span><br><span class="line">│       └── main.go</span><br><span class="line">├── LICENSE.txt</span><br><span class="line">├── main.go # 命令行入口</span><br><span class="line">├── Makefile</span><br><span class="line">├── NOTICE.txt</span><br><span class="line">├── pkg</span><br><span class="line">│   ├── internal</span><br><span class="line">│   │   └── kubernetes</span><br><span class="line">│   │       ├── client.go # 获取 client</span><br><span class="line">│   │       └── pod_exec.go</span><br><span class="line">│   ├── logging</span><br><span class="line">│   │   └── logrus_logr.go</span><br><span class="line">│   └── upgrade</span><br><span class="line">│       ├── config.go </span><br><span class="line">│       ├── control_plane.go # 主要升级逻辑</span><br><span class="line">│       └── control_plane_test.go</span><br><span class="line">├── README.md</span><br><span class="line">└── test</span><br><span class="line">    └── integration</span><br><span class="line">        ├── go.mod</span><br><span class="line">        ├── go.sum</span><br><span class="line">        └── main_test.go</span><br></pre></td></tr></table></figure>
+<h2 id="升级流程"><a href="#升级流程" class="headerlink" title="升级流程"></a>升级流程</h2><p>首先在 main.go 封装了相应的命令行用于升级，获取到相应配置后，开始升级：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">upgrader, err := upgrade.NewControlPlaneUpgrader(newLogger(), finalConfig)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">return</span> upgrader.Upgrade()</span><br></pre></td></tr></table></figure>
+<p>在 control_plane.go 文件中是升级的主要逻辑，所有的步骤都是顺序执行的，摘要下主要的步骤：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Upgrade does the upgrading of the control plane.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *ControlPlaneUpgrader)</span> <span class="title">Upgrade</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	machines, err := u.listMachines()</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">if</span> err := u.reconcileKubeadmConfigMapAPIEndpoints(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	err = u.updateKubeletConfigMapIfNeeded(u.desiredVersion)</span><br><span class="line">	err = u.updateKubeletRbacIfNeeded(u.desiredVersion)</span><br><span class="line">    <span class="keyword">if</span> err := u.etcdClusterHealthCheck(<span class="number">15</span> * time.Second); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err := u.UpdateProviderIDsToNodes(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> updateKubeadmKubernetesVersion(in, <span class="string">"v"</span>+u.desiredVersion.String())</span><br><span class="line">	<span class="keyword">if</span> err := u.updateMachines(machines); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> err := u.reconcileKubeadmConfigMapAPIEndpoints(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>u.listMachines</code>获取 TargetCluster 所有的 ControlPlane 节点<br> a. 通过 label 来进行 machine 过滤<br> b. 如果 Machine 的 DeletionTimestamp 字段为 0，则追加到列表中</li>
+<li><code>u.reconcileKubeadmConfigMapAPIEndpoints</code> 这里主要是确保对应的 APIEndpoints 节点都在 k8s 集群中，通过对比 nodeList 与 APIEndpoints 来进行过滤</li>
+<li><code>u.updateKubeletConfigMapIfNeeded</code> 在 k8s 中，在 ConfigMap 中是有保存 kubelet 配置信息的，在升级过程中，需要重新创建对应版本的 kubelet 配置信息，这个函数中直接将原版本的 kubelet 复制了一份，创建一份目标版本的 kublet 配置 ConfigMap</li>
+<li><code>u.updateKubeletRbacIfNeeded</code> 创建目标版本的 Role 和 RoleBinding 资源</li>
+<li><code>u.etcdClusterHealthCheck</code> 检查 etcd 集群是否健康，这里主要通过 <code>endpoint health --endpoints</code> 来检查 etcd 是否健康</li>
+<li><code>u.UpdateProviderIDsToNodes</code> 通过 Cluster-API 创建出来的节点，需要设置 node.ProviderID 才可以被 Cluster-API 识别为 running 状态，ProviderId 格式为：<code>vmware://xxxxx</code> ，这里根据 ProviderID 来检测出具体的 ID，并将其作为一个 map 返回</li>
+<li><code>u.updateKubeadmKubernetesVersion</code> 将 kubeadm ConfigMap 中的  <code>kubernetesVersion</code> 字段更新为目标版本，便于后续添加节点时指定的是目标版本</li>
+<li><code>u.updateMachines</code> 在所有配置文件已经准备、更新完成后，开始做整个升级中最重要的部分，节点（Machine）升级，首先遍历所有 Machine 资源，针对每个 Machine，进行如下动作：<br> a. <code>u.etcdClusterHealthCheck</code> 检查 etcd 集群是否健康，如果不健康，则退出升级<br> b. <code>generateReplacementMachineName</code> 生成替代 Machine 相应配置信息，如 MachineName<br> c. <code>u.updateInfrastructureReference</code> 创建替代 Machine 的 Infrastructure Object<br> d. <code>u.updateBootstrapConfig</code> 创建替代 Machine 的 Bootstrap Config，因为默认 Cluster-API 使用的 kubeadm Bootstrap，所以这里其实是生成替代 Machine 执行的 kubeadm 配置<br> e. <code>u.updateMachine</code> 真正创建替代 Machine 的步骤，创建对应的目标虚拟机，等待目标虚拟机添加到 K8s 集群中且处于 Ready 后，将原虚拟机对应 etcd 节点从 etcd 集群中移除，随后将原虚拟机对应节点从 K8s 集群中移除  </li>
+<li><code>u.reconcileKubeadmConfigMapAPIEndpoints</code> 等待所有 Machine 替换完成后，重新配置 kubeadm ConfigMap 保证 kubeadm ConfigMap 中保存所有的 APIEndpoints 信息。</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Cluster-API 作为 K8s cluster-lifecycle SIG 的一个还处于 Alpha 阶段的项目，还处于一个快速更新迭代的状态，因此最终升级流程是怎样还不确定，但是从 vmware 的这个工具来看，后续很有可能采用这种方案，毕竟 Cluster-API 不想通过 SSH 这种比较麻（恶）烦（心）的方式对节点进行管理，从 kubeadm Bootstrap 使用 Cloud-init 就可以看出，尤其是当支持多种 Linux 发行版后，可以预想这是一个灾难。因此使用这种节点逐一替换的方式是很方便的，具体实现看 v1alpha3 发布之后社区的讨论结果吧。</p>
+<p>吐槽：<br>Cluster-API 项目在代码中很少使用缩写，带来的好处很明显，易读易懂，上手容易，我自己的项目也一直秉承着这种观点，但是当我看到 <code>reconcileKubeadmConfigMapAPIEndpoints</code> 这种长度的变量名，还是很崩溃的。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/vmware/cluster-api-upgrade-tool" target="_blank" rel="noopener">https://github.com/vmware/cluster-api-upgrade-tool</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/19/Kubernetes-实战-高可用集群部署（无LB）/" rel="next" title="Kubernetes 实战-高可用集群部署（无LB）">
+                <i class="fa fa-chevron-left"></i> Kubernetes 实战-高可用集群部署（无LB）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">102</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cluster-api-upgrade-tool"><span class="nav-number">2.</span> <span class="nav-text">cluster-api-upgrade-tool</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#升级流程"><span class="nav-number">3.</span> <span class="nav-text">升级流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">5.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/';
+          this.page.identifier = '2019/12/22/Kubernetes-实战-Cluster-API-升级流程/';
+          this.page.title = 'Kubernetes 实战-Cluster API 升级流程';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

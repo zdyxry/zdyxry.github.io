@@ -275,6 +275,159 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/" itemprop="url">Kubernetes 实战-Cluster API 升级流程</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-22T16:53:55+08:00">
+                2019-12-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/22/Kubernetes-实战-Cluster-API-升级流程/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/12/22/Kubernetes-实战-Cluster-API-升级流程/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的<a href="https://github.com/vmware/cluster-api-upgrade-tool" target="_blank" rel="noopener">升级工具</a>，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。</p>
+<h2 id="cluster-api-upgrade-tool"><a href="#cluster-api-upgrade-tool" class="headerlink" title="cluster-api-upgrade-tool"></a>cluster-api-upgrade-tool</h2><p>项目地址：<a href="https://github.com/vmware/cluster-api-upgrade-tool" target="_blank" rel="noopener">https://github.com/vmware/cluster-api-upgrade-tool</a></p>
+<p>因为这只是一个单独的工具，因此代码结构比较简单：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">yiran@t480:~/go/src/github.com/vmware/cluster-api-upgrade-tool </span><br><span class="line">master ✔ $ tree .</span><br><span class="line">.</span><br><span class="line">├── CODE-OF-CONDUCT.md</span><br><span class="line">├── CONTRIBUTING.md</span><br><span class="line">├── Dockerfile</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── hack</span><br><span class="line">│   └── tools</span><br><span class="line">│       ├── go.mod</span><br><span class="line">│       ├── go.sum</span><br><span class="line">│       └── main.go</span><br><span class="line">├── LICENSE.txt</span><br><span class="line">├── main.go # 命令行入口</span><br><span class="line">├── Makefile</span><br><span class="line">├── NOTICE.txt</span><br><span class="line">├── pkg</span><br><span class="line">│   ├── internal</span><br><span class="line">│   │   └── kubernetes</span><br><span class="line">│   │       ├── client.go # 获取 client</span><br><span class="line">│   │       └── pod_exec.go</span><br><span class="line">│   ├── logging</span><br><span class="line">│   │   └── logrus_logr.go</span><br><span class="line">│   └── upgrade</span><br><span class="line">│       ├── config.go </span><br><span class="line">│       ├── control_plane.go # 主要升级逻辑</span><br><span class="line">│       └── control_plane_test.go</span><br><span class="line">├── README.md</span><br><span class="line">└── test</span><br><span class="line">    └── integration</span><br><span class="line">        ├── go.mod</span><br><span class="line">        ├── go.sum</span><br><span class="line">        └── main_test.go</span><br></pre></td></tr></table></figure>
+<h2 id="升级流程"><a href="#升级流程" class="headerlink" title="升级流程"></a>升级流程</h2><p>首先在 main.go 封装了相应的命令行用于升级，获取到相应配置后，开始升级：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">upgrader, err := upgrade.NewControlPlaneUpgrader(newLogger(), finalConfig)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">return</span> upgrader.Upgrade()</span><br></pre></td></tr></table></figure>
+<p>在 control_plane.go 文件中是升级的主要逻辑，所有的步骤都是顺序执行的，摘要下主要的步骤：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Upgrade does the upgrading of the control plane.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(u *ControlPlaneUpgrader)</span> <span class="title">Upgrade</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	machines, err := u.listMachines()</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">if</span> err := u.reconcileKubeadmConfigMapAPIEndpoints(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	err = u.updateKubeletConfigMapIfNeeded(u.desiredVersion)</span><br><span class="line">	err = u.updateKubeletRbacIfNeeded(u.desiredVersion)</span><br><span class="line">    <span class="keyword">if</span> err := u.etcdClusterHealthCheck(<span class="number">15</span> * time.Second); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err := u.UpdateProviderIDsToNodes(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> updateKubeadmKubernetesVersion(in, <span class="string">"v"</span>+u.desiredVersion.String())</span><br><span class="line">	<span class="keyword">if</span> err := u.updateMachines(machines); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> err := u.reconcileKubeadmConfigMapAPIEndpoints(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>u.listMachines</code>获取 TargetCluster 所有的 ControlPlane 节点<br> a. 通过 label 来进行 machine 过滤<br> b. 如果 Machine 的 DeletionTimestamp 字段为 0，则追加到列表中</li>
+<li><code>u.reconcileKubeadmConfigMapAPIEndpoints</code> 这里主要是确保对应的 APIEndpoints 节点都在 k8s 集群中，通过对比 nodeList 与 APIEndpoints 来进行过滤</li>
+<li><code>u.updateKubeletConfigMapIfNeeded</code> 在 k8s 中，在 ConfigMap 中是有保存 kubelet 配置信息的，在升级过程中，需要重新创建对应版本的 kubelet 配置信息，这个函数中直接将原版本的 kubelet 复制了一份，创建一份目标版本的 kublet 配置 ConfigMap</li>
+<li><code>u.updateKubeletRbacIfNeeded</code> 创建目标版本的 Role 和 RoleBinding 资源</li>
+<li><code>u.etcdClusterHealthCheck</code> 检查 etcd 集群是否健康，这里主要通过 <code>endpoint health --endpoints</code> 来检查 etcd 是否健康</li>
+<li><code>u.UpdateProviderIDsToNodes</code> 通过 Cluster-API 创建出来的节点，需要设置 node.ProviderID 才可以被 Cluster-API 识别为 running 状态，ProviderId 格式为：<code>vmware://xxxxx</code> ，这里根据 ProviderID 来检测出具体的 ID，并将其作为一个 map 返回</li>
+<li><code>u.updateKubeadmKubernetesVersion</code> 将 kubeadm ConfigMap 中的  <code>kubernetesVersion</code> 字段更新为目标版本，便于后续添加节点时指定的是目标版本</li>
+<li><code>u.updateMachines</code> 在所有配置文件已经准备、更新完成后，开始做整个升级中最重要的部分，节点（Machine）升级，首先遍历所有 Machine 资源，针对每个 Machine，进行如下动作：<br> a. <code>u.etcdClusterHealthCheck</code> 检查 etcd 集群是否健康，如果不健康，则退出升级<br> b. <code>generateReplacementMachineName</code> 生成替代 Machine 相应配置信息，如 MachineName<br> c. <code>u.updateInfrastructureReference</code> 创建替代 Machine 的 Infrastructure Object<br> d. <code>u.updateBootstrapConfig</code> 创建替代 Machine 的 Bootstrap Config，因为默认 Cluster-API 使用的 kubeadm Bootstrap，所以这里其实是生成替代 Machine 执行的 kubeadm 配置<br> e. <code>u.updateMachine</code> 真正创建替代 Machine 的步骤，创建对应的目标虚拟机，等待目标虚拟机添加到 K8s 集群中且处于 Ready 后，将原虚拟机对应 etcd 节点从 etcd 集群中移除，随后将原虚拟机对应节点从 K8s 集群中移除  </li>
+<li><code>u.reconcileKubeadmConfigMapAPIEndpoints</code> 等待所有 Machine 替换完成后，重新配置 kubeadm ConfigMap 保证 kubeadm ConfigMap 中保存所有的 APIEndpoints 信息。</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Cluster-API 作为 K8s cluster-lifecycle SIG 的一个还处于 Alpha 阶段的项目，还处于一个快速更新迭代的状态，因此最终升级流程是怎样还不确定，但是从 vmware 的这个工具来看，后续很有可能采用这种方案，毕竟 Cluster-API 不想通过 SSH 这种比较麻（恶）烦（心）的方式对节点进行管理，从 kubeadm Bootstrap 使用 Cloud-init 就可以看出，尤其是当支持多种 Linux 发行版后，可以预想这是一个灾难。因此使用这种节点逐一替换的方式是很方便的，具体实现看 v1alpha3 发布之后社区的讨论结果吧。</p>
+<p>吐槽：<br>Cluster-API 项目在代码中很少使用缩写，带来的好处很明显，易读易懂，上手容易，我自己的项目也一直秉承着这种观点，但是当我看到 <code>reconcileKubeadmConfigMapAPIEndpoints</code> 这种长度的变量名，还是很崩溃的。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/vmware/cluster-api-upgrade-tool" target="_blank" rel="noopener">https://github.com/vmware/cluster-api-upgrade-tool</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/12/19/Kubernetes-实战-高可用集群部署（无LB）/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1885,215 +2038,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/11/09/路由器-vs-交换机/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/11/09/路由器-vs-交换机/" itemprop="url">路由器 vs 交换机</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-11-09T09:59:07+08:00">
-                2019-11-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/11/09/路由器-vs-交换机/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/11/09/路由器-vs-交换机/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>交换机和路由器大家应该都听说过，大部分也用过，但是它俩有啥联系，又有啥区别？</p>
-<p>P.S. 最近看《OSTEP》看的脑子有点短路，趁着周末看点网络的东西。</p>
-<h2 id="路由器"><a href="#路由器" class="headerlink" title="路由器"></a>路由器</h2><blockquote>
-<p>路由器（英语：Router，又称路径器）是一种电讯网络设备，提供路由与转送两种重要机制，可以决定封包从来源端到目的端所经过的路由路径（host 到 host 之间的传输路径），这个过程称为路由；将路由器输入端的封包移送至适当的路由器输出端（在路由器内部进行），这称为转送。路由工作在OSI模型的第三层——即网络层，例如网际协议（IP）。</p>
-</blockquote>
-<p>路由器主要具有两个职能：</p>
-<ul>
-<li>路由器确保信息不到达不需要到达的位置</li>
-<li>路由器确保信息到达所需要的正确目的地</li>
-</ul>
-<p>在执行以上这两种职能中，路由器连接两个网络，将信息从一个网络传送至另一个网络。在某些情况下，还执行两个网络间的多种协议的翻译职能。此外它还确保网络之间通信路由的相互独立，预防其中一个网络上的多余流量溢出到另一个网络上。该过程称为路由选择。</p>
-<p>路由选择是 OSI 模型第三层（网络层的）一个功能。路由器通过网络层协议头如 IP 头（包含源地址和目的地址）和路由表，选择转发数据包的最佳路径。为选择任意两个主机间的最佳路由，实现路由器间的通信，通常需要应用如 ICMP 这样的路由选择协议。</p>
-<h2 id="交换机"><a href="#交换机" class="headerlink" title="交换机"></a>交换机</h2><blockquote>
-<p>网络交换机（Network switch）是一种网络数据转发设备，能够对数据包进行高速的“交换”。二层交换机工作于OSI参考模型的第二层，即数据链路层。</p>
-</blockquote>
-<blockquote>
-<p>交换机内部的CPU会在每个端口成功连接时，通过将MAC地址和端口对应，形成一张 MAC 表。在今后的通讯中，发往该MAC地址的数据包将仅送往其对应的端口，而不是所有的端口。交换机对数据包的转发是建立在MAC (Media Access Control) 地址–物理地址基础之上的，对于IP 网络协议来说，它是透明的，即交换机在转发数据包时，不知道也无须知道信源机和信宿机的IP 地址，只需知其物理地址即MAC 地址。</p>
-</blockquote>
-<blockquote>
-<p>交换机在操作过程当中会不断的收集资料去建立它本身的一个地址表，这个表相当简单，它说明了某个MAC 地址是在哪个端口上被发现的，所以当交换机收到一个TCP/IP 封包时，它便会看一下该数据包的目的 MAC 地址，核对一下自己的地址表以确认应该从哪个端口把数据包发出去。由于这个过程比较简单，加上这功能由一崭新硬件进行——ASIC (Application Specific Integrated Circuit) ，因此速度相当快，一般只需几十微秒，交换机便可决定一个IP 封包该往那里送。</p>
-</blockquote>
-<blockquote>
-<p>值得一提的是：万一交换机收到一个不认识的封包，就是说如果目的地MAC 地址不能在地址表中找到时，交换机会把IP 封包”扩散”出去，即把它从每一个端口中送出去，就如交换机在处理一个收到的广播封包时一样。</p>
-</blockquote>
-<blockquote>
-<p>二层交换机的弱点正是它处理广播封包的手法不太有效，比方说，当一个交换机收到一个从TCP/IP 工作站上发出来的广播封包时，他便会把该封包传到所有其他端口去，哪怕有些端口上连的是IPX 或DECnet 工作站。这样一来，非TCP/IP 节点的带宽便会受到负面的影响，就算同样的TCP/IP 节点，如果他们的子网跟发送那个广播封包的工作站的子网相同，那么他们也会无原无故地收到一些与他们毫不相干的网络广播，整个网络的效率因此会大打折扣。</p>
-</blockquote>
-<h2 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h2><table>
-<thead>
-<tr>
-<th></th>
-<th>路由器</th>
-<th>交换机</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>OSI</td>
-<td>网络层</td>
-<td>数据链路层</td>
-</tr>
-<tr>
-<td>数据传输地址</td>
-<td>IP 地址</td>
-<td>MAC 地址</td>
-</tr>
-<tr>
-<td>使用范围</td>
-<td>局域网/广域网</td>
-<td>局域网</td>
-</tr>
-<tr>
-<td>存储信息</td>
-<td>路由表</td>
-<td>MAC 地址与端口映射表</td>
-</tr>
-<tr>
-<td>传输方式</td>
-<td>全双工</td>
-<td>全双工</td>
-</tr>
-<tr>
-<td>隔离方式</td>
-<td>划分子网</td>
-<td>划分 VLAN</td>
-</tr>
-<tr>
-<td>具体用途</td>
-<td>连接多个网络</td>
-<td>连接一个网络内的多个设备</td>
-</tr>
-</tbody>
-</table>
-<p>那么路由器和交换机可以互相替换么？</p>
-<p>路由器通常带有 WAN 口和多个 LAN 口，其中多个 LAN 口可以看作一个小型的交换机，只是端口数量较少。二层交换机无法替换路由器，因为不具有路由转发的功能。但是现在存在三层交换机，可以实现路由器中的路由转发功能，甚至看到部分三层交换机已经支持了 NAT 功能，那么当不同 VLAN 之间的网络设备想要进行通信，就可以直接通过三层交换机找到对应路由，交换机学习到了 MAC 地址与 IP 地址的对应关系后，后续直接通过二层联通，不需要经过查找路由这一步了。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://pc.net/helpcenter/answers/difference_between_switch_and_router" target="_blank" rel="noopener">https://pc.net/helpcenter/answers/difference_between_switch_and_router</a></li>
-<li><a href="https://www.diffen.com/difference/Router_vs_Switch" target="_blank" rel="noopener">https://www.diffen.com/difference/Router_vs_Switch</a></li>
-<li><a href="https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8" target="_blank" rel="noopener">https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2146,7 +2090,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">101</span>
+                  <span class="site-state-item-count">102</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
