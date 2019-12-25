@@ -275,6 +275,259 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/31/Kubernetes-实战-集群部署/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/31/Kubernetes-实战-集群部署/" itemprop="url">Kubernetes 实战-集群部署</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-31T21:22:51+08:00">
+                2019-05-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/31/Kubernetes-实战-集群部署/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/31/Kubernetes-实战-集群部署/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>本来计划这周写一下如何定制 UEFI Linux 发行版的，但是计划赶不上变化，加上 UEFI 的改动比想象中的多，这周还是继续 k8s 系列好了。</p>
+<p>说起来 k8s 写了 3 篇博客一直没有写集群部署相关的，一是当时对 k8s 了解不多，集群搭建大多是 GitHub 上的开源项目或 Rancher 快速搭建起来的；二是 k8s 官方工具 kubeadm 现在还有很多的不确定性，随着 v1.14 版本的发布，可用性大大提高，虽然还不支持 HA，但是要写一下了。</p>
+<p>本文并不会介绍具体的部署步骤，望周知。</p>
+<h2 id="Kubernetes-主要组件"><a href="#Kubernetes-主要组件" class="headerlink" title="Kubernetes 主要组件"></a>Kubernetes 主要组件</h2><p>因为主要说集群部署相关的，因此只列出 Master 和 Node 的主要组件，k8s 内部资源不再罗列：</p>
+<h3 id="Master"><a href="#Master" class="headerlink" title="Master"></a>Master</h3><ul>
+<li><p>apiserver： 集群中所有其他组件通过 apiserver 进行交互</p>
+</li>
+<li><p>scheduler： 按照 Pod 配置来对 Pod 进行节点调度</p>
+</li>
+<li><p>controller-manager：负责节点管理，资源的具体创建动作， <code>desired state management</code> 具体实行者</p>
+</li>
+<li><p>etcd：用于存储集群中数据的键值存储</p>
+</li>
+</ul>
+<h3 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h3><ul>
+<li><p>kubelet：处理 master 及其上运行的 node 之间的所有通信。它与容器运行时配合，负责部署和监控容器</p>
+</li>
+<li><p>kube-proxy：负责维护 node 的网络规则，还负责处理 Pod,Node和外部之间的通信</p>
+</li>
+<li><p>容器运行时：在节点上运行容器的具体实现，常见的有 Docker/rkt/CRI-O</p>
+</li>
+</ul>
+<h2 id="Kubernetes-集群准备"><a href="#Kubernetes-集群准备" class="headerlink" title="Kubernetes 集群准备"></a>Kubernetes 集群准备</h2><h3 id="所需资源"><a href="#所需资源" class="headerlink" title="所需资源"></a>所需资源</h3><p>大部分的安装文档中，都会先写明 os 要求，计算 &amp; 存储资源需求，k8s 自身对资源消耗很低，通常的 2c4g + 30GiB 足够运行起来。</p>
+<p>上面说完了硬件资源，那么我们来说下软件资源， k8s 作为一个容器编排系统，它需要的软件资源也是很重要的一部分，这里我们来说一下网络部分。</p>
+<p>假设我们集群中存在 5 个节点，使用 <code>kubeadm init</code> 方式部署集群，那么最基本的，需要 5 个节点的 IP。那如果是高可用的集群呢？我们需要加一个 VIP，也就是 6 个 IP 地址。</p>
+<p>在考虑了 IP 地址之后，我们来说下网段划分，以 flannel 为例，在创建网络时，每个 k8s 节点都会分配一段子网用于 Pod 分配 IP，这里的网段是不可以跟宿主机的网络重叠的，所以这里的网络划分也是一个很重要的资源。</p>
+<p>具体其他网络类型，我会在之后的网络部分详细的写一下。</p>
+<h3 id="部署方式"><a href="#部署方式" class="headerlink" title="部署方式"></a>部署方式</h3><p>好了，现在我们已经有了资源了（无论是硬件资源还是软件资源），那么我们可以部署了，那此时采用什么方式部署，或者说怎么部署成了问题。</p>
+<hr>
+<p>首先说下最特殊的服务，kubelet，它作为节点的实际管控者，它如果运行在容器中，那么谁来控制kubelet 容器的启停呢？当节点故障恢复后，又如何自启动呢？最开始我使用 Rancher 部署的时候发现他们是将 kubelet 直接部署在容器中的，那是因为他们在节点上还有其他 Agent 用于管理节点，Rancher 相当于 k8s 集群之外的上帝，管控着一切。</p>
+<p>当我们没有 Rancher 这类管理工具时，还是老老实实将 kubelet 以服务的形式部署在宿主机上吧。</p>
+<hr>
+<p>官方推荐使用 <code>kubeadm</code> 进行集群部署，简单快捷，只是还在快速迭代中，存在较多不确定性，那么现在那些大厂是如何部署的呢？</p>
+<p>我花了点时间阅读了下 Github 上面一些关于 k8s 部署项目，简单的罗列一下：</p>
+<table>
+<thead>
+<tr>
+<th>项目名称</th>
+<th>项目地址</th>
+<th>星</th>
+<th>服务运行方式</th>
+<th>ha </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ansible-kubeadm</td>
+<td><a href="https://github.com/4admin2root/ansible-kubeadm" target="_blank" rel="noopener">https://github.com/4admin2root/ansible-kubeadm</a></td>
+<td>3</td>
+<td>Static Pod</td>
+<td>- </td>
+</tr>
+<tr>
+<td>ansible-kubeadm-ha-cluster</td>
+<td><a href="https://github.com/sv01a/ansible-kubeadm-ha-cluster" target="_blank" rel="noopener">https://github.com/sv01a/ansible-kubeadm-ha-cluster</a></td>
+<td>5</td>
+<td>Docker</td>
+<td>keepvalied </td>
+</tr>
+<tr>
+<td>kubeadm-playbook</td>
+<td><a href="https://github.com/ReSearchITEng/kubeadm-playbook" target="_blank" rel="noopener">https://github.com/ReSearchITEng/kubeadm-playbook</a></td>
+<td>117</td>
+<td>Static Pod</td>
+<td>keepalived </td>
+</tr>
+<tr>
+<td>Kubernetes-ansible</td>
+<td><a href="https://github.com/zhangguanzhang/Kubernetes-ansible" target="_blank" rel="noopener">https://github.com/zhangguanzhang/Kubernetes-ansible</a></td>
+<td>208</td>
+<td>Service</td>
+<td>keepalived &amp; Haproxy</td>
+</tr>
+<tr>
+<td>kubeadm-ansible</td>
+<td><a href="https://github.com/kairen/kubeadm-ansible" target="_blank" rel="noopener">https://github.com/kairen/kubeadm-ansible</a></td>
+<td>281</td>
+<td>Static Pod</td>
+<td>- </td>
+</tr>
+<tr>
+<td>kubeadm-ha</td>
+<td><a href="https://github.com/cookeem/kubeadm-ha" target="_blank" rel="noopener">https://github.com/cookeem/kubeadm-ha</a></td>
+<td>502</td>
+<td>Service</td>
+<td>keepalived &amp; nginx </td>
+</tr>
+<tr>
+<td>kubeasz</td>
+<td><a href="https://github.com/easzlab/kubeasz" target="_blank" rel="noopener">https://github.com/easzlab/kubeasz</a></td>
+<td>2987</td>
+<td>Service</td>
+<td>keepalived &amp; Haproxy </td>
+</tr>
+</tbody>
+</table>
+<p>可以看到虽然有些细微的差别，但是大家做的都围绕着一个目的，就是把上一节提到的 k8s 所有必要组件部署到集群中，我们根据服务运行方式和 HA 方式来说一下。</p>
+<h2 id="服务运行方式"><a href="#服务运行方式" class="headerlink" title="服务运行方式"></a>服务运行方式</h2><p>根据我上面总结的各个项目，大体分为 3 类，分别是：Host Service、Docker、Static Pod。我们一个一个的过一下。</p>
+<h3 id="Host-Service"><a href="#Host-Service" class="headerlink" title="Host Service"></a>Host Service</h3><p>在没有容器的时代，我们要部署一个服务，都是采用 Host Service 方式，我们在宿主机的 OS 上配置一个服务，管理方式可能是 init.d ，也可能是 systemd 。k8s 所有的服务都可以通过 Host Service 方式运行。</p>
+<p>优点：</p>
+<p>在 systemd 大法加持下，所有服务均可通过 systemd 统一管理，可以配置随着系统进行启停。</p>
+<p>缺点：</p>
+<p>如果通过 systemd 方式部署，那么服务配置修改、服务升级是一个大麻烦。</p>
+<h3 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a>Docker</h3><p>既然我们觉得 Host Service 的方式服务配置修改、升级都比较麻烦，那我们直接通过 Docker 启动就好了，升级直接更新 image 重新启动，一切问题放佛都解决了。</p>
+<p>但是考虑一个问题，当集群全部掉电，系统开机后，k8s 如何自启动？以 Docker 作为容器运行时的基础上，Docker 比较让人诟病的一点就是它是一个 Daemon，在这里反而是优点，我们可以设置 Docker 随开机自启动，并将 k8s 所有服务对应镜像设置为 <code>--restart=always</code>，就可以解决这个问题。</p>
+<p>优点：</p>
+<p>服务配置、升级方便。</p>
+<p>缺点：</p>
+<p>依赖于 Docker，若更换其他 CRI，无法处理极端情况。</p>
+<h3 id="Static-Pod"><a href="#Static-Pod" class="headerlink" title="Static Pod"></a>Static Pod</h3><p>最后我们来说说 Static Pod，这种方式是 kubeadm 目前所采用的方式，也是 k8s 所推荐的方式。</p>
+<p>什么是 Static Pod？其实就是字面意义， <code>静态 Pod</code>，k8s 不去调度的 Pod，而是由 kubelet 直接管理。前面我们在讨论 kubelet 提到，kubelet 是以服务的形式运行在宿主机上的，那么也就是 kubelet 的启停是通过 systemd 控制的，不受 k8s 控制。</p>
+<p>Static Pod 由 kubelet 控制，当 kubelet 启动后，会自动拉起 Static Pod，且 Static Pod 不受 k8s 控制，无论是通过 kubectl 进行删除，还是通过 docker 对该 Pod 进行 stop 动作，kubelet 都会保证 Static Pod 正常运行。</p>
+<p>这个方式很适合我们来处理 k8s 自身的服务，比如 apiserver/scheduler ，每个 master 节点上通过 Static Pod 配置，当 kubelet 启动后，自动拉起 apiserver/scheduler 等服务，那么 k8s 集群也就自启动了，也就解决了我们上面提到的集群全部掉电的情况。</p>
+<p>优点：</p>
+<p>跟随 kubelet 启停，完美适配 k8s 升级场景。</p>
+<p>缺点：</p>
+<p>因为随着 kubelet 启停，所以导致更新 kubelet 配置时需要指定 manifest 文件路径。</p>
+<h2 id="HA-配置"><a href="#HA-配置" class="headerlink" title="HA 配置"></a>HA 配置</h2><p>k8s 作为一个基础架构服务，它的可用性关乎着我们整个业务的稳定，所以一定要保证不会出现单点故障。</p>
+<p>在公有云场景下，由公有云提供 LB 的支持，只要我们部署了多个 master 节点，就不用担心了。</p>
+<p>那在裸机场景下怎么办呢？</p>
+<p>目前通用解决方案是 VIP 配合 LB（也就是 keepalived &amp; haproxy/nginx）。</p>
+<p> keepalived 提供了 VIP。在 k8s 集群部署过程中，所有节点都指定 <code>controlPlaneEndpoint</code> 为 VIP，而 VIP 在集群中的一个 master 节点上。当 VIP 所在节点故障时， VIP 自动漂浮到集群中其他 master 节点上，保证高可用。</p>
+<p> haproxy/nginx 作为 LB，当我们 k8s 集群中所有节点都连接一个 apiserver 时，通过 LB 按照既定策略将请求分发到集群中多个 master 节点上，保证性能。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>关于 k8s 集群的部署大概就是上述这些内容，具体的操作步骤都可以通过官网或者 github 找到相关资料。目前如果个人学习的话，直接通过 kubeadm 部署就好；如果想要在生产环境中部署，那么需要根据自身业务类型，仔细考虑自己是否需要 HA，如何配置 HA。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/05/26/BIOS-vs-UEFI/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1881,179 +2134,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/04/06/apscheduler-源码阅读/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/06/apscheduler-源码阅读/" itemprop="url">apscheduler 源码阅读</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-06T10:58:49+08:00">
-                2019-04-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/04/06/apscheduler-源码阅读/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/04/06/apscheduler-源码阅读/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>apscheduler 全称 <code>Advanced Python Scheduler</code>，调度器，主要功能如下：</p>
-<ul>
-<li>动态添加、删除任务</li>
-<li>暂停、恢复任务</li>
-<li>周期性调度：cron,date,interval</li>
-<li>…</li>
-</ul>
-<p>那么接下来我们根据官方示例，看看 apscheduler 是如何进行处理任务的。</p>
-<p>示例版本为 2.1，因为在 2.1 版本包含目前 master 分支上的主要功能，简单易懂。</p>
-<p>代码结构如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler</span><br><span class="line">2.1 ✔ $ tree apscheduler</span><br><span class="line">apscheduler</span><br><span class="line">├── __init__.py</span><br><span class="line">├── events.py</span><br><span class="line">├── job.py</span><br><span class="line">├── jobstores</span><br><span class="line">│   ├── __init__.py</span><br><span class="line">│   ├── base.py</span><br><span class="line">│   ├── mongodb_store.py</span><br><span class="line">│   ├── ram_store.py</span><br><span class="line">│   ├── redis_store.py</span><br><span class="line">│   ├── shelve_store.py</span><br><span class="line">│   └── sqlalchemy_store.py</span><br><span class="line">├── scheduler.py</span><br><span class="line">├── threadpool.py</span><br><span class="line">├── triggers</span><br><span class="line">│   ├── __init__.py</span><br><span class="line">│   ├── cron</span><br><span class="line">│   │   ├── __init__.py</span><br><span class="line">│   │   ├── expressions.py</span><br><span class="line">│   │   └── fields.py</span><br><span class="line">│   ├── interval.py</span><br><span class="line">│   └── simple.py</span><br><span class="line">└── util.py</span><br></pre></td></tr></table></figure></p>
-<p>示例：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timedelta</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> apscheduler.scheduler <span class="keyword">import</span> Scheduler</span><br><span class="line"><span class="keyword">from</span> apscheduler.jobstores.shelve_store <span class="keyword">import</span> ShelveJobStore</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">alarm</span><span class="params">(time)</span>:</span></span><br><span class="line">    print(<span class="string">'Alarm! This alarm was scheduled at %s.'</span> % time)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    scheduler = Scheduler(standalone=<span class="keyword">True</span>)</span><br><span class="line">    scheduler.add_jobstore(ShelveJobStore(<span class="string">'example.db'</span>), <span class="string">'shelve'</span>)</span><br><span class="line">    alarm_time = datetime.now() + timedelta(seconds=<span class="number">10</span>)</span><br><span class="line">    scheduler.add_date_job(alarm, alarm_time, name=<span class="string">'alarm'</span>,</span><br><span class="line">                           jobstore=<span class="string">'shelve'</span>, args=[datetime.now()])</span><br><span class="line">    print(<span class="string">'To clear the alarms, delete the example.db file.'</span>)</span><br><span class="line">    print(<span class="string">'Press Ctrl+C to exit'</span>)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        scheduler.start()</span><br><span class="line">    <span class="keyword">except</span> (KeyboardInterrupt, SystemExit):</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure></p>
-<h2 id="Scheduler"><a href="#Scheduler" class="headerlink" title="Scheduler"></a>Scheduler</h2><p>上述示例很容易理解，首先对 <code>Scheduler</code> 实例化，然后添加 jobstore，定义一个名为 <code>alarm</code> 的 job，并指定其运行时间为当前时间 + 10s，将该 job 添加到 scheduler 中，添加 job 类型为 <code>date_job</code>，然后启动 scheduler。</p>
-<p>可以看到我们所有的操作都是通过 scheduler 方法实现的，那么我们来看下 <code>Scheduler</code> 类具体实现了哪些功能：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Scheduler</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    This class is responsible for scheduling jobs and triggering</span></span><br><span class="line"><span class="string">    their execution.</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    _stopped = <span class="keyword">True</span></span><br><span class="line">    _thread = <span class="keyword">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, gconfig=&#123;&#125;, **options)</span>:</span></span><br><span class="line">        self._wakeup = Event()</span><br><span class="line">        self._jobstores = &#123;&#125;</span><br><span class="line">        self._jobstores_lock = Lock()</span><br><span class="line">        self._listeners = []</span><br><span class="line">        self._listeners_lock = Lock()</span><br><span class="line">        self._pending_jobs = []</span><br><span class="line">        self.configure(gconfig, **options)</span><br></pre></td></tr></table></figure>
-<p>在 <code>Scheduler</code> 构造函数中，对一些变量进行初始化，这里要注意 <code>self._wakeup</code> ，后续的一些主要功能都是通过它来实现的。接下来看看 <code>add_jobstore</code> 方法：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_jobstore</span><span class="params">(self, jobstore, alias, quiet=False)</span>:</span></span><br><span class="line">    self._jobstores_lock.acquire() <span class="comment"># 请求锁</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">if</span> alias <span class="keyword">in</span> self._jobstores:</span><br><span class="line">            <span class="keyword">raise</span> KeyError(<span class="string">'Alias "%s" is already in use'</span> % alias)</span><br><span class="line">        self._jobstores[alias] = jobstore <span class="comment"># 将 jobstore 别名作为 key，添加到 self._jobstores 中</span></span><br><span class="line">        jobstore.load_jobs() <span class="comment"># 加载 jobstore 中所有 job</span></span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        self._jobstores_lock.release() <span class="comment"># 释放锁</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify listeners that a new job store has been added</span></span><br><span class="line">    self._notify_listeners(JobStoreEvent(EVENT_JOBSTORE_ADDED, alias)) <span class="comment"># 事件通知</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify the scheduler so it can scan the new job store for jobs</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> quiet:</span><br><span class="line">        self._wakeup.set() <span class="comment"># 将 Event 置为 True</span></span><br></pre></td></tr></table></figure>
-<p>在 <code>add_jobstore</code> 中，将 jobstore 添加到 scheduler 中，并加载当前 jobstore 中的所有任务，接下来将具体的 job 添加到 scheduler 中：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_date_job</span><span class="params">(self, func, date, args=None, kwargs=None, **options)</span>:</span></span><br><span class="line">    trigger = SimpleTrigger(date)</span><br><span class="line">    <span class="keyword">return</span> self.add_job(trigger, func, args, kwargs, **options)</span><br></pre></td></tr></table></figure>
-<p>这里的 <code>SimpleTrigger</code> 只是多种 Trigger 中的一种，根据 Trigger 类型的不同，最主要的差别在于 <code>get_next_fire_time</code> 计算方式不同。</p>
-<p>如果添加的任务是 interval_job，那么对应 Trigger 为 <code>IntervalTrigger</code> ；如果添加的任务是 cron_job，那么对应的 Trigger 为 <code>CronTrigger</code>。</p>
-<p>可以看到不同的任务只是 Trigger 计算方式不同，最终还是通过 <code>add_job</code> 方法，继续看：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_job</span><span class="params">(self, trigger, func, args, kwargs, jobstore=<span class="string">'default'</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">            **options)</span>:</span></span><br><span class="line">    job = Job(trigger, func, args <span class="keyword">or</span> [], kwargs <span class="keyword">or</span> &#123;&#125;,</span><br><span class="line">              options.pop(<span class="string">'misfire_grace_time'</span>, self.misfire_grace_time),</span><br><span class="line">              options.pop(<span class="string">'coalesce'</span>, self.coalesce), **options) <span class="comment"># 将 job 实例化</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> self.running: <span class="comment"># 如果 scheduler 未启动，那么将其添加到等待队列中</span></span><br><span class="line">        self._pending_jobs.append((job, jobstore))</span><br><span class="line">        logger.info(<span class="string">'Adding job tentatively -- it will be properly '</span></span><br><span class="line">                    <span class="string">'scheduled when the scheduler starts'</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        self._real_add_job(job, jobstore, <span class="keyword">True</span>) <span class="comment"># 否则添加 job 到 jobstore 中</span></span><br><span class="line">    <span class="keyword">return</span> job</span><br></pre></td></tr></table></figure>
-<p>继续看 <code>_real_add_job</code> 中的实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_real_add_job</span><span class="params">(self, job, jobstore, wakeup)</span>:</span></span><br><span class="line">    job.compute_next_run_time(datetime.now()) <span class="comment"># 计算job 下次运行时间</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> job.next_run_time:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">'Not adding job since it would never be run'</span>)</span><br><span class="line"></span><br><span class="line">    self._jobstores_lock.acquire() <span class="comment"># 请求锁</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            store = self._jobstores[jobstore]</span><br><span class="line">        <span class="keyword">except</span> KeyError:</span><br><span class="line">            <span class="keyword">raise</span> KeyError(<span class="string">'No such job store: %s'</span> % jobstore)</span><br><span class="line">        store.add_job(job) <span class="comment"># 添加 job</span></span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        self._jobstores_lock.release()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify listeners that a new job has been added</span></span><br><span class="line">    event = JobStoreEvent(EVENT_JOBSTORE_JOB_ADDED, jobstore, job)</span><br><span class="line">    self._notify_listeners(event) <span class="comment"># 事件通知</span></span><br><span class="line"></span><br><span class="line">    logger.info(<span class="string">'Added job "%s" to job store "%s"'</span>, job, jobstore)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Notify the scheduler about the new job</span></span><br><span class="line">    <span class="keyword">if</span> wakeup:</span><br><span class="line">        self._wakeup.set() <span class="comment"># # 将 Event 置为 True</span></span><br></pre></td></tr></table></figure>
-<p>在 <code>_real_add_job</code> 中我们终于看到 <code>store.add_job(job)</code> ，至于 <code>store.add_job</code> 如何实现我们之后看 <code>JobStore</code> 再说。</p>
-<p>现在我们已经给 scheduler 添加了 jobstore 和 job，那么看下 scheduler 是如何运行的：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">start</span><span class="params">(self)</span>:</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="comment"># Schedule all pending jobs</span></span><br><span class="line">    <span class="keyword">for</span> job, jobstore <span class="keyword">in</span> self._pending_jobs: <span class="comment"># 将 scheduler 未运行时添加的 job，即在等待队列中的 job 添加到 jobstore 中</span></span><br><span class="line">        self._real_add_job(job, jobstore, <span class="keyword">False</span>)</span><br><span class="line">    <span class="keyword">del</span> self._pending_jobs[:]</span><br><span class="line"></span><br><span class="line">    self._stopped = <span class="keyword">False</span></span><br><span class="line">    <span class="keyword">if</span> self.standalone:</span><br><span class="line">        self._main_loop()</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        self._thread = Thread(target=self._main_loop, name=<span class="string">'APScheduler'</span>)</span><br><span class="line">        self._thread.setDaemon(self.daemonic)</span><br><span class="line">        self._thread.start()</span><br></pre></td></tr></table></figure>
-<p>在 scheduler 运行时，会先将所有的 job 加载到 jobstore 中，然后调用 <code>self._main_loop</code> ，如果 Standalone 为 True，则会一直阻塞知道没有 job 需要运行，看看 <code>self._main_loop</code> 做了啥：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_main_loop</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="string">"""Executes jobs on schedule."""</span></span><br><span class="line"></span><br><span class="line">    logger.info(<span class="string">'Scheduler started'</span>)</span><br><span class="line">    self._notify_listeners(SchedulerEvent(EVENT_SCHEDULER_START)) <span class="comment"># 事件通知 </span></span><br><span class="line"></span><br><span class="line">    self._wakeup.clear()</span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">not</span> self._stopped:</span><br><span class="line">        logger.debug(<span class="string">'Looking for jobs to run'</span>)</span><br><span class="line">        now = datetime.now()</span><br><span class="line">        next_wakeup_time = self._process_jobs(now) <span class="comment"># 计算下次唤醒时间</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> next_wakeup_time <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">            wait_seconds = time_difference(next_wakeup_time, now)</span><br><span class="line">            logger.debug(<span class="string">'Next wakeup is due at %s (in %f seconds)'</span>,</span><br><span class="line">                         next_wakeup_time, wait_seconds)</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                self._wakeup.wait(wait_seconds) <span class="comment"># 等待 Event flag</span></span><br><span class="line">            <span class="keyword">except</span> IOError:  <span class="comment"># Catch errno 514 on some Linux kernels</span></span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line">            self._wakeup.clear()</span><br><span class="line">        <span class="keyword">elif</span> self.standalone:</span><br><span class="line">            logger.debug(<span class="string">'No jobs left; shutting down scheduler'</span>)</span><br><span class="line">            self.shutdown() <span class="comment"># 若 scheduler standalone 为 True 且 jobs 为空，则停止 scheduler</span></span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            logger.debug(<span class="string">'No jobs; waiting until a job is added'</span>)</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                self._wakeup.wait() <span class="comment"># 等待 Event flag</span></span><br><span class="line">            <span class="keyword">except</span> IOError:  <span class="comment"># Catch errno 514 on some Linux kernels</span></span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line">            self._wakeup.clear()</span><br></pre></td></tr></table></figure>
-<p>还记得上面提到的 <code>Scheduler</code> 构造函数中的 <code>self._wakeup</code> 么，它实际上是 <code>threading.Event</code> ，它的 wait 方法会一直 block 直到 Event flag 为 True，也就是我们上面看到的 <code>self._wakeup.set()</code> ，那么我们可以知道在 <code>Scheduler</code> 中有几种场景会置为 True：</p>
-<ol>
-<li>Scheduler.shutdown</li>
-<li>Scheduler.add_jobstore</li>
-<li>Scheduler._real_add_job</li>
-</ol>
-<p>如果没有触发上述场景，则 <code>_main_loop</code> 会根据 jobs 的执行时间一直循环等待。</p>
-<h2 id="JobStore"><a href="#JobStore" class="headerlink" title="JobStore"></a>JobStore</h2><p>在 apscheduler 中，JobStore 只是单纯的实现了 Job 相关的方法：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">JobStore</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">add_job</span><span class="params">(self, job)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">update_job</span><span class="params">(self, job)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">remove_job</span><span class="params">(self, job)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">load_jobs</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">close</span><span class="params">(self)</span>:</span></span><br></pre></td></tr></table></figure>
-<p>其中，对 job 的操作会根据 JobStore 类型的不同，而采用不同的序列化方式，比如在 <code>MongoDBJobStore</code> 中采用的是 <code>bson.binary</code>，而在其他 JobStore 比如 <code>RedisJobStore</code> 中采用的都是 <code>pickle</code>。</p>
-<h2 id="Events"><a href="#Events" class="headerlink" title="Events"></a>Events</h2><p>在 <code>Scheduler</code> 中，我们已经看到通过 <code>threading.Event</code> 来实现事件通知的，那么我们通知的 <code>Event</code> 都是在 <code>apscheduler.events</code> 中定义好的，比如：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">JobEvent</span><span class="params">(SchedulerEvent)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, code, job, scheduled_run_time, retval=None,</span></span></span><br><span class="line"><span class="function"><span class="params">                 exception=None, traceback=None)</span>:</span></span><br><span class="line">        SchedulerEvent.__init__(self, code)</span><br><span class="line">        self.job = job</span><br><span class="line">        self.scheduled_run_time = scheduled_run_time</span><br><span class="line">        self.retval = retval</span><br><span class="line">        self.exception = exception</span><br><span class="line">        self.traceback = traceback</span><br></pre></td></tr></table></figure>
-<p>在 <code>JobEvent</code> 中，我们能看到 job 的执行时间，返回值，异常捕获等信息。如果看过之前关于 <a href="https://zdyxry.github.io/2019/03/31/huey-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">huey 博客</a> 的同学应该知道，在 huey 中是可以直接通过 task id 获取 task 执行结果的，但是在 apscheduler 中，我们并没有直接获取该结果的方法，而是通过在 <code>Scheduler</code> 中的 <code>add_listener</code> 添加监听者，监控指定成功的 Job 获取该 Job 的返回值，感觉这里不太友好。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里我们基本上已经将 apscheduler 的流程走了一遍，具体的 Trigger 计算时间的方法之后有机会单独写一下关于 cron，interval，date 的计算方法。</p>
-<p>与 huey 相比，apscheduler 使用上要简单，但是简单也意味着功能的不足，比如获取 job 执行结果、job retry 机制等等。当然也有比较好的地方，apscheduler 在跟 web 框架比如 Flask，Django 集成的时候有一些第三方插件可以直接使用，不用像 Huey 一样要单独启动一个 consumer 进程，比较方便。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2106,7 +2186,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">102</span>
+                  <span class="site-state-item-count">103</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
