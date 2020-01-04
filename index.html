@@ -275,7 +275,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/01/03/为什么你的-flannel-1-会消失/">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/01/03/为什么-flannel-1-丢失后不会自动重建/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="yiran">
@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2020/01/03/为什么你的-flannel-1-会消失/" itemprop="url">为什么 flannel.1 丢失后不会自动重建</a></h1>
+                <a class="post-title-link" href="/2020/01/03/为什么-flannel-1-丢失后不会自动重建/" itemprop="url">为什么 flannel.1 丢失后不会自动重建</a></h1>
         
 
         <div class="post-meta">
@@ -325,8 +325,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/01/03/为什么你的-flannel-1-会消失/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/01/03/为什么你的-flannel-1-会消失/" itemprop="commentCount"></span>
+                <a href="/2020/01/03/为什么-flannel-1-丢失后不会自动重建/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/01/03/为什么-flannel-1-丢失后不会自动重建/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -379,7 +379,7 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">[root@install2 09:34:47 net.d]$pwd</span><br><span class="line">/etc/cni/net.d</span><br><span class="line">[root@install2 09:34:48 net.d]$cat 10-flannel.conflist</span><br><span class="line">&#123;</span><br><span class="line">  "name": "cbr0",</span><br><span class="line">  "cniVersion": "0.3.1",</span><br><span class="line">  "plugins": [</span><br><span class="line">    &#123;</span><br><span class="line">      "type": "flannel",</span><br><span class="line">      "delegate": &#123;</span><br><span class="line">        "hairpinMode": true,</span><br><span class="line">        "isDefaultGateway": true</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">      "type": "portmap",</span><br><span class="line">      "capabilities": &#123;</span><br><span class="line">        "portMappings": true</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>大概了解了 CNI Flannel Plugin ，说好的 <code>flannel.1</code> 呢？既然确定了 <code>flannel.1</code> 不是 CNI Plugin 里面实现的，那肯定就是 Flannel 自己的行为了，接下来看 <code>Flannel</code> 代码就可以了。</p>
 <h2 id="Flannel"><a href="#Flannel" class="headerlink" title="Flannel"></a>Flannel</h2><p>提到 Flannel，就不得不拿出这张图：</p>
-<img src="/2020/01/03/为什么你的-flannel-1-会消失/flannel.png" title="Flannel">
+
 <h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:~/go/src/github.com/coreos/flannel</span><br><span class="line">master ✗ $ tree . -L 1</span><br><span class="line">├── backend # 后端实现：vxlan,udp,hostgw</span><br><span class="line">├── main.go # 入口</span><br><span class="line">├── network # IPtables 相关配置</span><br><span class="line">├── pkg     # 辅助功能，如 IP，Namespace</span><br><span class="line">├── README.md</span><br><span class="line">├── subnet  # 子网管理，K8s 通信相关</span><br></pre></td></tr></table></figure>
 <h3 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h3><p>我们先来回想一下 K8s 集群部署，我们通过 kubeadm 指定了 Pod CIDR 为 <code>10.244.0.0/16</code> ：</p>
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">apiServer:</span> <span class="string">&#123;&#125;</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kubeadm.k8s.io/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ClusterConfiguration</span></span><br><span class="line"><span class="attr">kubernetesVersion:</span> <span class="string">""</span></span><br><span class="line"><span class="attr">networking:</span></span><br><span class="line"><span class="attr">  dnsDomain:</span> <span class="string">""</span></span><br><span class="line"><span class="attr">  podSubnet:</span> <span class="number">10.244</span><span class="number">.0</span><span class="number">.0</span><span class="string">/16</span></span><br><span class="line"><span class="attr">  serviceSubnet:</span> <span class="string">""</span></span><br></pre></td></tr></table></figure>
