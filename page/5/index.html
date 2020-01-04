@@ -275,6 +275,281 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/06/15/Kubernetes-实战-高可用集群部署/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/06/15/Kubernetes-实战-高可用集群部署/" itemprop="url">Kubernetes 实战-高可用集群部署</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-15T01:44:28+08:00">
+                2019-06-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/06/15/Kubernetes-实战-高可用集群部署/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/06/15/Kubernetes-实战-高可用集群部署/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>本文所有节点 OS 均为 CentOS 7.4 。</p>
+<h3 id="1-关闭-selinux"><a href="#1-关闭-selinux" class="headerlink" title="1.关闭 selinux"></a>1.关闭 selinux</h3><p>所有节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># cat /etc/selinux/config </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># This file controls the state of SELinux on the system.</span></span><br><span class="line"><span class="comment"># SELINUX= can take one of these three values:</span></span><br><span class="line"><span class="comment">#     enforcing - SELinux security policy is enforced.</span></span><br><span class="line"><span class="comment">#     permissive - SELinux prints warnings instead of enforcing.</span></span><br><span class="line"><span class="comment">#     disabled - No SELinux policy is loaded.</span></span><br><span class="line">SELINUX=disabled</span><br><span class="line"><span class="comment"># SELINUXTYPE= can take one of three two values:</span></span><br><span class="line"><span class="comment">#     targeted - Targeted processes are protected,</span></span><br><span class="line"><span class="comment">#     minimum - Modification of targeted policy. Only selected processes are protected. </span></span><br><span class="line"><span class="comment">#     mls - Multi Level Security protection.</span></span><br><span class="line">SELINUXTYPE=targeted </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[root@node211 ~]<span class="comment"># getenforce </span></span><br><span class="line">Disabled</span><br></pre></td></tr></table></figure>
+<h3 id="2-关于-firewalld"><a href="#2-关于-firewalld" class="headerlink" title="2. 关于 firewalld"></a>2. 关于 firewalld</h3><p>所有节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># systemctl disable firewalld</span></span><br><span class="line">[root@node211 ~]<span class="comment"># systemctl stop firewalld</span></span><br><span class="line">[root@node211 ~]<span class="comment"># systemctl status firewalld</span></span><br><span class="line">[root@node211 ~]<span class="comment"># systemctl status firewalld</span></span><br><span class="line">● firewalld.service - firewalld - dynamic firewall daemon</span><br><span class="line">   Loaded: loaded (/usr/lib/systemd/system/firewalld.service; disabled; vendor preset: enabled)</span><br><span class="line">   Active: inactive (dead)</span><br><span class="line">     Docs: man:firewalld(1)</span><br></pre></td></tr></table></figure>
+<h3 id="3-安装必要-yum-源：epel-release"><a href="#3-安装必要-yum-源：epel-release" class="headerlink" title="3. 安装必要 yum 源：epel-release"></a>3. 安装必要 yum 源：epel-release</h3><p>所有节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># yum install epel-release</span></span><br><span class="line">[root@node211 ~]<span class="comment"># ls /etc/yum.repos.d/epel.repo </span></span><br><span class="line">/etc/yum.repos.d/epel.repo</span><br></pre></td></tr></table></figure>
+<h3 id="4-关闭节点-swap-空间"><a href="#4-关闭节点-swap-空间" class="headerlink" title="4. 关闭节点 swap 空间"></a>4. 关闭节点 swap 空间</h3><p>所有节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># cat /etc/fstab </span></span><br><span class="line"></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># /etc/fstab</span></span><br><span class="line"><span class="comment"># Created by anaconda on Thu Jun 13 09:45:52 2019</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Accessible filesystems, by reference, are maintained under '/dev/disk'</span></span><br><span class="line"><span class="comment"># See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">/dev/mapper/centos-root /                       xfs     defaults        0 0</span><br><span class="line">UUID=c0f0a31a-0c36-42cf-b52a-8f3b027ef948 /boot                   xfs     defaults        0 0</span><br><span class="line"><span class="comment">#/dev/mapper/centos-swap swap                    swap    defaults        0 0</span></span><br><span class="line">[root@node211 ~]<span class="comment"># free -h</span></span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:           3.7G        102M        3.3G        8.3M        230M        3.3G</span><br><span class="line">Swap:            0B          0B          0B</span><br></pre></td></tr></table></figure>
+<h3 id="5-安装-docker-ce"><a href="#5-安装-docker-ce" class="headerlink" title="5. 安装 docker-ce"></a>5. 安装 docker-ce</h3><p>所有节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># </span></span><br><span class="line">[root@node211 ~]<span class="comment"># head -n 6 /etc/yum.repos.d/docker-ce.repo</span></span><br><span class="line">[docker-ce-stable]</span><br><span class="line">name=Docker CE Stable - <span class="variable">$basearch</span></span><br><span class="line">baseurl=https://download.docker.com/linux/centos/7/<span class="variable">$basearch</span>/stable</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=1</span><br><span class="line">gpgkey=https://download.docker.com/linux/centos/gpg</span><br><span class="line">[root@node211 ~]<span class="comment"># rpm -q docker</span></span><br><span class="line">docker-1.13.1-96.gitb2f74b2.el7.centos.x86_64</span><br><span class="line">[root@node211 ~]<span class="comment"># systemctl enable docker</span></span><br><span class="line">[root@node211 ~]<span class="comment"># systemctl start docker</span></span><br><span class="line">[root@node211 ~]<span class="comment"># systemctl status docker</span></span><br><span class="line">● docker.service - Docker Application Container Engine</span><br><span class="line">   Loaded: loaded (/usr/lib/systemd/system/docker.service; enabled; vendor preset: disabled)</span><br><span class="line">   Active: active (running) since Fri 2019-06-14 19:48:40 CST; 3s ago</span><br><span class="line">     Docs: http://docs.docker.com</span><br><span class="line"> Main PID: 11488 (dockerd-current)</span><br><span class="line">   CGroup: /system.slice/docker.service</span><br><span class="line">           ├─11488 /usr/bin/dockerd-current --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current --default-runtime=docker-runc --<span class="built_in">exec</span>-opt native.cgroupdriver=systemd --userland-proxy-path=/usr/libexec/docker/docker-proxy-current --init-path=/usr...</span><br><span class="line">           └─11495 /usr/bin/docker-containerd-current -l unix:///var/run/docker/libcontainerd/docker-containerd.sock --metrics-interval=0 --start-timeout 2m --state-dir /var/run/docker/libcontainerd/containerd --shim docker-containerd-shim --runtime docker-r...</span><br><span class="line"></span><br><span class="line">Jun 14 19:48:40 node211 dockerd-current[11488]: time=<span class="string">"2019-06-14T19:48:40.282909889+08:00"</span> level=info msg=<span class="string">"Docker daemon"</span> commit=<span class="string">"b2f74b2/1.13.1"</span> graphdriver=overlay2 version=1.13.1</span><br><span class="line">Jun 14 19:48:40 node211 dockerd-current[11488]: time=<span class="string">"2019-06-14T19:48:40.293315055+08:00"</span> level=info msg=<span class="string">"API listen on /var/run/docker.sock"</span></span><br><span class="line">Jun 14 19:48:40 node211 systemd[1]: Started Docker Application Container Engine.</span><br></pre></td></tr></table></figure>
+<h3 id="6-开启必要系统参数-sysctl"><a href="#6-开启必要系统参数-sysctl" class="headerlink" title="6. 开启必要系统参数 sysctl"></a>6. 开启必要系统参数 sysctl</h3><p>所有节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># sysctl -p</span></span><br><span class="line">net.bridge.bridge-nf-call-ip6tables = 1</span><br><span class="line">net.bridge.bridge-nf-call-iptables = 1</span><br></pre></td></tr></table></figure>
+<h2 id="kubeadm"><a href="#kubeadm" class="headerlink" title="kubeadm"></a>kubeadm</h2><p>因为 kubeadm 官方文档中没有详细步骤，因此相关描述尽量具体到命令行。</p>
+<h3 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h3><table>
+<thead>
+<tr>
+<th>ip</th>
+<th>role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>192.168.77.211</td>
+<td>master</td>
+</tr>
+<tr>
+<td>192.168.77.212</td>
+<td>master</td>
+</tr>
+<tr>
+<td>192.168.77.213</td>
+<td>master </td>
+</tr>
+<tr>
+<td>192.168.77.214</td>
+<td>node</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-安装-kubeadm"><a href="#1-安装-kubeadm" class="headerlink" title="1. 安装 kubeadm"></a>1. 安装 kubeadm</h3><p>所有节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># cat /etc/yum.repos.d/kubernetes.repo </span></span><br><span class="line">[kubernetes]</span><br><span class="line">name=Kubernetes</span><br><span class="line">baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=1</span><br><span class="line">repo_gpgcheck=1</span><br><span class="line">gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg</span><br><span class="line">proxy=socks5://127.0.0.1:1080</span><br><span class="line">[root@node211 ~]<span class="comment"># yum install kubeadm kubelet</span></span><br><span class="line">[root@node211 ~]<span class="comment"># which kubeadm </span></span><br><span class="line">/usr/bin/kubeadm</span><br></pre></td></tr></table></figure>
+<h3 id="2-安装-keepalived"><a href="#2-安装-keepalived" class="headerlink" title="2. 安装 keepalived"></a>2. 安装 keepalived</h3><p>所有 master 节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># yum install keepalived</span></span><br><span class="line">[root@node212 ~]<span class="comment"># yum install keepalived </span></span><br><span class="line">[root@node213 ~]<span class="comment"># yum install keepalived</span></span><br></pre></td></tr></table></figure>
+<p>编辑 node211 配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># cat /etc/keepalived/keepalived.conf </span></span><br><span class="line">! Configuration File <span class="keyword">for</span> keepalived</span><br><span class="line"></span><br><span class="line">global_defs &#123;</span><br><span class="line">   notification_email &#123;</span><br><span class="line">        feng110498@163.com</span><br><span class="line">   &#125;</span><br><span class="line">   notification_email_from Alexandre.Cassen@firewall.loc</span><br><span class="line">   smtp_server 127.0.0.1</span><br><span class="line">   smtp_connect_timeout 30</span><br><span class="line">   router_id LVS_1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">vrrp_instance VI_1 &#123;</span><br><span class="line">    state MASTER          </span><br><span class="line">    interface eth0</span><br><span class="line">    lvs_sync_daemon_inteface eth0</span><br><span class="line">    virtual_router_id 79</span><br><span class="line">    advert_int 1</span><br><span class="line">    priority 100         </span><br><span class="line">    authentication &#123;</span><br><span class="line">        auth_type PASS</span><br><span class="line">        auth_pass 1111</span><br><span class="line">    &#125;</span><br><span class="line">    virtual_ipaddress &#123;</span><br><span class="line">      192.168.77.219/20</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编辑 node212 配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@node212 ~]<span class="comment"># cat /etc/keepalived/keepalived.conf </span></span><br><span class="line">! Configuration File <span class="keyword">for</span> keepalived</span><br><span class="line"></span><br><span class="line">global_defs &#123;</span><br><span class="line">   notification_email &#123;</span><br><span class="line">        feng110498@163.com</span><br><span class="line">   &#125;</span><br><span class="line">   notification_email_from Alexandre.Cassen@firewall.loc</span><br><span class="line">   smtp_server 127.0.0.1</span><br><span class="line">   smtp_connect_timeout 30</span><br><span class="line">   router_id LVS_1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">vrrp_instance VI_1 &#123;</span><br><span class="line">    state MASTER          </span><br><span class="line">    interface eth0</span><br><span class="line">    lvs_sync_daemon_inteface eth0</span><br><span class="line">    virtual_router_id 79</span><br><span class="line">    advert_int 1</span><br><span class="line">    priority 90         </span><br><span class="line">    authentication &#123;</span><br><span class="line">        auth_type PASS</span><br><span class="line">        auth_pass 1111</span><br><span class="line">    &#125;</span><br><span class="line">    virtual_ipaddress &#123;</span><br><span class="line">      192.168.77.219/20</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编辑 node213 配置文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@node213 ~]<span class="comment"># cat /etc/keepalived/keepalived.conf </span></span><br><span class="line">! Configuration File <span class="keyword">for</span> keepalived</span><br><span class="line"></span><br><span class="line">global_defs &#123;</span><br><span class="line">   notification_email &#123;</span><br><span class="line">        feng110498@163.com</span><br><span class="line">   &#125;</span><br><span class="line">   notification_email_from Alexandre.Cassen@firewall.loc</span><br><span class="line">   smtp_server 127.0.0.1</span><br><span class="line">   smtp_connect_timeout 30</span><br><span class="line">   router_id LVS_1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">vrrp_instance VI_1 &#123;</span><br><span class="line">    state MASTER          </span><br><span class="line">    interface eth0</span><br><span class="line">    lvs_sync_daemon_inteface eth0</span><br><span class="line">    virtual_router_id 79</span><br><span class="line">    advert_int 1</span><br><span class="line">    priority 70         </span><br><span class="line">    authentication &#123;</span><br><span class="line">        auth_type PASS</span><br><span class="line">        auth_pass 1111</span><br><span class="line">    &#125;</span><br><span class="line">    virtual_ipaddress &#123;</span><br><span class="line">      192.168.77.219/20</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>node211, node212, node213 重启 keepalived：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># systemctl restart keepalived</span></span><br><span class="line">[root@node212 ~]<span class="comment"># systemctl restart keepalived</span></span><br><span class="line">[root@node213 ~]<span class="comment"># systemctl restart keepalived</span></span><br></pre></td></tr></table></figure>
+<p>因为 node211 优先级最高，此时 VIP 192.168.77.219 应该在 node211 节点，查看 node211 节点 IP：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># ip ad </span></span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN qlen 1</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">    inet 127.0.0.1/8 scope host lo</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 ::1/128 scope host </span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP qlen 1000</span><br><span class="line">    link/ether 52:54:00:42:fd:a6 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 192.168.77.211/20 brd 192.168.79.255 scope global eth0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet 192.168.77.219/20 scope global secondary eth0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 fe80::5554:b212:7895:c8ad/64 scope link tentative dadfailed </span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 fe80::3e97:25b9:cc1a:809c/64 scope link tentative dadfailed </span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 fe80::7a4f:3726:af17:18bf/64 scope link tentative dadfailed </span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">3: docker0: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN </span><br><span class="line">    link/ether 02:42:6f:0e:81:59 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 172.17.0.1/16 scope global docker0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br></pre></td></tr></table></figure>
+<p>配置无异常，node211,node212,node213 设置开机自启动：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># systemctl enable keepalived</span></span><br><span class="line">Created symlink from /etc/systemd/system/multi-user.target.wants/keepalived.service to /usr/lib/systemd/system/keepalived.service.</span><br><span class="line">[root@node212 ~]<span class="comment"># systemctl enable keepalived</span></span><br><span class="line">Created symlink from /etc/systemd/system/multi-user.target.wants/keepalived.service to /usr/lib/systemd/system/keepalived.service.</span><br><span class="line">[root@node213 ~]<span class="comment"># systemctl enable keepalived</span></span><br><span class="line">Created symlink from /etc/systemd/system/multi-user.target.wants/keepalived.service to /usr/lib/systemd/system/keepalived.service.</span><br></pre></td></tr></table></figure>
+<h3 id="3-安装-haproxy"><a href="#3-安装-haproxy" class="headerlink" title="3. 安装 haproxy"></a>3. 安装 haproxy</h3><p>所有 master 节点执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># yum install haproxy</span></span><br><span class="line">[root@node212 ~]<span class="comment"># yum install haproxy</span></span><br><span class="line">[root@node213 ~]<span class="comment"># yum install haproxy</span></span><br></pre></td></tr></table></figure>
+<p>编辑所有 master 节点配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># cat /etc/haproxy/haproxy.cfg </span></span><br><span class="line">global</span><br><span class="line">        chroot  /var/lib/haproxy</span><br><span class="line">        daemon</span><br><span class="line">        group haproxy</span><br><span class="line">        user haproxy</span><br><span class="line">        <span class="built_in">log</span> 127.0.0.1:514 local0 warning</span><br><span class="line">        pidfile /var/lib/haproxy.pid</span><br><span class="line">        maxconn 20000</span><br><span class="line">        spread-checks 3</span><br><span class="line">        nbproc 8</span><br><span class="line"></span><br><span class="line">defaults</span><br><span class="line">        <span class="built_in">log</span>     global</span><br><span class="line">        mode    tcp</span><br><span class="line">        retries 3</span><br><span class="line">        option redispatch</span><br><span class="line"></span><br><span class="line">listen https-apiserver</span><br><span class="line">        <span class="built_in">bind</span> *:8443</span><br><span class="line">        mode tcp</span><br><span class="line">        balance roundrobin</span><br><span class="line">        timeout server 900s</span><br><span class="line">        timeout connect 15s</span><br><span class="line"></span><br><span class="line">        server m1 192.168.77.211:6443 check port 6443 inter 5000 fall 5</span><br><span class="line">        server m2 192.168.77.212:6443 check port 6443 inter 5000 fall 5</span><br><span class="line">        server m3 192.168.77.213:6443 check port 6443 inter 5000 fall 5</span><br></pre></td></tr></table></figure>
+<p>所有 master 节点启动 haproxy，并设置 开机自启动：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># systemctl start haproxy </span></span><br><span class="line">[root@node211 ~]<span class="comment"># systemctl enable haproxy</span></span><br><span class="line">Created symlink from /etc/systemd/system/multi-user.target.wants/haproxy.service to /usr/lib/systemd/system/haproxy.service.</span><br><span class="line">[root@node212 ~]<span class="comment"># systemctl start haproxy </span></span><br><span class="line">[root@node212 ~]<span class="comment"># systemctl enable haproxy</span></span><br><span class="line">Created symlink from /etc/systemd/system/multi-user.target.wants/haproxy.service to /usr/lib/systemd/system/haproxy.service.</span><br><span class="line">[root@node213 ~]<span class="comment"># systemctl start haproxy </span></span><br><span class="line">[root@node213 ~]<span class="comment"># systemctl enable haproxy</span></span><br><span class="line">Created symlink from /etc/systemd/system/multi-user.target.wants/haproxy.service to /usr/lib/systemd/system/haproxy.service.</span><br></pre></td></tr></table></figure>
+<h3 id="4-编写-kubeadm-配置文件"><a href="#4-编写-kubeadm-配置文件" class="headerlink" title="4. 编写 kubeadm 配置文件"></a>4. 编写 kubeadm 配置文件</h3><p>在 node211 节点编写 kubeadm 配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># cat kubeadm-init.yaml</span></span><br><span class="line">apiVersion: kubeadm.k8s.io/v1beta1</span><br><span class="line">kind: ClusterConfiguration</span><br><span class="line">apiServer:</span><br><span class="line">  timeoutForControlPlane: 4m0s</span><br><span class="line">certificatesDir: /etc/kubernetes/pki</span><br><span class="line">clusterName: kubernetes</span><br><span class="line">controlPlaneEndpoint: <span class="string">"192.168.77.219:8443"</span></span><br><span class="line">dns:</span><br><span class="line">  <span class="built_in">type</span>: CoreDNS</span><br><span class="line">etcd:</span><br><span class="line">  <span class="built_in">local</span>:</span><br><span class="line">    dataDir: /var/lib/etcd</span><br><span class="line">imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers</span><br><span class="line">kubernetesVersion: v1.14.3</span><br><span class="line">networking:</span><br><span class="line">  dnsDomain: cluster.local</span><br><span class="line">  podSubnet: <span class="string">"10.123.0.0/16"</span></span><br><span class="line">scheduler: &#123;&#125;</span><br><span class="line">controllerManager: &#123;&#125;</span><br><span class="line">---</span><br><span class="line">apiVersion: kubeproxy.config.k8s.io/v1alpha1</span><br><span class="line">kind: KubeProxyConfiguration</span><br><span class="line">mode: <span class="string">"ipvs"</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-初始化"><a href="#5-初始化" class="headerlink" title="5. 初始化"></a>5. 初始化</h3><p>在 node211 节点执行初始化操作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># kubeadm init --config=kubeadm-init.yaml --experimental-upload-certs</span></span><br><span class="line">[init] Using Kubernetes version: v1.14.3</span><br><span class="line">[preflight] Running pre-flight checks</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node211"</span> could not be reached</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node211"</span>: lookup node211 on 192.168.64.215:53: no such host</span><br><span class="line">	[WARNING Service-Kubelet]: kubelet service is not enabled, please run <span class="string">'systemctl enable kubelet.service'</span></span><br><span class="line">	[WARNING RequiredIPVSKernelModulesAvailable]: </span><br><span class="line"></span><br><span class="line">The IPVS proxier may not be used because the following required kernel modules are not loaded: [ip_vs_rr ip_vs_wrr ip_vs_sh]</span><br><span class="line">or no <span class="built_in">builtin</span> kernel IPVS support was found: map[ip_vs:&#123;&#125; ip_vs_rr:&#123;&#125; ip_vs_sh:&#123;&#125; ip_vs_wrr:&#123;&#125; nf_conntrack_ipv4:&#123;&#125;].</span><br><span class="line">However, these modules may be loaded automatically by kube-proxy <span class="keyword">if</span> they are available on your system.</span><br><span class="line">To verify IPVS support:</span><br><span class="line"></span><br><span class="line">   Run <span class="string">"lsmod | grep 'ip_vs|nf_conntrack'"</span> and verify each of the above modules are listed.</span><br><span class="line"></span><br><span class="line">If they are not listed, you can use the following methods to load them:</span><br><span class="line"></span><br><span class="line">1. For each missing module run <span class="string">'modprobe $modulename'</span> (e.g., <span class="string">'modprobe ip_vs'</span>, <span class="string">'modprobe ip_vs_rr'</span>, ...)</span><br><span class="line">2. If <span class="string">'modprobe $modulename'</span> returns an error, you will need to install the missing module support <span class="keyword">for</span> your kernel.</span><br><span class="line"></span><br><span class="line">[preflight] Pulling images required <span class="keyword">for</span> setting up a Kubernetes cluster</span><br><span class="line">[preflight] This might take a minute or two, depending on the speed of your internet connection</span><br><span class="line">[preflight] You can also perform this action <span class="keyword">in</span> beforehand using <span class="string">'kubeadm config images pull'</span></span><br><span class="line">[kubelet-start] Writing kubelet environment file with flags to file <span class="string">"/var/lib/kubelet/kubeadm-flags.env"</span></span><br><span class="line">[kubelet-start] Writing kubelet configuration to file <span class="string">"/var/lib/kubelet/config.yaml"</span></span><br><span class="line">[kubelet-start] Activating the kubelet service</span><br><span class="line">[certs] Using certificateDir folder <span class="string">"/etc/kubernetes/pki"</span></span><br><span class="line">[certs] Generating <span class="string">"ca"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"apiserver"</span> certificate and key</span><br><span class="line">[certs] apiserver serving cert is signed <span class="keyword">for</span> DNS names [node211 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 192.168.77.211 192.168.77.219]</span><br><span class="line">[certs] Generating <span class="string">"apiserver-kubelet-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"front-proxy-ca"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"front-proxy-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"etcd/ca"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"etcd/server"</span> certificate and key</span><br><span class="line">[certs] etcd/server serving cert is signed <span class="keyword">for</span> DNS names [node211 localhost] and IPs [192.168.77.211 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"etcd/peer"</span> certificate and key</span><br><span class="line">[certs] etcd/peer serving cert is signed <span class="keyword">for</span> DNS names [node211 localhost] and IPs [192.168.77.211 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"etcd/healthcheck-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"apiserver-etcd-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"sa"</span> key and public key</span><br><span class="line">[kubeconfig] Using kubeconfig folder <span class="string">"/etc/kubernetes"</span></span><br><span class="line">[endpoint] WARNING: port specified <span class="keyword">in</span> controlPlaneEndpoint overrides bindPort <span class="keyword">in</span> the controlplane address</span><br><span class="line">[kubeconfig] Writing <span class="string">"admin.conf"</span> kubeconfig file</span><br><span class="line">[endpoint] WARNING: port specified <span class="keyword">in</span> controlPlaneEndpoint overrides bindPort <span class="keyword">in</span> the controlplane address</span><br><span class="line">[kubeconfig] Writing <span class="string">"kubelet.conf"</span> kubeconfig file</span><br><span class="line">[endpoint] WARNING: port specified <span class="keyword">in</span> controlPlaneEndpoint overrides bindPort <span class="keyword">in</span> the controlplane address</span><br><span class="line">[kubeconfig] Writing <span class="string">"controller-manager.conf"</span> kubeconfig file</span><br><span class="line">[endpoint] WARNING: port specified <span class="keyword">in</span> controlPlaneEndpoint overrides bindPort <span class="keyword">in</span> the controlplane address</span><br><span class="line">[kubeconfig] Writing <span class="string">"scheduler.conf"</span> kubeconfig file</span><br><span class="line">[control-plane] Using manifest folder <span class="string">"/etc/kubernetes/manifests"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-apiserver"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-controller-manager"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-scheduler"</span></span><br><span class="line">[etcd] Creating static Pod manifest <span class="keyword">for</span> <span class="built_in">local</span> etcd <span class="keyword">in</span> <span class="string">"/etc/kubernetes/manifests"</span></span><br><span class="line">[<span class="built_in">wait</span>-control-plane] Waiting <span class="keyword">for</span> the kubelet to boot up the control plane as static Pods from directory <span class="string">"/etc/kubernetes/manifests"</span>. This can take up to 4m0s</span><br><span class="line">[kubelet-check] Initial timeout of 40s passed.</span><br><span class="line">[apiclient] All control plane components are healthy after 107.014141 seconds</span><br><span class="line">[upload-config] storing the configuration used <span class="keyword">in</span> ConfigMap <span class="string">"kubeadm-config"</span> <span class="keyword">in</span> the <span class="string">"kube-system"</span> Namespace</span><br><span class="line">[kubelet] Creating a ConfigMap <span class="string">"kubelet-config-1.14"</span> <span class="keyword">in</span> namespace kube-system with the configuration <span class="keyword">for</span> the kubelets <span class="keyword">in</span> the cluster</span><br><span class="line">[upload-certs] Storing the certificates <span class="keyword">in</span> ConfigMap <span class="string">"kubeadm-certs"</span> <span class="keyword">in</span> the <span class="string">"kube-system"</span> Namespace</span><br><span class="line">[upload-certs] Using certificate key:</span><br><span class="line">1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span><br><span class="line">[mark-control-plane] Marking the node node211 as control-plane by adding the label <span class="string">"node-role.kubernetes.io/master=''"</span></span><br><span class="line">[mark-control-plane] Marking the node node211 as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]</span><br><span class="line">[bootstrap-token] Using token: ptuvy5.hl4rzxugpxpgkgkh</span><br><span class="line">[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles</span><br><span class="line">[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to post CSRs <span class="keyword">in</span> order <span class="keyword">for</span> nodes to get long term certificate credentials</span><br><span class="line">[bootstrap-token] configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token</span><br><span class="line">[bootstrap-token] configured RBAC rules to allow certificate rotation <span class="keyword">for</span> all node client certificates <span class="keyword">in</span> the cluster</span><br><span class="line">[bootstrap-token] creating the <span class="string">"cluster-info"</span> ConfigMap <span class="keyword">in</span> the <span class="string">"kube-public"</span> namespace</span><br><span class="line">[addons] Applied essential addon: CoreDNS</span><br><span class="line">[endpoint] WARNING: port specified <span class="keyword">in</span> controlPlaneEndpoint overrides bindPort <span class="keyword">in</span> the controlplane address</span><br><span class="line">[addons] Applied essential addon: kube-proxy</span><br><span class="line"></span><br><span class="line">Your Kubernetes control-plane has initialized successfully!</span><br><span class="line"></span><br><span class="line">To start using your cluster, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">  mkdir -p <span class="variable">$HOME</span>/.kube</span><br><span class="line">  sudo cp -i /etc/kubernetes/admin.conf <span class="variable">$HOME</span>/.kube/config</span><br><span class="line">  sudo chown $(id -u):$(id -g) <span class="variable">$HOME</span>/.kube/config</span><br><span class="line"></span><br><span class="line">You should now deploy a pod network to the cluster.</span><br><span class="line">Run <span class="string">"kubectl apply -f [podnetwork].yaml"</span> with one of the options listed at:</span><br><span class="line">  https://kubernetes.io/docs/concepts/cluster-administration/addons/</span><br><span class="line"></span><br><span class="line">You can now join any number of the control-plane node running the following <span class="built_in">command</span> on each as root:</span><br><span class="line"></span><br><span class="line">  kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh \</span><br><span class="line">    --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4 \</span><br><span class="line">    --experimental-control-plane --certificate-key 1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span><br><span class="line"></span><br><span class="line">Please note that the certificate-key gives access to cluster sensitive data, keep it secret!</span><br><span class="line">As a safeguard, uploaded-certs will be deleted <span class="keyword">in</span> two hours; If necessary, you can use </span><br><span class="line"><span class="string">"kubeadm init phase upload-certs --experimental-upload-certs"</span> to reload certs afterward.</span><br><span class="line"></span><br><span class="line">Then you can join any number of worker nodes by running the following on each as root:</span><br><span class="line"></span><br><span class="line">kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh \</span><br><span class="line">    --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4</span><br></pre></td></tr></table></figure>
+<p>按照说明，拷贝 kubectl 配置文件并验证：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># mkdir -p $HOME/.kube</span></span><br><span class="line">[root@node211 ~]<span class="comment"># sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span></span><br><span class="line">[root@node211 ~]<span class="comment"># sudo chown $(id -u):$(id -g) $HOME/.kube/config</span></span><br><span class="line">[root@node211 ~]<span class="comment"># kubectl get node</span></span><br><span class="line">NAME      STATUS     ROLES    AGE   VERSION</span><br><span class="line">node211   NotReady   master   82s   v1.14.3</span><br></pre></td></tr></table></figure>
+<h3 id="6-部署-flannel-网络插件"><a href="#6-部署-flannel-网络插件" class="headerlink" title="6. 部署 flannel 网络插件"></a>6. 部署 flannel 网络插件</h3><p>在 node211 节点部署 flannel 插件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/a70459be0084506e4ec919aa1c114638878db11b/Documentation/kube-flannel.yml</span></span><br><span class="line">clusterrole.rbac.authorization.k8s.io/flannel created</span><br><span class="line">clusterrolebinding.rbac.authorization.k8s.io/flannel created</span><br><span class="line">serviceaccount/flannel created</span><br><span class="line">configmap/kube-flannel-cfg created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-amd64 created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-arm64 created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-arm created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-ppc64le created</span><br><span class="line">daemonset.extensions/kube-flannel-ds-s390x created</span><br></pre></td></tr></table></figure>
+<p>查看部署状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># kubectl get pod -n kube-system</span></span><br><span class="line">NAME                              READY   STATUS    RESTARTS   AGE</span><br><span class="line">coredns-d5947d4b-rn2wl            0/1     Pending   0          3m17s</span><br><span class="line">coredns-d5947d4b-zdptx            0/1     Pending   0          3m17s</span><br><span class="line">etcd-node211                      1/1     Running   0          2m48s</span><br><span class="line">kube-apiserver-node211            1/1     Running   0          2m28s</span><br><span class="line">kube-controller-manager-node211   1/1     Running   0          2m59s</span><br><span class="line">kube-flannel-ds-amd64-vzk7c       1/1     Running   0          36s</span><br><span class="line">kube-proxy-w5gsg                  1/1     Running   0          3m16s</span><br><span class="line">kube-scheduler-node211            1/1     Running   0          2m41s</span><br></pre></td></tr></table></figure>
+<h3 id="7-添加其他-master-节点"><a href="#7-添加其他-master-节点" class="headerlink" title="7. 添加其他 master 节点"></a>7. 添加其他 master 节点</h3><p>按照 node211 初始化提示，在 node212 节点及 node213 节点添加到集群，角色为 master：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line">[root@node212 ~]<span class="comment"># kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh \</span></span><br><span class="line">&gt;     --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4 \</span><br><span class="line">&gt;     --experimental-control-plane --certificate-key 1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span><br><span class="line">[preflight] Running pre-flight checks</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node212"</span> could not be reached</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node212"</span>: lookup node212 on 192.168.64.215:53: no such host</span><br><span class="line">	[WARNING Service-Kubelet]: kubelet service is not enabled, please run <span class="string">'systemctl enable kubelet.service'</span></span><br><span class="line">[preflight] Reading configuration from the cluster...</span><br><span class="line">[preflight] FYI: You can look at this config file with <span class="string">'kubectl -n kube-system get cm kubeadm-config -oyaml'</span></span><br><span class="line">	[WARNING RequiredIPVSKernelModulesAvailable]: </span><br><span class="line"></span><br><span class="line">The IPVS proxier may not be used because the following required kernel modules are not loaded: [ip_vs_sh ip_vs_rr ip_vs_wrr]</span><br><span class="line">or no <span class="built_in">builtin</span> kernel IPVS support was found: map[ip_vs:&#123;&#125; ip_vs_rr:&#123;&#125; ip_vs_sh:&#123;&#125; ip_vs_wrr:&#123;&#125; nf_conntrack_ipv4:&#123;&#125;].</span><br><span class="line">However, these modules may be loaded automatically by kube-proxy <span class="keyword">if</span> they are available on your system.</span><br><span class="line">To verify IPVS support:</span><br><span class="line"></span><br><span class="line">   Run <span class="string">"lsmod | grep 'ip_vs|nf_conntrack'"</span> and verify each of the above modules are listed.</span><br><span class="line"></span><br><span class="line">If they are not listed, you can use the following methods to load them:</span><br><span class="line"></span><br><span class="line">1. For each missing module run <span class="string">'modprobe $modulename'</span> (e.g., <span class="string">'modprobe ip_vs'</span>, <span class="string">'modprobe ip_vs_rr'</span>, ...)</span><br><span class="line">2. If <span class="string">'modprobe $modulename'</span> returns an error, you will need to install the missing module support <span class="keyword">for</span> your kernel.</span><br><span class="line"></span><br><span class="line">[preflight] Running pre-flight checks before initializing the new control plane instance</span><br><span class="line">[preflight] Pulling images required <span class="keyword">for</span> setting up a Kubernetes cluster</span><br><span class="line">[preflight] This might take a minute or two, depending on the speed of your internet connection</span><br><span class="line">[preflight] You can also perform this action <span class="keyword">in</span> beforehand using <span class="string">'kubeadm config images pull'</span></span><br><span class="line">[download-certs] Downloading the certificates <span class="keyword">in</span> Secret <span class="string">"kubeadm-certs"</span> <span class="keyword">in</span> the <span class="string">"kube-system"</span> Namespace</span><br><span class="line">[certs] Using certificateDir folder <span class="string">"/etc/kubernetes/pki"</span></span><br><span class="line">[certs] Generating <span class="string">"etcd/server"</span> certificate and key</span><br><span class="line">[certs] etcd/server serving cert is signed <span class="keyword">for</span> DNS names [node212 localhost] and IPs [192.168.77.212 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"apiserver-etcd-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"etcd/peer"</span> certificate and key</span><br><span class="line">[certs] etcd/peer serving cert is signed <span class="keyword">for</span> DNS names [node212 localhost] and IPs [192.168.77.212 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"etcd/healthcheck-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"apiserver"</span> certificate and key</span><br><span class="line">[certs] apiserver serving cert is signed <span class="keyword">for</span> DNS names [node212 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 192.168.77.212 192.168.77.219]</span><br><span class="line">[certs] Generating <span class="string">"apiserver-kubelet-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"front-proxy-client"</span> certificate and key</span><br><span class="line">[certs] Valid certificates and keys now exist <span class="keyword">in</span> <span class="string">"/etc/kubernetes/pki"</span></span><br><span class="line">[certs] Using the existing <span class="string">"sa"</span> key</span><br><span class="line">[kubeconfig] Generating kubeconfig files</span><br><span class="line">[kubeconfig] Using kubeconfig folder <span class="string">"/etc/kubernetes"</span></span><br><span class="line">[endpoint] WARNING: port specified <span class="keyword">in</span> controlPlaneEndpoint overrides bindPort <span class="keyword">in</span> the controlplane address</span><br><span class="line">[kubeconfig] Writing <span class="string">"admin.conf"</span> kubeconfig file</span><br><span class="line">[kubeconfig] Writing <span class="string">"controller-manager.conf"</span> kubeconfig file</span><br><span class="line">[kubeconfig] Writing <span class="string">"scheduler.conf"</span> kubeconfig file</span><br><span class="line">[control-plane] Using manifest folder <span class="string">"/etc/kubernetes/manifests"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-apiserver"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-controller-manager"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-scheduler"</span></span><br><span class="line">[check-etcd] Checking that the etcd cluster is healthy</span><br><span class="line">[kubelet-start] Downloading configuration <span class="keyword">for</span> the kubelet from the <span class="string">"kubelet-config-1.14"</span> ConfigMap <span class="keyword">in</span> the kube-system namespace</span><br><span class="line">[kubelet-start] Writing kubelet configuration to file <span class="string">"/var/lib/kubelet/config.yaml"</span></span><br><span class="line">[kubelet-start] Writing kubelet environment file with flags to file <span class="string">"/var/lib/kubelet/kubeadm-flags.env"</span></span><br><span class="line">[kubelet-start] Activating the kubelet service</span><br><span class="line">[kubelet-start] Waiting <span class="keyword">for</span> the kubelet to perform the TLS Bootstrap...</span><br><span class="line">[etcd] Announced new etcd member joining to the existing etcd cluster</span><br><span class="line">[etcd] Wrote Static Pod manifest <span class="keyword">for</span> a <span class="built_in">local</span> etcd member to <span class="string">"/etc/kubernetes/manifests/etcd.yaml"</span></span><br><span class="line">[etcd] Waiting <span class="keyword">for</span> the new etcd member to join the cluster. This can take up to 40s</span><br><span class="line">[upload-config] storing the configuration used <span class="keyword">in</span> ConfigMap <span class="string">"kubeadm-config"</span> <span class="keyword">in</span> the <span class="string">"kube-system"</span> Namespace</span><br><span class="line">[mark-control-plane] Marking the node node212 as control-plane by adding the label <span class="string">"node-role.kubernetes.io/master=''"</span></span><br><span class="line">[mark-control-plane] Marking the node node212 as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]</span><br><span class="line"></span><br><span class="line">This node has joined the cluster and a new control plane instance was created:</span><br><span class="line"></span><br><span class="line">* Certificate signing request was sent to apiserver and approval was received.</span><br><span class="line">* The Kubelet was informed of the new secure connection details.</span><br><span class="line">* Control plane (master) label and taint were applied to the new node.</span><br><span class="line">* The Kubernetes control plane instances scaled up.</span><br><span class="line">* A new etcd member was added to the <span class="built_in">local</span>/stacked etcd cluster.</span><br><span class="line"></span><br><span class="line">To start administering your cluster from this node, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">	mkdir -p <span class="variable">$HOME</span>/.kube</span><br><span class="line">	sudo cp -i /etc/kubernetes/admin.conf <span class="variable">$HOME</span>/.kube/config</span><br><span class="line">	sudo chown $(id -u):$(id -g) <span class="variable">$HOME</span>/.kube/config</span><br><span class="line"></span><br><span class="line">Run <span class="string">'kubectl get nodes'</span> to see this node join the cluster.</span><br></pre></td></tr></table></figure>
+<p>按照说明，拷贝 kubectl 配置文件并验证：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node212 ~]<span class="comment"># mkdir -p $HOME/.kube</span></span><br><span class="line">[root@node212 ~]<span class="comment"># sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span></span><br><span class="line">[root@node212 ~]<span class="comment"># sudo chown $(id -u):$(id -g) $HOME/.kube/config</span></span><br><span class="line">[root@node212 ~]<span class="comment"># kubectl get node</span></span><br><span class="line">NAME      STATUS   ROLES    AGE     VERSION</span><br><span class="line">node211   Ready    master   7m48s   v1.14.3</span><br><span class="line">node212   Ready    master   66s     v1.14.3</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line">[root@node213 ~]<span class="comment"># kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh \</span></span><br><span class="line">&gt;     --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4 \</span><br><span class="line">&gt;     --experimental-control-plane --certificate-key 1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span><br><span class="line">[preflight] Running pre-flight checks</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node213"</span> could not be reached</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node213"</span>: lookup node213 on 192.168.64.215:53: no such host</span><br><span class="line">	[WARNING Service-Kubelet]: kubelet service is not enabled, please run <span class="string">'systemctl enable kubelet.service'</span></span><br><span class="line">[preflight] Reading configuration from the cluster...</span><br><span class="line">[preflight] FYI: You can look at this config file with <span class="string">'kubectl -n kube-system get cm kubeadm-config -oyaml'</span></span><br><span class="line">	[WARNING RequiredIPVSKernelModulesAvailable]: </span><br><span class="line"></span><br><span class="line">The IPVS proxier may not be used because the following required kernel modules are not loaded: [ip_vs_wrr ip_vs_sh ip_vs_rr]</span><br><span class="line">or no <span class="built_in">builtin</span> kernel IPVS support was found: map[ip_vs:&#123;&#125; ip_vs_rr:&#123;&#125; ip_vs_sh:&#123;&#125; ip_vs_wrr:&#123;&#125; nf_conntrack_ipv4:&#123;&#125;].</span><br><span class="line">However, these modules may be loaded automatically by kube-proxy <span class="keyword">if</span> they are available on your system.</span><br><span class="line">To verify IPVS support:</span><br><span class="line"></span><br><span class="line">   Run <span class="string">"lsmod | grep 'ip_vs|nf_conntrack'"</span> and verify each of the above modules are listed.</span><br><span class="line"></span><br><span class="line">If they are not listed, you can use the following methods to load them:</span><br><span class="line"></span><br><span class="line">1. For each missing module run <span class="string">'modprobe $modulename'</span> (e.g., <span class="string">'modprobe ip_vs'</span>, <span class="string">'modprobe ip_vs_rr'</span>, ...)</span><br><span class="line">2. If <span class="string">'modprobe $modulename'</span> returns an error, you will need to install the missing module support <span class="keyword">for</span> your kernel.</span><br><span class="line"></span><br><span class="line">[preflight] Running pre-flight checks before initializing the new control plane instance</span><br><span class="line">[preflight] Pulling images required <span class="keyword">for</span> setting up a Kubernetes cluster</span><br><span class="line">[preflight] This might take a minute or two, depending on the speed of your internet connection</span><br><span class="line">[preflight] You can also perform this action <span class="keyword">in</span> beforehand using <span class="string">'kubeadm config images pull'</span></span><br><span class="line">[download-certs] Downloading the certificates <span class="keyword">in</span> Secret <span class="string">"kubeadm-certs"</span> <span class="keyword">in</span> the <span class="string">"kube-system"</span> Namespace</span><br><span class="line">[certs] Using certificateDir folder <span class="string">"/etc/kubernetes/pki"</span></span><br><span class="line">[certs] Generating <span class="string">"front-proxy-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"etcd/server"</span> certificate and key</span><br><span class="line">[certs] etcd/server serving cert is signed <span class="keyword">for</span> DNS names [node213 localhost] and IPs [192.168.77.213 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"etcd/peer"</span> certificate and key</span><br><span class="line">[certs] etcd/peer serving cert is signed <span class="keyword">for</span> DNS names [node213 localhost] and IPs [192.168.77.213 127.0.0.1 ::1]</span><br><span class="line">[certs] Generating <span class="string">"etcd/healthcheck-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"apiserver-etcd-client"</span> certificate and key</span><br><span class="line">[certs] Generating <span class="string">"apiserver"</span> certificate and key</span><br><span class="line">[certs] apiserver serving cert is signed <span class="keyword">for</span> DNS names [node213 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 192.168.77.213 192.168.77.219]</span><br><span class="line">[certs] Generating <span class="string">"apiserver-kubelet-client"</span> certificate and key</span><br><span class="line">[certs] Valid certificates and keys now exist <span class="keyword">in</span> <span class="string">"/etc/kubernetes/pki"</span></span><br><span class="line">[certs] Using the existing <span class="string">"sa"</span> key</span><br><span class="line">[kubeconfig] Generating kubeconfig files</span><br><span class="line">[kubeconfig] Using kubeconfig folder <span class="string">"/etc/kubernetes"</span></span><br><span class="line">[endpoint] WARNING: port specified <span class="keyword">in</span> controlPlaneEndpoint overrides bindPort <span class="keyword">in</span> the controlplane address</span><br><span class="line">[kubeconfig] Writing <span class="string">"admin.conf"</span> kubeconfig file</span><br><span class="line">[kubeconfig] Writing <span class="string">"controller-manager.conf"</span> kubeconfig file</span><br><span class="line">[kubeconfig] Writing <span class="string">"scheduler.conf"</span> kubeconfig file</span><br><span class="line">[control-plane] Using manifest folder <span class="string">"/etc/kubernetes/manifests"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-apiserver"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-controller-manager"</span></span><br><span class="line">[control-plane] Creating static Pod manifest <span class="keyword">for</span> <span class="string">"kube-scheduler"</span></span><br><span class="line">[check-etcd] Checking that the etcd cluster is healthy</span><br><span class="line">[kubelet-start] Downloading configuration <span class="keyword">for</span> the kubelet from the <span class="string">"kubelet-config-1.14"</span> ConfigMap <span class="keyword">in</span> the kube-system namespace</span><br><span class="line">[kubelet-start] Writing kubelet configuration to file <span class="string">"/var/lib/kubelet/config.yaml"</span></span><br><span class="line">[kubelet-start] Writing kubelet environment file with flags to file <span class="string">"/var/lib/kubelet/kubeadm-flags.env"</span></span><br><span class="line">[kubelet-start] Activating the kubelet service</span><br><span class="line">[kubelet-start] Waiting <span class="keyword">for</span> the kubelet to perform the TLS Bootstrap...</span><br><span class="line">[etcd] Announced new etcd member joining to the existing etcd cluster</span><br><span class="line">[etcd] Wrote Static Pod manifest <span class="keyword">for</span> a <span class="built_in">local</span> etcd member to <span class="string">"/etc/kubernetes/manifests/etcd.yaml"</span></span><br><span class="line">[etcd] Waiting <span class="keyword">for</span> the new etcd member to join the cluster. This can take up to 40s</span><br><span class="line">[upload-config] storing the configuration used <span class="keyword">in</span> ConfigMap <span class="string">"kubeadm-config"</span> <span class="keyword">in</span> the <span class="string">"kube-system"</span> Namespace</span><br><span class="line">[mark-control-plane] Marking the node node213 as control-plane by adding the label <span class="string">"node-role.kubernetes.io/master=''"</span></span><br><span class="line">[mark-control-plane] Marking the node node213 as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]</span><br><span class="line"></span><br><span class="line">This node has joined the cluster and a new control plane instance was created:</span><br><span class="line"></span><br><span class="line">* Certificate signing request was sent to apiserver and approval was received.</span><br><span class="line">* The Kubelet was informed of the new secure connection details.</span><br><span class="line">* Control plane (master) label and taint were applied to the new node.</span><br><span class="line">* The Kubernetes control plane instances scaled up.</span><br><span class="line">* A new etcd member was added to the <span class="built_in">local</span>/stacked etcd cluster.</span><br><span class="line"></span><br><span class="line">To start administering your cluster from this node, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">	mkdir -p <span class="variable">$HOME</span>/.kube</span><br><span class="line">	sudo cp -i /etc/kubernetes/admin.conf <span class="variable">$HOME</span>/.kube/config</span><br><span class="line">	sudo chown $(id -u):$(id -g) <span class="variable">$HOME</span>/.kube/config</span><br><span class="line"></span><br><span class="line">Run <span class="string">'kubectl get nodes'</span> to see this node join the cluster.</span><br></pre></td></tr></table></figure>
+<p>按照说明，拷贝 kubectl 配置文件并验证：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@node213 ~]<span class="comment"># mkdir -p $HOME/.kube</span></span><br><span class="line">[root@node213 ~]<span class="comment"># sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span></span><br><span class="line">[root@node213 ~]<span class="comment"># sudo chown $(id -u):$(id -g) $HOME/.kube/config</span></span><br><span class="line">[root@node213 ~]<span class="comment"># kubectl get node</span></span><br><span class="line">NAME      STATUS   ROLES    AGE     VERSION</span><br><span class="line">node211   Ready    master   11m     v1.14.3</span><br><span class="line">node212   Ready    master   4m39s   v1.14.3</span><br><span class="line">node213   Ready    master   72s     v1.14.3</span><br></pre></td></tr></table></figure>
+<h3 id="8-添加其他-node-节点"><a href="#8-添加其他-node-节点" class="headerlink" title="8. 添加其他 node 节点"></a>8. 添加其他 node 节点</h3><p>按照 node211 初始化提示，添加 node214 节点到集群，角色为 node：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">[root@node214 ~]<span class="comment"># kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh \</span></span><br><span class="line">&gt;     --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4 </span><br><span class="line">[preflight] Running pre-flight checks</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node214"</span> could not be reached</span><br><span class="line">	[WARNING Hostname]: hostname <span class="string">"node214"</span>: lookup node214 on 192.168.64.215:53: no such host</span><br><span class="line">	[WARNING Service-Kubelet]: kubelet service is not enabled, please run <span class="string">'systemctl enable kubelet.service'</span></span><br><span class="line">[preflight] Reading configuration from the cluster...</span><br><span class="line">[preflight] FYI: You can look at this config file with <span class="string">'kubectl -n kube-system get cm kubeadm-config -oyaml'</span></span><br><span class="line">	[WARNING RequiredIPVSKernelModulesAvailable]: </span><br><span class="line"></span><br><span class="line">The IPVS proxier may not be used because the following required kernel modules are not loaded: [ip_vs_wrr ip_vs_sh ip_vs_rr]</span><br><span class="line">or no <span class="built_in">builtin</span> kernel IPVS support was found: map[ip_vs:&#123;&#125; ip_vs_rr:&#123;&#125; ip_vs_sh:&#123;&#125; ip_vs_wrr:&#123;&#125; nf_conntrack_ipv4:&#123;&#125;].</span><br><span class="line">However, these modules may be loaded automatically by kube-proxy <span class="keyword">if</span> they are available on your system.</span><br><span class="line">To verify IPVS support:</span><br><span class="line"></span><br><span class="line">   Run <span class="string">"lsmod | grep 'ip_vs|nf_conntrack'"</span> and verify each of the above modules are listed.</span><br><span class="line"></span><br><span class="line">If they are not listed, you can use the following methods to load them:</span><br><span class="line"></span><br><span class="line">1. For each missing module run <span class="string">'modprobe $modulename'</span> (e.g., <span class="string">'modprobe ip_vs'</span>, <span class="string">'modprobe ip_vs_rr'</span>, ...)</span><br><span class="line">2. If <span class="string">'modprobe $modulename'</span> returns an error, you will need to install the missing module support <span class="keyword">for</span> your kernel.</span><br><span class="line"></span><br><span class="line">[kubelet-start] Downloading configuration <span class="keyword">for</span> the kubelet from the <span class="string">"kubelet-config-1.14"</span> ConfigMap <span class="keyword">in</span> the kube-system namespace</span><br><span class="line">[kubelet-start] Writing kubelet configuration to file <span class="string">"/var/lib/kubelet/config.yaml"</span></span><br><span class="line">[kubelet-start] Writing kubelet environment file with flags to file <span class="string">"/var/lib/kubelet/kubeadm-flags.env"</span></span><br><span class="line">[kubelet-start] Activating the kubelet service</span><br><span class="line">[kubelet-start] Waiting <span class="keyword">for</span> the kubelet to perform the TLS Bootstrap...</span><br><span class="line"></span><br><span class="line">This node has joined the cluster:</span><br><span class="line">* Certificate signing request was sent to apiserver and a response was received.</span><br><span class="line">* The Kubelet was informed of the new secure connection details.</span><br><span class="line"></span><br><span class="line">Run <span class="string">'kubectl get nodes'</span> on the control-plane to see this node join the cluster.</span><br></pre></td></tr></table></figure>
+<p>至此 kubeadm 配合 keepalived &amp; haproxy 搭建高可用集群就完成了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">[root@node211 ~]<span class="comment"># kubectl get node</span></span><br><span class="line">NAME      STATUS   ROLES    AGE     VERSION</span><br><span class="line">node211   Ready    master   4h10m   v1.14.3</span><br><span class="line">node212   Ready    master   4h3m    v1.14.3</span><br><span class="line">node213   Ready    master   4h      v1.14.3</span><br><span class="line">node214   Ready    &lt;none&gt;   3h57m   v1.14.3</span><br><span class="line">[root@node211 ~]<span class="comment"># kubectl get pod -n kube-system</span></span><br><span class="line">NAME                              READY   STATUS    RESTARTS   AGE</span><br><span class="line">coredns-d5947d4b-rn2wl            1/1     Running   0          4h10m</span><br><span class="line">coredns-d5947d4b-zdptx            1/1     Running   0          4h10m</span><br><span class="line">etcd-node211                      1/1     Running   0          4h9m</span><br><span class="line">etcd-node212                      1/1     Running   0          4h3m</span><br><span class="line">etcd-node213                      1/1     Running   0          4h</span><br><span class="line">kube-apiserver-node211            1/1     Running   0          4h9m</span><br><span class="line">kube-apiserver-node212            1/1     Running   1          4h3m</span><br><span class="line">kube-apiserver-node213            1/1     Running   0          3h59m</span><br><span class="line">kube-controller-manager-node211   1/1     Running   1          4h9m</span><br><span class="line">kube-controller-manager-node212   1/1     Running   0          4h2m</span><br><span class="line">kube-controller-manager-node213   1/1     Running   0          3h59m</span><br><span class="line">kube-flannel-ds-amd64-gchpj       1/1     Running   0          4h</span><br><span class="line">kube-flannel-ds-amd64-mx44p       1/1     Running   0          3h57m</span><br><span class="line">kube-flannel-ds-amd64-vzk7c       1/1     Running   0          4h7m</span><br><span class="line">kube-flannel-ds-amd64-x9rm7       1/1     Running   0          4h3m</span><br><span class="line">kube-proxy-fj448                  1/1     Running   0          4h</span><br><span class="line">kube-proxy-jmhm7                  1/1     Running   0          4h3m</span><br><span class="line">kube-proxy-s7jdf                  1/1     Running   0          3h57m</span><br><span class="line">kube-proxy-w5gsg                  1/1     Running   0          4h10m</span><br><span class="line">kube-scheduler-node211            1/1     Running   1          4h9m</span><br><span class="line">kube-scheduler-node212            1/1     Running   0          4h2m</span><br><span class="line">kube-scheduler-node213            1/1     Running   0          3h59m</span><br></pre></td></tr></table></figure>
+<h3 id="HA-机制"><a href="#HA-机制" class="headerlink" title="HA 机制"></a>HA 机制</h3><p>由集群节点上运行的 keepalived &amp; haproxy 提供 VIP &amp; LB，集群中所有节点的 kubelet 连接至 VIP:<haproxy port> EndPoints。</haproxy></p>
+<p>当 VIP 所在节点发生故障，VIP 切换到集群中其他 master 节点，即可正常提供服务。</p>
+<h3 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h3><ol>
+<li>kubeadm 需要正常网络支持，需要确保自己处于正常网络环境下；</li>
+<li>kubeadm 在添加节点时，有可能会 hang 住，未查明原因；</li>
+<li>kubeadm 默认生成证书有效期为 1年，若想要修改，则需要手动生成证书替换；</li>
+<li>…</li>
+</ol>
+<h2 id="kubespray"><a href="#kubespray" class="headerlink" title="kubespray"></a>kubespray</h2><p>因为 kubespray 项目主要使用 ansible 配合 kubeadm 部署，具体内容可以直接查看 github 文档，因此不详细记录具体步骤。</p>
+<h3 id="环境信息-1"><a href="#环境信息-1" class="headerlink" title="环境信息"></a>环境信息</h3><table>
+<thead>
+<tr>
+<th>ip</th>
+<th>role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>192.168.77.201</td>
+<td>master</td>
+</tr>
+<tr>
+<td>192.168.77.202</td>
+<td>master</td>
+</tr>
+<tr>
+<td>192.168.77.203</td>
+<td>master </td>
+</tr>
+<tr>
+<td>192.168.77.204</td>
+<td>node</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-安装-kubespray"><a href="#1-安装-kubespray" class="headerlink" title="1. 安装 kubespray"></a>1. 安装 kubespray</h3><p>在 GitHub <a href="https://github.com/kubernetes-sigs/kubespray/releases" target="_blank" rel="noopener">项目链接</a>上下载最新 Release 版本代码。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@node201 ~]<span class="comment"># wget https://github.com/kubernetes-sigs/kubespray/archive/v2.10.3.tar.gz</span></span><br></pre></td></tr></table></figure>
+<h3 id="2-安装必要依赖"><a href="#2-安装必要依赖" class="headerlink" title="2. 安装必要依赖"></a>2. 安装必要依赖</h3><p>项目依赖于 Python3，所以这里采用 Python3.6 版本进行安装。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node201 kubespray-2.10.3]<span class="comment"># yum install python36</span></span><br><span class="line">[root@node201 kubespray-2.10.3]<span class="comment"># yum install python36-pip</span></span><br><span class="line">[root@node201 kubespray-2.10.3]<span class="comment"># pip3 install -r requirements.txt</span></span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>生成 ansible inventory</li>
+</ol>
+<p>项目默认提供了一个 Python 脚本用于自动生成 inventory，该脚本生成 inventory 通常需要根据实际情况自己调整。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@node201 kubespray-2.10.3]<span class="comment"># cp -rfp inventory/sample inventory/mycluster</span></span><br><span class="line">[root@node201 kubespray-2.10.3]<span class="comment"># declare -a IPS=(192.168.77.201 192.168.77.202 192.168.77.203 192.168.77.203)</span></span><br><span class="line">[root@node201 kubespray-2.10.3]<span class="comment"># CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py $&#123;IPS[@]&#125;</span></span><br><span class="line">DEBUG: Adding group all</span><br><span class="line">DEBUG: Adding group kube-master</span><br><span class="line">DEBUG: Adding group kube-node</span><br><span class="line">DEBUG: Adding group etcd</span><br><span class="line">DEBUG: Adding group k8s-cluster</span><br><span class="line">DEBUG: Adding group calico-rr</span><br><span class="line">DEBUG: Skipping existing host 192.168.77.203.</span><br><span class="line">DEBUG: adding host node1 to group all</span><br><span class="line">DEBUG: adding host node2 to group all</span><br><span class="line">DEBUG: adding host node3 to group all</span><br><span class="line">DEBUG: adding host node1 to group etcd</span><br><span class="line">DEBUG: adding host node2 to group etcd</span><br><span class="line">DEBUG: adding host node3 to group etcd</span><br><span class="line">DEBUG: adding host node1 to group kube-master</span><br><span class="line">DEBUG: adding host node2 to group kube-master</span><br><span class="line">DEBUG: adding host node1 to group kube-node</span><br><span class="line">DEBUG: adding host node2 to group kube-node</span><br><span class="line">DEBUG: adding host node3 to group kube-node</span><br></pre></td></tr></table></figure>
+<p>查看生成 inventory 结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">[root@node201 kubespray-2.10.3]<span class="comment"># cat inventory/mycluster/hosts.yml </span></span><br><span class="line">all:</span><br><span class="line">  hosts:</span><br><span class="line">    node1:</span><br><span class="line">      ansible_host: 192.168.77.201</span><br><span class="line">      ip: 192.168.77.201</span><br><span class="line">      access_ip: 192.168.77.201</span><br><span class="line">    node2:</span><br><span class="line">      ansible_host: 192.168.77.202</span><br><span class="line">      ip: 192.168.77.202</span><br><span class="line">      access_ip: 192.168.77.202</span><br><span class="line">    node3:</span><br><span class="line">      ansible_host: 192.168.77.203</span><br><span class="line">      ip: 192.168.77.203</span><br><span class="line">      access_ip: 192.168.77.203</span><br><span class="line">  children:</span><br><span class="line">    kube-master:</span><br><span class="line">      hosts:</span><br><span class="line">        node1:</span><br><span class="line">        node2:</span><br><span class="line">    kube-node:</span><br><span class="line">      hosts:</span><br><span class="line">        node1:</span><br><span class="line">        node2:</span><br><span class="line">        node3:</span><br><span class="line">    etcd:</span><br><span class="line">      hosts:</span><br><span class="line">        node1:</span><br><span class="line">        node2:</span><br><span class="line">        node3:</span><br><span class="line">    k8s-cluster:</span><br><span class="line">      children:</span><br><span class="line">        kube-master:</span><br><span class="line">        kube-node:</span><br><span class="line">    calico-rr:</span><br><span class="line">      hosts: &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到跟我们计划中的有所差别，根据实际情况调整 kube-master 数量即可。</p>
+<h3 id="4-编写部署配置参数"><a href="#4-编写部署配置参数" class="headerlink" title="4. 编写部署配置参数"></a>4. 编写部署配置参数</h3><p>在 <code>[root@node201 kubespray-2.10.3]# ls inventory/mycluster/group_vars/all/all.yml</code> 路径下包含了一些全局配置，比如 proxy 之类的，可以手动调整。</p>
+<h3 id="5-编写-k8s-配置参数"><a href="#5-编写-k8s-配置参数" class="headerlink" title="5. 编写 k8s 配置参数"></a>5. 编写 k8s 配置参数</h3><p>在 <code>[root@node201 kubespray-2.10.3]# ls inventory/mycluster/group_vars/k8s-cluster/k8s-cluster.yml</code> 路径下包含了 k8s 所有配置项，根据实际情况编辑修改。</p>
+<h3 id="6-部署"><a href="#6-部署" class="headerlink" title="6. 部署"></a>6. 部署</h3><p>在所有准备工作完成后，执行部署操作。</p>
+<p>注意， Kubespray 部署的前提条件是你的网络是一个正常的网络，可以正常访问所有网站，若无法访问，则根据自身实际情况，调整配置，配置路径为： <code>roles/download/defaults/main.yml</code> 。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-playbook -i inventory/mycluster/hosts.yml --become --become-user=root cluster.yml</span><br></pre></td></tr></table></figure>
+<p>等待部署完成即可。</p>
+<h3 id="HA-机制-1"><a href="#HA-机制-1" class="headerlink" title="HA 机制"></a>HA 机制</h3><p>集群中所有的 Node 节点自己启动一个 Nginx Static Pod，用于代理转发，将所有指定 <code>127.0.0.1:6443</code> 的请求转发至所有 master 节点真实 apiserver ，这样所有的 kubelet 只需要自己节点即可，无需其他节点参与。</p>
+<h3 id="坑-1"><a href="#坑-1" class="headerlink" title="坑"></a>坑</h3><ol>
+<li>CentOS 默认 Python2.7，需要单独安装 Python3.6</li>
+<li>通过 pip 安装依赖，部分软件包需要 gcc,python36-devel,openssl-devel 等依赖包，需要根据错误提示自行安装，文档中没有提到</li>
+<li>默认会安装 docker &amp; containerd 服务，但是 containerd 服务未设置开机自启动，会导致 docker 无法自动运行</li>
+<li>在安装过程中，会安装 selinux 相应 Python 库，但是该依赖未在 <code>requirements.txt</code> 声明</li>
+<li>…</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>无论是直接只用 kubeadm + vip 方式部署 HA 集群，还是通过 Kubespray 部署，在网络正常情况下，是很快可以完成的。</p>
+<p>在使用 kubeadm 过程中，因为无需引入第三方依赖库，导致整体流程顺畅，体验极佳。</p>
+<p>在 Kubespray 过程中，因为采用 Python3 方式，但相关依赖又未显示声明，导致部署过程繁琐。但是也比较好理解，Kubespray 作为一个致力于部署企业级 k8s 集群的项目，需要处理大量的边界条件了，这个项目中 YAML 就写了 15k 行，可见一斑。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/06/05/查看磁盘扇区大小/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1816,308 +2091,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-源码阅读/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/20/PingCAP-tidb-ansible-源码阅读/" itemprop="url">PingCAP tidb-ansible 源码阅读</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-20T11:50:41+08:00">
-                2019-04-20
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/04/20/PingCAP-tidb-ansible-源码阅读/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/04/20/PingCAP-tidb-ansible-源码阅读/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>了解我的同学应该知道，我目前负责公司产品的运维工具开发相关的工作，作为一款 2B 的产品，在产品运维过程中，总是有一些不愉快（又不能让客户知道）的繁琐操作：这些操作可能是为了防止过程中出现错误，而不断添加的检测条件；也有可能是历史问题，随着产品发布迭代而一直遗留至今。</p>
-<p>所以我平时也在关注一些开源的 2B 产品的配套运维工具，比如 ZStack、PingCAP 之类的公司。</p>
-<p>但是 ZStack 的开源生态不是很好，感觉只是在保持代码更新（不知道哪个分支）的状态。相比之下 PingCAP 就好很多了，可以很直接的从文档中看到差别，而且社区很活跃。</p>
-<p>最近看到 PingCAP 的一个关于部署维护的 <a href="https://university.pingcap.com/views/common/audition.html?courseId=240255&amp;courseWareId=330983&amp;designId=270990" target="_blank" rel="noopener">视频讲解</a> ，可能时间有限，并没有很深入的讲解细节，有兴趣的同学可以看下。</p>
-<p>在讲解过程中，一个比较核心的工具就是 Ansible，通过 Ansible Playbook 来定义各个步骤，我最近也在使用 Ansible 来进行二次开发，特此学习下 PingCAP 的 <a href="https://github.com/pingcap/tidb-ansible" target="_blank" rel="noopener">tidb-ansible</a> 。</p>
-<h2 id="安装方式"><a href="#安装方式" class="headerlink" title="安装方式"></a>安装方式</h2><p>TiDB 目前支持 4 种安装方式：</p>
-<ol>
-<li>Ansible Online</li>
-<li>Ansible Offline</li>
-<li>Docker</li>
-<li>Docker compose</li>
-</ol>
-<p>其中最佳实践应该是 Ansible Online 方式，通过控制机联网下载所需依赖及 TiDB binary 文件。当然如果所在环境无法访问互联网，那么只能采用 Offline 方式了。后两种部署方式，感觉只是用于开发测试或者给用户“看看”的情况。</p>
-<p>如果要学习的话肯定要学习最佳实践了，那么我们来看看 Ansible Online 方式。</p>
-<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>TiDB 作为一个 <strong>开源分布式关系型数据库</strong> ，所需要的物理环境是很比较苛刻的，官方最佳实践的需求如下：</p>
-<hr>
-<table>
-<thead>
-<tr>
-<th>组件</th>
-<th>CPU</th>
-<th>内存</th>
-<th>硬盘类型</th>
-<th>网络</th>
-<th>数量(最低要求)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>TiDB</td>
-<td>16</td>
-<td>32GB</td>
-<td>SAS</td>
-<td>10GbE * 2</td>
-<td>2</td>
-</tr>
-<tr>
-<td>PD</td>
-<td>4</td>
-<td>8GB</td>
-<td>SSD</td>
-<td>10 GbE * 2</td>
-<td>3</td>
-</tr>
-<tr>
-<td>TiKV</td>
-<td>16</td>
-<td>32GB</td>
-<td>SSD</td>
-<td>10 GbE * 2</td>
-<td>3</td>
-</tr>
-<tr>
-<td>监控</td>
-<td>8</td>
-<td>16GB</td>
-<td>SAS</td>
-<td>1GbE * 1</td>
-<td>1</td>
-</tr>
-</tbody>
-</table>
-<p>对于 CPU、内存和磁盘的要求我们暂时忽略，这里注意网卡数量都是推荐的 2 块网卡，应该是会做 bonding，到时候看下代码中是否处理。</p>
-<h2 id="安装部署流程"><a href="#安装部署流程" class="headerlink" title="安装部署流程"></a>安装部署流程</h2><ul>
-<li>控制节点安装依赖</li>
-<li>配置普通用户（tidb）<ul>
-<li>密码</li>
-<li>sudu 权限</li>
-<li>ssh key</li>
-<li>…</li>
-</ul>
-</li>
-<li>配置控制节点到被安装节点 SSH 免密登录<ul>
-<li>tidb 免密</li>
-</ul>
-</li>
-<li>NTP<ul>
-<li>各节点时钟同步</li>
-</ul>
-</li>
-<li>CPU 调节器模式<ul>
-<li>performance</li>
-</ul>
-</li>
-<li>格式化磁盘<ul>
-<li>推荐 ext4，支持 xfs</li>
-<li>挂载参数：nodelalloc 和 noatime </li>
-</ul>
-</li>
-<li>ansible inventory &amp; TiDB 配置修改<ul>
-<li>inventory</li>
-<li>tidb-ansible/conf/*</li>
-</ul>
-</li>
-<li>部署<ul>
-<li>local_prepare.yml</li>
-<li>bootstrap.yml</li>
-<li>deploy.yml</li>
-<li>start.yml</li>
-</ul>
-</li>
-</ul>
-<h2 id="具体步骤"><a href="#具体步骤" class="headerlink" title="具体步骤"></a>具体步骤</h2><h3 id="软件依赖"><a href="#软件依赖" class="headerlink" title="软件依赖"></a>软件依赖</h3><p>这里 TiDB 依赖的第三方组件不多，安装方式猜测之所以直接用 pip 是因为要支持不同的发型版本，python 通用些。<br>其中如果部署 pump 并开启 binlog 的话，是需要安装 Kafka 集群的，这里在安装部署文档中没有见到更多的说明。</p>
-<h3 id="普通用户"><a href="#普通用户" class="headerlink" title="普通用户"></a>普通用户</h3><p>这点很重要，一款软件的运行环境很重要，无须 root 权限的坚决不能给与 root 权限，否则之后的权限控制很难做。</p>
-<h3 id="时钟同步"><a href="#时钟同步" class="headerlink" title="时钟同步"></a>时钟同步</h3><p>这里采用的是 ntpd 同步，不知道为什么没有采用 chronyd，在 RHEL7 之后推荐采用 chronyd 来进行时钟同步，根据这篇<a href="https://www.thegeekdiary.com/centos-rhel-7-chrony-vs-ntp-differences-between-ntpd-and-chronyd/" target="_blank" rel="noopener">博客</a>中提到的，chronyd 应该占有绝对<a href="https://chrony.tuxfamily.org/comparison.html" target="_blank" rel="noopener">优势</a>的，不知道这里是出于什么考虑。</p>
-<h3 id="CPU-调节器模式"><a href="#CPU-调节器模式" class="headerlink" title="CPU 调节器模式"></a>CPU 调节器模式</h3><p>这里 TiDB 推荐采用 performance 模式，但是如果你的 2B 产品卖点中有提到 <strong>节省能耗</strong> 相关字眼的，觉得还是要综合考虑才好。</p>
-<h3 id="格式化磁盘"><a href="#格式化磁盘" class="headerlink" title="格式化磁盘"></a>格式化磁盘</h3><p>推荐采用 ext4，在 RHEL7 之后默认的系统分区均为 xfs，这里出于什么考虑也没有透露。</p>
-<p>在我个人使用过程中，xfs 在处理服务器掉电之后的处理很麻烦，经常是需要手动 xfs_repair 去修复磁盘分区。</p>
-<p>TiDB 挂载参数强制要求 <strong>nodelalloc</strong> ，我们看下这个参数的意义：<br><figure class="highlight plain"><figcaption><span>delayed allocation.  Blocks are allocated</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">when the data is copied from userspace to the page cache, either via the write(2) system call or when an mmap&apos;ed page which was previously unallocated is written for the first time.</span><br></pre></td></tr></table></figure></p>
-<h3 id="TiDB-参数"><a href="#TiDB-参数" class="headerlink" title="TiDB 参数"></a>TiDB 参数</h3><p>因为对 TiDB 无更多了解，此节忽略。</p>
-<h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><p>终于到了我最想了解的地方了：ansible playbook。我们先看下代码结构：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/tidb-ansible</span><br><span class="line">master ✔ $ tree -L 2 .</span><br><span class="line">.</span><br><span class="line">├── LICENSE</span><br><span class="line">├── README.md</span><br><span class="line">├── ansible.cfg</span><br><span class="line">├── bootstrap.yml</span><br><span class="line">├── clean_log_cron.yml</span><br><span class="line">├── cloud</span><br><span class="line">│   └── aws-ansible</span><br><span class="line">├── collect_diagnosis.yml</span><br><span class="line">├── common_tasks</span><br><span class="line">│   ├── add_evict_leader_scheduler.yml</span><br><span class="line">|   ...</span><br><span class="line">│   └── transfer_pd_leader.yml</span><br><span class="line">├── conf</span><br><span class="line">│   ├── alertmanager.yml</span><br><span class="line">|   ...</span><br><span class="line">│   └── tikv.yml</span><br><span class="line">├── create_users.yml</span><br><span class="line">├── deploy.yml</span><br><span class="line">├── deploy_drainer.yml</span><br><span class="line">├── deploy_ntp.yml</span><br><span class="line">├── excessive_rolling_update.yml</span><br><span class="line">├── filter_plugins</span><br><span class="line">│   └── tags.py</span><br><span class="line">├── graceful_stop.yml</span><br><span class="line">├── group_vars</span><br><span class="line">│   ├── alertmanager_servers.yml</span><br><span class="line">│   ├── all.yml</span><br><span class="line">|   ...</span><br><span class="line">│   ├── tidb_servers.yml</span><br><span class="line">│   └── tikv_servers.yml</span><br><span class="line">├── hosts.ini</span><br><span class="line">├── inventory.ini</span><br><span class="line">├── library</span><br><span class="line">│   ├── coreos_facts</span><br><span class="line">│   ├── docker_facts</span><br><span class="line">│   └── wait_for_pid.py</span><br><span class="line">├── local_prepare.yml</span><br><span class="line">├── <span class="built_in">log</span></span><br><span class="line">├── migrate_monitor.yml</span><br><span class="line">├── requirements.txt</span><br><span class="line">├── roles</span><br><span class="line">│   ├── alertmanager</span><br><span class="line">│   ├── blackbox_exporter</span><br><span class="line">│   ├── bootstrap</span><br><span class="line">|   ...</span><br><span class="line">│   ├── tikv</span><br><span class="line">│   ├── tikv_importer</span><br><span class="line">│   └── tispark</span><br><span class="line">├── rolling_update.yml</span><br><span class="line">├── rolling_update_monitor.yml</span><br><span class="line">├── scripts</span><br><span class="line">│   ...</span><br><span class="line">│   ├── check</span><br><span class="line">│   ├── clsrun.sh</span><br><span class="line">│   ├── disk_performance.json</span><br><span class="line">│   ├── grafana-config-copy.py</span><br><span class="line">|   ...</span><br><span class="line">│   └── tikv_trouble_shooting.json</span><br><span class="line">├── start.yml</span><br><span class="line">├── start_drainer.yml</span><br><span class="line">├── start_spark.yml</span><br><span class="line">├── stop.yml</span><br><span class="line">├── stop_drainer.yml</span><br><span class="line">├── stop_spark.yml</span><br><span class="line">├── templates</span><br><span class="line">│   └── grafana.dest.json.j2</span><br><span class="line">├── unsafe_cleanup.yml</span><br><span class="line">├── unsafe_cleanup_container.yml</span><br><span class="line">└── unsafe_cleanup_data.yml</span><br></pre></td></tr></table></figure>
-<p>一个标准的 Ansible Playbook 结构：在最外层暴露我们需要执行的 YAML 配置，所有具体的操作和配置文件都放到 roles 和 conf 中，下面我们来一点点看具体做了什么，哪些地方是我们需要注意的。</p>
-<h4 id="local-prepare-yml"><a href="#local-prepare-yml" class="headerlink" title="local_prepare.yml"></a>local_prepare.yml</h4><p>在这里一共做了以下这么几件事情：</p>
-<ul>
-<li>准备 binary 下载地址配置</li>
-<li>检查网络(GFW)</li>
-<li>下载 binary</li>
-<li>准备 fio 软件</li>
-<li>清理下载路径</li>
-</ul>
-<p>主要都是做环境准备的工作，其中网络检测这没有用我们日常使用最多的 <code>ping</code> ，而是使用了 <code>curl</code> ，这里猜测是因为有时候机器是可以与互联网通信，但是没有配置 DNS 解析，导致后续的下载也会失败，所以直接 <code>curl baidu.com</code> 是一个不错的选择。</p>
-<p>(这里还检查了 GFW - - )</p>
-<p>用到的 Ansible 模块有：</p>
-<ul>
-<li>file</li>
-<li>shell （果然没人会去用 command 的</li>
-<li>template</li>
-<li>get_url</li>
-<li>…</li>
-</ul>
-<h4 id="bootstrap-yml"><a href="#bootstrap-yml" class="headerlink" title="bootstrap.yml"></a>bootstrap.yml</h4><ul>
-<li>基本环境配置参数检查（机器数、配置、OS发行版）</li>
-<li>python 环境准备，NTP 软件包安装</li>
-<li>设置内核参数</li>
-<li>检查系统配置（cpu 调节器配置如果不是performance， 非开发模式下会强制退出）</li>
-<li>fio 检测<ul>
-<li>psync ,bs=32k,iodepth=4,numjobs=4  randread iops不小于 40k</li>
-<li>psync, bs=32k,iodepth=4,numjobs=4  randrw(100%r,0%w) iops均不低于 10k</li>
-<li>psync, bs=32k, iodepth=1,numjobs=1  randrw(100%r,0%w) lat randread 不高于 0.25ms，write 不高于 30us</li>
-</ul>
-</li>
-</ul>
-<p>内核参数部分修改了如下配置：</p>
-<ul>
-<li>net.core.somaxconn=32768 # 最大 socket 连接数，默认为 128</li>
-<li>vm.swappiness=0 # 禁用 swap 空间</li>
-<li>net.ipv4.tcp_syncookies=0 # 关闭 synccookies，默认为关闭</li>
-<li>net.ipv4.tcp_tw_recycle=0 # TIME_WAIT 快速回收，默认关闭，关于 TIME_WAIT 状态可以在《TCP/IP 详解 卷一 协议》 中了解更多</li>
-<li>fs.file-max=1000000 # 最大文件数，默认为 1024</li>
-<li>irqbalance ONESHOT=yes # irqbalance 不以守护进程方式运行</li>
-</ul>
-<p>关于 fio 检测，嗯，我还是太天真了，这个级别的磁盘延迟要求，估计只有 PCIe SSD 可以满足了吧。</p>
-<h4 id="deploy-yml"><a href="#deploy-yml" class="headerlink" title="deploy.yml"></a>deploy.yml</h4><p>这部分通用的东西比较少，都是内部的一些配置文件和服务。</p>
-<h4 id="start-yml"><a href="#start-yml" class="headerlink" title="start.yml"></a>start.yml</h4><p>貌似 TiDB 服务的启动是有严格的依赖关系的，不知道这里如果启动顺序调整，是否会自动重试直到相应依赖服务启动完成。</p>
-<h2 id="滚动升级"><a href="#滚动升级" class="headerlink" title="滚动升级"></a>滚动升级</h2><p>在视频讲解中，提到 TiDB 支持滚动升级，这一点在一个 2B 产品功能中很重要，随着产品的开发迭代，能够无痛的给客户进行升级是很重要的。</p>
-<p>在官方文档中，看到了两个升级文档，分别为 1.0 升级到 2.0 和 2.0 升级到 2.1。使用的滚动升级 YAML 文件为：rolling_update.yml<br>升级过程为滚动升级，步骤为：</p>
-<ol>
-<li>pre check</li>
-<li>upgrade</li>
-<li>post upgrade</li>
-</ol>
-<p>这里没搞懂为什么 pre check tidb-server 也要顺序执行，看上去只是检测了 TiDB 版本。</p>
-<p>在 YAML 中指定的升级顺序为：</p>
-<ol>
-<li>pd</li>
-<li>tikv</li>
-<li>pump</li>
-<li>tidb</li>
-</ol>
-<p>这里比较遗憾没有找到升级失败的处理方式，升级 PD 过程中检查健康状态连续 1分钟都未恢复正常，此时 Ansible 退出，PD 处于高版本状态，其他组件 tikv，tidb 还处于低版本状态，不知道这时如何处理，也许是产品上保证了兼容性？</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>了解了 TiDB 的安装和升级，着重学习下 Ansible Playbook 的组织形式，在 tidb-ansible 中，所有的功能都拆分的很细，能采用 ansible 的都用 ansible 实现了，但是难免需要一些脚本配合（fio），这里的选择需要根据实际情况来进行相应修改。</p>
-<h2 id="吐槽"><a href="#吐槽" class="headerlink" title="吐槽"></a>吐槽</h2><p>不知道为什么在代码中 scripts 下放置了许多json 配置文件。。。。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2170,7 +2143,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">104</span>
+                  <span class="site-state-item-count">105</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
