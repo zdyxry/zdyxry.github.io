@@ -294,7 +294,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2020/01/03/为什么你的-flannel-1-会消失/" itemprop="url">为什么你的 flannel.1 会消失</a></h1>
+                <a class="post-title-link" href="/2020/01/03/为什么你的-flannel-1-会消失/" itemprop="url">为什么 flannel.1 丢失后不会自动重建</a></h1>
         
 
         <div class="post-meta">
@@ -357,7 +357,7 @@
         
           
             <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在用 K8s 的同学应该多少都使用过 Flannel 作为自己的网络插件，不讨论性能稳定性，在复杂的网络环境配置中 Flannel 的要求应该是最低的，所以我通常使用 Flannel 作为 让 K8s Ready 的最后一步。</p>
-<p>在使用过程中，遇到过多次 flannel.1 这个 link 消失的情况，查看官方 Issue 中有人提到过： <a href="https://github.com/coreos/flannel/issues/869" target="_blank" rel="noopener">flannel.1 is deleted by <code>service network restart</code>, and never recreated again.</a> ，但是这个 Issue 从 2017年创建一直到现在都处于 Open 状态，看上去社区也不打算去解决，那为什么会出现这个问题，今天来看一看。</p>
+<p>在使用过程中，遇到过多次 flannel.1 这个 link 消失的情况，查看官方 Issue 中有人提到过： <a href="https://github.com/coreos/flannel/issues/869" target="_blank" rel="noopener">flannel.1 is deleted by <code>service network restart</code>, and never recreated again.</a> ，但是这个 Issue 从 2017年创建一直到现在都处于 Open 状态，看上去社区也不打算去解决，其实不只是重启网络，如果没有特殊指定的话，找到默认网关所在的网卡，直接 ifdown ，flannel.1 也会丢失，并且不会重建，那为什么会出现这个问题，今天来看一看。</p>
 <h2 id="CNI-Flannel-Plugin"><a href="#CNI-Flannel-Plugin" class="headerlink" title="CNI Flannel Plugin"></a>CNI Flannel Plugin</h2><p>我们常说的 Flannel 分为两部分：<a href="https://github.com/containernetworking/plugins/tree/master/plugins/meta/flannel" target="_blank" rel="noopener">CNI Flannel Plugin</a> 及 Flannel。</p>
 <p>CNI Flannel Plugin 是 Flannel CNI 插件的具体接口实现， CNI 要求实现的 <code>cmdAdd</code> <code>cmdDel</code> <code>cmdCheck</code> 都是在这里实现的，来看看具体的调用流程：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">cmdAdd</span><span class="params">(args *skel.CmdArgs)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="comment">// 从标准输入加载配置</span></span><br><span class="line">	n, err := loadFlannelNetConf(args.StdinData) </span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 加载子网配置：/run/flannel/subnet.env</span></span><br><span class="line">	fenv, err := loadFlannelSubnetEnv(n.SubnetFile) </span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 执行添加动作</span></span><br><span class="line">	<span class="keyword">return</span> doCmdAdd(args, n, fenv) </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
