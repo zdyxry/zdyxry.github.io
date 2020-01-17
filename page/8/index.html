@@ -275,6 +275,176 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/12/戴尔服务器-iDrac-配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/12/戴尔服务器-iDrac-配置/" itemprop="url">戴尔服务器 iDrac 配置</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T22:18:15+08:00">
+                2018-12-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/12/12/戴尔服务器-iDrac-配置/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/12/戴尔服务器-iDrac-配置/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前介绍过超微的 IPMI 配置时提过，超微的 IPMI 是最简陋的，最近在用戴尔服务器的时候碰到了一个比较坑的事情，查了资料解决了，更加坚定之前的结论，IPMI 相应的配置尽量独立。</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>在戴尔服务器安装 CentOS 后，可见网卡比预期要多出一块，物理服务器安装了两块 PCIe 网卡，一块千兆，一块万兆，每块网卡有两个网口，那么理应在服务器看到的应该是 4个网口，即 <code>ip ad</code> 看到的应该是</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@node11 22:24:49 ~]<span class="variable">$ip</span> ad |grep enp</span><br><span class="line">2: enp94s0f0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq master ovs-system state UP qlen 1000</span><br><span class="line">3: enp24s0f0: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc mq portid 3cfdfe6c9e10 state DOWN qlen 1000</span><br><span class="line">4: enp24s0f1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq master ovs-system portid 3cfdfe6c9e12 state UP qlen 1000</span><br><span class="line">5: enp94s0f1: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc mq state DOWN qlen 1000</span><br></pre></td></tr></table></figure>
+<p>但是安装完 OS，发现多出一块网口 <code>eno16</code> ，通过 <code>ethtool</code> 工具查看，发现该网口为千兆，且处于连接状态，最开始没多想，直接将该网口作为管理网络配置了，一切正常。</p>
+<p>当我尝试通过该网口连接 IPMI 获取风扇信息时，发现无法获取，验证命令为：<br><code>ipmitool -I lanplus -H &lt;ipmi ip&gt; -U &lt;user name&gt; -P &lt;password&gt; lan print</code><br>最开始以为是密码不对，后来发现是在 OS 内部无法 ping 通 IPMI IP，这就很奇怪了。</p>
+<p>当时网络情况如下：</p>
+<table>
+<thead>
+<tr>
+<th>连通情况</th>
+<th>yiran’s PC</th>
+<th>IPMI IP</th>
+<th>OS IP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>yiran’s PC</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>IPMI IP</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>OS IP</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>因为没遇到过这种情况，根据经验，先检查了下 iDRAC 网络配置，发现当时 iDRAC 网卡选择的是 LOM1，也就是板载网卡，且该网卡处于 pass-through 状态，官方解释如下：</p>
+<blockquote>
+<p>板载网卡 (LAN On Motherboards, LOM)，如果您选择 Network Settings（网络设置）下的 Auto Dedicated NIC（自动专用 NIC），则当 iDRAC 将其 NIC 选择作为共享 LOM（1、2、3 或 4）并且在 iDRAC 专用 NIC 上检测到链接时，iDRAC 会更改其 NIC 选择来使用专用 NIC。如果在专用 NIC 上检 测不到链接，则 iDRAC 使用共享 LOM。从共享 NIC 切换到专用 NIC 的超时为五秒，而从专用 NIC 切换到共享 NIC 的超时为 30 秒。可以使用 RACADM 或 WS-MAN 配置此超时值。<br>如果选择 LOM 作为直通配置，并且使用专用模式连接服务器，则输入操作系统的 IPv4 地址。 注: 如果在共享的 LOM 模式下连接了服务器，则操作系统 IP 地址字段将禁用。</p>
+</blockquote>
+<h2 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h2><p>将 iDRAC 网络配置从 LOM 改为 Dedicated 后，重启 OS 即可，注意，改为 Dedicated 后，OS 将无法识别到 LOM，需要重新配置网络。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/12/06/剑指-Offer（六）/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1578,141 +1748,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/11/18/剑指-Offer（一）/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/剑指-Offer（一）/" itemprop="url">剑指 Offer（一）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T12:23:07+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/11/18/剑指-Offer（一）/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/11/18/剑指-Offer（一）/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Python-单实例模式"><a href="#Python-单实例模式" class="headerlink" title="Python 单实例模式"></a>Python 单实例模式</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Singleton</span><span class="params">(object)</span>:</span></span><br><span class="line">    _instances = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__new__</span><span class="params">(cls, *args, **kwargs)</span>:</span></span><br><span class="line">        <span class="keyword">if</span> cls <span class="keyword">not</span> <span class="keyword">in</span> cls._instances:</span><br><span class="line">            cls._instances[cls] = super(Singleton, cls).__new__(cls, *args, **kwargs)</span><br><span class="line">        <span class="keyword">return</span> cls._instances[cls]</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MySingleton</span><span class="params">(Singleton)</span>:</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, val)</span>:</span></span><br><span class="line">        self.val = val</span><br><span class="line"></span><br><span class="line">a = MySingleton(<span class="number">1</span>)</span><br><span class="line">b = MySingleton(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">print</span> a.val</span><br><span class="line"><span class="keyword">print</span> b.val</span><br></pre></td></tr></table></figure>
-<h2 id="二维数组查找"><a href="#二维数组查找" class="headerlink" title="二维数组查找"></a>二维数组查找</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">find_num</span><span class="params">(matrix, num)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> matrix:</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">False</span></span><br><span class="line">    rows = len(matrix)</span><br><span class="line">    cols = len(matrix[<span class="number">0</span>])</span><br><span class="line">    row, col = rows - <span class="number">1</span>, <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> row &gt;= <span class="number">0</span> <span class="keyword">or</span> col &lt;= cols <span class="number">-1</span>:</span><br><span class="line">        <span class="keyword">if</span> matrix[row][col] == num:</span><br><span class="line">            <span class="keyword">return</span> num</span><br><span class="line">        <span class="keyword">elif</span> matrix[row][col] &gt; num:</span><br><span class="line">            row -= <span class="number">1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            col += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">False</span></span><br><span class="line"></span><br><span class="line">matrix = [[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>],</span><br><span class="line">          [<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="number">8</span>]</span><br><span class="line">         ]</span><br><span class="line"><span class="keyword">print</span> find_num(matrix, <span class="number">7</span>)</span><br></pre></td></tr></table></figure>
-<h2 id="打印链表"><a href="#打印链表" class="headerlink" title="打印链表"></a>打印链表</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Links</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        self.val = x</span><br><span class="line">        self.next = <span class="keyword">None</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">print_links</span><span class="params">(links)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> links:</span><br><span class="line">        print_links(links.next)</span><br><span class="line">        <span class="keyword">print</span> links.val</span><br><span class="line"></span><br><span class="line">links = Links(<span class="number">1</span>)</span><br><span class="line">links.next = Links(<span class="number">2</span>)</span><br><span class="line">links.next.next = Links(<span class="number">3</span>)</span><br><span class="line">print_links(links)</span><br></pre></td></tr></table></figure>
-<h2 id="重建二叉树"><a href="#重建二叉树" class="headerlink" title="重建二叉树"></a>重建二叉树</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 根据前序和中序遍历结果构建二叉树，遍历结果中不包含重复数值。</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        self.val = x</span><br><span class="line">        self.left = <span class="keyword">None</span></span><br><span class="line">        self.right = <span class="keyword">None</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tree</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.root = <span class="keyword">None</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">pre_traversal</span><span class="params">(self)</span>:</span></span><br><span class="line">        ret = []</span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">traversal</span><span class="params">(head)</span>:</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> head:</span><br><span class="line">                <span class="keyword">return</span></span><br><span class="line">            ret.append(head.val)</span><br><span class="line">            traversal(head.left)</span><br><span class="line">            traversal(head.right)</span><br><span class="line">        </span><br><span class="line">        traversal(self.root)</span><br><span class="line">        <span class="keyword">return</span> ret</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">in_traversal</span><span class="params">(self)</span>:</span></span><br><span class="line">        ret = []</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">traversal</span><span class="params">(head)</span>:</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> head:</span><br><span class="line">                <span class="keyword">return</span> </span><br><span class="line">            traversal(head.left)</span><br><span class="line">            ret.append(head.val)</span><br><span class="line">            traversal(head.right)</span><br><span class="line">        </span><br><span class="line">        traversal(self.root)</span><br><span class="line">        <span class="keyword">return</span> ret</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">post_traversal</span><span class="params">(self)</span>:</span></span><br><span class="line">        ret = []</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">traversal</span><span class="params">(head)</span>:</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> head:</span><br><span class="line">                <span class="keyword">return</span> </span><br><span class="line">            traversal(head.left)</span><br><span class="line">            traversal(head.right)</span><br><span class="line">            ret.append(head.val)</span><br><span class="line"></span><br><span class="line">        traversal(self.root)</span><br><span class="line">        <span class="keyword">return</span> ret</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">construct_tree</span><span class="params">(preorder=None, inorder=None)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> preorder <span class="keyword">or</span> <span class="keyword">not</span> inorder:</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">None</span></span><br><span class="line">    index = inorder.index(preorder[<span class="number">0</span>])</span><br><span class="line">    left = inorder[<span class="number">0</span>:index]</span><br><span class="line">    right = inorder[index + <span class="number">1</span>:]</span><br><span class="line">    root = TreeNode(preorder[<span class="number">0</span>])</span><br><span class="line">    root.left = construct_tree(preorder[<span class="number">1</span>:<span class="number">1</span>+len(left)], left)</span><br><span class="line">    root.right = construct_tree(preorder[-len(right):], right)</span><br><span class="line">    <span class="keyword">return</span> root</span><br><span class="line"></span><br><span class="line">t = Tree()</span><br><span class="line">root = construct_tree(preorder=[<span class="number">1</span>,<span class="number">2</span>,<span class="number">4</span>,<span class="number">7</span>,<span class="number">3</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">8</span>],</span><br><span class="line">                      inorder=[<span class="number">4</span>,<span class="number">7</span>,<span class="number">2</span>,<span class="number">1</span>,<span class="number">5</span>,<span class="number">3</span>,<span class="number">8</span>,<span class="number">6</span>])</span><br><span class="line">t.root = root</span><br><span class="line"><span class="keyword">print</span> t.pre_traversal()</span><br><span class="line"><span class="keyword">print</span> t.in_traversal()</span><br><span class="line"><span class="keyword">print</span> t.post_traversal()</span><br></pre></td></tr></table></figure>
-<h2 id="旋转数组的最小数字"><a href="#旋转数组的最小数字" class="headerlink" title="旋转数组的最小数字"></a>旋转数组的最小数字</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">find_min</span><span class="params">(nums)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> nums:</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">False</span></span><br><span class="line">    length = len(nums)</span><br><span class="line">    left, right = <span class="number">0</span>, length - <span class="number">1</span></span><br><span class="line">    <span class="keyword">while</span> nums[right] &gt;= nums[left]:</span><br><span class="line">        <span class="keyword">if</span> right - left == <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">return</span> nums[right]</span><br><span class="line">        mid = (left + right) / <span class="number">2</span></span><br><span class="line">        <span class="keyword">if</span> nums[left] &lt;= nums[mid]:</span><br><span class="line">            left = mid</span><br><span class="line">        <span class="keyword">if</span> nums[right] &gt;= nums[mid]:</span><br><span class="line">            right = mid</span><br><span class="line">    <span class="keyword">return</span> nums[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">nums = [<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>]</span><br><span class="line"><span class="keyword">print</span> find_min(nums)</span><br><span class="line">nums = [<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>]</span><br><span class="line"><span class="keyword">print</span> find_min(nums)</span><br></pre></td></tr></table></figure>
-<h2 id="二进制中-1-的个数"><a href="#二进制中-1-的个数" class="headerlink" title="二进制中 1 的个数"></a>二进制中 1 的个数</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">find_num_of_1</span><span class="params">(n)</span>:</span></span><br><span class="line">    ret = <span class="number">0</span></span><br><span class="line">    <span class="keyword">if</span> n &lt; <span class="number">0</span>:</span><br><span class="line">        n = n &amp; <span class="number">0xffffffff</span></span><br><span class="line">    <span class="keyword">while</span> n:</span><br><span class="line">        ret += <span class="number">1</span></span><br><span class="line">        n = n &amp; (n - <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">return</span> ret</span><br><span class="line"></span><br><span class="line">num = <span class="number">3</span></span><br><span class="line"><span class="keyword">print</span> find_num_of_1(num)</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1765,7 +1800,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">106</span>
+                  <span class="site-state-item-count">107</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

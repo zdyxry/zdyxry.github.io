@@ -275,6 +275,190 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/08/16/cluster-api-provider-vsphere-源码阅读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/08/16/cluster-api-provider-vsphere-源码阅读/" itemprop="url">cluster-api-provider-vsphere 源码阅读</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-16T20:57:25+08:00">
+                2019-08-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/08/16/cluster-api-provider-vsphere-源码阅读/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/08/16/cluster-api-provider-vsphere-源码阅读/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>上一篇博客讲了 Cluster-API 的相关概念，现在我们来找一个 provider 实现看看具体里面做了啥，因为对 vmware 产品中的概念比较熟悉，就找了 cluster-api-provider-vsphere 。</p>
+<p>以下内容均对应 clusterapi v1alpha1 版本。</p>
+<h2 id="clusterctl-命令"><a href="#clusterctl-命令" class="headerlink" title="clusterctl 命令"></a>clusterctl 命令</h2><p>cluster-api provider 提供了命令行 <code>clusterctl</code> 用于给我们快速创建 bootstrap 集群用于创建目标 k8s 集群，我们来执行一下看看具体做了哪些工作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-workstation:~/go/src/github.com/kubernetes-sigs/cluster-api-provider-vsphere </span><br><span class="line">master ✗ $ clusterctl create cluster \                                                       </span><br><span class="line">  --provider vsphere \</span><br><span class="line">  --bootstrap-type kind \</span><br><span class="line">  --cluster ./out/management-cluster/cluster.yaml \</span><br><span class="line">  --machines ./out/management-cluster/machines.yaml \</span><br><span class="line">  --provider-components ./out/management-cluster/provider-components.yaml \</span><br><span class="line">  --addon-components ./out/management-cluster/addons.yaml \</span><br><span class="line">  --kubeconfig-out ./out/management-cluster/kubeconfig</span><br><span class="line">I0816 17:28:05.815156   14562 createbootstrapcluster.go:27] Preparing bootstrap cluster</span><br><span class="line">I0816 17:29:15.292547   14562 clusterdeployer.go:78] Applying Cluster API stack to bootstrap cluster</span><br><span class="line">I0816 17:29:15.292619   14562 applyclusterapicomponents.go:26] Applying Cluster API Provider Components</span><br><span class="line">I0816 17:29:16.492405   14562 clusterdeployer.go:83] Provisioning target cluster via bootstrap cluster</span><br><span class="line">I0816 17:29:16.505317   14562 applycluster.go:36] Creating cluster object management-cluster in namespace &quot;default&quot;</span><br><span class="line">I0816 17:29:16.518456   14562 clusterdeployer.go:92] Creating control plane machine in namespace &quot;default&quot;</span><br><span class="line">I0816 17:29:16.548814   14562 applymachines.go:36] Creating machines in namespace &quot;default&quot; # 因为众所周知的“网络”问题，导致我的 Pod image 无法拉取，所以就卡在这里了。。。</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>可以看到这个命令一共做了如下的事情：</p>
+<ol>
+<li>创建 bootstrap 集群</li>
+<li>安装 Provider 组件</li>
+<li>创建目标 k8s 集群，创建 Cluster CR，Machine CR</li>
+<li>…</li>
+</ol>
+<p>这里因为“网络”问题我无法继续下去了，那么我们来看下命令行的具体实现。</p>
+<p>这个命令最终是由 provider 提供的，在 provider 中需要实现 2个接口来辅助信息的获取：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Deployer <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// <span class="doctag">TODO:</span> This requirement can be removed once after: https://github.com/kubernetes-sigs/cluster-api/issues/158</span></span><br><span class="line">	GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (<span class="keyword">string</span>, error)</span><br><span class="line">	<span class="comment">// <span class="doctag">TODO:</span> This requirement can be removed after: https://github.com/kubernetes-sigs/cluster-api/issues/160</span></span><br><span class="line">	GetKubeConfig(cluster *clusterv1.Cluster, master *clusterv1.Machine) (<span class="keyword">string</span>, error)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 Bootstrap 集群中，会运行 2个 StatefulSet ，分别对应的是 Cluster-api-control-manager 和 provider-control-manager。其中跟 Hypervisor 打交道的逻辑全部在 provider-control-manager 中实现。</p>
+<h2 id="Cluster"><a href="#Cluster" class="headerlink" title="Cluster"></a>Cluster</h2><p>创建流程：<br><img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/cluster_create.png" title="cluster_create"></p>
+<p>删除流程：<br><img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/cluster_delete.png" title="cluster_delete"></p>
+<p>在 Cluster Controller 中，最终所有的调度任务都会通过 actuator 完成，actuator 需要实现以下接口：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Actuator <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// Reconcile creates or applies updates to the cluster.</span></span><br><span class="line">	Reconcile(*clusterv1.Cluster) error</span><br><span class="line">	<span class="comment">// Delete the cluster.</span></span><br><span class="line">	Delete(*clusterv1.Cluster) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>来看下 vsphere 的实现：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(a *Actuator)</span> <span class="title">Reconcile</span><span class="params">(cluster *clusterv1.Cluster)</span> <span class="params">(opErr error)</span></span> &#123;</span><br><span class="line">	ctx, err := context.NewClusterContext(&amp;context.ClusterContextParams&#123;</span><br><span class="line">		Cluster:          cluster,</span><br><span class="line">		Client:           a.client,</span><br><span class="line">		CoreClient:       a.coreClient,</span><br><span class="line">		ControllerClient: a.controllerClient,</span><br><span class="line">		Logger:           klogr.New().WithName(<span class="string">"[cluster-actuator]"</span>),</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		opErr = actuators.PatchAndHandleError(ctx, <span class="string">"Reconcile"</span>, opErr)</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	ctx.Logger.V(<span class="number">6</span>).Info(<span class="string">"reconciling cluster"</span>)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := a.reconcilePKI(ctx); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := a.reconcileCloudConfigSecret(ctx); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := a.reconcileReadyState(ctx); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果在 actuator 中遇到需要等待或重新调度的情况，比如目标虚拟机未创建完成，目标集群未 ready 的情况，需要返回 <code>clusterErr.RequeueAfterError</code> ，从而重新调度。比如在配置 secret 时，如果无法获取目标集群的 k8s client，那么表示集群还未配置完成：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(a *Actuator)</span> <span class="title">reconcileCloudConfigSecret</span><span class="params">(ctx *context.ClusterContext)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	client, err := kubeclient.New(ctx)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		ctx.Logger.Error(err, <span class="string">"target cluster is not ready"</span>)</span><br><span class="line">		<span class="keyword">return</span> &amp;clusterErr.RequeueAfterError&#123;RequeueAfter: config.DefaultRequeue&#125;</span><br><span class="line">	&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<h2 id="machine"><a href="#machine" class="headerlink" title="machine"></a>machine</h2><p>创建流程：</p>
+<img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/machine_create.png" title="machine_create">
+<p>删除流程：</p>
+<img src="/2019/08/16/cluster-api-provider-vsphere-源码阅读/machine_delete.png" title="machine_delete">
+<p>在 v1alpha1 版本中，machine actuator 负责 2件事情：</p>
+<ol>
+<li>虚拟机构建；</li>
+<li>k8s 集群构建（cloud-init 或 ssh）</li>
+</ol>
+<p>在 vsphere 中，创建虚拟机和 k8s 集群构建两件事情时一起完成的，大概流程如下：</p>
+<ol>
+<li>生成配置信息，如证书</li>
+<li>判断目标 k8s 集群是否需要初始化（kubeadm init）</li>
+<li>根据是否需要初始化及是否为 controlplane，生成对应 cloud-init 配置文件</li>
+<li>克隆虚拟机，并将 cloud-init 配置文件作为 <code>guestinfo.userdata</code> 放入虚拟机配置参数中</li>
+<li>虚拟机开机，通过 <code>vmtoolsd</code> 获取 <code>guestinfo.userdata</code> 信息，并作为 cloud-init 参数进行配置</li>
+<li>k8s 集群构建完成（我在实际测试中，发现并没有自动创建 CNI 插件，不知道是不是 bug）</li>
+<li>vsphere 克隆虚拟机为异步任务，提交克隆虚拟机任务后，得到 task id，后续判断虚拟机是否存在会用到；</li>
+</ol>
+<h2 id="Cloud-init-or-SSH"><a href="#Cloud-init-or-SSH" class="headerlink" title="Cloud-init or SSH"></a>Cloud-init or SSH</h2><h3 id="Cloud-init"><a href="#Cloud-init" class="headerlink" title="Cloud-init"></a>Cloud-init</h3><p>在 vsphere provider 中，k8s 部署是通过 cloud-init 实现的，因为之前对 cloud-init 并不了解，这里大概看了下实现方式。</p>
+<p>首先在克隆虚拟机时，给目标虚拟机添加了 <code>guestinfo.userdata</code> 字段作为虚拟机配置参数，这个参数是配置在 Hypervisor 层面的，理论上存在虚拟机隔离性，那么虚拟机内部应该无法感知这个参数，这时候就需要一个工具：vmtools。各个虚拟化平台都会提供一个 vmtools 或类似的工具，用于给虚拟机提供一些高级功能，如：获取 IP、设置主机名、配置 NTP/DNS Server、执行特定命令等等。这些都是根据 vmtools 的实现方式不同支持的功能也不同。</p>
+<p>vmware vmtools 在安装后，vsphere 可以获取到虚拟机的 IP 等信息，同时，在虚拟机内部会安装一些命令，比如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"> $ <span class="built_in">which</span> vmtoolsd     </span><br><span class="line">/usr/bin/vmtoolsd</span><br><span class="line">root@yiran-workstation:~/project/cluster-api-provider-vsphere </span><br><span class="line">7d21730f ✔ $ vmware-*</span><br><span class="line">vmware-checkvm             vmware-hgfsclient          vmware-toolbox-cmd         vmware-vgauth-cmd        </span><br><span class="line">vmware-config-tools.pl     vmware-namespace-cmd       vmware-uninstall-tools.pl  vmware-vmblock-fuse      </span><br><span class="line">vmware-guestproxycerttool  vmware-rpctool             vmware-user-suid-wrapper   vmware-xferlogs</span><br></pre></td></tr></table></figure>
+<p>vsphere provider 代码中并没有很明确的给出参数是如何传递的，通过不断的寻找，我找到了这个项目： <a href="https://github.com/vmware/cloud-init-vmware-guestinfo" target="_blank" rel="noopener">https://github.com/vmware/cloud-init-vmware-guestinfo</a> ，在这里我们可以看到获取 Hypervisor 层面虚拟机的额外配置：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_guestinfo_value</span><span class="params">(key)</span>:</span></span><br><span class="line">    <span class="string">'''</span></span><br><span class="line"><span class="string">    Returns a guestinfo value for the specified key.</span></span><br><span class="line"><span class="string">    '''</span></span><br><span class="line">    LOG.debug(<span class="string">"Getting guestinfo value for key %s"</span>, key)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        (stdout, stderr) = util.subp(</span><br><span class="line">            [VMTOOLSD, <span class="string">"--cmd"</span>, <span class="string">"info-get guestinfo."</span> + key])</span><br></pre></td></tr></table></figure>
+<p>那么后续的步骤就可以想象的到了，全靠 cloud-init ，这里因为对 cloud-init 了解不多，之后有机会去学习下。</p>
+<h3 id="SSH"><a href="#SSH" class="headerlink" title="SSH"></a>SSH</h3><p>SSH 是我们日常远程连接服务器最常用的方式了，通过用户名，密码（或密钥）来进行 SSH 连接，之后都是通过 Shell 脚本的方式实现 k8s 集群部署，当然 Shell 脚本最终调用的命令是 kubeadm。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过阅读 vsphere provider 代码，我们大概了解了实现一个 Cluster-API provider 需要做哪些事情，最主要的资源控制工作都是在 Cluster-API 实现的，而 provider 主要根据各个场景不同，通过 actuator 实现对应工作，代码量和实现方式上也是千差万别。比如 aws 全部代码可能要 2w 行，而 IBM 的加一起可能不到2k，全看各家的重视程度了。</p>
+<p>在写这篇博客的间隙，Cluster-API 开始了 alpha2 的实质性工作： <a href="https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/developer/v1alpha1-compared-to-v1alpha2.md" target="_blank" rel="noopener">https://github.com/kubernetes-sigs/cluster-api/blob/master/docs/developer/v1alpha1-compared-to-v1alpha2.md</a> ，还没有了解具体的改动，等 beta 之后再看吧。</p>
+<hr>
+<p>吐槽：</p>
+<p>因为 Cluster-API 处于 v1alpha1 阶段，master 分支代码改动非常大，前几天看的代码今天再看就跟记忆中对不上了，之后看代码的时候一定要注意去一个稳定分支上看，免得费时费力。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/08/09/Kubernetes-实战-Cluster-API/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1696,244 +1880,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/06/21/Kubernetes-实战-Helm-包管理器/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/06/21/Kubernetes-实战-Helm-包管理器/" itemprop="url">Kubernetes 实战-Helm 包管理器</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-21T20:40:24+08:00">
-                2019-06-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/06/21/Kubernetes-实战-Helm-包管理器/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/06/21/Kubernetes-实战-Helm-包管理器/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>Helm 就是<code>k8s 的包管理器</code> 。常见的包管理器有：yum,apt,pip…</p>
-<p>包管理器基础功能有：</p>
-<ul>
-<li>安装<ul>
-<li>依赖安装</li>
-</ul>
-</li>
-<li>升级</li>
-<li>回滚</li>
-<li>卸载</li>
-<li>源管理</li>
-<li>搜索</li>
-<li>…</li>
-</ul>
-<h3 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h3><ul>
-<li><p>Helm: Kubernetes的包管理工具，命令行同名</p>
-</li>
-<li><p>Tiller: Helmv2 的服务端，用于接收并处理 Helm 发送的请求，默认以 Deployment 形式部署在 k8s 集群中</p>
-</li>
-<li><p>Chart: Helm 包管理的基础单元，等同于 RPM</p>
-</li>
-<li><p>Repoistory: Helm的软件源仓库，是一个 Web 服务器，路径下除了响应的软件 Chart 包之外，维护了一个 index.yaml 用于索引</p>
-</li>
-<li><p>Release: Helm 安装在 Kubernetes 集群中的 Chart 实例</p>
-</li>
-</ul>
-<h3 id="现状"><a href="#现状" class="headerlink" title="现状"></a>现状</h3><p>helm 截至06月20日最新稳定版本为 v2.14.1。</p>
-<p>在05月16日发布了 v3.0 alpha 版本，根据相关文档描述，v2 无法平滑升级到 v3 版本。</p>
-<p>注：存在部分小版本无法平滑升级情况。</p>
-<p>helm v3 版本改进：</p>
-<ol>
-<li>在 v2 版本设计中，需要单独创建属于 Tiller 的 ServiceAccount，授权 clusteradmin 权限，以为着只要你有 helm 权限，那么你有操作 k8s全集群所有权限。在 v3 版本中删除 Tiller，直接与 k8s api 进行通信，权限管理更清晰</li>
-<li>helm 提供 libary</li>
-<li>模板引擎切换为 Lua</li>
-<li>目前通过 Hook 方式创建的资源，helm 后续不会管理，在 v3 会增加管理 Hook 资源功能</li>
-<li>目前所有配置保存在 cm 中，后续考虑保存到 secret</li>
-<li>v2 需要单独维护仓库，v3 中可以将 Chart 推送到 Docker 镜像仓库中，提供 helm push/login 功能</li>
-<li>…</li>
-</ol>
-<h2 id="Helm2-基本使用"><a href="#Helm2-基本使用" class="headerlink" title="Helm2 基本使用"></a>Helm2 基本使用</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>在 Helm Github <a href="https://github.com/helm/helm/releases" target="_blank" rel="noopener">Release</a> 下载最新版本二进制文件，并在本地解压。</p>
-<p>在 k8s master 节点，执行 <code>helm init --server-account tiller</code> 将 Tiller 部署在 k8s 集群中，指定 Service Account 为 Tiller。</p>
-<p>在 k8s 1.6 版本之后，需要创建对应的 ServiceAccount 资源给 Tiller ，便于 Tiller 后续创建资源，参考官方文档：</p>
-<p>rbac-config.yaml<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ServiceAccount</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">tiller</span></span><br><span class="line"><span class="attr">  namespace:</span> <span class="string">kube-system</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">rbac.authorization.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ClusterRoleBinding</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">tiller</span></span><br><span class="line"><span class="attr">roleRef:</span></span><br><span class="line"><span class="attr">  apiGroup:</span> <span class="string">rbac.authorization.k8s.io</span></span><br><span class="line"><span class="attr">  kind:</span> <span class="string">ClusterRole</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">cluster-admin</span></span><br><span class="line"><span class="attr">subjects:</span></span><br><span class="line"><span class="attr">  - kind:</span> <span class="string">ServiceAccount</span></span><br><span class="line"><span class="attr">    name:</span> <span class="string">tiller</span></span><br><span class="line"><span class="attr">    namespace:</span> <span class="string">kube-system</span></span><br></pre></td></tr></table></figure></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl create -f rbac-config.yaml</span><br><span class="line">serviceaccount <span class="string">"tiller"</span> created</span><br><span class="line">clusterrolebinding <span class="string">"tiller"</span> created</span><br></pre></td></tr></table></figure>
-<p>通过 <code>helm version</code> 验证是否部署成功，成功会显示 client 和 server 对应版本。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># helm version</span></span><br><span class="line">Client: &amp;version.Version&#123;SemVer:<span class="string">"v2.14.1"</span>, GitCommit:<span class="string">"5270352a09c7e8b6e8c9593002a73535276507c0"</span>, GitTreeState:<span class="string">"clean"</span>&#125;</span><br><span class="line">Server: &amp;version.Version&#123;SemVer:<span class="string">"v2.14.1"</span>, GitCommit:<span class="string">"5270352a09c7e8b6e8c9593002a73535276507c0"</span>, GitTreeState:<span class="string">"clean"</span>&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h3><h4 id="Chart构建"><a href="#Chart构建" class="headerlink" title="Chart构建"></a>Chart构建</h4><p>本地创建一个测试软件包：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># helm create yiran-test</span></span><br><span class="line">Creating yiran-test</span><br><span class="line">[root@node1 helm]<span class="comment"># tree yiran-test/</span></span><br><span class="line">yiran-test/</span><br><span class="line">├── charts                            <span class="comment"># yiran-test 所依赖的 Chart，此处为空</span></span><br><span class="line">├── Chart.yaml                        <span class="comment"># yiran-test 的基本信息，包含：名称，apiversion, appversion, version</span></span><br><span class="line">├── templates</span><br><span class="line">│   ├── deployment.yaml               <span class="comment"># 配置模板路径</span></span><br><span class="line">│   ├── _helpers.tpl                  <span class="comment"># 用于修改kubernetes objcet配置的模板</span></span><br><span class="line">│   ├── ingress.yaml                  <span class="comment"># </span></span><br><span class="line">│   ├── NOTES.txt                     <span class="comment"># 类似于 Chart README</span></span><br><span class="line">│   ├── service.yaml                  <span class="comment"># </span></span><br><span class="line">│   └── tests</span><br><span class="line">│       └── <span class="built_in">test</span>-connection.yaml      <span class="comment"># 测试模板</span></span><br><span class="line">└── values.yaml                       <span class="comment"># 用于渲染模板的具体值</span></span><br><span class="line"></span><br><span class="line">3 directories, 8 files</span><br></pre></td></tr></table></figure>
-<p>有了基础示例，我们可以先通过 <code>dry-run</code> 方式跑一下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 yiran-test]<span class="comment"># helm install --dry-run --debug ./</span></span><br><span class="line">[debug] Created tunnel using <span class="built_in">local</span> port: <span class="string">'39257'</span></span><br><span class="line"></span><br><span class="line">[debug] SERVER: <span class="string">"127.0.0.1:39257"</span></span><br><span class="line"></span><br><span class="line">[debug] Original chart version: <span class="string">""</span></span><br><span class="line">[debug] CHART PATH: /root/helm/yiran-test</span><br><span class="line"></span><br><span class="line">NAME:   torrid-rodent</span><br><span class="line">REVISION: 1</span><br><span class="line">RELEASED: Thu Jun 20 19:10:08 2019</span><br><span class="line">CHART: yiran-test-0.1.0</span><br><span class="line">USER-SUPPLIED VALUES:</span><br><span class="line">&#123;&#125;</span><br><span class="line"></span><br><span class="line">COMPUTED VALUES:</span><br><span class="line">affinity: &#123;&#125;</span><br><span class="line">fullnameOverride: <span class="string">""</span></span><br><span class="line">image:</span><br><span class="line">  pullPolicy: IfNotPresent</span><br><span class="line">  repository: nginx</span><br><span class="line">  tag: stable</span><br><span class="line">imagePullSecrets: []</span><br><span class="line">ingress:</span><br><span class="line">  annotations: &#123;&#125;</span><br><span class="line">  enabled: <span class="literal">false</span></span><br><span class="line">  hosts:</span><br><span class="line">  - host: chart-example.local</span><br><span class="line">    paths: []</span><br><span class="line">  tls: []</span><br><span class="line">nameOverride: <span class="string">""</span></span><br><span class="line">nodeSelector: &#123;&#125;</span><br><span class="line">replicaCount: 1</span><br><span class="line">resources: &#123;&#125;</span><br><span class="line">service:</span><br><span class="line">  port: 80</span><br><span class="line">  <span class="built_in">type</span>: ClusterIP</span><br><span class="line">tolerations: []</span><br><span class="line"></span><br><span class="line">HOOKS:</span><br><span class="line">---</span><br><span class="line"><span class="comment"># torrid-rodent-yiran-test-test-connection</span></span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: <span class="string">"torrid-rodent-yiran-test-test-connection"</span></span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/name: yiran-test</span><br><span class="line">    helm.sh/chart: yiran-test-0.1.0</span><br><span class="line">    app.kubernetes.io/instance: torrid-rodent</span><br><span class="line">    app.kubernetes.io/version: <span class="string">"1.0"</span></span><br><span class="line">    app.kubernetes.io/managed-by: Tiller</span><br><span class="line">  annotations:</span><br><span class="line">    <span class="string">"helm.sh/hook"</span>: <span class="built_in">test</span>-success</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: wget</span><br><span class="line">      image: busybox</span><br><span class="line">      <span class="built_in">command</span>: [<span class="string">'wget'</span>]</span><br><span class="line">      args:  [<span class="string">'torrid-rodent-yiran-test:80'</span>]</span><br><span class="line">  restartPolicy: Never</span><br><span class="line">MANIFEST:</span><br></pre></td></tr></table></figure>
-<h4 id="安装-1"><a href="#安装-1" class="headerlink" title="安装"></a>安装</h4><p>可以看到生成的 YAML 文件就是拿 values.yaml 值渲染模板生成的，那么我们来安装一下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 yiran-test]<span class="comment"># helm install ./</span></span><br><span class="line">NAME:   precise-bear</span><br><span class="line">LAST DEPLOYED: Thu Jun 20 19:12:01 2019</span><br><span class="line">NAMESPACE: default</span><br><span class="line">STATUS: DEPLOYED</span><br><span class="line"></span><br><span class="line">RESOURCES:</span><br><span class="line">==&gt; v1/Deployment</span><br><span class="line">NAME                     READY  UP-TO-DATE  AVAILABLE  AGE</span><br><span class="line">precise-bear-yiran-test  0/1    0           0          1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Pod(related)</span><br><span class="line">NAME                                      READY  STATUS             RESTARTS  AGE</span><br><span class="line">precise-bear-yiran-test-785f967587-9rll6  0/1    ContainerCreating  0         1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Service</span><br><span class="line">NAME                     TYPE       CLUSTER-IP     EXTERNAL-IP  PORT(S)  AGE</span><br><span class="line">precise-bear-yiran-test  ClusterIP  10.68.142.106  &lt;none&gt;       80/TCP   1s</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">NOTES:</span><br><span class="line">1. Get the application URL by running these commands:</span><br><span class="line">  <span class="built_in">export</span> POD_NAME=$(kubectl get pods --namespace default -l <span class="string">"app.kubernetes.io/name=yiran-test,app.kubernetes.io/instance=precise-bear"</span> -o jsonpath=<span class="string">"&#123;.items[0].metadata.name&#125;"</span>)</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">"Visit http://127.0.0.1:8080 to use your application"</span></span><br><span class="line">  kubectl port-forward <span class="variable">$POD_NAME</span> 8080:80</span><br><span class="line"></span><br><span class="line">[root@node1 yiran-test]<span class="comment"># helm list </span></span><br><span class="line">NAME            REVISION    UPDATED                     STATUS      CHART               APP VERSION NAMESPACE</span><br><span class="line">precise-bear    1           Thu Jun 20 19:12:01 2019    DEPLOYED    yiran-test-0.1.0    1.0         default  </span><br><span class="line">[root@node1 yiran-test]<span class="comment"># kubectl get pod </span></span><br><span class="line">NAME                                       READY   STATUS    RESTARTS   AGE</span><br><span class="line">precise-bear-yiran-test-785f967587-9rll6   0/1     Running   0          7s</span><br></pre></td></tr></table></figure>
-<p>注意，此时我们已经创建好了对应的资源，可以通过 <code>kubectl</code> 来查看状态。</p>
-<h4 id="升级"><a href="#升级" class="headerlink" title="升级"></a>升级</h4><p>我们来修改一下 <code>yiran-test/Chart.yaml</code> ，调整下版本，进行升级：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 yiran-test]<span class="comment"># cat Chart.yaml</span></span><br><span class="line">apiVersion: v2</span><br><span class="line">appVersion: <span class="string">"2.0"</span></span><br><span class="line">description: A Helm chart <span class="keyword">for</span> Kubernetes</span><br><span class="line">name: yiran-test</span><br><span class="line">version: 0.2.0</span><br><span class="line">[root@node1 yiran-test]<span class="comment"># helm list </span></span><br><span class="line">heNAME          REVISION    UPDATED                     STATUS      CHART               APP VERSION NAMESPACE</span><br><span class="line">precise-bear    1           Thu Jun 20 19:12:01 2019    DEPLOYED    yiran-test-0.1.0    1.0         default  </span><br><span class="line">[root@node1 yiran-test]<span class="comment"># helm upgrade precise-bear ./</span></span><br><span class="line">Release <span class="string">"precise-bear"</span> has been upgraded.</span><br><span class="line">LAST DEPLOYED: Thu Jun 20 19:18:30 2019</span><br><span class="line">NAMESPACE: default</span><br><span class="line">STATUS: DEPLOYED</span><br><span class="line"></span><br><span class="line">RESOURCES:</span><br><span class="line">==&gt; v1/Deployment</span><br><span class="line">NAME                     READY  UP-TO-DATE  AVAILABLE  AGE</span><br><span class="line">precise-bear-yiran-test  1/1    1           1          6m30s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Pod(related)</span><br><span class="line">NAME                                      READY  STATUS   RESTARTS  AGE</span><br><span class="line">precise-bear-yiran-test-785f967587-9rll6  1/1    Running  0         6m30s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Service</span><br><span class="line">NAME                     TYPE       CLUSTER-IP     EXTERNAL-IP  PORT(S)  AGE</span><br><span class="line">precise-bear-yiran-test  ClusterIP  10.68.142.106  &lt;none&gt;       80/TCP   6m30s</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">NOTES:</span><br><span class="line">1. Get the application URL by running these commands:</span><br><span class="line">  <span class="built_in">export</span> POD_NAME=$(kubectl get pods --namespace default -l <span class="string">"app.kubernetes.io/name=yiran-test,app.kubernetes.io/instance=precise-bear"</span> -o jsonpath=<span class="string">"&#123;.items[0].metadata.name&#125;"</span>)</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">"Visit http://127.0.0.1:8080 to use your application"</span></span><br><span class="line">  kubectl port-forward <span class="variable">$POD_NAME</span> 8080:80</span><br><span class="line"></span><br><span class="line">[root@node1 yiran-test]<span class="comment"># helm list </span></span><br><span class="line">NAME            REVISION    UPDATED                     STATUS      CHART               APP VERSION NAMESPACE</span><br><span class="line">precise-bear    2           Thu Jun 20 19:18:30 2019    DEPLOYED    yiran-test-0.2.0    2.0         default</span><br></pre></td></tr></table></figure>
-<h4 id="回滚"><a href="#回滚" class="headerlink" title="回滚"></a>回滚</h4><p>通过上述步骤，我们已经把我们的应用 <code>yiran-test</code> 从 <code>0.1.0</code> 版本升级到了 <code>0.2.0</code> 版本，那么我们现在来尝试下回滚。</p>
-<p>helm 回滚操作需要指定 Release 名称和目标版本：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 yiran-test]<span class="comment"># helm list </span></span><br><span class="line">NAME            REVISION    UPDATED                     STATUS      CHART               APP VERSION NAMESPACE</span><br><span class="line">precise-bear    2           Thu Jun 20 19:18:30 2019    DEPLOYED    yiran-test-0.2.0    2.0         default  </span><br><span class="line">[root@node1 yiran-test]<span class="comment"># helm rollback precise-bear 1</span></span><br><span class="line">Rollback was a success.</span><br><span class="line">[root@node1 yiran-test]<span class="comment"># helm list </span></span><br><span class="line">NAME            REVISION    UPDATED                     STATUS      CHART               APP VERSION NAMESPACE</span><br><span class="line">precise-bear    3           Thu Jun 20 19:23:04 2019    DEPLOYED    yiran-test-0.1.0    1.0         default</span><br></pre></td></tr></table></figure>
-<p>嗯，可以看到，我们指定了回滚的目标 REVISION，回滚成功了，<code>yiran-test</code> 回到了 <code>0.1.0</code> 版本，但是，最恶心的来了，Release 的当前版本变成了 <code>3</code> ，而不是设想中的 <code>1</code> 。</p>
-<h4 id="卸载"><a href="#卸载" class="headerlink" title="卸载"></a>卸载</h4><p>如果我们想要从 k8s 上卸载对应的软件，也就是我们的 <code>yiran-test</code> ，我们可以直接执行 <code>delete</code> 命令，会直接把相关资源全部删除掉。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 ~]<span class="comment"># helm list</span></span><br><span class="line">NAME            REVISION        UPDATED                         STATUS          CHART                   APP VERSION     NAMESPACE</span><br><span class="line">precise-bear    3               Thu Jun 20 19:23:04 2019        DEPLOYED        yiran-test-0.1.0        1.0             default</span><br><span class="line">[root@node1 ~]<span class="comment"># kubectl get pod</span></span><br><span class="line">kuNAME                                       READY   STATUS    RESTARTS   AGE</span><br><span class="line">precise-bear-yiran-test-785f967587-9rll6   1/1     Running   0          139m</span><br><span class="line">[root@node1 ~]<span class="comment"># kubectl get svc</span></span><br><span class="line">NAME                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE</span><br><span class="line">kubernetes                ClusterIP   10.68.0.1       &lt;none&gt;        443/TCP   36d</span><br><span class="line">precise-bear-yiran-test   ClusterIP   10.68.142.106   &lt;none&gt;        80/TCP    139m</span><br><span class="line">[root@node1 ~]<span class="comment"># helm delete precise-bear</span></span><br><span class="line">release <span class="string">"precise-bear"</span> deleted</span><br><span class="line">[root@node1 ~]<span class="comment"># helm list</span></span><br><span class="line">[root@node1 ~]<span class="comment"># kubectl get pod</span></span><br><span class="line">NAME                                       READY   STATUS        RESTARTS   AGE</span><br><span class="line">precise-bear-yiran-test-785f967587-9rll6   0/1     Terminating   0          139m</span><br><span class="line">[root@node1 ~]<span class="comment"># kubectl get svc</span></span><br><span class="line">NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE</span><br><span class="line">kubernetes   ClusterIP   10.68.0.1    &lt;none&gt;        443/TCP   36d</span><br></pre></td></tr></table></figure>
-<h4 id="软件源管理"><a href="#软件源管理" class="headerlink" title="软件源管理"></a>软件源管理</h4><p>上面我们所有的操作都是针对本地包（路径），那么我们怎么才能通过网络下载别人已经构建好的软件包呢？ </p>
-<p>helm 使用 <code>repo</code> 命令来管理软件源，使用上也很简单，简单列举下相应命令实用说明：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 ~]<span class="comment"># helm repo list</span></span><br><span class="line">NAME    URL</span><br><span class="line">stable          https://kubernetes-charts.storage.googleapis.com</span><br><span class="line"><span class="built_in">local</span>   http://127.0.0.1:8879/charts</span><br><span class="line">[root@node1 ~]<span class="comment"># helm repo add stable-mirror https://burdenbear.github.io/kube-charts-mirror/</span></span><br><span class="line"><span class="string">"stable-mirror"</span> has been added to your repositories</span><br><span class="line">[root@node1 ~]<span class="comment"># helm repo add stable https://kubernetes-charts.storage.googleapis.com</span></span><br><span class="line">helm repo list</span><br><span class="line"><span class="string">"stable"</span> has been added to your repositories</span><br><span class="line">[root@node1 ~]<span class="comment"># helm repo list</span></span><br><span class="line">NAME            URL</span><br><span class="line">stable          https://kubernetes-charts.storage.googleapis.com</span><br><span class="line"><span class="built_in">local</span>           http://127.0.0.1:8879/charts</span><br><span class="line">stable-mirror   https://burdenbear.github.io/kube-charts-mirror/</span><br><span class="line">[root@node1 ~]<span class="comment"># helm repo remove local</span></span><br><span class="line"><span class="string">"local"</span> has been removed from your repositories</span><br><span class="line">[root@node1 ~]<span class="comment"># helm repo list</span></span><br><span class="line">NAME            URL</span><br><span class="line">stable          https://kubernetes-charts.storage.googleapis.com</span><br><span class="line">stable-mirror   https://burdenbear.github.io/kube-charts-mirror/</span><br></pre></td></tr></table></figure>
-<h4 id="软件搜索"><a href="#软件搜索" class="headerlink" title="软件搜索"></a>软件搜索</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 ~]<span class="comment"># helm search mongo</span></span><br><span class="line">NAME                                            CHART VERSION   APP VERSION     DESCRIPTION</span><br><span class="line">stable-mirror/mongodb                           5.20.0          4.0.10          NoSQL document-oriented database that stores JSON-like <span class="keyword">do</span>...</span><br><span class="line">stable-mirror/mongodb-replicaset                3.9.6           3.6             </span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<h4 id="打包与本地软件源构建"><a href="#打包与本地软件源构建" class="headerlink" title="打包与本地软件源构建"></a>打包与本地软件源构建</h4><p>Helm v2 命令支持本地创建软件源，命令关键字是 <code>helm serve</code> ，下面来演示下相关操作：</p>
-<p>启动本地源，并指定 IP 地址和 repo 路径：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># pwd</span></span><br><span class="line">/root/helm</span><br><span class="line">[root@node1 helm]<span class="comment"># ls </span></span><br><span class="line">rbac-config.yaml  yiran-test</span><br><span class="line">[root@node1 helm]<span class="comment"># helm serve --address 192.168.27.231:8879 --repo-path /root/helm/ </span></span><br><span class="line">Regenerating index. This may take a moment.</span><br><span class="line">Now serving you on 192.168.27.231:8879</span><br></pre></td></tr></table></figure></p>
-<p>新开终端，通过修改 <code>yiran-test</code> 的 Chart.yaml 文件打包两个版本的 Chart：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># cat yiran-test/Chart.yaml </span></span><br><span class="line">apiVersion: v1</span><br><span class="line">appVersion: <span class="string">"1.0"</span></span><br><span class="line">description: A Helm chart <span class="keyword">for</span> Kubernetes</span><br><span class="line">name: yiran-test</span><br><span class="line">version: 0.1.0</span><br><span class="line">[root@node1 helm]<span class="comment"># helm package yiran-test</span></span><br><span class="line">Successfully packaged chart and saved it to: /root/helm/yiran-test-0.1.0.tgz</span><br><span class="line">[root@node1 helm]<span class="comment"># vi yiran-test/Chart.yaml </span></span><br><span class="line">[root@node1 helm]<span class="comment"># cat yiran-test/Chart.yaml</span></span><br><span class="line">apiVersion: v2</span><br><span class="line">appVersion: <span class="string">"2.0"</span></span><br><span class="line">description: A Helm chart <span class="keyword">for</span> Kubernetes</span><br><span class="line">name: yiran-test</span><br><span class="line">version: 0.2.0</span><br><span class="line">[root@node1 helm]<span class="comment"># helm package yiran-test</span></span><br><span class="line">Successfully packaged chart and saved it to: /root/helm/yiran-test-0.2.0.tgz</span><br><span class="line">[root@node1 helm]<span class="comment"># ls </span></span><br><span class="line">index.yaml  rbac-config.yaml  yiran-test  yiran-test-0.1.0.tgz  yiran-test-0.2.0.tgz</span><br></pre></td></tr></table></figure>
-<p>此时访问浏览器，应该只能看到空的列表，我们更新一下软件源索引：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># helm repo index --url=http://192.168.27.231:8879 .</span></span><br><span class="line">[root@node1 helm]<span class="comment"># pwd</span></span><br><span class="line">/root/helm</span><br><span class="line">[root@node1 helm]<span class="comment"># cat index.yaml </span></span><br><span class="line">apiVersion: v1</span><br><span class="line">entries:</span><br><span class="line">  yiran-test:</span><br><span class="line">  - apiVersion: v2</span><br><span class="line">    appVersion: <span class="string">"2.0"</span></span><br><span class="line">    created: <span class="string">"2019-06-21T13:43:41.220764856+08:00"</span></span><br><span class="line">    description: A Helm chart <span class="keyword">for</span> Kubernetes</span><br><span class="line">    digest: af54cfdc5f8e6463a91311496bab8fafd7364c3588b85b5e676fb930cd4e2754</span><br><span class="line">    name: yiran-test</span><br><span class="line">    urls:</span><br><span class="line">    - http://192.168.27.231:8879/yiran-test-0.2.0.tgz</span><br><span class="line">    version: 0.2.0</span><br><span class="line">  - apiVersion: v1</span><br><span class="line">    appVersion: <span class="string">"1.0"</span></span><br><span class="line">    created: <span class="string">"2019-06-21T13:43:41.220059406+08:00"</span></span><br><span class="line">    description: A Helm chart <span class="keyword">for</span> Kubernetes</span><br><span class="line">    digest: 64b94c30827aab8e52f57cd3950645bb14ae2deb44e3100d48ecd64f1e706ea5</span><br><span class="line">    name: yiran-test</span><br><span class="line">    urls:</span><br><span class="line">    - http://192.168.27.231:8879/yiran-test-0.1.0.tgz</span><br><span class="line">    version: 0.1.0</span><br><span class="line">generated: <span class="string">"2019-06-21T13:43:41.218753007+08:00"</span></span><br></pre></td></tr></table></figure>
-<p>可以看到在 repo 路径下生成了一个 index.yaml 文件，这个文件就是 repo 的索引文件，我们可以直接通过浏览器访问 <code>http://192.168.27.231:8879</code> 来浏览或下载所需软件包。</p>
-<p>也可以将本地 repo 添加到 helm 中，使用 helm 命令将软件包部署到 k8s 中：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># helm repo list </span></span><br><span class="line">NAME         	URL                                             </span><br><span class="line">stable       	https://kubernetes-charts.storage.googleapis.com</span><br><span class="line">stable-mirror	https://burdenbear.github.io/kube-charts-mirror/</span><br><span class="line">[root@node1 helm]<span class="comment"># helm repo add local http://192.168.27.231:8879</span></span><br><span class="line"><span class="string">"local"</span> has been added to your repositories</span><br><span class="line">[root@node1 helm]<span class="comment"># helm repo list </span></span><br><span class="line">NAME         	URL                                             </span><br><span class="line">stable       	https://kubernetes-charts.storage.googleapis.com</span><br><span class="line">stable-mirror	https://burdenbear.github.io/kube-charts-mirror/</span><br><span class="line"><span class="built_in">local</span>        	http://192.168.27.231:8879                      </span><br><span class="line">[root@node1 helm]<span class="comment"># helm search yiran</span></span><br><span class="line">NAME            	CHART VERSION	APP VERSION	DESCRIPTION                </span><br><span class="line"><span class="built_in">local</span>/yiran-test	0.2.0        	2.0        	A Helm chart <span class="keyword">for</span> Kubernetes</span><br></pre></td></tr></table></figure>
-<p>尝试从本地源安装应用：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># helm list </span></span><br><span class="line">[root@node1 helm]<span class="comment"># helm search yiran</span></span><br><span class="line">NAME            	CHART VERSION	APP VERSION	DESCRIPTION                </span><br><span class="line"><span class="built_in">local</span>/yiran-test	0.2.0        	2.0        	A Helm chart <span class="keyword">for</span> Kubernetes</span><br><span class="line">[root@node1 helm]<span class="comment"># helm install local/yiran-test</span></span><br><span class="line">NAME:   orange-chicken</span><br><span class="line">LAST DEPLOYED: Fri Jun 21 13:49:45 2019</span><br><span class="line">NAMESPACE: default</span><br><span class="line">STATUS: DEPLOYED</span><br><span class="line"></span><br><span class="line">RESOURCES:</span><br><span class="line">==&gt; v1/Deployment</span><br><span class="line">NAME                       READY  UP-TO-DATE  AVAILABLE  AGE</span><br><span class="line">orange-chicken-yiran-test  0/1    0           0          1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Pod(related)</span><br><span class="line">NAME                                        READY  STATUS             RESTARTS  AGE</span><br><span class="line">orange-chicken-yiran-test-7f494c67b5-q9kwp  0/1    ContainerCreating  0         1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Service</span><br><span class="line">NAME                       TYPE       CLUSTER-IP    EXTERNAL-IP  PORT(S)  AGE</span><br><span class="line">orange-chicken-yiran-test  ClusterIP  10.68.85.197  &lt;none&gt;       80/TCP   1s</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">NOTES:</span><br><span class="line">1. Get the application URL by running these commands:</span><br><span class="line">  <span class="built_in">export</span> POD_NAME=$(kubectl get pods --namespace default -l <span class="string">"app.kubernetes.io/name=yiran-test,app.kubernetes.io/instance=orange-chicken"</span> -o jsonpath=<span class="string">"&#123;.items[0].metadata.name&#125;"</span>)</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">"Visit http://127.0.0.1:8080 to use your application"</span></span><br><span class="line">  kubectl port-forward <span class="variable">$POD_NAME</span> 8080:80</span><br><span class="line"></span><br><span class="line">[root@node1 helm]<span class="comment"># helm list </span></span><br><span class="line">NAME          	REVISION	UPDATED                 	STATUS  	CHART           	APP VERSION	NAMESPACE</span><br><span class="line">orange-chicken	1       	Fri Jun 21 13:49:45 2019	DEPLOYED	yiran-test-0.2.0	2.0        	default </span><br><span class="line">[root@node1 helm]<span class="comment"># kubectl get pod </span></span><br><span class="line">NAME                                         READY   STATUS    RESTARTS   AGE</span><br><span class="line">orange-chicken-yiran-test-7f494c67b5-q9kwp   1/1     Running   0          62s</span><br></pre></td></tr></table></figure>
-<h4 id="Chart-依赖管理"><a href="#Chart-依赖管理" class="headerlink" title="Chart 依赖管理"></a>Chart 依赖管理</h4><p>包管理器一个比较钟要的功能就是依赖管理，当我安装 A，A 依赖于 B，那么 B 应该会自动安装完成。</p>
-<p>我们在 <code>yiran-test</code> 中添加两个依赖，并构建：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># cat yiran-test/requirements.yaml   # 添加 apache 和 mysql 依赖</span></span><br><span class="line">dependencies:</span><br><span class="line">  - name: apache</span><br><span class="line">    version: 4.3.2</span><br><span class="line">    repository: https://charts.bitnami.com</span><br><span class="line">  - name: mysql</span><br><span class="line">    version: 1.2.0</span><br><span class="line">    repository: https://burdenbear.github.io/kube-charts-mirror/</span><br><span class="line">[root@node1 helm]<span class="comment"># tree yiran-test/ # 当前目录结构</span></span><br><span class="line">yiran-test/</span><br><span class="line">├── charts</span><br><span class="line">├── Chart.yaml</span><br><span class="line">├── requirements.yaml</span><br><span class="line">├── templates</span><br><span class="line">│   ├── deployment.yaml</span><br><span class="line">│   ├── _helpers.tpl</span><br><span class="line">│   ├── ingress.yaml</span><br><span class="line">│   ├── NOTES.txt</span><br><span class="line">│   ├── service.yaml</span><br><span class="line">│   └── tests</span><br><span class="line">│       └── <span class="built_in">test</span>-connection.yaml</span><br><span class="line">└── values.yaml</span><br><span class="line"></span><br><span class="line">3 directories, 9 files</span><br><span class="line">[root@node1 helm]<span class="comment"># helm dep up yiran-test/ # 下载依赖到本地</span></span><br><span class="line">Hang tight <span class="keyword">while</span> we grab the latest from your chart repositories...</span><br><span class="line">...Successfully got an update from the <span class="string">"local"</span> chart repository</span><br><span class="line">...Successfully got an update from the <span class="string">"stable"</span> chart repository</span><br><span class="line">...Successfully got an update from the <span class="string">"bitnami"</span> chart repository</span><br><span class="line">...Successfully got an update from the <span class="string">"stable-mirror"</span> chart repository</span><br><span class="line">Update Complete.</span><br><span class="line">Saving 2 charts</span><br><span class="line">Downloading apache from repo https://charts.bitnami.com</span><br><span class="line">Downloading mysql from repo https://burdenbear.github.io/kube-charts-mirror/</span><br><span class="line">Deleting outdated charts</span><br><span class="line">[root@node1 helm]<span class="comment"># tree yiran-test/ # 完整目录结构</span></span><br><span class="line">yiran-test/</span><br><span class="line">├── charts</span><br><span class="line">│   ├── apache-4.3.2.tgz</span><br><span class="line">│   └── mysql-1.2.0.tgz</span><br><span class="line">├── Chart.yaml</span><br><span class="line">├── requirements.lock</span><br><span class="line">├── requirements.yaml</span><br><span class="line">├── templates</span><br><span class="line">│   ├── deployment.yaml</span><br><span class="line">│   ├── _helpers.tpl</span><br><span class="line">│   ├── ingress.yaml</span><br><span class="line">│   ├── NOTES.txt</span><br><span class="line">│   ├── service.yaml</span><br><span class="line">│   └── tests</span><br><span class="line">│       └── <span class="built_in">test</span>-connection.yaml</span><br><span class="line">└── values.yaml</span><br><span class="line"></span><br><span class="line">3 directories, 12 files</span><br><span class="line">[root@node1 helm]<span class="comment"># helm package yiran-test</span></span><br><span class="line">Successfully packaged chart and saved it to: /root/helm/yiran-test-0.2.0.tgz</span><br></pre></td></tr></table></figure>
-<p>可以看到 helm 对依赖的管理方式是将自己所依赖的所有 Chart，均下载到 <code>yiran-test/charts/</code> 路径下，我们打包的时候其实已经包含了所有依赖了。</p>
-<p>再创建一个 Chart，依赖于 <code>yiran-test</code> ：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># tree nested/</span></span><br><span class="line">nested/</span><br><span class="line">├── charts</span><br><span class="line">│   └── yiran-test-0.2.0.tgz</span><br><span class="line">├── Chart.yaml</span><br><span class="line">├── requirements.lock</span><br><span class="line">├── requirements.yaml</span><br><span class="line">├── templates</span><br><span class="line">│   ├── deployment.yaml</span><br><span class="line">│   ├── _helpers.tpl</span><br><span class="line">│   ├── ingress.yaml</span><br><span class="line">│   ├── NOTES.txt</span><br><span class="line">│   ├── service.yaml</span><br><span class="line">│   └── tests</span><br><span class="line">│       └── <span class="built_in">test</span>-connection.yaml</span><br><span class="line">└── values.yaml</span><br><span class="line"></span><br><span class="line">3 directories, 11 files</span><br><span class="line">[root@node1 helm]<span class="comment"># cat nested/requirements.yaml </span></span><br><span class="line">dependencies:</span><br><span class="line">  - name: yiran-test</span><br><span class="line">    version: 0.2.0</span><br><span class="line">    repository: http://192.168.27.231:8879</span><br></pre></td></tr></table></figure>
-<p>实际安装 <code>nested</code> ，来看下安装结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 helm]<span class="comment"># helm install nested/</span></span><br><span class="line">NAME:   alliterating-gopher</span><br><span class="line">LAST DEPLOYED: Fri Jun 21 18:22:52 2019</span><br><span class="line">NAMESPACE: default</span><br><span class="line">STATUS: DEPLOYED</span><br><span class="line"></span><br><span class="line">RESOURCES:</span><br><span class="line">==&gt; v1/ConfigMap</span><br><span class="line">NAME                            DATA  AGE</span><br><span class="line">alliterating-gopher-mysql-test  1     1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Deployment</span><br><span class="line">NAME                            READY  UP-TO-DATE  AVAILABLE  AGE</span><br><span class="line">alliterating-gopher-nested      0/1    1           0          1s</span><br><span class="line">alliterating-gopher-yiran-test  0/1    1           0          1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/PersistentVolumeClaim</span><br><span class="line">NAME                       STATUS   VOLUME  CAPACITY  ACCESS MODES  STORAGECLASS  AGE</span><br><span class="line">alliterating-gopher-mysql  Pending  1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Pod(related)</span><br><span class="line">NAME                                             READY  STATUS             RESTARTS  AGE</span><br><span class="line">alliterating-gopher-apac-7bf7cc75d5-mhdsg        0/1    ContainerCreating  0         1s</span><br><span class="line">alliterating-gopher-mysql-5db64c59d9-987vm       0/1    Pending            0         1s</span><br><span class="line">alliterating-gopher-nested-6c74d785df-jdqgq      0/1    ContainerCreating  0         1s</span><br><span class="line">alliterating-gopher-yiran-test-67b5cb5599-nfspm  0/1    ContainerCreating  0         1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Secret</span><br><span class="line">NAME                       TYPE    DATA  AGE</span><br><span class="line">alliterating-gopher-mysql  Opaque  2     1s</span><br><span class="line"></span><br><span class="line">==&gt; v1/Service</span><br><span class="line">NAME                            TYPE          CLUSTER-IP     EXTERNAL-IP  PORT(S)                     AGE</span><br><span class="line">alliterating-gopher-apac        LoadBalancer  10.68.35.233   &lt;pending&gt;    80:21195/TCP,443:26200/TCP  1s</span><br><span class="line">alliterating-gopher-mysql       ClusterIP     10.68.70.173   &lt;none&gt;       3306/TCP                    1s</span><br><span class="line">alliterating-gopher-nested      ClusterIP     10.68.190.252  &lt;none&gt;       80/TCP                      1s</span><br><span class="line">alliterating-gopher-yiran-test  ClusterIP     10.68.217.171  &lt;none&gt;       80/TCP                      1s</span><br><span class="line"></span><br><span class="line">==&gt; v1beta1/Deployment</span><br><span class="line">NAME                       READY  UP-TO-DATE  AVAILABLE  AGE</span><br><span class="line">alliterating-gopher-apac   0/1    1           0          1s</span><br><span class="line">alliterating-gopher-mysql  0/1    1           0          1s</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">NOTES:</span><br><span class="line">1. Get the application URL by running these commands:</span><br><span class="line">  <span class="built_in">export</span> POD_NAME=$(kubectl get pods --namespace default -l <span class="string">"app.kubernetes.io/name=nested,app.kubernetes.io/instance=alliterating-gopher"</span> -o jsonpath=<span class="string">"&#123;.items[0].metadata.name&#125;"</span>)</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">"Visit http://127.0.0.1:8080 to use your application"</span></span><br><span class="line">  kubectl port-forward <span class="variable">$POD_NAME</span> 8080:80</span><br><span class="line"></span><br><span class="line">[root@node1 helm]<span class="comment"># helm list </span></span><br><span class="line">NAME               	REVISION	UPDATED                 	STATUS  	CHART       	APP VERSION	NAMESPACE</span><br><span class="line">alliterating-gopher	1       	Fri Jun 21 18:22:52 2019	DEPLOYED	nested-0.1.0	1.0        	default  </span><br><span class="line">[root@node1 helm]<span class="comment"># kubectl get pod </span></span><br><span class="line">NAME                                              READY   STATUS    RESTARTS   AGE</span><br><span class="line">alliterating-gopher-apac-7bf7cc75d5-mhdsg         0/1     Running   0          5s</span><br><span class="line">alliterating-gopher-mysql-5db64c59d9-987vm        0/1     Pending   0          5s</span><br><span class="line">alliterating-gopher-nested-6c74d785df-jdqgq       0/1     Running   0          5s</span><br><span class="line">alliterating-gopher-yiran-test-67b5cb5599-nfspm   1/1     Running   0          5s</span><br></pre></td></tr></table></figure>
-<p>我们可以看到 nested 已经安装完成了，同时 nested 依赖得 yiran-test 及 yiran-test 依赖得 mysql &amp; apache 也已经安装了。</p>
-<p>具体得依赖关系直接引用官方文档示例：</p>
-<p>假设名为 “A” 的 chart 创建以下 Kubernetes 对象</p>
-<blockquote>
-<p>namespace “A-Namespace”<br>statefulset “A-StatefulSet”<br>service “A-Service”  </p>
-</blockquote>
-<p>此外，A 依赖于创建对象的 chart B.</p>
-<blockquote>
-<p>namespace “B-Namespace”<br>replicaset “B-ReplicaSet”<br>service “B-Service”  </p>
-</blockquote>
-<p>安装/升级 chart A 后，会创建/修改单个 Helm 版本。该版本将按以下顺序创建/更新所有上述 Kubernetes 对象：</p>
-<blockquote>
-<p>A-Namespace<br>B-Namespace<br>A-StatefulSet<br>B-ReplicaSet<br>A-Service<br>B-Service  </p>
-</blockquote>
-<p>这是因为当 Helm 安装 / 升级 charts 时，charts 中的 Kubernetes 对象及其所有依赖项都是如下</p>
-<ol>
-<li>聚合成一个单一的集合; </li>
-<li>按类型排序，然后按名称排序; </li>
-<li>按该顺序创建/更新。</li>
-</ol>
-<p>因此，单个 release 是使用 charts 及其依赖关系创建的所有对象，这意味着 Helm 不管理依赖服务的相关启动顺序，要由上层应用自己控制（比如创建响应探针）。</p>
-<p>具体的资源创建顺序可以看 Tiller <a href="https://github.com/helm/helm/blob/master/pkg/tiller/kind_sorter.go#L29" target="_blank" rel="noopener">相关代码</a>。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>总体来说 Helm 基础功能使用还是很方便的，关键在于我们如何划分我们应用的粒度，比如 openstack 是以组件为粒度划分的：nova Chart 包含 api、scheduler、conductor 等服务；比如 TiDB Operator 项目是以具体功能来划分的：tidb-backup、tidb-cluster、tidb-operator 。我们应该根据自己的业务需求，合理划分。</p>
-<p>还有一点需要注意的是，Helm 项目还处于快速发展阶段（貌似涉及 k8s 的都变化太快），尤其是最近发布了 Helm3 alpha，如果是生产系统，需要考虑后续是否能够平滑升级的影响。</p>
-<p>如果实在不喜欢 Helm Tiller 方式，单纯使用 Helm template 也是可以的。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1986,7 +1932,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">106</span>
+                  <span class="site-state-item-count">107</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
