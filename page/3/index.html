@@ -275,6 +275,235 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/10/19/Buildah-初次体验/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/10/19/Buildah-初次体验/" itemprop="url">Buildah 初次体验</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-19T10:15:39+08:00">
+                2019-10-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/10/19/Buildah-初次体验/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/10/19/Buildah-初次体验/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>上周体验了 <a href="https://zdyxry.github.io/2019/10/12/Podman-%E5%88%9D%E6%AC%A1%E4%BD%93%E9%AA%8C/">Podman</a> 来管理容器的构建、生命周期管理等。Podman 自身是可以通过 Dockerfile 来进行容器镜像的构建，并且也支持容器镜像的 pull/push/login 等操作，Buildah 能够带来什么好处，我们为什么要使用它？</p>
+<p>容器工具体验系列：</p>
+<ul>
+<li><a href="https://zdyxry.github.io/2019/10/12/Podman-%E5%88%9D%E6%AC%A1%E4%BD%93%E9%AA%8C/">Podman 初次体验</a></li>
+<li><a href="https://zdyxry.github.io/2019/10/19/Buildah-%E5%88%9D%E6%AC%A1%E4%BD%93%E9%AA%8C/">Buildah 初次体验</a></li>
+<li><a href="https://zdyxry.github.io/2019/10/26/Skopeo-初次体验/">Skopeo 初次体验</a></li>
+</ul>
+<p>注意：本文章所采用环境为 CentOS7，需要除了 Buildah 工具外，还需要安装 <code>containers-common</code> 用于配置容器。</p>
+<h2 id="What"><a href="#What" class="headerlink" title="What"></a>What</h2><p>我们现在使用的容器管理工具无论是 Podman 还是 Docker，都是符合 OCI 规范的，他们操作的镜像也需要符合 OCI 规范，Buildah 介绍很简单： <code>A tool that facilitates building OCI images</code>。</p>
+<p>Buildah 功能列表：</p>
+<ol>
+<li>创建容器</li>
+<li>通过 Dockerfile 或者一个处于运行状态的容器（指 Buildah 自身创建的容器，Podman 不可见</li>
+<li>挂载/卸载镜像文件系统</li>
+<li>使用更新后挂载的镜像文件系统作为文件系统层创建新的镜像</li>
+<li>…</li>
+</ol>
+<h3 id="Buildah-与-Podman-的关系"><a href="#Buildah-与-Podman-的关系" class="headerlink" title="Buildah 与 Podman 的关系"></a>Buildah 与 Podman 的关系</h3><p>在官方说法中，Buildah 与 Podman 是相辅相成的关系，有很多共同点：它们都不需要 root 权限；都可以通过 Dockerfile 来构建容器镜像；都采用 fork-exec 模型；都不需要守护进程等等。 Buildah 主要的优势在于可以在没有 Doclerfiles 的情况下创建容器镜像，这也造成了从 Docker 切换到 Buildah 的用户使用成本会稍微高一些，因为部分概念发生了改变，主要有以下这些对比：</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Podman Behavior</th>
+<th>Buildah Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>build</td>
+<td>Calls buildah bud</td>
+<td>Provides the build-using-dockerfile (bud) command that emulates Docker’s build command.</td>
+</tr>
+<tr>
+<td>commit</td>
+<td>Commits a Podman container into a container image. Does not work on a Buildah container. Once committed the resulting image can be used by either Podman or Buildah.</td>
+<td>Commits a Buildah container into a container image. Does not work on a Podman container. Once committed, the resulting image can be used by either Buildah or Podman.</td>
+</tr>
+<tr>
+<td>mount</td>
+<td>Mounts a Podman container. Does not work on a Buildah container.</td>
+<td>Mounts a Buildah container. Does not work on a Podman container.</td>
+</tr>
+<tr>
+<td>pull and push</td>
+<td>Pull or push an image from a container image registry. Functionally the same as Buildah.</td>
+<td>Pull or push an image from a container image registry. Functionally the same as Podman.</td>
+</tr>
+<tr>
+<td>run</td>
+<td>Run a process in a new container in the same manner as docker run.</td>
+<td>Runs the container in the same way as the RUN command in a Dockerfile.</td>
+</tr>
+<tr>
+<td>rm</td>
+<td>Removes a Podman container. Does not work on a Buildah container.</td>
+<td>Removes a Buildah container. Does not work on a Podman container.</td>
+<td></td>
+</tr>
+<tr>
+<td>rmi, images, tag</td>
+<td>Equivalent on both projects.</td>
+<td>Equivalent on both projects.</td>
+</tr>
+<tr>
+<td>containers and ps</td>
+<td>ps is used to list Podman containers. The containers command does not exist.</td>
+<td>containers is used to list Buildah containers. The ps command does not exist.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="How"><a href="#How" class="headerlink" title="How"></a>How</h2><h3 id="从-Dockerfile-构建镜像"><a href="#从-Dockerfile-构建镜像" class="headerlink" title="从 Dockerfile 构建镜像"></a>从 Dockerfile 构建镜像</h3><p>buildah 提供了 <code>build-using-dockerfile</code> 命令支持从 Dockerfile 构建镜像，命令等同于 <code>docker build</code> 与 <code>podman build</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ cat Dockerfile  <span class="comment"># 编写 Dockerfile</span></span><br><span class="line">FROM centos</span><br><span class="line"></span><br><span class="line">MAINTAINER &lt;zdyxry@gmail.com&gt;</span><br><span class="line"></span><br><span class="line">CMD <span class="built_in">echo</span> <span class="string">"hello yiran"</span></span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah bud -t yiran . <span class="comment"># 使用 `bud` 命令构建镜像，等同于 `docker build`</span></span><br><span class="line">STEP 1: FROM centos</span><br><span class="line">STEP 2: MAINTAINER &lt;zdyxry@gmail.com&gt;</span><br><span class="line">STEP 3: CMD <span class="built_in">echo</span> <span class="string">"hello yiran"</span></span><br><span class="line">STEP 4: COMMIT yiran</span><br><span class="line">Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob 9e607bb861a7 skipped: already exists</span><br><span class="line">Copying blob 5f70bf18a086 skipped: already exists</span><br><span class="line">Copying config ebaeed04e2 <span class="keyword">done</span></span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">ebaeed04e23610d304c74d1e3bc0c428162e6e7eac529dce1376d8b284604b85</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah images</span><br><span class="line">REPOSITORY                 TAG      IMAGE ID       CREATED              SIZE</span><br><span class="line">localhost/yiran            latest   ebaeed04e236   3 seconds ago        227 MB</span><br><span class="line">docker.io/library/centos   latest   0f3e07c0138f   2 weeks ago          227 MB</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ podman images <span class="comment"># 构建出来的镜像保存在 `/var/lib/containers/storage` ，因此 Podman 可以直接使用</span></span><br><span class="line">REPOSITORY                 TAG      IMAGE ID       CREATED              SIZE</span><br><span class="line">localhost/yiran            latest   ebaeed04e236   7 seconds ago        227 MB</span><br><span class="line">docker.io/library/centos   latest   0f3e07c0138f   2 weeks ago          227 MB</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ podman run localhost/yiran:latest</span><br><span class="line">hello yiran</span><br></pre></td></tr></table></figure>
+<h3 id="从容器中构建镜像"><a href="#从容器中构建镜像" class="headerlink" title="从容器中构建镜像"></a>从容器中构建镜像</h3><p>这是 Buildah 最常使用方式，<code>buildah</code> 配合 Host 的命令操作来达到简化镜像构建的目的。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah from centos</span><br><span class="line">centos-working-container</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah run centos-working-container yum install httpd -y</span><br><span class="line">Complete!</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ <span class="built_in">echo</span> <span class="string">"Hi yiran"</span> &gt; index.html</span><br><span class="line">You have new mail.</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah copy centos-working-container index.html /var/www/html/index</span><br><span class="line">062e7183713e39f9788fe12ef40c298aa69e394df5ee9699aa6c136fb32f3144</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah config --entrypoint <span class="string">"/usr/sbin/httpd -DFOREGROUND"</span> centos-working-container      </span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah commit centos-working-container  yiran-httpd</span><br><span class="line">Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob 9e607bb861a7 skipped: already exists</span><br><span class="line">Copying blob a6d6842abbd9 <span class="keyword">done</span></span><br><span class="line">Copying config daa1399f36 <span class="keyword">done</span></span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">bdaa1399f36944ff74e6fe20c5b346aece51f5edb9c47907027ac4d877ccf179c</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah images</span><br><span class="line">REPOSITORY                 TAG      IMAGE ID       CREATED          SIZE</span><br><span class="line">localhost/yiran-httpd      latest   daa1399f3694   7 seconds ago    277 MB</span><br><span class="line">localhost/yiran            latest   ebaeed04e236   13 minutes ago   227 MB</span><br><span class="line">&lt;none&gt;                     &lt;none&gt;   975b7fcdfccc   13 minutes ago   227 MB</span><br><span class="line">&lt;none&gt;                     &lt;none&gt;   8cafad8a1ab0   15 minutes ago   227 MB</span><br><span class="line">docker.io/library/centos   latest   0f3e07c0138f   2 weeks ago      227 MB</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ podman images</span><br><span class="line">REPOSITORY                 TAG      IMAGE ID       CREATED          SIZE</span><br><span class="line">localhost/yiran-httpd      latest   daa1399f3694   15 seconds ago   277 MB</span><br><span class="line">localhost/yiran            latest   ebaeed04e236   13 minutes ago   227 MB</span><br><span class="line">&lt;none&gt;                     &lt;none&gt;   975b7fcdfccc   13 minutes ago   227 MB</span><br><span class="line">&lt;none&gt;                     &lt;none&gt;   8cafad8a1ab0   15 minutes ago   227 MB</span><br><span class="line">docker.io/library/centos   latest   0f3e07c0138f   2 weeks ago      227 MB</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ podman run -p 8080:80 localhost/yiran-httpd:latest</span><br><span class="line">AH00558: httpd: Could not reliably determine the server<span class="string">'s fully qualified domain name, using 10.88.0.5. Set the '</span>ServerName<span class="string">' directive globally to suppress this message</span></span><br></pre></td></tr></table></figure>
+<p>上述操作解释如下：</p>
+<ol>
+<li><code>buildah from</code> 命令创建一个新的处于运行中的容器</li>
+<li><code>buildah run &lt;container id&gt;</code> 在容器中执行命令</li>
+<li><code>echo yiran &gt; index.html</code> 在主机上执行的命令，生成文件，该文件保存在主机上</li>
+<li><code>buildah copy</code> 将主机上的文件拷贝到容器中，等同于 Dockerfile 中的 <code>COPY</code></li>
+<li><code>buildah config --entrypoint</code> 给容器配置 entrypoint，等同于 Dockerfile 中的 <code>ENTRYPOINT</code></li>
+<li><code>buildah commit</code> 将该容器制作为镜像，保存在 <code>/var/lib/containers/</code> 下</li>
+</ol>
+<h3 id="挂载镜像"><a href="#挂载镜像" class="headerlink" title="挂载镜像"></a>挂载镜像</h3><p>buildah 提供了 <code>buildah mount</code> 命令，可以将运行中容器挂载到 Host 的文件系统上，我们可以直接在 Host 上对容器内文件进行操作：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah images</span><br><span class="line">REPOSITORY                  TAG      IMAGE ID       CREATED          SIZE</span><br><span class="line">localhost/yiran-httpd       latest   daa1399f3694   25 minutes ago   277 MB</span><br><span class="line">localhost/yiran             latest   ebaeed04e236   39 minutes ago   227 MB</span><br><span class="line">docker.io/library/centos    latest   0f3e07c0138f   2 weeks ago      227 MB</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah from localhost/yiran-httpd</span><br><span class="line">yiran-httpd-working-container</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ buildah mount yiran-httpd-working-container</span><br><span class="line">/var/lib/containers/storage/overlay/75d42aaf05bfb855d59c7ae32ac138acd17c6a40f56cd541b16bffad6c720e9b/merged</span><br><span class="line">root@yiran-30-250:/tmp/buildah</span><br><span class="line"> $ cat /var/lib/containers/storage/overlay/75d42aaf05bfb855d59c7ae32ac138acd17c6a40f56cd541b16bffad6c720e9b/merged/var/www/html/index</span><br><span class="line">Hi yiran</span><br></pre></td></tr></table></figure>
+<p>我们除了可以直接操作容器内文件，也可以在 Host 上给容器安装一些软件，如 dnf、make 等工具：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dnf install --installroot=&lt;container mountpoint&gt;</span><br><span class="line">make install DESTDIR=&lt;container mountpoint&gt;</span><br></pre></td></tr></table></figure>
+<p>这里面临一个问题：如果在构建镜像的时候依赖于我们 Host 的环境，那么就无法达到我们想要的构建环境隔离了。这个问题可以通过使用多个容器共同构建来解决。</p>
+<p>假设如果我们需要 gcc 环境，那么我们可以准备两个容器：其中一个包含 gcc ，并用它来编译，编译完成后在另一个纯净的容器中安装，最终只需要 commit 纯净的容器就可以。</p>
+<p>这里的好处是 buildah 方式构建镜像，不会像 Dockerfile 一样包含很多层，只有执行 <code>buildah commit</code> 的时候产生一层镜像文件，我们也不需要考虑清理编译环境等问题。</p>
+<h2 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h2><p>了解了基本的使用，那么我们需要知道为什么要使用 Buildah。</p>
+<p>首先如果不使用 Buildah，对于整个容器工具链来说是完全 Ok 的，哪怕是不使用 Docker，仅凭 <code>podman build</code> 命令配合 Dockerfile 也是足够的，我们可以构建我们所需要的任意镜像。</p>
+<p>使用 Buildah 能带来什么好处呢？我理解是我们可以通过更多的手段去构建镜像，不局限于 Dockerfile 中有限的关键字，我们有了更多的可能性，这就足够了。无论是 Buildah 原生命令还是通过 <code>buildah mount</code> 挂载到本地文件系统，都让我们可以更舒服的构建镜像，我们从维护一个 Dockerfile 转变为维护一个 Shell 脚本。</p>
+<p>当然无论使用哪种方式，我们都需要知道 OCI 镜像标准是什么，这是最基本的。</p>
+<p>Shell 脚本示例：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/usr/bin/env bash</span></span><br><span class="line"></span><br><span class="line">set -o errexit</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Create a container</span></span><br><span class="line">container=$(buildah from fedora:28)</span><br><span class="line">mountpoint=$(buildah mount $container)</span><br><span class="line"></span><br><span class="line">buildah config --label maintainer="yiran &lt;zdyxry@gmail.com&gt;" $container</span><br><span class="line"></span><br><span class="line">curl -sSL http://ftpmirror.gnu.org/hello/hello-2.10.tar.gz \</span><br><span class="line">     -o /tmp/hello-2.10.tar.gz</span><br><span class="line">tar xvzf src/hello-2.10.tar.gz -C $&#123;mountpoint&#125;/opt</span><br><span class="line"></span><br><span class="line">pushd $&#123;mountpoint&#125;/opt/hello-2.10</span><br><span class="line">./configure</span><br><span class="line">make</span><br><span class="line">make install DESTDIR=$&#123;mountpoint&#125;</span><br><span class="line">popd</span><br><span class="line"></span><br><span class="line">chroot $mountpoint bash -c "/usr/local/bin/hello -v"</span><br><span class="line"></span><br><span class="line">buildah config --entrypoint "/usr/local/bin/hello" $container</span><br><span class="line">buildah commit --format docker $container hello</span><br><span class="line">buildah unmount $container</span><br></pre></td></tr></table></figure></p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/containers/buildah" target="_blank" rel="noopener">https://github.com/containers/buildah</a></li>
+<li><a href="http://chris.collins.is/2017/08/17/buildah-a-new-way-to-build-container-images/" target="_blank" rel="noopener">http://chris.collins.is/2017/08/17/buildah-a-new-way-to-build-container-images/</a> </li>
+<li><a href="https://developers.redhat.com/blog/2019/02/21/podman-and-buildah-for-docker-users/" target="_blank" rel="noopener">https://developers.redhat.com/blog/2019/02/21/podman-and-buildah-for-docker-users/</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/10/12/Podman-初次体验/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2215,162 +2444,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/08/17/provider-vs-provisioner/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/08/17/provider-vs-provisioner/" itemprop="url">provider vs provisioner</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-17T21:08:46+08:00">
-                2019-08-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/08/17/provider-vs-provisioner/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/08/17/provider-vs-provisioner/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前 liqiang 同学写了一篇博客：<a href="https://liqiang.io/post/status-or-state-fa70399e" target="_blank" rel="noopener">Status 还是 State</a> 用于总结日常工作中遇到的相似词的区别。这两天看代码，经常能够看到两个词：provider 和 provisioner，作为一个英语渣渣，很难准确的理解两个词的区别。</p>
-<h2 id="字典解释"><a href="#字典解释" class="headerlink" title="字典解释"></a>字典解释</h2><p>provider 字典中的解释为：</p>
-<ol>
-<li>供应者（商）</li>
-<li>提供者（商）</li>
-<li>供养人</li>
-<li>…</li>
-</ol>
-<p>provisioner 字典中的解释为：</p>
-<ol>
-<li>粮食供应者</li>
-</ol>
-<p>看上去从字面上也是一个意思，那么我们来找个实际场景看看。</p>
-<h2 id="实际场景"><a href="#实际场景" class="headerlink" title="实际场景"></a>实际场景</h2><h3 id="Terraform"><a href="#Terraform" class="headerlink" title="Terraform"></a>Terraform</h3><p>在 Terraform 概念中，同时存在 provider 和 provisioner 两个概念：</p>
-<figure class="highlight plain"><figcaption><span>is used to create, manage, and update infrastructure resources such as physical machines, VMs, network switches, containers, and more. Almost any infrastructure type can be represented as a resource in Terraform.</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">A provider is responsible for understanding API interactions and exposing resources. Providers generally are an IaaS (e.g. AWS, GCP, Microsoft Azure, OpenStack), PaaS (e.g. Heroku), or SaaS services (e.g. Terraform Cloud, DNSimple, CloudFlare).</span><br></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Provisioners are used to execute scripts on a local or remote machine as part of resource creation or destruction. Provisioners can be used to bootstrap a resource, cleanup before destroy, run configuration management, etc.</span><br></pre></td></tr></table></figure>
-<p>这里的 provider 对应 <code>供应商</code> 的含义是可以正确理解的，不同的供应商提供不同的插件。</p>
-<p>provisioner 在这里指的是定义的资源可使用的插件，如 <code>remote-exec</code>,<code>file</code>,<code>chef</code> 等等，跟供应商关系不大。</p>
-<h3 id="Vagrant-Docker"><a href="#Vagrant-Docker" class="headerlink" title="Vagrant Docker"></a>Vagrant Docker</h3><p>在搜索过程中，看到有人在 SO 上问了这么个问题 <a href="https://stackoverflow.com/questions/30394707/vagrant-docker-provider-vs-docker-provisioner" target="_blank" rel="noopener">Vagrant - Docker provider vs. docker provisioner</a></p>
-<p>下面的高票回答：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Docker provisioner help to prepare environment: build and pull images, run containers if you need multiple containers running for your vagrant machine. Docker provider is running vagrant machine in docker container (instead of VM/cloud as other providers do).</span><br></pre></td></tr></table></figure>
-<p>虽然感觉说的不是很清楚，但是也可以看出 provider 是有明确分类的，而 provisioner 更像是具体的动作种类，比如创建、删除、更新等。</p>
-<h3 id="CSI"><a href="#CSI" class="headerlink" title="CSI"></a>CSI</h3><p>在 k8s CSI 中，也有 provisioner 的概念，这里主要是指具体的“置备动作执行者”。</p>
-<p>当然 provisioner 也有多个，根据具体的存储供应商的不同，提供不同的 provisioner。</p>
-<h3 id="Cluster-API"><a href="#Cluster-API" class="headerlink" title="Cluster-API"></a>Cluster-API</h3><p>在 Cluster-API 中，不同厂家为了支持 Cluster-API，会实现不同的 provider，比如 cluster-api-provider-aws, cluster-api-provider-vspher 等。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>根据实际的情况，provider 主要是用来区分供应者，是谁来提供某个事物，通常以公司区分。</p>
-<p>provisioner 使用场景不多，主要是涉及到具体的功能执行，我这里理解为“置备动作执行者”，虽然也可以进行分类，但是主要意思应该是前者比较多一些。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2423,7 +2496,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">107</span>
+                  <span class="site-state-item-count">108</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
