@@ -275,6 +275,140 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/06/17/将-Json-转换为-Python-Object2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/06/17/将-Json-转换为-Python-Object2/" itemprop="url">将 Json 转换为 Python Object(二)</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-17T21:00:49+08:00">
+                2018-06-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/06/17/将-Json-转换为-Python-Object2/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/06/17/将-Json-转换为-Python-Object2/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。<br>今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。</p>
+<p>源码代码很少，补充一些关键变量用于了解整体实现流程。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br></pre></td><td class="code"><pre><span class="line">import copy</span><br><span class="line">from pprint import pprint</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">class Dict(dict):</span><br><span class="line"></span><br><span class="line">    def __init__(__self, *args, **kwargs):</span><br><span class="line">        print &apos;init kwargs is &apos;, kwargs</span><br><span class="line">        object.__setattr__(__self, &apos;__parent&apos;, kwargs.pop(&apos;__parent&apos;, None))</span><br><span class="line">        object.__setattr__(__self, &apos;__key&apos;, kwargs.pop(&apos;__key&apos;, None))</span><br><span class="line">        for arg in args:</span><br><span class="line">            if not arg:</span><br><span class="line">                continue</span><br><span class="line">            elif isinstance(arg, dict):</span><br><span class="line">                for key, val in arg.items():</span><br><span class="line">                    __self[key] = __self._hook(val)</span><br><span class="line">            elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)):</span><br><span class="line">                __self[arg[0]] = __self._hook(arg[1])</span><br><span class="line">            else:</span><br><span class="line">                for key, val in iter(arg):</span><br><span class="line">                    __self[key] = __self._hook(val)</span><br><span class="line"></span><br><span class="line">        for key, val in kwargs.items():</span><br><span class="line">            __self[key] = __self._hook(val)</span><br><span class="line"></span><br><span class="line">    def __setattr__(self, name, value):</span><br><span class="line">        if hasattr(Dict, name):</span><br><span class="line">            raise AttributeError(&quot;&apos;Dict&apos; object attribute &quot;</span><br><span class="line">                                 &quot;&apos;&#123;0&#125;&apos; is read-only&quot;.format(name))</span><br><span class="line">        else:</span><br><span class="line">            self[name] = value</span><br><span class="line"></span><br><span class="line">    def __setitem__(self, name, value):</span><br><span class="line">        print &apos;setitem name is %s, value is %s &apos; % (name, value)</span><br><span class="line">        super(Dict, self).__setitem__(name, value)</span><br><span class="line">        try:</span><br><span class="line">            p = object.__getattribute__(self, &apos;__parent&apos;)</span><br><span class="line">            key = object.__getattribute__(self, &apos;__key&apos;)</span><br><span class="line">        except AttributeError:</span><br><span class="line">            p = None</span><br><span class="line">            key = None</span><br><span class="line">        if p is not None:</span><br><span class="line">            print &apos;parent is %s&apos; % p</span><br><span class="line">            print &apos;key is %s&apos; % key</span><br><span class="line">            p[key] = self</span><br><span class="line">            object.__delattr__(self, &apos;__parent&apos;)</span><br><span class="line">            object.__delattr__(self, &apos;__key&apos;)</span><br><span class="line"></span><br><span class="line">    def __add__(self, other):</span><br><span class="line">        if not self.keys():</span><br><span class="line">            return other</span><br><span class="line">        else:</span><br><span class="line">            self_type = type(self).__name__</span><br><span class="line">            other_type = type(other).__name__</span><br><span class="line">            msg = &quot;unsupported operand type(s) for +: &apos;&#123;&#125;&apos; and &apos;&#123;&#125;&apos;&quot;</span><br><span class="line">            raise TypeError(msg.format(self_type, other_type))</span><br><span class="line"></span><br><span class="line">    @classmethod</span><br><span class="line">    def _hook(cls, item):</span><br><span class="line">        if isinstance(item, dict):</span><br><span class="line">            return cls(item)</span><br><span class="line">        elif isinstance(item, (list, tuple)):</span><br><span class="line">            return type(item)(cls._hook(elem) for elem in item)</span><br><span class="line">        return item</span><br><span class="line"></span><br><span class="line">    def __getattr__(self, item):</span><br><span class="line">        return self.__getitem__(item)</span><br><span class="line"></span><br><span class="line">    def __getitem__(self, name):</span><br><span class="line">        print &apos;getitem name is &apos;, name</span><br><span class="line">        if name not in self:</span><br><span class="line">            print &quot;%s not in self&quot; % name</span><br><span class="line">            return Dict(__parent=self, __key=name)</span><br><span class="line">        return super(Dict, self).__getitem__(name)</span><br><span class="line"></span><br><span class="line">    def __delattr__(self, name):</span><br><span class="line">        del self[name]</span><br><span class="line"></span><br><span class="line">    def to_dict(self):</span><br><span class="line">        base = &#123;&#125;</span><br><span class="line">        for key, value in self.items():</span><br><span class="line">            if isinstance(value, type(self)):</span><br><span class="line">                base[key] = value.to_dict()</span><br><span class="line">            elif isinstance(value, (list, tuple)):</span><br><span class="line">                base[key] = type(value)(</span><br><span class="line">                    item.to_dict() if isinstance(item, type(self)) else</span><br><span class="line">                    item for item in value)</span><br><span class="line">            else:</span><br><span class="line">                base[key] = value</span><br><span class="line">        return base</span><br><span class="line"></span><br><span class="line">    def copy(self):</span><br><span class="line">        return copy.copy(self)</span><br><span class="line"></span><br><span class="line">    def deepcopy(self):</span><br><span class="line">        return copy.deepcopy(self)</span><br><span class="line"></span><br><span class="line">    def __deepcopy__(self, memo):</span><br><span class="line">        other = self.__class__()</span><br><span class="line">        memo[id(self)] = other</span><br><span class="line">        for key, value in self.items():</span><br><span class="line">            other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)</span><br><span class="line">        return other</span><br><span class="line"></span><br><span class="line">    def update(self, *args, **kwargs):</span><br><span class="line">        other = &#123;&#125;</span><br><span class="line">        if args:</span><br><span class="line">            if len(args) &gt; 1:</span><br><span class="line">                raise TypeError()</span><br><span class="line">            other.update(args[0])</span><br><span class="line">        other.update(kwargs)</span><br><span class="line">        for k, v in other.items():</span><br><span class="line">            if ((k not in self) or</span><br><span class="line">                (not isinstance(self[k], dict)) or</span><br><span class="line">                    (not isinstance(v, dict))):</span><br><span class="line">                self[k] = v</span><br><span class="line">            else:</span><br><span class="line">                self[k].update(v)</span><br><span class="line"></span><br><span class="line">    def __getnewargs__(self):</span><br><span class="line">        return tuple(self.items())</span><br><span class="line"></span><br><span class="line">    def __getstate__(self):</span><br><span class="line">        return self</span><br><span class="line"></span><br><span class="line">    def __setstate__(self, state):</span><br><span class="line">        self.update(state)</span><br><span class="line"></span><br><span class="line">    def setdefault(self, key, default=None):</span><br><span class="line">        if key in self:</span><br><span class="line">            return self[key]</span><br><span class="line">        else:</span><br><span class="line">            self[key] = default</span><br><span class="line">            return default</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">json_data = &#123;</span><br><span class="line">    &quot;a&quot;: &quot;a&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">test1 = Dict(json_data)</span><br><span class="line">test1.b.c = &quot;c&quot;</span><br><span class="line">test1.b.d.e = &quot;e&quot;</span><br><span class="line">pprint(test1.to_dict())</span><br></pre></td></tr></table></figure>
+<hr>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"> $ python a.py</span><br><span class="line">init kwargs is  &#123;&#125;</span><br><span class="line">setitem name is a, value is a </span><br><span class="line">getitem name is  b</span><br><span class="line">b not in self</span><br><span class="line">init kwargs is  &#123;&apos;__key&apos;: &apos;b&apos;, &apos;__parent&apos;: &#123;&apos;a&apos;: &apos;a&apos;&#125;&#125;</span><br><span class="line">setitem name is c, value is c </span><br><span class="line">parent is &#123;&apos;a&apos;: &apos;a&apos;&#125;</span><br><span class="line">key is b</span><br><span class="line">setitem name is b, value is &#123;&apos;c&apos;: &apos;c&apos;&#125; </span><br><span class="line">getitem name is  b</span><br><span class="line">getitem name is  d</span><br><span class="line">d not in self</span><br><span class="line">init kwargs is  &#123;&apos;__key&apos;: &apos;d&apos;, &apos;__parent&apos;: &#123;&apos;c&apos;: &apos;c&apos;&#125;&#125;</span><br><span class="line">setitem name is e, value is e </span><br><span class="line">parent is &#123;&apos;c&apos;: &apos;c&apos;&#125;</span><br><span class="line">key is d</span><br><span class="line">setitem name is d, value is &#123;&apos;e&apos;: &apos;e&apos;&#125; </span><br><span class="line">&#123;&apos;a&apos;: &apos;a&apos;, &apos;b&apos;: &#123;&apos;c&apos;: &apos;c&apos;, &apos;d&apos;: &#123;&apos;e&apos;: &apos;e&apos;&#125;&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2018/06/09/将-Json-转换为-Python-Object1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1514,7 +1648,7 @@ iops-total-max-length=60
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">108</span>
+                  <span class="site-state-item-count">109</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1527,7 +1661,7 @@ iops-total-max-length=60
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-count">28</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

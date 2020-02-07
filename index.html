@@ -275,6 +275,153 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/02/07/HTTP-Content-Length-学习/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/02/07/HTTP-Content-Length-学习/" itemprop="url">HTTP Content-Length 学习</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-02-07T22:54:14+08:00">
+                2020-02-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/02/07/HTTP-Content-Length-学习/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/02/07/HTTP-Content-Length-学习/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前提供了一个用于下载文件的 API，使用到了 <code>Content-Length</code> 字段并踩了个坑： <code>Content-Length</code> 与实际的数据大小不一致。今天来学习下这个字段相关的知识。</p>
+<h2 id="Content-Length"><a href="#Content-Length" class="headerlink" title="Content-Length"></a>Content-Length</h2><blockquote>
+<p>Content-Length 是一个实体消息首部，用来指明发送给接收方的消息主体的大小，即用十进制数字表示的八位元组的数目。</p>
+</blockquote>
+<p>当客户端向服务器发送一个请求时，服务器可以很清楚的知道内容大小，然后通过Content-length消息首部字段告诉客户端需要接收多少数据。除了使用 <code>Transfer-Encoding</code>，当<code>Content-Length</code> 存在是必须与实际传输的数据大小一致，如果前者大，则会导致请求一直等待直至超时；如果后者大，则会导致数据被截断，在最近版本的 Chrome 中，会直接提示 <code>net::ERR_CONTENT_LENGTH_MISMATCH</code> 报错导致加载失败。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"net/http"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	http.HandleFunc(<span class="string">"/"</span>, <span class="function"><span class="keyword">func</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line"></span><br><span class="line">		w.Header().Set(<span class="string">"Content-Length"</span>, <span class="string">"20"</span>)</span><br><span class="line">		<span class="comment">//w.Header().Set("Content-Length", "12")</span></span><br><span class="line">		w.WriteHeader(<span class="number">200</span>)</span><br><span class="line">		w.Write([]<span class="keyword">byte</span>(<span class="string">"hello world\n"</span>))</span><br><span class="line"></span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	http.ListenAndServe(<span class="string">":8080"</span>, <span class="literal">nil</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Request URL: http://127.0.0.1:8080/</span><br><span class="line">Request Method: GET</span><br><span class="line">Status Code: 200 OK</span><br><span class="line">Remote Address: 127.0.0.1:8080</span><br><span class="line">Referrer Policy: no-referrer-when-downgrade</span><br><span class="line">Content-Length: 12</span><br><span class="line">Content-Type: text/plain; charset=utf-8</span><br><span class="line">Date: Fri, 07 Feb 2020 14:36:40 GMT</span><br><span class="line">X-DNS-Prefetch-Control: off</span><br></pre></td></tr></table></figure>
+<h2 id="Transfer-Encoding"><a href="#Transfer-Encoding" class="headerlink" title="Transfer-Encoding"></a>Transfer-Encoding</h2><img src="/2020/02/07/HTTP-Content-Length-学习/http.png" title="Transfer-Encoding">
+<blockquote>
+<p>Transfer-Encoding 消息首部指明了将 entity 安全传递给用户所采用的编码形式。Transfer-Encoding 是一个逐跳传输消息首部，即仅应用于两个节点之间的消息传递，而不是所请求的资源本身。一个多节点连接中的每一段都可以应用不同的Transfer-Encoding 值。</p>
+</blockquote>
+<p>如果在传输前不知道消息大小，那么就可以使用 <code>Transfer-Encoding</code> 。当设置了 <code>Transfer-Encoding</code> ， <code>Content-Length</code> 会被忽略，两者无法共存。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">        <span class="string">"io"</span></span><br><span class="line">        <span class="string">"log"</span></span><br><span class="line">        <span class="string">"net/http"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// hello world, the web server</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">HelloServer</span><span class="params">(w http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">        w.WriteHeader(<span class="number">200</span>)</span><br><span class="line">        <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ &#123;</span><br><span class="line">                io.WriteString(w, <span class="string">"hello, world!\n"</span>)</span><br><span class="line">                w.(http.Flusher).Flush()</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">        http.HandleFunc(<span class="string">"/"</span>, HelloServer)</span><br><span class="line">        err := http.ListenAndServe(<span class="string">":8080"</span>, <span class="literal">nil</span>)</span><br><span class="line">        <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">                log.Fatal(<span class="string">"ListenAndServe: "</span>, err)</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Request URL: http://127.0.0.1:8080/</span><br><span class="line">Request Method: GET</span><br><span class="line">Status Code: 200 OK</span><br><span class="line">Remote Address: 127.0.0.1:8080</span><br><span class="line">Referrer Policy: no-referrer-when-downgrade</span><br><span class="line">Content-Type: text/plain; charset=utf-8</span><br><span class="line">Date: Fri, 07 Feb 2020 13:56:54 GMT</span><br><span class="line">Transfer-Encoding: chunked</span><br><span class="line">X-DNS-Prefetch-Control: off</span><br></pre></td></tr></table></figure>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Content-Length" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Content-Length</a></li>
+<li><a href="https://blog.piaoruiqing.com/2019/09/08/do-you-know-content-length/#Content-Length-3" target="_blank" rel="noopener">https://blog.piaoruiqing.com/2019/09/08/do-you-know-content-length/#Content-Length-3</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/02/03/Server-Sent-Events-简单使用/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1887,200 +2034,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/12/09/2019年读书记录/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/12/09/2019年读书记录/" itemprop="url">2019年读书记录</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-09T20:07:34+08:00">
-                2019-12-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/12/09/2019年读书记录/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/12/09/2019年读书记录/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="年终总结"><a href="#年终总结" class="headerlink" title="年终总结"></a>年终总结</h2><ul>
-<li><a href="https://zdyxry.github.io/2016/12/31/2016%E5%B9%B4%E8%AF%BB%E4%B9%A6%E8%AE%B0%E5%BD%95/">2016</a><ul>
-<li>计划读 5 本，实际读 13 本。</li>
-</ul>
-</li>
-<li><a href="https://zdyxry.github.io/2017/12/31/2017%E5%B9%B4%E8%AF%BB%E4%B9%A6%E8%AE%B0%E5%BD%95/">2017</a><ul>
-<li>计划 32 本，实际读完 23 本。</li>
-</ul>
-</li>
-<li><a href="https://zdyxry.github.io/2018/12/30/2018%E5%B9%B4%E8%AF%BB%E4%B9%A6%E8%AE%B0%E5%BD%95/">2018</a><ul>
-<li>计划 30 本，实际25本。</li>
-</ul>
-</li>
-<li>2019<ul>
-<li>计划 30 本，实际 43 本。</li>
-</ul>
-</li>
-</ul>
-<p>今年是第 4 年写读书记录了，感觉手上这本 TLPI 年底之前是看不完了，就总结一下。与之前不同的是今年把周末的时间利用的比较好，通常周末两天会拿出一整天的时间来看书，保证自己的精力集中，效率会高很多。</p>
-<p>因为博客集成了豆瓣，所以就不列出 <code>在读</code> 和 <code>想读</code> 列表了，想的太多，耽误事。希望接下来读一些经典的技术书，把自己的基础知识补齐。</p>
-<h2 id="已读"><a href="#已读" class="headerlink" title="已读"></a>已读</h2><ol>
-<li>《用Python写网络爬虫》  </li>
-<li>《Wireshark网络分析就这么简单》  </li>
-<li>《如何有效阅读一本书 : 超实用笔记读书法》</li>
-<li>《冷场》  </li>
-<li>《Go程序设计语言》  </li>
-<li>《爱你就像爱生命》  </li>
-<li>《Go by Example》</li>
-<li>《显微镜下的大明》</li>
-<li>《流浪地球》</li>
-<li>《情感勒索》</li>
-<li>《Go语言实战》</li>
-<li>《活着》</li>
-<li>《悉达多》</li>
-<li>《Go in Practice》</li>
-<li>《奈飞文化手册》  </li>
-<li>《刻意练习》  </li>
-<li>《软件测试的艺术》  </li>
-<li>《Redis实战》  </li>
-<li>《雪崩》  </li>
-<li>《TCP/IP详解 卷1：协议》</li>
-<li>《Structure and Interpretation of Computer Programs - 2nd Edition (MIT)》</li>
-<li>《编码的奥秘》</li>
-<li>《Kubernetes in Action》</li>
-<li>《计算机组成：结构化方法》</li>
-<li>《人月神话》</li>
-<li>《自己动手写Docker》</li>
-<li>《好文案一句话就够了》</li>
-<li>《跟老男孩学Linux运维：Web集群实战》</li>
-<li>《计算机组成与设计》</li>
-<li>《简约至上》</li>
-<li>《Go Web编程》</li>
-<li>《大话数据结构》</li>
-<li>《Python Web开发实战》</li>
-<li>《Programming Kubernetes》</li>
-<li>《Istio入门与实战》</li>
-<li>《刷新》</li>
-<li>《奇特的一生》</li>
-<li>《图解密码技术（第3版）》</li>
-<li>《细节》</li>
-<li>《生活大爆炸里的科学》</li>
-<li>《操作系统导论》</li>
-<li>《RESTful Web APIs中文版》</li>
-<li>《正则表达式必知必会》</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2133,7 +2086,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">108</span>
+                  <span class="site-state-item-count">109</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2146,7 +2099,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-count">28</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
