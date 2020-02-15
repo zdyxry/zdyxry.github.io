@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Kubernetes,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景之前写过一篇 《Kubernetes 实战-平滑移除节点》 讲如何从 K8s 集群中移除节点的，今天来看看 kubectl drain 命令具体做了什么，怎么实现的。 kubectldrain 相关命令都属于 kubectl 的自命令，因此需要先看下 kubectl 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在">
+<meta name="keywords" content="Kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="K8s drain 命令源码阅读">
+<meta property="og:url" content="https://zdyxry.github.io/2020/02/15/K8s-drain-源码阅读/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景之前写过一篇 《Kubernetes 实战-平滑移除节点》 讲如何从 K8s 集群中移除节点的，今天来看看 kubectl drain 命令具体做了什么，怎么实现的。 kubectldrain 相关命令都属于 kubectl 的自命令，因此需要先看下 kubectl 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-02-15T07:17:20.689Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="K8s drain 命令源码阅读">
+<meta name="twitter:description" content="背景之前写过一篇 《Kubernetes 实战-平滑移除节点》 讲如何从 K8s 集群中移除节点的，今天来看看 kubectl drain 命令具体做了什么，怎么实现的。 kubectldrain 相关命令都属于 kubectl 的自命令，因此需要先看下 kubectl 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2020/02/15/K8s-drain-源码阅读/">
+
+
+
+
+
+  <title>K8s drain 命令源码阅读 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/02/15/K8s-drain-源码阅读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">K8s drain 命令源码阅读</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-02-15T11:22:13+08:00">
+                2020-02-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/02/15/K8s-drain-源码阅读/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/02/15/K8s-drain-源码阅读/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前写过一篇 <a href="https://zdyxry.github.io/2019/08/01/Kubernetes-%E5%AE%9E%E6%88%98-%E5%B9%B3%E6%BB%91%E7%A7%BB%E9%99%A4%E8%8A%82%E7%82%B9/">《Kubernetes 实战-平滑移除节点》</a> 讲如何从 K8s 集群中移除节点的，今天来看看 <code>kubectl drain</code> 命令具体做了什么，怎么实现的。</p>
+<h2 id="kubectl"><a href="#kubectl" class="headerlink" title="kubectl"></a>kubectl</h2><p><code>drain</code> 相关命令都属于 <code>kubectl</code> 的自命令，因此需要先看下 <code>kubectl</code> 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在 <code>cmd/kubectl/kubectl.go</code> ，实际的处理逻辑在 <code>pkg/kubectl/cmd/cmd.go</code> 中</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">   ...</span><br><span class="line">groups := templates.CommandGroups&#123;</span><br><span class="line">	&#123;</span><br><span class="line">		Message: <span class="string">"Basic Commands (Beginner):"</span>,</span><br><span class="line">		...</span><br><span class="line">	&#125;,</span><br><span class="line">	&#123;</span><br><span class="line">		Message: <span class="string">"Deploy Commands:"</span>,</span><br><span class="line">		...</span><br><span class="line">	&#125;,</span><br><span class="line">	&#123;</span><br><span class="line">		Message: <span class="string">"Cluster Management Commands:"</span>,</span><br><span class="line">		Commands: []*cobra.Command&#123;</span><br><span class="line">			certificates.NewCmdCertificate(f, ioStreams),</span><br><span class="line">			clusterinfo.NewCmdClusterInfo(f, ioStreams),</span><br><span class="line">			top.NewCmdTop(f, ioStreams),</span><br><span class="line">			drain.NewCmdCordon(f, ioStreams),</span><br><span class="line">			drain.NewCmdUncordon(f, ioStreams),</span><br><span class="line">			drain.NewCmdDrain(f, ioStreams),</span><br><span class="line">			taint.NewCmdTaint(f, ioStreams),</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;,</span><br><span class="line">   ...</span><br><span class="line">&#125;</span><br><span class="line">   groups.Add(cmds)</span><br></pre></td></tr></table></figure>
+<p>可以看到在 <code>kubectl</code> 所有子命令的入口，我们今天要看的 <code>drain</code> 命令都属于集群管理命令，包含了：</p>
+<ul>
+<li>cordon</li>
+<li>uncordon</li>
+<li>drain</li>
+</ul>
+<h2 id="Cordon"><a href="#Cordon" class="headerlink" title="Cordon"></a>Cordon</h2><p>先来看看 <code>cordon</code> 命令，这条命令的用途是标记节点为不可调度状态，防止在进行节点维护时 K8s 仍调度资源到该节点上。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewCmdCordon</span><span class="params">(f cmdutil.Factory, ioStreams genericclioptions.IOStreams)</span> *<span class="title">cobra</span>.<span class="title">Command</span></span> &#123;</span><br><span class="line">	o := NewDrainCmdOptions(f, ioStreams)</span><br><span class="line"></span><br><span class="line">	cmd := &amp;cobra.Command&#123;</span><br><span class="line">		Use:                   <span class="string">"cordon NODE"</span>,</span><br><span class="line">		DisableFlagsInUseLine: <span class="literal">true</span>,</span><br><span class="line">		Short:                 i18n.T(<span class="string">"Mark node as unschedulable"</span>),</span><br><span class="line">		Long:                  cordonLong,</span><br><span class="line">		Example:               cordonExample,</span><br><span class="line">		Run: <span class="function"><span class="keyword">func</span><span class="params">(cmd *cobra.Command, args []<span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">			cmdutil.CheckErr(o.Complete(f, cmd, args))</span><br><span class="line">			cmdutil.CheckErr(o.RunCordonOrUncordon(<span class="literal">true</span>))</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;</span><br><span class="line">	cmd.Flags().StringVarP(&amp;o.drainer.Selector, <span class="string">"selector"</span>, <span class="string">"l"</span>, o.drainer.Selector, <span class="string">"Selector (label query) to filter on"</span>)</span><br><span class="line">	cmdutil.AddDryRunFlag(cmd)</span><br><span class="line">	<span class="keyword">return</span> cmd</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>直接看 <code>Run</code> 中的内容，先忽略 <code>cmdutil.CheckErr</code> ，这里主要执行了两个方法：<code>o.Complete</code> 和 <code>o.RunCordonOrUncordon</code> 。这里就必须提一下 <code>kubectl</code> 的实现方式，<code>kubectl</code> 的根本目的是发送对应的 HTTP 请求到 APIServer，<code>kubectl</code> 通过 <code>Builder</code> 和 <code>Visitor</code> 来实现了一层封装，使每个子命令的实现方式统一、简洁。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Builder provides convenience functions for taking arguments and parameters</span></span><br><span class="line"><span class="comment">// from the command line and converting them to a list of resources to iterate</span></span><br><span class="line"><span class="comment">// over using the Visitor interface.</span></span><br><span class="line"><span class="keyword">type</span> Builder <span class="keyword">struct</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Visitor lets clients walk a list of resources.</span></span><br><span class="line"><span class="keyword">type</span> Visitor <span class="keyword">interface</span> &#123;</span><br><span class="line">	Visit(VisitorFunc) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>o.Complete</code> 中构建了对应的 <code>builder</code>:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">    <span class="comment">// 根据命令行参数构建 builder 实例</span></span><br><span class="line">	builder := f.NewBuilder().</span><br><span class="line">		WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).</span><br><span class="line">		NamespaceParam(o.Namespace).DefaultNamespace().</span><br><span class="line">		ResourceNames(<span class="string">"nodes"</span>, args...).</span><br><span class="line">		SingleResourceType().</span><br><span class="line">		Flatten()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(o.drainer.Selector) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		builder = builder.LabelSelectorParam(o.drainer.Selector).</span><br><span class="line">			ResourceTypes(<span class="string">"nodes"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">// builder.Do 返回带有 Visitor 的 Result 对象</span></span><br><span class="line">    r := builder.Do()</span><br></pre></td></tr></table></figure>
+<p>来看看 <code>builder.Do()</code> 接下来是怎么做的来返回了 Result 类型资源：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b *Builder)</span> <span class="title">Do</span><span class="params">()</span> *<span class="title">Result</span></span> &#123;</span><br><span class="line">    <span class="comment">// 调用 visitorResult 返回 Result 类型</span></span><br><span class="line">	r := b.visitorResult()</span><br><span class="line">    ...</span><br><span class="line">	<span class="keyword">return</span> r</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b *Builder)</span> <span class="title">visitorResult</span><span class="params">()</span> *<span class="title">Result</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">	<span class="comment">// 跳过其他步骤，直接看最简单的通过 Name 来获取 Result</span></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(b.names) != <span class="number">0</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> b.visitByName()</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b *Builder)</span> <span class="title">visitByName</span><span class="params">()</span> *<span class="title">Result</span></span> &#123;</span><br><span class="line">    <span class="comment">// 声明 Result 对象</span></span><br><span class="line">	result := &amp;Result&#123;</span><br><span class="line">		singleItemImplied:  <span class="built_in">len</span>(b.names) == <span class="number">1</span>,</span><br><span class="line">		targetsSingleItems: <span class="literal">true</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 获取 K8s client</span></span><br><span class="line">	client, err := b.getClient(mapping.GroupVersionKind.GroupVersion())</span><br><span class="line">	...</span><br><span class="line">	visitors := []Visitor&#123;&#125;</span><br><span class="line">	<span class="keyword">for</span> _, name := <span class="keyword">range</span> b.names &#123;</span><br><span class="line">		info := &amp;Info&#123;</span><br><span class="line">			Client:    client,</span><br><span class="line">			Mapping:   mapping,</span><br><span class="line">			Namespace: selectorNamespace,</span><br><span class="line">			Name:      name,</span><br><span class="line">			Export:    b.export,</span><br><span class="line">		&#125;</span><br><span class="line">		visitors = <span class="built_in">append</span>(visitors, info)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// VisitorList 也实现了 Visit 接口，遍历执行 Visitor 的 Visit 方法</span></span><br><span class="line">	result.visitor = VisitorList(visitors)</span><br><span class="line">	result.sources = visitors</span><br><span class="line">	<span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看到了如何获取 Result 类型对象，我们再来看 <code>o.Complete</code> 如何处理的，传入一个 VisitorFunc，Result 的 visitor 都实现了 <code>Visit</code> 接口，<code>Visit</code> 接口的作用是接收 <code>VisitorFunc</code> 并执行。 ：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> r.Visit(<span class="function"><span class="keyword">func</span><span class="params">(info *resource.Info, err error)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">		...</span><br><span class="line">    &#125;)</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v DecoratedVisitor)</span> <span class="title">Visit</span><span class="params">(fn VisitorFunc)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> v.visitor.Visit(<span class="function"><span class="keyword">func</span><span class="params">(info *Info, err error)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">        ...</span><br><span class="line">		<span class="keyword">for</span> i := <span class="keyword">range</span> v.decorators &#123;</span><br><span class="line">			<span class="keyword">if</span> err := v.decorators[i](info, <span class="literal">nil</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">				<span class="keyword">return</span> err</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> fn(info, <span class="literal">nil</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来看看 <code>o.RunCordonOrUncordon</code> 做了什么：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(o *DrainCmdOptions)</span> <span class="title">RunCordonOrUncordon</span><span class="params">(desired <span class="keyword">bool</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	cordonOrUncordon := <span class="string">"cordon"</span></span><br><span class="line">	<span class="keyword">if</span> !desired &#123;</span><br><span class="line">		cordonOrUncordon = <span class="string">"un"</span> + cordonOrUncordon</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">// 通过 Visit 获取到的 nodeInfos 列表</span></span><br><span class="line">	<span class="keyword">for</span> _, nodeInfo := <span class="keyword">range</span> o.nodeInfos &#123;</span><br><span class="line">        ...</span><br><span class="line">		gvk := nodeInfo.ResourceMapping().GroupVersionKind</span><br><span class="line">		<span class="keyword">if</span> gvk.Kind == <span class="string">"Node"</span> &#123;</span><br><span class="line">			c, err := drain.NewCordonHelperFromRuntimeObject(nodeInfo.Object, scheme.Scheme, gvk)</span><br><span class="line">			<span class="keyword">if</span> updateRequired := c.UpdateIfRequired(desired); !updateRequired &#123;</span><br><span class="line">				...</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="keyword">if</span> o.drainer.DryRunStrategy != cmdutil.DryRunClient &#123;</span><br><span class="line">                    ...</span><br><span class="line">                    <span class="comment">// 修改对应节点的配置</span></span><br><span class="line">					err, patchErr := c.PatchOrReplace(o.drainer.Client, o.drainer.DryRunStrategy == cmdutil.DryRunServer)</span><br><span class="line">					...</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *CordonHelper)</span> <span class="title">PatchOrReplace</span><span class="params">(clientset kubernetes.Interface, serverDryRun <span class="keyword">bool</span>)</span> <span class="params">(error, error)</span></span> &#123;</span><br><span class="line">	client := clientset.CoreV1().Nodes()</span><br><span class="line">    oldData, err := json.Marshal(c.node)</span><br><span class="line">    <span class="comment">// 更新 node Spec 的 Unschedulable 字段</span></span><br><span class="line">	c.node.Spec.Unschedulable = c.desired</span><br><span class="line">	newData, err := json.Marshal(c.node)</span><br><span class="line">    <span class="comment">// merge 数据，通过 diff 然后获取</span></span><br><span class="line">	patchBytes, patchErr := strategicpatch.CreateTwoWayMergePatch(oldData, newData, c.node)</span><br><span class="line">	<span class="keyword">if</span> patchErr == <span class="literal">nil</span> &#123;</span><br><span class="line">		...</span><br><span class="line">		_, err = client.Patch(context.TODO(), c.node.Name, types.StrategicMergePatchType, patchBytes, patchOptions)</span><br><span class="line">	&#125; </span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Drain"><a href="#Drain" class="headerlink" title="Drain"></a>Drain</h2><p>看完了 Cordon，再来看 Drain：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewCmdDrain</span><span class="params">(f cmdutil.Factory, ioStreams genericclioptions.IOStreams)</span> *<span class="title">cobra</span>.<span class="title">Command</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">	cmd := &amp;cobra.Command&#123;</span><br><span class="line">		...</span><br><span class="line">		Run: <span class="function"><span class="keyword">func</span><span class="params">(cmd *cobra.Command, args []<span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">			cmdutil.CheckErr(o.Complete(f, cmd, args))</span><br><span class="line">			cmdutil.CheckErr(o.RunDrain())</span><br><span class="line">		&#125;,</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p>直接看 <code>o.RunDrain</code>，我们会看到第一件事情就就是执行 <code>o.RunCordonOrUncordon</code> ，就是标记节点为不可调度，所以我之前写的那篇博客其实说法不正确，如果是想将节点下线，那么直接执行 <code>kubectl drain</code> 就好：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(o *DrainCmdOptions)</span> <span class="title">RunDrain</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err := o.RunCordonOrUncordon(<span class="literal">true</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">    ...</span><br><span class="line">	drainedNodes := sets.NewString()</span><br><span class="line">	<span class="keyword">var</span> fatal error</span><br><span class="line">	<span class="keyword">for</span> _, info := <span class="keyword">range</span> o.nodeInfos &#123;</span><br><span class="line">        <span class="comment">// 驱逐 Pod</span></span><br><span class="line">		<span class="keyword">if</span> err := o.deleteOrEvictPodsSimple(info); err == <span class="literal">nil</span> &#123;</span><br><span class="line">			drainedNodes.Insert(info.Name)</span><br><span class="line">			printObj(info.Object, o.Out)</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// 如果驱逐 Pod 失败，则显示对应的 Node 信息</span></span><br><span class="line">			<span class="keyword">if</span> <span class="built_in">len</span>(remainingNodes) &gt; <span class="number">0</span> &#123;</span><br><span class="line">				fmt.Fprintf(o.ErrOut, <span class="string">"There are pending nodes to be drained:\n"</span>)</span><br><span class="line">				<span class="keyword">for</span> _, nodeName := <span class="keyword">range</span> remainingNodes &#123;</span><br><span class="line">					fmt.Fprintf(o.ErrOut, <span class="string">" %s\n"</span>, nodeName)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>deleteOrEvictPodsSimple</code> 中，先通过 Node 名称获取对应的 Pod 信息，然后进行驱逐动作：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(o *DrainCmdOptions)</span> <span class="title">deleteOrEvictPodsSimple</span><span class="params">(nodeInfo *resource.Info)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	list, errs := o.drainer.GetPodsForDeletion(nodeInfo.Name)</span><br><span class="line">    ...</span><br><span class="line">	<span class="keyword">if</span> err := o.drainer.DeleteOrEvictPods(list.Pods()); err != <span class="literal">nil</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的 <code>GetPodsForDeletion</code> 会进行一个过滤，包含以下几种场景的过滤，需要注意的是，这里的过滤场景是有严格的顺序的：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *Helper)</span> <span class="title">makeFilters</span><span class="params">()</span> []<span class="title">podFilter</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> []podFilter&#123;</span><br><span class="line">        <span class="comment">// 被标记删除的 Pod(DeletionTimestamp 不为0)</span></span><br><span class="line">        d.skipDeletedFilter,</span><br><span class="line">        <span class="comment">// 属于 DaemonSet 的 Pod</span></span><br><span class="line">        d.daemonSetFilter,</span><br><span class="line">        <span class="comment">// mirror pod 其实就是 static pod，</span></span><br><span class="line">        <span class="comment">// 是我们在 /etc/kubernetes/manifests/ 中定义的由 kubelet 负责生命周期管理的 Pod</span></span><br><span class="line">        <span class="comment">// 在 `Annotations` 中会包含 `kubernetes.io/config.mirror` </span></span><br><span class="line">        d.mirrorPodFilter,</span><br><span class="line">        <span class="comment">// 包含本地存储的 Pod，Pod 中的 Volume 字段不为空</span></span><br><span class="line">        d.localStorageFilter,</span><br><span class="line">        <span class="comment">// 不属于 replicate 的 pod，`Controlled By` 不为空的 pod</span></span><br><span class="line">		d.unreplicatedFilter,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>获取到过滤后的 Pod 列表后，就开始执行驱逐动作，每个 Pod 起一个 goroutine ，提交驱逐动作后会等待，直到 Pod 驱逐完成：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *Helper)</span> <span class="title">evictPods</span><span class="params">(pods []corev1.Pod, policyGroupVersion <span class="keyword">string</span>, getPodFn <span class="keyword">func</span>(namespace, name <span class="keyword">string</span>)</span> <span class="params">(*corev1.Pod, error)</span>) <span class="title">error</span></span> &#123;</span><br><span class="line">	returnCh := <span class="built_in">make</span>(<span class="keyword">chan</span> error, <span class="number">1</span>)</span><br><span class="line">    ...</span><br><span class="line">	ctx, cancel := context.WithTimeout(d.getContext(), globalTimeout)</span><br><span class="line">	<span class="keyword">defer</span> cancel()</span><br><span class="line">	<span class="keyword">for</span> _, pod := <span class="keyword">range</span> pods &#123;</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(pod corev1.Pod, returnCh <span class="keyword">chan</span> error)</span></span> &#123;</span><br><span class="line">			<span class="keyword">for</span> &#123;</span><br><span class="line">				...</span><br><span class="line">				<span class="keyword">select</span> &#123;</span><br><span class="line">				<span class="keyword">case</span> &lt;-ctx.Done():</span><br><span class="line">					<span class="comment">// 驱逐超时</span></span><br><span class="line">					returnCh &lt;- fmt.Errorf(<span class="string">"error when evicting pod %q: global timeout reached: %v"</span>, pod.Name, globalTimeout)</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				<span class="keyword">default</span>:</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 驱逐 Pod 动作，最终执行 d.Client.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)</span></span><br><span class="line">				err := d.EvictPod(pod, policyGroupVersion)</span><br><span class="line">				...</span><br><span class="line">			&#125;</span><br><span class="line">			...</span><br><span class="line">			params := waitForDeleteParams&#123;</span><br><span class="line">				...</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 等待驱逐动作完成</span></span><br><span class="line">			_, err := waitForDelete(params)</span><br><span class="line">			<span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">				returnCh &lt;- <span class="literal">nil</span></span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				returnCh &lt;- fmt.Errorf(<span class="string">"error when waiting for pod %q terminating: %v"</span>, pod.Name, err)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;(pod, returnCh)</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p><code>waitForDelete</code> 如果没有立即完成，会将 <code>ConditionFunc</code> 传入 <code>WaitFor</code> 循环检测，其中 <code>ConditionFunc</code> 的检测依据是 Pod 存在且 ObjectMeta UID发生了改变：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WaitFor</span><span class="params">(wait WaitFunc, fn ConditionFunc, done &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	stopCh := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line">	<span class="keyword">defer</span> <span class="built_in">close</span>(stopCh)</span><br><span class="line">	c := wait(stopCh)</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		<span class="keyword">select</span> &#123;</span><br><span class="line">		<span class="keyword">case</span> _, open := &lt;-c:</span><br><span class="line">			ok, err := runConditionWithCrashProtection(fn)</span><br><span class="line">			<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">				<span class="keyword">return</span> err</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> ok &#123;</span><br><span class="line">				<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> !open &#123;</span><br><span class="line">				<span class="keyword">return</span> ErrWaitTimeout</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> &lt;-done:</span><br><span class="line">			<span class="keyword">return</span> ErrWaitTimeout</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>kubectl drain</code> 相关命令的实现还是很简单的，没有特别负责的逻辑，K8s 能够做到这种效果一个重要的原因是所有动作都是声明式的，声明之后等待执行完成就好，不需要主动的去做某些很脏的动作。在驱逐 Pod 的行为中，并不是所有的 Pod 都会被驱逐到其他节点，这里需要格外的注意，在节点下线前需要检查是否有单纯的 Pod 资源仍在节点上运行，是否有使用本地存储的 Pod等类似情况。</p>
+<p>平时写代码很糙，见到这种多种设计模式组合的形式看了半天，找机会重新学习下设计模式。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://qiankunli.github.io/2018/12/23/kubernetes_source_kubectl.html" target="_blank" rel="noopener">https://qiankunli.github.io/2018/12/23/kubernetes_source_kubectl.html</a></li>
+<li><a href="https://juejin.im/post/5a113e686fb9a0452936596c" target="_blank" rel="noopener">https://juejin.im/post/5a113e686fb9a0452936596c</a></li>
+<li><a href="https://rootdeep.github.io/k8s-source-code-analysis/kubectl/construct-visitor.html" target="_blank" rel="noopener">https://rootdeep.github.io/k8s-source-code-analysis/kubectl/construct-visitor.html</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/02/07/HTTP-Content-Length-学习/" rel="next" title="HTTP Content-Length 学习">
+                <i class="fa fa-chevron-left"></i> HTTP Content-Length 学习
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">110</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">28</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubectl"><span class="nav-number">2.</span> <span class="nav-text">kubectl</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cordon"><span class="nav-number">3.</span> <span class="nav-text">Cordon</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Drain"><span class="nav-number">4.</span> <span class="nav-text">Drain</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">6.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2020/02/15/K8s-drain-源码阅读/';
+          this.page.identifier = '2020/02/15/K8s-drain-源码阅读/';
+          this.page.title = 'K8s drain 命令源码阅读';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

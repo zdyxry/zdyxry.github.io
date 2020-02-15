@@ -275,6 +275,175 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/02/15/K8s-drain-源码阅读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/02/15/K8s-drain-源码阅读/" itemprop="url">K8s drain 命令源码阅读</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-02-15T11:22:13+08:00">
+                2020-02-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/02/15/K8s-drain-源码阅读/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/02/15/K8s-drain-源码阅读/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前写过一篇 <a href="https://zdyxry.github.io/2019/08/01/Kubernetes-%E5%AE%9E%E6%88%98-%E5%B9%B3%E6%BB%91%E7%A7%BB%E9%99%A4%E8%8A%82%E7%82%B9/">《Kubernetes 实战-平滑移除节点》</a> 讲如何从 K8s 集群中移除节点的，今天来看看 <code>kubectl drain</code> 命令具体做了什么，怎么实现的。</p>
+<h2 id="kubectl"><a href="#kubectl" class="headerlink" title="kubectl"></a>kubectl</h2><p><code>drain</code> 相关命令都属于 <code>kubectl</code> 的自命令，因此需要先看下 <code>kubectl</code> 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在 <code>cmd/kubectl/kubectl.go</code> ，实际的处理逻辑在 <code>pkg/kubectl/cmd/cmd.go</code> 中</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">   ...</span><br><span class="line">groups := templates.CommandGroups&#123;</span><br><span class="line">	&#123;</span><br><span class="line">		Message: <span class="string">"Basic Commands (Beginner):"</span>,</span><br><span class="line">		...</span><br><span class="line">	&#125;,</span><br><span class="line">	&#123;</span><br><span class="line">		Message: <span class="string">"Deploy Commands:"</span>,</span><br><span class="line">		...</span><br><span class="line">	&#125;,</span><br><span class="line">	&#123;</span><br><span class="line">		Message: <span class="string">"Cluster Management Commands:"</span>,</span><br><span class="line">		Commands: []*cobra.Command&#123;</span><br><span class="line">			certificates.NewCmdCertificate(f, ioStreams),</span><br><span class="line">			clusterinfo.NewCmdClusterInfo(f, ioStreams),</span><br><span class="line">			top.NewCmdTop(f, ioStreams),</span><br><span class="line">			drain.NewCmdCordon(f, ioStreams),</span><br><span class="line">			drain.NewCmdUncordon(f, ioStreams),</span><br><span class="line">			drain.NewCmdDrain(f, ioStreams),</span><br><span class="line">			taint.NewCmdTaint(f, ioStreams),</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;,</span><br><span class="line">   ...</span><br><span class="line">&#125;</span><br><span class="line">   groups.Add(cmds)</span><br></pre></td></tr></table></figure>
+<p>可以看到在 <code>kubectl</code> 所有子命令的入口，我们今天要看的 <code>drain</code> 命令都属于集群管理命令，包含了：</p>
+<ul>
+<li>cordon</li>
+<li>uncordon</li>
+<li>drain</li>
+</ul>
+<h2 id="Cordon"><a href="#Cordon" class="headerlink" title="Cordon"></a>Cordon</h2><p>先来看看 <code>cordon</code> 命令，这条命令的用途是标记节点为不可调度状态，防止在进行节点维护时 K8s 仍调度资源到该节点上。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewCmdCordon</span><span class="params">(f cmdutil.Factory, ioStreams genericclioptions.IOStreams)</span> *<span class="title">cobra</span>.<span class="title">Command</span></span> &#123;</span><br><span class="line">	o := NewDrainCmdOptions(f, ioStreams)</span><br><span class="line"></span><br><span class="line">	cmd := &amp;cobra.Command&#123;</span><br><span class="line">		Use:                   <span class="string">"cordon NODE"</span>,</span><br><span class="line">		DisableFlagsInUseLine: <span class="literal">true</span>,</span><br><span class="line">		Short:                 i18n.T(<span class="string">"Mark node as unschedulable"</span>),</span><br><span class="line">		Long:                  cordonLong,</span><br><span class="line">		Example:               cordonExample,</span><br><span class="line">		Run: <span class="function"><span class="keyword">func</span><span class="params">(cmd *cobra.Command, args []<span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">			cmdutil.CheckErr(o.Complete(f, cmd, args))</span><br><span class="line">			cmdutil.CheckErr(o.RunCordonOrUncordon(<span class="literal">true</span>))</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;</span><br><span class="line">	cmd.Flags().StringVarP(&amp;o.drainer.Selector, <span class="string">"selector"</span>, <span class="string">"l"</span>, o.drainer.Selector, <span class="string">"Selector (label query) to filter on"</span>)</span><br><span class="line">	cmdutil.AddDryRunFlag(cmd)</span><br><span class="line">	<span class="keyword">return</span> cmd</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>直接看 <code>Run</code> 中的内容，先忽略 <code>cmdutil.CheckErr</code> ，这里主要执行了两个方法：<code>o.Complete</code> 和 <code>o.RunCordonOrUncordon</code> 。这里就必须提一下 <code>kubectl</code> 的实现方式，<code>kubectl</code> 的根本目的是发送对应的 HTTP 请求到 APIServer，<code>kubectl</code> 通过 <code>Builder</code> 和 <code>Visitor</code> 来实现了一层封装，使每个子命令的实现方式统一、简洁。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Builder provides convenience functions for taking arguments and parameters</span></span><br><span class="line"><span class="comment">// from the command line and converting them to a list of resources to iterate</span></span><br><span class="line"><span class="comment">// over using the Visitor interface.</span></span><br><span class="line"><span class="keyword">type</span> Builder <span class="keyword">struct</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Visitor lets clients walk a list of resources.</span></span><br><span class="line"><span class="keyword">type</span> Visitor <span class="keyword">interface</span> &#123;</span><br><span class="line">	Visit(VisitorFunc) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>o.Complete</code> 中构建了对应的 <code>builder</code>:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">    <span class="comment">// 根据命令行参数构建 builder 实例</span></span><br><span class="line">	builder := f.NewBuilder().</span><br><span class="line">		WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).</span><br><span class="line">		NamespaceParam(o.Namespace).DefaultNamespace().</span><br><span class="line">		ResourceNames(<span class="string">"nodes"</span>, args...).</span><br><span class="line">		SingleResourceType().</span><br><span class="line">		Flatten()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(o.drainer.Selector) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		builder = builder.LabelSelectorParam(o.drainer.Selector).</span><br><span class="line">			ResourceTypes(<span class="string">"nodes"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">// builder.Do 返回带有 Visitor 的 Result 对象</span></span><br><span class="line">    r := builder.Do()</span><br></pre></td></tr></table></figure>
+<p>来看看 <code>builder.Do()</code> 接下来是怎么做的来返回了 Result 类型资源：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b *Builder)</span> <span class="title">Do</span><span class="params">()</span> *<span class="title">Result</span></span> &#123;</span><br><span class="line">    <span class="comment">// 调用 visitorResult 返回 Result 类型</span></span><br><span class="line">	r := b.visitorResult()</span><br><span class="line">    ...</span><br><span class="line">	<span class="keyword">return</span> r</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b *Builder)</span> <span class="title">visitorResult</span><span class="params">()</span> *<span class="title">Result</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">	<span class="comment">// 跳过其他步骤，直接看最简单的通过 Name 来获取 Result</span></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(b.names) != <span class="number">0</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> b.visitByName()</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b *Builder)</span> <span class="title">visitByName</span><span class="params">()</span> *<span class="title">Result</span></span> &#123;</span><br><span class="line">    <span class="comment">// 声明 Result 对象</span></span><br><span class="line">	result := &amp;Result&#123;</span><br><span class="line">		singleItemImplied:  <span class="built_in">len</span>(b.names) == <span class="number">1</span>,</span><br><span class="line">		targetsSingleItems: <span class="literal">true</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// 获取 K8s client</span></span><br><span class="line">	client, err := b.getClient(mapping.GroupVersionKind.GroupVersion())</span><br><span class="line">	...</span><br><span class="line">	visitors := []Visitor&#123;&#125;</span><br><span class="line">	<span class="keyword">for</span> _, name := <span class="keyword">range</span> b.names &#123;</span><br><span class="line">		info := &amp;Info&#123;</span><br><span class="line">			Client:    client,</span><br><span class="line">			Mapping:   mapping,</span><br><span class="line">			Namespace: selectorNamespace,</span><br><span class="line">			Name:      name,</span><br><span class="line">			Export:    b.export,</span><br><span class="line">		&#125;</span><br><span class="line">		visitors = <span class="built_in">append</span>(visitors, info)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// VisitorList 也实现了 Visit 接口，遍历执行 Visitor 的 Visit 方法</span></span><br><span class="line">	result.visitor = VisitorList(visitors)</span><br><span class="line">	result.sources = visitors</span><br><span class="line">	<span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看到了如何获取 Result 类型对象，我们再来看 <code>o.Complete</code> 如何处理的，传入一个 VisitorFunc，Result 的 visitor 都实现了 <code>Visit</code> 接口，<code>Visit</code> 接口的作用是接收 <code>VisitorFunc</code> 并执行。 ：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> r.Visit(<span class="function"><span class="keyword">func</span><span class="params">(info *resource.Info, err error)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">		...</span><br><span class="line">    &#125;)</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(v DecoratedVisitor)</span> <span class="title">Visit</span><span class="params">(fn VisitorFunc)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> v.visitor.Visit(<span class="function"><span class="keyword">func</span><span class="params">(info *Info, err error)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">        ...</span><br><span class="line">		<span class="keyword">for</span> i := <span class="keyword">range</span> v.decorators &#123;</span><br><span class="line">			<span class="keyword">if</span> err := v.decorators[i](info, <span class="literal">nil</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">				<span class="keyword">return</span> err</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> fn(info, <span class="literal">nil</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来看看 <code>o.RunCordonOrUncordon</code> 做了什么：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(o *DrainCmdOptions)</span> <span class="title">RunCordonOrUncordon</span><span class="params">(desired <span class="keyword">bool</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	cordonOrUncordon := <span class="string">"cordon"</span></span><br><span class="line">	<span class="keyword">if</span> !desired &#123;</span><br><span class="line">		cordonOrUncordon = <span class="string">"un"</span> + cordonOrUncordon</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">// 通过 Visit 获取到的 nodeInfos 列表</span></span><br><span class="line">	<span class="keyword">for</span> _, nodeInfo := <span class="keyword">range</span> o.nodeInfos &#123;</span><br><span class="line">        ...</span><br><span class="line">		gvk := nodeInfo.ResourceMapping().GroupVersionKind</span><br><span class="line">		<span class="keyword">if</span> gvk.Kind == <span class="string">"Node"</span> &#123;</span><br><span class="line">			c, err := drain.NewCordonHelperFromRuntimeObject(nodeInfo.Object, scheme.Scheme, gvk)</span><br><span class="line">			<span class="keyword">if</span> updateRequired := c.UpdateIfRequired(desired); !updateRequired &#123;</span><br><span class="line">				...</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				<span class="keyword">if</span> o.drainer.DryRunStrategy != cmdutil.DryRunClient &#123;</span><br><span class="line">                    ...</span><br><span class="line">                    <span class="comment">// 修改对应节点的配置</span></span><br><span class="line">					err, patchErr := c.PatchOrReplace(o.drainer.Client, o.drainer.DryRunStrategy == cmdutil.DryRunServer)</span><br><span class="line">					...</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *CordonHelper)</span> <span class="title">PatchOrReplace</span><span class="params">(clientset kubernetes.Interface, serverDryRun <span class="keyword">bool</span>)</span> <span class="params">(error, error)</span></span> &#123;</span><br><span class="line">	client := clientset.CoreV1().Nodes()</span><br><span class="line">    oldData, err := json.Marshal(c.node)</span><br><span class="line">    <span class="comment">// 更新 node Spec 的 Unschedulable 字段</span></span><br><span class="line">	c.node.Spec.Unschedulable = c.desired</span><br><span class="line">	newData, err := json.Marshal(c.node)</span><br><span class="line">    <span class="comment">// merge 数据，通过 diff 然后获取</span></span><br><span class="line">	patchBytes, patchErr := strategicpatch.CreateTwoWayMergePatch(oldData, newData, c.node)</span><br><span class="line">	<span class="keyword">if</span> patchErr == <span class="literal">nil</span> &#123;</span><br><span class="line">		...</span><br><span class="line">		_, err = client.Patch(context.TODO(), c.node.Name, types.StrategicMergePatchType, patchBytes, patchOptions)</span><br><span class="line">	&#125; </span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Drain"><a href="#Drain" class="headerlink" title="Drain"></a>Drain</h2><p>看完了 Cordon，再来看 Drain：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewCmdDrain</span><span class="params">(f cmdutil.Factory, ioStreams genericclioptions.IOStreams)</span> *<span class="title">cobra</span>.<span class="title">Command</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">	cmd := &amp;cobra.Command&#123;</span><br><span class="line">		...</span><br><span class="line">		Run: <span class="function"><span class="keyword">func</span><span class="params">(cmd *cobra.Command, args []<span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">			cmdutil.CheckErr(o.Complete(f, cmd, args))</span><br><span class="line">			cmdutil.CheckErr(o.RunDrain())</span><br><span class="line">		&#125;,</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p>直接看 <code>o.RunDrain</code>，我们会看到第一件事情就就是执行 <code>o.RunCordonOrUncordon</code> ，就是标记节点为不可调度，所以我之前写的那篇博客其实说法不正确，如果是想将节点下线，那么直接执行 <code>kubectl drain</code> 就好：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(o *DrainCmdOptions)</span> <span class="title">RunDrain</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err := o.RunCordonOrUncordon(<span class="literal">true</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">    ...</span><br><span class="line">	drainedNodes := sets.NewString()</span><br><span class="line">	<span class="keyword">var</span> fatal error</span><br><span class="line">	<span class="keyword">for</span> _, info := <span class="keyword">range</span> o.nodeInfos &#123;</span><br><span class="line">        <span class="comment">// 驱逐 Pod</span></span><br><span class="line">		<span class="keyword">if</span> err := o.deleteOrEvictPodsSimple(info); err == <span class="literal">nil</span> &#123;</span><br><span class="line">			drainedNodes.Insert(info.Name)</span><br><span class="line">			printObj(info.Object, o.Out)</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// 如果驱逐 Pod 失败，则显示对应的 Node 信息</span></span><br><span class="line">			<span class="keyword">if</span> <span class="built_in">len</span>(remainingNodes) &gt; <span class="number">0</span> &#123;</span><br><span class="line">				fmt.Fprintf(o.ErrOut, <span class="string">"There are pending nodes to be drained:\n"</span>)</span><br><span class="line">				<span class="keyword">for</span> _, nodeName := <span class="keyword">range</span> remainingNodes &#123;</span><br><span class="line">					fmt.Fprintf(o.ErrOut, <span class="string">" %s\n"</span>, nodeName)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>deleteOrEvictPodsSimple</code> 中，先通过 Node 名称获取对应的 Pod 信息，然后进行驱逐动作：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(o *DrainCmdOptions)</span> <span class="title">deleteOrEvictPodsSimple</span><span class="params">(nodeInfo *resource.Info)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	list, errs := o.drainer.GetPodsForDeletion(nodeInfo.Name)</span><br><span class="line">    ...</span><br><span class="line">	<span class="keyword">if</span> err := o.drainer.DeleteOrEvictPods(list.Pods()); err != <span class="literal">nil</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的 <code>GetPodsForDeletion</code> 会进行一个过滤，包含以下几种场景的过滤，需要注意的是，这里的过滤场景是有严格的顺序的：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *Helper)</span> <span class="title">makeFilters</span><span class="params">()</span> []<span class="title">podFilter</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> []podFilter&#123;</span><br><span class="line">        <span class="comment">// 被标记删除的 Pod(DeletionTimestamp 不为0)</span></span><br><span class="line">        d.skipDeletedFilter,</span><br><span class="line">        <span class="comment">// 属于 DaemonSet 的 Pod</span></span><br><span class="line">        d.daemonSetFilter,</span><br><span class="line">        <span class="comment">// mirror pod 其实就是 static pod，</span></span><br><span class="line">        <span class="comment">// 是我们在 /etc/kubernetes/manifests/ 中定义的由 kubelet 负责生命周期管理的 Pod</span></span><br><span class="line">        <span class="comment">// 在 `Annotations` 中会包含 `kubernetes.io/config.mirror` </span></span><br><span class="line">        d.mirrorPodFilter,</span><br><span class="line">        <span class="comment">// 包含本地存储的 Pod，Pod 中的 Volume 字段不为空</span></span><br><span class="line">        d.localStorageFilter,</span><br><span class="line">        <span class="comment">// 不属于 replicate 的 pod，`Controlled By` 不为空的 pod</span></span><br><span class="line">		d.unreplicatedFilter,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>获取到过滤后的 Pod 列表后，就开始执行驱逐动作，每个 Pod 起一个 goroutine ，提交驱逐动作后会等待，直到 Pod 驱逐完成：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *Helper)</span> <span class="title">evictPods</span><span class="params">(pods []corev1.Pod, policyGroupVersion <span class="keyword">string</span>, getPodFn <span class="keyword">func</span>(namespace, name <span class="keyword">string</span>)</span> <span class="params">(*corev1.Pod, error)</span>) <span class="title">error</span></span> &#123;</span><br><span class="line">	returnCh := <span class="built_in">make</span>(<span class="keyword">chan</span> error, <span class="number">1</span>)</span><br><span class="line">    ...</span><br><span class="line">	ctx, cancel := context.WithTimeout(d.getContext(), globalTimeout)</span><br><span class="line">	<span class="keyword">defer</span> cancel()</span><br><span class="line">	<span class="keyword">for</span> _, pod := <span class="keyword">range</span> pods &#123;</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(pod corev1.Pod, returnCh <span class="keyword">chan</span> error)</span></span> &#123;</span><br><span class="line">			<span class="keyword">for</span> &#123;</span><br><span class="line">				...</span><br><span class="line">				<span class="keyword">select</span> &#123;</span><br><span class="line">				<span class="keyword">case</span> &lt;-ctx.Done():</span><br><span class="line">					<span class="comment">// 驱逐超时</span></span><br><span class="line">					returnCh &lt;- fmt.Errorf(<span class="string">"error when evicting pod %q: global timeout reached: %v"</span>, pod.Name, globalTimeout)</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				<span class="keyword">default</span>:</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 驱逐 Pod 动作，最终执行 d.Client.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)</span></span><br><span class="line">				err := d.EvictPod(pod, policyGroupVersion)</span><br><span class="line">				...</span><br><span class="line">			&#125;</span><br><span class="line">			...</span><br><span class="line">			params := waitForDeleteParams&#123;</span><br><span class="line">				...</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 等待驱逐动作完成</span></span><br><span class="line">			_, err := waitForDelete(params)</span><br><span class="line">			<span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">				returnCh &lt;- <span class="literal">nil</span></span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				returnCh &lt;- fmt.Errorf(<span class="string">"error when waiting for pod %q terminating: %v"</span>, pod.Name, err)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;(pod, returnCh)</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p><code>waitForDelete</code> 如果没有立即完成，会将 <code>ConditionFunc</code> 传入 <code>WaitFor</code> 循环检测，其中 <code>ConditionFunc</code> 的检测依据是 Pod 存在且 ObjectMeta UID发生了改变：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WaitFor</span><span class="params">(wait WaitFunc, fn ConditionFunc, done &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	stopCh := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line">	<span class="keyword">defer</span> <span class="built_in">close</span>(stopCh)</span><br><span class="line">	c := wait(stopCh)</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		<span class="keyword">select</span> &#123;</span><br><span class="line">		<span class="keyword">case</span> _, open := &lt;-c:</span><br><span class="line">			ok, err := runConditionWithCrashProtection(fn)</span><br><span class="line">			<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">				<span class="keyword">return</span> err</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> ok &#123;</span><br><span class="line">				<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> !open &#123;</span><br><span class="line">				<span class="keyword">return</span> ErrWaitTimeout</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> &lt;-done:</span><br><span class="line">			<span class="keyword">return</span> ErrWaitTimeout</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>kubectl drain</code> 相关命令的实现还是很简单的，没有特别负责的逻辑，K8s 能够做到这种效果一个重要的原因是所有动作都是声明式的，声明之后等待执行完成就好，不需要主动的去做某些很脏的动作。在驱逐 Pod 的行为中，并不是所有的 Pod 都会被驱逐到其他节点，这里需要格外的注意，在节点下线前需要检查是否有单纯的 Pod 资源仍在节点上运行，是否有使用本地存储的 Pod等类似情况。</p>
+<p>平时写代码很糙，见到这种多种设计模式组合的形式看了半天，找机会重新学习下设计模式。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://qiankunli.github.io/2018/12/23/kubernetes_source_kubectl.html" target="_blank" rel="noopener">https://qiankunli.github.io/2018/12/23/kubernetes_source_kubectl.html</a></li>
+<li><a href="https://juejin.im/post/5a113e686fb9a0452936596c" target="_blank" rel="noopener">https://juejin.im/post/5a113e686fb9a0452936596c</a></li>
+<li><a href="https://rootdeep.github.io/k8s-source-code-analysis/kubectl/construct-visitor.html" target="_blank" rel="noopener">https://rootdeep.github.io/k8s-source-code-analysis/kubectl/construct-visitor.html</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/02/07/HTTP-Content-Length-学习/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1804,236 +1973,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2019/12/11/邻居发现协议（NDP）简易实现/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="yiran">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/yiran.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Yiran's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/12/11/邻居发现协议（NDP）简易实现/" itemprop="url">邻居发现协议（NDP）简易实现</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-11T21:29:59+08:00">
-                2019-12-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/12/11/邻居发现协议（NDP）简易实现/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/12/11/邻居发现协议（NDP）简易实现/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。</p>
-<h2 id="邻居发现协议（NDP）"><a href="#邻居发现协议（NDP）" class="headerlink" title="邻居发现协议（NDP）"></a>邻居发现协议（NDP）</h2><p>引用维基百科的介绍：</p>
-<blockquote>
-<p>The Neighbor Discovery Protocol (NDP, ND)[1] is a protocol in the Internet protocol suite used with Internet Protocol Version 6 (IPv6). It operates at the link layer of the Internet model (RFC 1122), and is responsible for gathering various information required for internet communication, including the configuration of local connections and the domain name servers and gateways used to communicate with more distant systems.[2]</p>
-</blockquote>
-<p>这里有两点需要关注：</p>
-<ol>
-<li>与 IPv6 一起使用</li>
-<li>工作在数据链路层（link layer）</li>
-</ol>
-<h3 id="IPv6-地址"><a href="#IPv6-地址" class="headerlink" title="IPv6 地址"></a>IPv6 地址</h3><p>在 IPv6 中，无论我们的网络环境是否存在 DHCP Server，我们只要配置网卡启动 IPv6 选项，将网卡置为 active 状态，就能获取到对应的 IPv6 地址，这是因为 IPv6中支持 IP 自动配置，大概流程如下：</p>
-<ol>
-<li>根据 MAC 地址产生链路本地地址（link-local address）</li>
-<li>发出邻居发现请求，进行重复地址检测，如果重复，则停止配置</li>
-<li>链路本地地址生效，发送路由请求报文（RS）</li>
-</ol>
-<h4 id="单播地址"><a href="#单播地址" class="headerlink" title="单播地址"></a>单播地址</h4><p>单播地址中又分为三类：</p>
-<ol>
-<li>可聚合的全局单播地址，相当于公网 IPv4 地址</li>
-<li>链路本地地址，相当于IPv4里面的169.254.0.0/16地址，一般自动生成</li>
-<li>独特本地单播地址</li>
-</ol>
-<h4 id="组播地址"><a href="#组播地址" class="headerlink" title="组播地址"></a>组播地址</h4><table>
-<thead>
-<tr>
-<th>IPv6 常用组播地址</th>
-<th>IPv4 常用组播地址</th>
-<th>组播组</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>节点-本地范围</td>
-<td>节点-本地范围</td>
-<td>节点-本地范围</td>
-</tr>
-<tr>
-<td>FF01::1</td>
-<td>224.0.0.1</td>
-<td>所有-节点地址</td>
-</tr>
-<tr>
-<td>FF01::2</td>
-<td>224.0.0.2</td>
-<td>所有-路由器地址</td>
-</tr>
-<tr>
-<td>链路-本地范围</td>
-<td>链路-本地范围</td>
-<td>链路-本地范围</td>
-</tr>
-<tr>
-<td>FF02::1</td>
-<td>224.0.0.1</td>
-<td>所有-节点地址</td>
-</tr>
-<tr>
-<td>FF02::2</td>
-<td>224.0.0.2</td>
-<td>所有-路由器地址</td>
-</tr>
-<tr>
-<td>FF02::5</td>
-<td>224.0.0.5</td>
-<td>OSPF IGP</td>
-</tr>
-<tr>
-<td>FF02::6</td>
-<td>224.0.0.6</td>
-<td>OSPF IGP DR</td>
-</tr>
-</tbody>
-</table>
-<h4 id="任播地址"><a href="#任播地址" class="headerlink" title="任播地址"></a>任播地址</h4><p>在 IPv6 中，没有广播的概念，而是使用任播代替。在任播中，网络地址与网络节点之前存在一对多的关系：每一个地址对应一群接收节点，但是在任何给定时间，只有其中之一可以接收到传送端发来的信息。</p>
-<p>邻居发现协议 NDP 是 IPv6 协议体系中一个重要的基础协议，替代了IPv4的 ARP 和 ICMP 路由器发现，定义了使用 ICMPv6 报文实现地址解析、跟踪邻居状态、重复地址检测、路由器发现以及重定向等功能。</p>
-<h2 id="IPv6-地址发现"><a href="#IPv6-地址发现" class="headerlink" title="IPv6 地址发现"></a>IPv6 地址发现</h2><p>因为我本人也没有完整阅读过相应 RFC 文档，在这里也不详细描述每个报文的具体格式及每个字段是什么意思了，直接看看怎么实现。</p>
-<h3 id="ping6-amp-组播"><a href="#ping6-amp-组播" class="headerlink" title="ping6 &amp; 组播"></a>ping6 &amp; 组播</h3><p>如果我们知道了一个主机的 IPv6 地址，我们可以通过 <code>ping6</code> 来检测是否联通：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ping6 fe80::5054:ff:fe80:95d9%eth0</span></span><br><span class="line">PING fe80::5054:ff:fe80:95d9%eth0(fe80::5054:ff:fe80:95d9%eth0) 56 data bytes</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=2 ttl=64 time=0.055 ms</span><br><span class="line">^C</span><br><span class="line">--- fe80::5054:ff:fe80:95d9%eth0 ping statistics ---</span><br><span class="line">2 packets transmitted, 2 received, 0% packet loss, time 999ms</span><br><span class="line">rtt min/avg/max/mdev = 0.045/0.050/0.055/0.005 ms</span><br></pre></td></tr></table></figure>
-<p>那么有了这个 <code>ping6</code> 命令和上面提到的组播地址，我们就可以通过 <code>ping6</code> 直接 ping 组播地址就能知道那些地址可以联通了，那么应该选择哪个？应该选择 <code>FF01::1</code> ，因为我们想要实现的是获取 IPv6 地址：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ping6 -c1 -I eth0 <span class="string">'ff02::1%eth0'</span></span></span><br><span class="line">PING ff02::1%eth0(ff02::1%eth0) from fe80::5054:ff:fe80:95d9%eth0 eth0: 56 data bytes</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms</span><br><span class="line"></span><br><span class="line">--- ff02::1%eth0 ping statistics ---</span><br><span class="line">1 packets transmitted, 1 received, 0% packet loss, time 0ms</span><br><span class="line">rtt min/avg/max/mdev = 0.045/0.045/0.045/0.000 ms</span><br></pre></td></tr></table></figure>
-<p>因为我的实验环境里节点太多，这里使用 <code>-c</code> 参数限制发送 ECHO_REQUEST 包的数量为 1。</p>
-<p>在发送组播之后，如果能够联通，那么系统会记录对应的 ARP 信息，我们可以通过 <code>ip</code> 命令直接获取：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ip -6 neighbor show dev eth0 | head -n 5</span></span><br><span class="line">fe80::8c6e:a0ff:fe19:f146 lladdr 8e:6e:a0:19:f1:46 DELAY</span><br><span class="line">fe80::8010:f1ff:fe02:af40 lladdr 82:10:f1:02:af:40 DELAY</span><br><span class="line">fe80::baca:3aff:feec:fdac lladdr b8:ca:3a:ec:fd:ac DELAY</span><br><span class="line">fe80::f11c:e35a:912:dbc9 lladdr 52:54:00:0a:b3:fc DELAY</span><br><span class="line">fe80::570d:aa51:dc3b:1f02 lladdr 00:50:56:9b:f6:6c DELAY</span><br></pre></td></tr></table></figure>
-<p>这样就拿到了自己节点在二层联通的所有 IPv6 地址了。</p>
-<h4 id="Nmap"><a href="#Nmap" class="headerlink" title="Nmap"></a>Nmap</h4><p>既然已经使用了 <code>ping6</code>，那么可以使用一些更高级的工具，比如 Nmap，Nmap可以检测目标主机是否在线、端口开放情况、侦测运行的服务类型及版本信息、侦测操作系统与设备类型等信息。 它通常用来评估网络系统安全。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> nmap -6 <span class="string">"--script=targets-ipv6-multicast-*"</span> | head -n 10</span></span><br><span class="line"></span><br><span class="line">Starting Nmap 6.40 ( http://nmap.org ) at 2019-12-12 07:22 CST</span><br><span class="line">Pre-scan script results:</span><br><span class="line">| targets-ipv6-multicast-echo:</span><br><span class="line">|   IP: fe80::e4a5:4fff:fea7:79af  MAC: e6:a5:4f:a7:79:af  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe85:647e   MAC: 00:50:56:85:64:7e  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9e:2473   MAC: 00:50:56:9e:24:73  IFACE: eth0</span><br><span class="line">|   IP: fe80::ae53:a418:ca0:83e8   MAC: 00:50:56:9f:43:ca  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9e:bcb6   MAC: 00:50:56:9e:bc:b6  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9f:6153   MAC: 00:50:56:9f:61:53  IFACE: eth0</span><br><span class="line">WARNING: No targets were specified, so 0 hosts scanned.</span><br></pre></td></tr></table></figure>
-<h2 id="更进一步"><a href="#更进一步" class="headerlink" title="更进一步"></a>更进一步</h2><p>往往我们的需求不只是获取到 IP 这么简单，我们现在更进一步，我们要求扫描的结果中与我们预期的版本相同，那么此时就需要与对应节点进行通信了。</p>
-<h3 id="HTTP"><a href="#HTTP" class="headerlink" title="HTTP"></a>HTTP</h3><p>一个比较简单的实现，就是在目标节点开机的时候自动启动一个 API server，提供一个 Entrypoint，比如：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> jsonify</span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route('/api/v1/version')</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">version</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> jsonify(&#123;<span class="string">"version"</span>:<span class="string">"v1.0.0"</span>&#125;)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    app.run(host=<span class="string">'::'</span>, port=<span class="number">5000</span>, debug=<span class="keyword">True</span>) <span class="comment"># 要兼容 IPv6</span></span><br></pre></td></tr></table></figure>
-<p>然后我们可以在得到 IPv6 地址后，通过 curl 或者 Python urllib2 来发送对应的请求：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> curl -g -6 <span class="string">'http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version'</span></span></span><br><span class="line">&#123;</span><br><span class="line">  "version": "v1.0.0"</span><br><span class="line">&#125;#</span><br></pre></td></tr></table></figure>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> urllib2</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>res = urllib2.urlopen(<span class="string">"http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>res.read()</span><br><span class="line"><span class="string">'&#123;\n  "version": "v1.0.0"\n&#125;'</span></span><br></pre></td></tr></table></figure>
-<p>这样虽然可以达到我们想要的效果，但是效率太低了，要先后进行2次操作，一次是扫描对应的 IPv6 地址，一次是得到地址后进行 HTTP 请求。</p>
-<h3 id="Socket"><a href="#Socket" class="headerlink" title="Socket"></a>Socket</h3><p>我们可以通过 socket 通信来达到类似的效果，与 HTTP 不同的是，我们可以直接使用 socket 发送组播，来进行消息传递，这样上面的两步就可以通过一步来解决了，这里给出对应的 server 和 client 代码示例：</p>
-<h4 id="Server"><a href="#Server" class="headerlink" title="Server"></a>Server</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> select</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">server</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, <span class="number">1</span>)</span><br><span class="line">        s.bind((<span class="string">''</span>, <span class="number">30000</span>))</span><br><span class="line">        s.setblocking(<span class="keyword">False</span>)</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">            rlist, _, _ = select.select([s], [], [s], <span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> rlist:</span><br><span class="line">                string, address = s.recvfrom(<span class="number">20000</span>)</span><br><span class="line">                <span class="keyword">print</span> string, address</span><br><span class="line">                <span class="keyword">try</span>:</span><br><span class="line">                    data = json.loads(string)</span><br><span class="line">                <span class="keyword">except</span> Exception:</span><br><span class="line">                    <span class="keyword">pass</span></span><br><span class="line">                owner = data.get(<span class="string">"owner"</span>)</span><br><span class="line">                <span class="keyword">if</span> owner == <span class="string">"yiran"</span>:</span><br><span class="line">                    info = &#123;<span class="string">"version"</span>: <span class="string">"v1.0"</span>,</span><br><span class="line">                            <span class="string">"owner"</span>: <span class="string">"yiran"</span>,</span><br><span class="line">                            <span class="string">"nic"</span>: address[<span class="number">0</span>].split(<span class="string">"%"</span>, <span class="number">1</span>)[<span class="number">1</span>]&#125;</span><br><span class="line">                    s.sendto(json.dumps(info), address)</span><br><span class="line">    <span class="keyword">except</span> Exception:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    server()</span><br></pre></td></tr></table></figure>
-<h4 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> select</span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pprint <span class="keyword">import</span> pprint</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">client</span><span class="params">()</span>:</span></span><br><span class="line">    s= socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">    s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, <span class="number">5000000</span>)</span><br><span class="line">    nics = socket.getaddrinfo(<span class="string">"%s%%%s"</span> % (<span class="string">'ff02::1'</span>, <span class="string">'eth0'</span>), <span class="number">30000</span>, socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">    data = &#123;<span class="string">"owner"</span>: <span class="string">"yiran"</span>&#125;</span><br><span class="line">    string = json.dumps(data)</span><br><span class="line">    results = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>):</span><br><span class="line">        <span class="keyword">for</span> nic <span class="keyword">in</span> nics:</span><br><span class="line">            _, _, _, _, address = nic</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                s.sendto(string, address)</span><br><span class="line">            <span class="keyword">except</span> Exception:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">        rlist, _, _ = select.select([s], [], [s], <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> rlist:</span><br><span class="line">            json_string, address = s.recvfrom(<span class="number">10000</span>)</span><br><span class="line">            results[address] = json_string</span><br><span class="line"></span><br><span class="line">    s.close()</span><br><span class="line">    ips = []</span><br><span class="line">    <span class="keyword">for</span> address, json_test <span class="keyword">in</span> results.iteritems():</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            data = json.loads(json_test)</span><br><span class="line">            <span class="keyword">if</span> data.get(<span class="string">"version"</span>, <span class="keyword">None</span>) == <span class="string">"v1.0"</span>:</span><br><span class="line">                info = &#123;&#125;</span><br><span class="line">                info[<span class="string">'ipv6_address'</span>] = address[<span class="number">0</span>]</span><br><span class="line">                info[<span class="string">'test'</span>] = data</span><br><span class="line"></span><br><span class="line">                ips.append(info)</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ips</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    pprint(client())</span><br></pre></td></tr></table></figure>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="http://www.ruijie.com.cn/fa/xw-hlw/83116/" target="_blank" rel="noopener">http://www.ruijie.com.cn/fa/xw-hlw/83116/</a></li>
-<li><a href="https://tools.ietf.org/html/rfc4861" target="_blank" rel="noopener">https://tools.ietf.org/html/rfc4861</a></li>
-<li><a href="https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses" target="_blank" rel="noopener">https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2086,7 +2025,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">109</span>
+                  <span class="site-state-item-count">110</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
