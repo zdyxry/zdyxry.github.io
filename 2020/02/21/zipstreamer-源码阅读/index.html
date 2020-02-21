@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Python,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景在之前的一篇博客《HTTP Content-Length 学习》 中提到自己踩了一个坑，就是 content-length 与实际大小不匹配导致文件下载失败，在解决过程中用到了 zipstreamer ，今天来看看 zipstreamer 是如何工作的。 zipfilePython 标准库中提供了 zipfile 用来对 Zip 文件进行操作，可以进行 Zip 的创建、写入、读取、解压等动作，">
+<meta name="keywords" content="Python">
+<meta property="og:type" content="article">
+<meta property="og:title" content="zipstreamer 源码阅读">
+<meta property="og:url" content="https://zdyxry.github.io/2020/02/21/zipstreamer-源码阅读/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景在之前的一篇博客《HTTP Content-Length 学习》 中提到自己踩了一个坑，就是 content-length 与实际大小不匹配导致文件下载失败，在解决过程中用到了 zipstreamer ，今天来看看 zipstreamer 是如何工作的。 zipfilePython 标准库中提供了 zipfile 用来对 Zip 文件进行操作，可以进行 Zip 的创建、写入、读取、解压等动作，">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://zdyxry.github.io/2020/02/21/zipstreamer-源码阅读/zip2.png">
+<meta property="og:image" content="https://zdyxry.github.io/2020/02/21/zipstreamer-源码阅读/zip.png">
+<meta property="og:updated_time" content="2020-02-21T14:07:52.208Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="zipstreamer 源码阅读">
+<meta name="twitter:description" content="背景在之前的一篇博客《HTTP Content-Length 学习》 中提到自己踩了一个坑，就是 content-length 与实际大小不匹配导致文件下载失败，在解决过程中用到了 zipstreamer ，今天来看看 zipstreamer 是如何工作的。 zipfilePython 标准库中提供了 zipfile 用来对 Zip 文件进行操作，可以进行 Zip 的创建、写入、读取、解压等动作，">
+<meta name="twitter:image" content="https://zdyxry.github.io/2020/02/21/zipstreamer-源码阅读/zip2.png">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2020/02/21/zipstreamer-源码阅读/">
+
+
+
+
+
+  <title>zipstreamer 源码阅读 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/02/21/zipstreamer-源码阅读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">zipstreamer 源码阅读</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-02-21T19:33:08+08:00">
+                2020-02-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/02/21/zipstreamer-源码阅读/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/02/21/zipstreamer-源码阅读/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在之前的一篇博客<a href="https://zdyxry.github.io/2020/02/07/HTTP-Content-Length-%E5%AD%A6%E4%B9%A0/">《HTTP Content-Length 学习》</a> 中提到自己踩了一个坑，就是 <code>content-length</code> 与实际大小不匹配导致文件下载失败，在解决过程中用到了 zipstreamer ，今天来看看 zipstreamer 是如何工作的。</p>
+<h2 id="zipfile"><a href="#zipfile" class="headerlink" title="zipfile"></a>zipfile</h2><p>Python 标准库中提供了 zipfile 用来对 Zip 文件进行操作，可以进行 Zip 的创建、写入、读取、解压等动作，但是 zipfile 只能对文件进行操作，没办法传入 stream，所以能做的操作有限。</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">import</span> zipfile</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test</span><span class="params">()</span>:</span></span><br><span class="line"> </span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1</span>, <span class="number">4</span>):</span><br><span class="line">        f = open(<span class="string">"file"</span> + str(i) + <span class="string">".txt"</span>, <span class="string">'w'</span>)</span><br><span class="line">        f.write(str(i))</span><br><span class="line">        f.close()</span><br><span class="line"> </span><br><span class="line">    f = zipfile.ZipFile(<span class="string">'filename.zip'</span>, <span class="string">'w'</span>, zipfile.ZIP_DEFLATED)</span><br><span class="line">    f.write(<span class="string">'file1.txt'</span>)</span><br><span class="line">    f.write(<span class="string">'file2.txt'</span>)</span><br><span class="line">    f.write(<span class="string">'file3.txt'</span>)</span><br><span class="line">    f.close()</span><br><span class="line"> </span><br><span class="line">    f = zipfile.ZipFile(<span class="string">'filename.zip'</span>)</span><br><span class="line">    f.extractall()</span><br><span class="line">    f.close()</span><br><span class="line"> </span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    test()</span><br></pre></td></tr></table></figure>
+<h2 id="zipstreamer"><a href="#zipstreamer" class="headerlink" title="zipstreamer"></a>zipstreamer</h2><p>在提供文件下载接口时，有一个比较常见的需求是传过来一个 stream，然后我们要将 stream 作为 Zip 中的一个文件转发出去，实时下载，这时候就需要 zipstreamer 来实现了。</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">z = ZipStream(files=[</span><br><span class="line">    ZipFile(<span class="string">'file.txt'</span>, <span class="number">4</span>, <span class="keyword">lambda</span>: StringIO(<span class="string">'test'</span>), <span class="keyword">None</span>, <span class="keyword">None</span>),</span><br><span class="line">    ZipFile(<span class="string">'emptydir/'</span>, <span class="keyword">None</span>, <span class="keyword">None</span>, <span class="keyword">None</span>, <span class="keyword">None</span>),</span><br><span class="line">    ZipFile(<span class="string">'dir/remote.txt'</span>, remote_file_size, get_remote_file, <span class="keyword">None</span>, <span class="keyword">None</span>),</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line">size = z.size()</span><br><span class="line"></span><br><span class="line">res = Response(z.generate(), mimetype=<span class="string">'application/zip'</span>)</span><br><span class="line">res.headers[<span class="string">'Content-Length'</span>] = str(size)</span><br></pre></td></tr></table></figure>
+<h3 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h3><p>在看代码之前，我们先看下 zip 文件的数据格式：</p>
+<img src="/2020/02/21/zipstreamer-源码阅读/zip2.png" title="Zip Format">
+<img src="/2020/02/21/zipstreamer-源码阅读/zip.png" title="Zip Format">
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:~/project/python-zipstreamer/zipstreamer</span><br><span class="line">master ✔ $ tree .</span><br><span class="line">.</span><br><span class="line">├── compat.py # py2 py3 兼容</span><br><span class="line">├── __init__.py # 主要逻辑</span><br><span class="line">└── __version__.py # 版本信息</span><br></pre></td></tr></table></figure>
+<p>zipstreamer 的目录结构比较简单，所有逻辑都在 <code>__init__.py</code> 中，先来看看 <code>compat.py</code> 中做了什么，根据 Python 版本来决定 BytesIO 的引用，修改下默认的 str 定义：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#: Python 2.x?</span></span><br><span class="line">IS_PY2 = (_VER[<span class="number">0</span>] == <span class="number">2</span>)</span><br><span class="line"><span class="comment">#: Python 3.x?</span></span><br><span class="line">IS_PY3 = (_VER[<span class="number">0</span>] == <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> IS_PY2:</span><br><span class="line">    <span class="keyword">from</span> StringIO <span class="keyword">import</span> StringIO <span class="keyword">as</span> BytesIO</span><br><span class="line">    str = unicode</span><br><span class="line"></span><br><span class="line"><span class="keyword">elif</span> IS_PY3:</span><br><span class="line">    <span class="keyword">from</span> io <span class="keyword">import</span> BytesIO</span><br><span class="line">    str = str</span><br></pre></td></tr></table></figure>
+<p>那么来看看 <code>__init__.py</code> 中都定义了哪些类，根据示例我们知道有 <code>ZipStream</code>，并且它肯定实现了 <code>generate</code> 方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ZipStream</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, files, comment=None)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">size</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_incr</span><span class="params">(self, buf)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_generate_file</span><span class="params">(self, zip_file)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_generate_dir_entry</span><span class="params">(self, entry)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_generate_zip_file</span><span class="params">(self)</span>:</span></span><br></pre></td></tr></table></figure>
+<p>先来看看构造函数中定义了什么：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, files, comment=None)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> isinstance(comment, str):</span><br><span class="line">        <span class="keyword">raise</span> ZipFileBytesRequired(<span class="string">'ZIP comment should bytes'</span>)</span><br><span class="line">    <span class="comment"># 所有 ZipFile 的集合</span></span><br><span class="line">    self.files = files</span><br><span class="line">    self.comment = comment</span><br><span class="line">    <span class="comment"># 定义初始值及必要的 flag</span></span><br><span class="line">    self._dir = <span class="keyword">None</span></span><br><span class="line">    self._pos = <span class="keyword">None</span> <span class="comment"># 计算文件大小时用到</span></span><br><span class="line">    self._generating = <span class="keyword">False</span></span><br><span class="line">    self._calculate_size = <span class="keyword">False</span></span><br></pre></td></tr></table></figure>
+<p>最终传给 Response 的是 <code>z.generate()</code> ，所以先看看 <code>generate()</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="comment"># 构造函数中定义的 flag，因为是生成器，如果已经执行过那么后续执行都会异常，所以这里提前判断</span></span><br><span class="line">    <span class="keyword">if</span> self._generating:</span><br><span class="line">        <span class="keyword">raise</span> ZipFileInProgress(<span class="string">'ZipFile generator already in progress'</span>)</span><br><span class="line"></span><br><span class="line">    self._generating = <span class="keyword">True</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> self._generate_zip_file():</span><br><span class="line">            <span class="keyword">yield</span> chunk</span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        self._generating = <span class="keyword">False</span></span><br></pre></td></tr></table></figure>
+<p>继续看 <code>self._generate_zip_file()</code> 这里是整个 zipstreamer 中最核心的逻辑，包含了 Zip 文件内容定义，数据格式定义：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_generate_zip_file</span><span class="params">(self)</span>:</span></span><br><span class="line">    self._dir = []</span><br><span class="line">    self._pos = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> zip_file <span class="keyword">in</span> self.files:</span><br><span class="line">        <span class="comment"># 生成文件数据</span></span><br><span class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> self._generate_file(zip_file):</span><br><span class="line">            <span class="keyword">yield</span> chunk</span><br><span class="line">    <span class="comment"># 这里可以判断 self._generate_file 会修改 self._pos</span></span><br><span class="line">    start = self._pos</span><br><span class="line">    <span class="keyword">for</span> entry <span class="keyword">in</span> self._dir:</span><br><span class="line">        <span class="comment"># 生成文件夹数据</span></span><br><span class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> self._generate_dir_entry(entry):</span><br><span class="line">            <span class="keyword">yield</span> chunk</span><br><span class="line">    <span class="comment"># 同样 self._generate_dir_entry 也会修改 self._pos</span></span><br><span class="line">    end = self._pos</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 可以猜测在 self._generate_dir_entry 会更新 self._dir</span></span><br><span class="line">    cent_dir_count = len(self._dir)</span><br><span class="line">    cent_dir_size = end - start</span><br><span class="line">    cent_dir_offset = start</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 根据条件判断最终 Zip 文件是否为 64 位</span></span><br><span class="line">    <span class="keyword">if</span> (cent_dir_count &gt;= UINT16_MAX <span class="keyword">or</span> cent_dir_size &gt;= UINT32_MAX <span class="keyword">or</span> cent_dir_offset &gt;= UINT32_MAX):</span><br><span class="line">        zip64_end_rec = struct.pack(</span><br><span class="line">            STRUCT_END_ARCHIVE64, STRING_END_ARCHIVE64, <span class="number">44</span>, ZIP_VERSION_45,</span><br><span class="line">            ZIP_VERSION_45, <span class="number">0</span>, <span class="number">0</span>, cent_dir_count, cent_dir_count,</span><br><span class="line">            cent_dir_size, cent_dir_offset)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">yield</span> self._incr(zip64_end_rec)</span><br><span class="line"></span><br><span class="line">        zip64_loc_rec = struct.pack(</span><br><span class="line">            STRUCT_END_ARCHIVE64_LOCATOR, STRING_END_ARCHIVE64_LOCATOR, <span class="number">0</span>,</span><br><span class="line">            end, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">yield</span> self._incr(zip64_loc_rec)</span><br><span class="line"></span><br><span class="line">        cent_dir_count = UINT16_MAX</span><br><span class="line">        cent_dir_size = UINT32_MAX</span><br><span class="line">        cent_dir_offset = UINT32_MAX</span><br><span class="line"></span><br><span class="line">    eocd_comment = <span class="string">b''</span> <span class="keyword">if</span> self.comment <span class="keyword">is</span> <span class="keyword">None</span> <span class="keyword">else</span> self.comment</span><br><span class="line"></span><br><span class="line">    endrec = struct.pack(</span><br><span class="line">        STRUCT_END_ARCHIVE, STRING_END_ARCHIVE, <span class="number">0</span>, <span class="number">0</span>, cent_dir_count,</span><br><span class="line">        cent_dir_count, cent_dir_size, cent_dir_offset, len(eocd_comment))</span><br><span class="line">    <span class="comment"># 返回 Zip 格式要求的 central 部分</span></span><br><span class="line">    <span class="keyword">yield</span> self._incr(endrec)</span><br><span class="line">    <span class="keyword">yield</span> self._incr(eocd_comment)</span><br></pre></td></tr></table></figure>
+<p><code>self._generate_file</code> 和 <code>self._generate_dir_entry</code> 都涉及到具体的 Zip 数据格式的定义，这里不详细展开了，需要注意的是在 <code>self._generate_file</code> 中的传输 chunk 大小的定义，一次返回的数据大小为 4096字节：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">elif</span> file_obj <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">        buf = file_obj.read(<span class="number">4096</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> buf:</span><br><span class="line">            <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
+<h3 id="文件大小计算"><a href="#文件大小计算" class="headerlink" title="文件大小计算"></a>文件大小计算</h3><p>在示例代码中我们使用 <code>z.size()</code> 来获取打包后的 Zip 文件大小，来看看这里是怎么获取的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">size</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> self._generating:</span><br><span class="line">        <span class="keyword">raise</span> ZipFileInProgress(</span><br><span class="line">            <span class="string">'ZipFile generator already in progress. You need to call'</span></span><br><span class="line">            <span class="string">' size() before generate()'</span>)</span><br><span class="line"></span><br><span class="line">    self._calculate_size = <span class="keyword">True</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="comment"># 执行一次 generate() 方法</span></span><br><span class="line">        <span class="keyword">for</span> _ <span class="keyword">in</span> self.generate():</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        self._calculate_size = <span class="keyword">False</span></span><br><span class="line">    <span class="comment"># 最终返回 self._pos</span></span><br><span class="line">    <span class="keyword">return</span> self._pos</span><br></pre></td></tr></table></figure>
+<p>在 zipstream 执行 yield 的时候，都是跟着 <code>self._incr</code> 的，这里保存这文件大小的计算逻辑：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_incr</span><span class="params">(self, buf)</span>:</span></span><br><span class="line">    <span class="keyword">assert</span> <span class="keyword">not</span> isinstance(buf, str)</span><br><span class="line"></span><br><span class="line">    self._pos += len(buf)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> buf</span><br></pre></td></tr></table></figure>
+<p>我们只需要保证我们返回的所有数据都用 <code>self._incr</code> 封装了，那么最终的 <code>self._pos</code> 就是文件的总大小。</p>
+<h3 id="Zip-文件格式"><a href="#Zip-文件格式" class="headerlink" title="Zip 文件格式"></a>Zip 文件格式</h3><p>大概了解了 zipstream 是怎么做的，回过头来看看 Zip 的文件格式，根据 yield 顺序汇总一下，可以看到与我们在看代码之前看到的 Zip 文件格式图表是一致的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># files</span></span><br><span class="line"><span class="keyword">yield</span> self._incr(header)</span><br><span class="line"><span class="keyword">yield</span> self._incr(filename)</span><br><span class="line"><span class="keyword">yield</span> self._incr(extra)</span><br><span class="line"><span class="keyword">yield</span> self._incr(buf)</span><br><span class="line"><span class="keyword">yield</span> self._incr(data_descriptor)</span><br><span class="line"><span class="comment"># dirs</span></span><br><span class="line"><span class="keyword">yield</span> self._incr(central_dir)</span><br><span class="line"><span class="keyword">yield</span> self._incr(entry.filename)</span><br><span class="line"><span class="keyword">yield</span> self._incr(extra)</span><br><span class="line"><span class="keyword">yield</span> self._incr(entry.comment)</span><br><span class="line"><span class="comment"># zip structure</span></span><br><span class="line"><span class="keyword">yield</span> self._incr(zip64_end_rec)</span><br><span class="line"><span class="keyword">yield</span> self._incr(zip64_loc_rec)</span><br><span class="line"><span class="keyword">yield</span> self._incr(endrec)</span><br><span class="line"><span class="keyword">yield</span> self._incr(eocd_comment)</span><br></pre></td></tr></table></figure>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/koofr/python-zipstreamer" target="_blank" rel="noopener">https://github.com/koofr/python-zipstreamer</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Python/" rel="tag"># Python</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/02/15/K8s-drain-源码阅读/" rel="next" title="K8s drain 命令源码阅读">
+                <i class="fa fa-chevron-left"></i> K8s drain 命令源码阅读
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">111</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">28</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#zipfile"><span class="nav-number">2.</span> <span class="nav-text">zipfile</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#示例"><span class="nav-number">2.1.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#zipstreamer"><span class="nav-number">3.</span> <span class="nav-text">zipstreamer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#示例-1"><span class="nav-number">3.1.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#源码"><span class="nav-number">3.2.</span> <span class="nav-text">源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文件大小计算"><span class="nav-number">3.3.</span> <span class="nav-text">文件大小计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Zip-文件格式"><span class="nav-number">3.4.</span> <span class="nav-text">Zip 文件格式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">4.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2020/02/21/zipstreamer-源码阅读/';
+          this.page.identifier = '2020/02/21/zipstreamer-源码阅读/';
+          this.page.title = 'zipstreamer 源码阅读';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
