@@ -354,43 +354,16 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>通常情况下，一个公司内部都会有监控报警平台去支撑业务主机的稳定运行，比如 Nagios，Zabbix 或者 Prometheus 等其他工具。<br>这些工具，无论是 push 模式还是 pull 模式，都基于一个前提：主机是可访问的，或者说 agent/exporter 是可正常工作的。</p>
-<p>如果运维人员在面对一台处于异常状态的主机，应该如何收集该主机的当前状态及相应日志呢？</p>
-<p>企业级产品通常会内置工具用来采集异常状态信息，比如：</p>
-<ul>
-<li>DELL 服务器如果出现了未知错误，拨打 400 询问问题，<br>一线客服会告诉你，打开 iDRAC 界面，点击“收集日志” 选项，会自动收集并下载节点信息</li>
-<li>如果你是 RedHat RHEL 用户，主机出现异常状态，红帽技术支持工程师进行初始分析时，通常会使用 sosreport 工具</li>
-</ul>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>sosreport 命令是一个工具，用来收集 RHEL 系统上的配置信息、系统信息和诊断信息。比如：正在运行的内核版本、已加载的模块，以及系统和服务的配置文件。同时，sosreport 支持用户自己编写 Plugin ，用于收集自己想要收集的服务日志及命令结果。  </p>
-<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>sosreport 提供了 <code>sosreport</code> 命令行，用户可以直接执行该命令收集信息，默认收集所有 Plugin 信息。</p>
-<h2 id="执行流程"><a href="#执行流程" class="headerlink" title="执行流程"></a>执行流程</h2><p>通过 which 命令查看提供 sosreport 命令行的文件，可以看到指向 <code>sos.sosreport.main</code>。  </p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:~/project/sos </span><br><span class="line">master ✔ $ which sosreport</span><br><span class="line">/usr/sbin/sosreport</span><br><span class="line">root@yiran-30-250:~/project/sos </span><br><span class="line">master ✔ $ cat /usr/sbin/sosreport</span><br><span class="line"><span class="meta">#</span><span class="bash">!/usr/bin/python</span></span><br><span class="line">import sys</span><br><span class="line">try:</span><br><span class="line">    from sos.sosreport import main</span><br><span class="line">except KeyboardInterrupt:</span><br><span class="line">    raise SystemExit()</span><br><span class="line"></span><br><span class="line">if __name__ == '__main__':</span><br><span class="line">    main(sys.argv[1:])</span><br></pre></td></tr></table></figure>
-<p>查看 main 函数，实例化 SoSReport，并执行 SoSReport中的 execute 方法，查看 execute 具体做了什么：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">execute</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="comment"># 获取集群配置并配置，包含日志路径，报告路径,配置文件等参数</span></span><br><span class="line">        self.policy.set_commons(self.get_commons())</span><br><span class="line">        self.print_header()</span><br><span class="line">        <span class="comment"># 加载所有插件,并根据发行版本进行校验</span></span><br><span class="line">        self.load_plugins()</span><br><span class="line">        <span class="comment"># 设置默认配置参数</span></span><br><span class="line">        self._set_all_options()</span><br><span class="line">        self._set_tunables()</span><br><span class="line">        self._check_for_unknown_plugins()</span><br><span class="line">        self._set_plugin_options()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> self.opts.list_plugins:</span><br><span class="line">            self.list_plugins()</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line">        <span class="keyword">if</span> self.opts.list_profiles:</span><br><span class="line">            self.list_profiles()</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line">        <span class="keyword">if</span> self.opts.list_presets:</span><br><span class="line">            self.list_presets()</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line">        <span class="keyword">if</span> self.opts.add_preset:</span><br><span class="line">            <span class="keyword">return</span> self.add_preset(self.opts.add_preset)</span><br><span class="line">        <span class="keyword">if</span> self.opts.del_preset:</span><br><span class="line">            <span class="keyword">return</span> self.del_preset(self.opts.del_preset)</span><br><span class="line">        <span class="comment"># verify that at least one plug-in is enabled</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.verify_plugins():</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">False</span></span><br><span class="line"></span><br><span class="line">        self.batch()</span><br><span class="line">        <span class="comment"># 收集前准备工作，包括打包方式等配置</span></span><br><span class="line">        self.prework()</span><br><span class="line">        self.setup()</span><br><span class="line">        <span class="comment"># 真正开始收集执行</span></span><br><span class="line">        self.collect()</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.opts.noreport:</span><br><span class="line">            self.report()</span><br><span class="line">            self.html_report()</span><br><span class="line">            self.plain_report()</span><br><span class="line">        self.postproc()</span><br><span class="line">        self.version()</span><br><span class="line">        <span class="keyword">return</span> self.final_work()</span><br></pre></td></tr></table></figure>
-<p>其中，主要步骤有两步：</p>
-<ol>
-<li>加载插件并校验</li>
-<li>执行各个插件内容</li>
-</ol>
-<h3 id="加载插件并校验"><a href="#加载插件并校验" class="headerlink" title="加载插件并校验"></a>加载插件并校验</h3><p>通过遍历软件包所在路径，先获取所有的插件名称:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_plugin_name</span><span class="params">(self, path)</span>:</span></span><br><span class="line">    <span class="string">"Returns the plugin module name given the path"</span></span><br><span class="line">    base = os.path.basename(path)</span><br><span class="line">    name, ext = os.path.splitext(base)</span><br><span class="line">    <span class="keyword">return</span> name</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_get_plugins_from_list</span><span class="params">(self, list_)</span>:</span></span><br><span class="line">    plugins = [self._plugin_name(plugin)</span><br><span class="line">               <span class="keyword">for</span> plugin <span class="keyword">in</span> list_</span><br><span class="line">               <span class="keyword">if</span> <span class="string">"__init__"</span> <span class="keyword">not</span> <span class="keyword">in</span> plugin <span class="keyword">and</span> plugin.endswith(<span class="string">".py"</span>)]</span><br><span class="line">    plugins.sort()</span><br><span class="line">    <span class="keyword">return</span> plugins</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_find_plugins_in_dir</span><span class="params">(self, path)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> os.path.exists(path):</span><br><span class="line">        py_files = list(find(<span class="string">"*.py"</span>, path))</span><br><span class="line">        pnames = self._get_plugins_from_list(py_files)</span><br><span class="line">        <span class="keyword">if</span> pnames:</span><br><span class="line">            <span class="keyword">return</span> pnames</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> []</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_modules</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="string">"""Returns the list of importable modules in the configured python</span></span><br><span class="line"><span class="string">    package. """</span></span><br><span class="line">    plugins = []</span><br><span class="line">    <span class="keyword">for</span> path <span class="keyword">in</span> self.package.__path__:</span><br><span class="line">        <span class="keyword">if</span> os.path.isdir(path) <span class="keyword">or</span> path == <span class="string">''</span>:</span><br><span class="line">            plugins.extend(self._find_plugins_in_dir(path))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plugins</span><br></pre></td></tr></table></figure>
-<p>获取到插件名称后，获取 Linux 主机发行版本信息，并将发行版本指定为 import 参数，<br>用于判断插件是否支持该发行版本(通过 inspect 校验 是否为子类方式):</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">import_module</span><span class="params">(module_fqname, superclasses=None)</span>:</span></span><br><span class="line">    <span class="string">"""Imports the module module_fqname and returns a list of defined classes</span></span><br><span class="line"><span class="string">    from that module. If superclasses is defined then the classes returned will</span></span><br><span class="line"><span class="string">    be subclasses of the specified superclass or superclasses. If superclasses</span></span><br><span class="line"><span class="string">    is plural it must be a tuple of classes."""</span></span><br><span class="line">    module_name = module_fqname.rpartition(<span class="string">"."</span>)[<span class="number">-1</span>]</span><br><span class="line">    module = __import__(module_fqname, globals(), locals(), [module_name])</span><br><span class="line">    modules = [class_ <span class="keyword">for</span> cname, class_ <span class="keyword">in</span></span><br><span class="line">               inspect.getmembers(module, inspect.isclass)</span><br><span class="line">               <span class="keyword">if</span> class_.__module__ == module_fqname]</span><br><span class="line">    <span class="keyword">if</span> superclasses:</span><br><span class="line">        modules = [m <span class="keyword">for</span> m <span class="keyword">in</span> modules <span class="keyword">if</span> issubclass(m, superclasses)]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> modules</span><br></pre></td></tr></table></figure>
-<p>接下来还有根据命令行参数进行相应配置参数传递，此处不进行展开。</p>
-<h3 id="执行各个插件"><a href="#执行各个插件" class="headerlink" title="执行各个插件"></a>执行各个插件</h3><p>查看 self.collect() 函数，可以发现，最终执行是通过线程池进行的，默认 Pool Size 为 4。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">collect</span><span class="params">(self)</span>:</span></span><br><span class="line">    self.ui_log.info(_(<span class="string">" Running plugins. Please wait ..."</span>))</span><br><span class="line">    self.ui_log.info(<span class="string">""</span>)</span><br><span class="line"></span><br><span class="line">    plugruncount = <span class="number">0</span></span><br><span class="line">    self.pluglist = []</span><br><span class="line">    self.running_plugs = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> self.loaded_plugins:</span><br><span class="line">        plugruncount += <span class="number">1</span></span><br><span class="line">        self.pluglist.append((plugruncount, i[<span class="number">0</span>]))</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        self.plugpool = ThreadPoolExecutor(self.opts.threads)</span><br><span class="line">        <span class="comment"># Pass the plugpool its own private copy of self.pluglist</span></span><br><span class="line">        self.plugpool.map(self._collect_plugin, list(self.pluglist),</span><br><span class="line">                          chunksize=<span class="number">1</span>)</span><br><span class="line">        self.plugpool.shutdown(wait=<span class="keyword">True</span>)</span><br><span class="line">        self.ui_log.info(<span class="string">""</span>)</span><br><span class="line">    <span class="keyword">except</span> KeyboardInterrupt:</span><br><span class="line">        <span class="comment"># We may not be at a newline when the user issues Ctrl-C</span></span><br><span class="line">        self.ui_log.error(<span class="string">"\nExiting on user cancel\n"</span>)</span><br><span class="line">        os._exit(<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
-<p>在查看 self._collect_plugin，发现最终执行的函数为 <code>plug.collect()</code> ,这指向了插件本身，<br>随便找一个插件看看是否有 collect 方法，以 block 插件为例：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> sos.plugins <span class="keyword">import</span> Plugin, RedHatPlugin, DebianPlugin, UbuntuPlugin</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Block</span><span class="params">(Plugin, RedHatPlugin, DebianPlugin, UbuntuPlugin)</span>:</span></span><br><span class="line">    <span class="string">"""Block device information</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line"></span><br><span class="line">    plugin_name = <span class="string">'block'</span></span><br><span class="line">    profiles = (<span class="string">'storage'</span>, <span class="string">'hardware'</span>)</span><br><span class="line">    verify_packages = (<span class="string">'util-linux'</span>,)</span><br><span class="line">    files = (<span class="string">'/sys/block'</span>,)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">setup</span><span class="params">(self)</span>:</span></span><br><span class="line">		<span class="comment"># 执行命令收集信息</span></span><br><span class="line">        self.add_cmd_output([</span><br><span class="line">            <span class="string">"lsblk"</span>,</span><br><span class="line">            <span class="string">"lsblk -t"</span>,</span><br><span class="line">            <span class="string">"lsblk -D"</span>,</span><br><span class="line">            <span class="string">"blkid -c /dev/null"</span>,</span><br><span class="line">            <span class="string">"blockdev --report"</span>,</span><br><span class="line">            <span class="string">"ls -lanR /dev"</span>,</span><br><span class="line">            <span class="string">"ls -lanR /sys/block"</span></span><br><span class="line">        ])</span><br><span class="line"></span><br><span class="line">        <span class="comment"># legacy location for non-/run distributions</span></span><br><span class="line">        <span class="comment"># 拷贝文件路径收集信息</span></span><br><span class="line">        self.add_copy_spec([</span><br><span class="line">            <span class="string">"/etc/blkid.tab"</span>,</span><br><span class="line">            <span class="string">"/run/blkid/blkid.tab"</span>,</span><br><span class="line">            <span class="string">"/proc/partitions"</span>,</span><br><span class="line">            <span class="string">"/proc/diskstats"</span>,</span><br><span class="line">            <span class="string">"/sys/block/*/queue/scheduler"</span></span><br><span class="line">        ])</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> os.path.isdir(<span class="string">"/sys/block"</span>):</span><br><span class="line">            <span class="keyword">for</span> disk <span class="keyword">in</span> os.listdir(<span class="string">"/sys/block"</span>):</span><br><span class="line">                <span class="keyword">if</span> disk.startswith(<span class="string">"ram"</span>):</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                disk_path = os.path.join(<span class="string">'/dev/'</span>, disk)</span><br><span class="line">                self.add_udev_info(disk_path)</span><br><span class="line">                self.add_udev_info(disk_path, attrs=<span class="keyword">True</span>)</span><br><span class="line">                self.add_cmd_output([</span><br><span class="line">                    <span class="string">"parted -s %s unit s print"</span> % (disk_path),</span><br><span class="line">                    <span class="string">"fdisk -l %s"</span> % disk_path</span><br><span class="line">                ])</span><br></pre></td></tr></table></figure>
-<p>可以看到，插件中除了实现了 setup，指定了一些命令及相应收集文件路径，并没有 collect()，<br>那么我们查看 block 插件 Block 的父类，Plugin：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">collect</span><span class="params">(self)</span>:</span></span><br><span class="line">    <span class="string">"""Collect the data for a plugin."""</span></span><br><span class="line">    start = time()</span><br><span class="line">    self._collect_copy_specs()</span><br><span class="line">    self._collect_cmd_output()</span><br><span class="line">    fields = (self.name(), time() - start)</span><br><span class="line">    self._log_debug(<span class="string">"collected plugin '%s' in %s"</span> % fields)</span><br></pre></td></tr></table></figure>
-<p>这里我们看到，执行 plug.collect() 的内容为：_collect_copy_specs()，_collect_cmd_output()<br>和 _collect_strings(), 那么我们接下来就能看到这三个函数具体执行的内容了：</p>
-<h4 id="收集文件"><a href="#收集文件" class="headerlink" title="收集文件"></a>收集文件</h4><p>通过层层跳转，最终看到各个打包方式的不同，收集文件的方式也不同，这里用 FileCache 举例，<br>可以看到最终调用的是标准库中的 <code>shutil</code> 实现文件拷贝。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_file</span><span class="params">(self, src, dest=None)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> dest:</span><br><span class="line">        dest = src</span><br><span class="line">    dest = self.dest_path(dest)</span><br><span class="line">    self._check_path(dest)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Handle adding a file from either a string respresenting</span></span><br><span class="line">    <span class="comment"># a path, or a File object open for reading.</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> getattr(src, <span class="string">"read"</span>, <span class="keyword">None</span>):</span><br><span class="line">        <span class="comment"># path case</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            shutil.copy(src, dest)</span><br></pre></td></tr></table></figure>
-<h4 id="命令执行"><a href="#命令执行" class="headerlink" title="命令执行"></a>命令执行</h4><p>同理，命令执行对应的最终是 subprocess.Popen 函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    p = Popen(expanded_args, shell=<span class="keyword">False</span>, stdout=PIPE,</span><br><span class="line">              stderr=STDOUT <span class="keyword">if</span> stderr <span class="keyword">else</span> PIPE,</span><br><span class="line">              bufsize=<span class="number">-1</span>, env=cmd_env, close_fds=<span class="keyword">True</span>,</span><br><span class="line">              preexec_fn=_child_prep_fn)</span><br><span class="line"></span><br><span class="line">    reader = AsyncReader(p.stdout, sizelimit, binary)</span><br><span class="line">    stdout = reader.get_contents()</span><br><span class="line">    p.poll()</span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过阅读代码，我们可以了解到，sosreport 插件编写还是很容易的，只需要将要执行的命令及要拷贝的文件填写好就基本上完成了。<br>同时，强烈推荐一下 sosreport 中内置插件，能够帮助我们更好的了解某些功能，毕竟只有在出现故障的时候才是暴露最多的时候，比如 networking.py 中关于网络配置命令、网卡配置文件、DNS/DHCP 配置等信息，可以极大的扩充对 Linux 系统的了解程度，应该很有帮助。</p>
-
-          
+          背景通常情况下，一个公司内部都会有监控报警平台去支撑业务主机的稳定运行，比如 Nagios，Zabbix 或者 Prometheus 等其他工具。这些工具，无论是 push 模式还是 pull 模式，都基于一个前提：主机是可访问的，或者说 agent/exporter 是可正常工作的。
+如果运维人员
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/07/06/Linux-主机异常信息收集/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -518,26 +491,15 @@
       
         
           
-            <p>在日常工作中，经常会用到定时任务配合脚本自动处理一些重复性工作，通常我会选择 crontab &amp; flock &amp; script 这样的组合进行配置，<br>最近了解了 systemd timer ，发现虽然配置上比 crontab 要麻烦一点（需要编写两个配置文件），<br>但是其他的优势是 crontab 不具备的。</p>
-<h2 id="systemd-timer-优势"><a href="#systemd-timer-优势" class="headerlink" title="systemd timer 优势"></a>systemd timer 优势</h2><ol>
-<li>systemd 会自动将定时任务事件记录在 systemd 日志中，可以通过 journalctl 轻松查找</li>
-<li>可以配置定时器之间的依赖关系</li>
-<li>定时器启动/关闭不需要再注释掉 crontab 中的某一行或移除 <code>/etc/cron.d/</code> 下的某个文件，而是直接 start/stop/enable/disable 控制</li>
-<li>自带锁机制，无需通过 flock 或脚本中添加锁文件的方式控制任务执行与否</li>
-</ol>
-<h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><p>例如，我想要定时备份数据从开发机到服务器上，通常重要的文件采用 inotify &amp; rsync 的方式同步，优先级较低的采用定时同步方式。   </p>
-<hr>
-<h3 id="crontab-配置方式"><a href="#crontab-配置方式" class="headerlink" title="crontab 配置方式"></a>crontab 配置方式</h3><h4 id="编写-crontab-配置文件"><a href="#编写-crontab-配置文件" class="headerlink" title="编写 crontab 配置文件"></a>编写 crontab 配置文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">crontab -e (或者在 /etc/cron.*/ 对应路径下编写配置文件)</span><br><span class="line">0 1 * * * flock /usr/<span class="built_in">local</span>/bin/system-backup.sh</span><br></pre></td></tr></table></figure>
-<h4 id="手动触发定时任务"><a href="#手动触发定时任务" class="headerlink" title="手动触发定时任务"></a>手动触发定时任务</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/<span class="built_in">local</span>/bin/system-backup.sh</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="systemd-timer-配置方式"><a href="#systemd-timer-配置方式" class="headerlink" title="systemd timer 配置方式"></a>systemd timer 配置方式</h3><h4 id="编写-timer-配置文件"><a href="#编写-timer-配置文件" class="headerlink" title="编写 timer 配置文件"></a>编写 timer 配置文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Perform system backup</span><br><span class="line"></span><br><span class="line">[Timer]</span><br><span class="line">OnCalendar=daily</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=timers.target</span><br></pre></td></tr></table></figure>
-<h4 id="编写-timer-对应-service-配置文件"><a href="#编写-timer-对应-service-配置文件" class="headerlink" title="编写 timer 对应 service 配置文件"></a>编写 timer 对应 service 配置文件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Perform system backup</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Type=simple</span><br><span class="line">Nice=19</span><br><span class="line">IOSchedulingClass=2</span><br><span class="line">IOSchedulingPriority=7</span><br><span class="line">ExecStart=/usr/loca/bin/system-backup.sh</span><br></pre></td></tr></table></figure>
-<h4 id="启动定时任务"><a href="#启动定时任务" class="headerlink" title="启动定时任务"></a>启动定时任务</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start system-backup.timer   </span><br><span class="line">systemctl <span class="built_in">enable</span> system-backup.timer</span><br></pre></td></tr></table></figure>
-<h4 id="检查定时任务是否启动"><a href="#检查定时任务是否启动" class="headerlink" title="检查定时任务是否启动"></a>检查定时任务是否启动</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl list-timers --all</span><br></pre></td></tr></table></figure>
-<h4 id="手动触发定时任务-1"><a href="#手动触发定时任务-1" class="headerlink" title="手动触发定时任务"></a>手动触发定时任务</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start system-backup.service</span><br></pre></td></tr></table></figure>
-<h4 id="查看日志"><a href="#查看日志" class="headerlink" title="查看日志"></a>查看日志</h4><p>可以通过 journalctl 查看定时任务日志，并且可以指定过滤条件。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">journalctl -u system-backup --since=<span class="string">"yesterday"</span></span><br></pre></td></tr></table></figure></p>
-
-          
+          在日常工作中，经常会用到定时任务配合脚本自动处理一些重复性工作，通常我会选择 crontab &amp; flock &amp; script 这样的组合进行配置，最近了解了 systemd timer ，发现虽然配置上比 crontab 要麻烦一点（需要编写两个配置文件），但是其他的优势是 cro
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/06/28/使用-systemd-timer-替换-crontab/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -665,13 +627,16 @@
       
         
           
-            <p>最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。<br>今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。</p>
-<p>源码代码很少，补充一些关键变量用于了解整体实现流程。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br></pre></td><td class="code"><pre><span class="line">import copy</span><br><span class="line">from pprint import pprint</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">class Dict(dict):</span><br><span class="line"></span><br><span class="line">    def __init__(__self, *args, **kwargs):</span><br><span class="line">        print &apos;init kwargs is &apos;, kwargs</span><br><span class="line">        object.__setattr__(__self, &apos;__parent&apos;, kwargs.pop(&apos;__parent&apos;, None))</span><br><span class="line">        object.__setattr__(__self, &apos;__key&apos;, kwargs.pop(&apos;__key&apos;, None))</span><br><span class="line">        for arg in args:</span><br><span class="line">            if not arg:</span><br><span class="line">                continue</span><br><span class="line">            elif isinstance(arg, dict):</span><br><span class="line">                for key, val in arg.items():</span><br><span class="line">                    __self[key] = __self._hook(val)</span><br><span class="line">            elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)):</span><br><span class="line">                __self[arg[0]] = __self._hook(arg[1])</span><br><span class="line">            else:</span><br><span class="line">                for key, val in iter(arg):</span><br><span class="line">                    __self[key] = __self._hook(val)</span><br><span class="line"></span><br><span class="line">        for key, val in kwargs.items():</span><br><span class="line">            __self[key] = __self._hook(val)</span><br><span class="line"></span><br><span class="line">    def __setattr__(self, name, value):</span><br><span class="line">        if hasattr(Dict, name):</span><br><span class="line">            raise AttributeError(&quot;&apos;Dict&apos; object attribute &quot;</span><br><span class="line">                                 &quot;&apos;&#123;0&#125;&apos; is read-only&quot;.format(name))</span><br><span class="line">        else:</span><br><span class="line">            self[name] = value</span><br><span class="line"></span><br><span class="line">    def __setitem__(self, name, value):</span><br><span class="line">        print &apos;setitem name is %s, value is %s &apos; % (name, value)</span><br><span class="line">        super(Dict, self).__setitem__(name, value)</span><br><span class="line">        try:</span><br><span class="line">            p = object.__getattribute__(self, &apos;__parent&apos;)</span><br><span class="line">            key = object.__getattribute__(self, &apos;__key&apos;)</span><br><span class="line">        except AttributeError:</span><br><span class="line">            p = None</span><br><span class="line">            key = None</span><br><span class="line">        if p is not None:</span><br><span class="line">            print &apos;parent is %s&apos; % p</span><br><span class="line">            print &apos;key is %s&apos; % key</span><br><span class="line">            p[key] = self</span><br><span class="line">            object.__delattr__(self, &apos;__parent&apos;)</span><br><span class="line">            object.__delattr__(self, &apos;__key&apos;)</span><br><span class="line"></span><br><span class="line">    def __add__(self, other):</span><br><span class="line">        if not self.keys():</span><br><span class="line">            return other</span><br><span class="line">        else:</span><br><span class="line">            self_type = type(self).__name__</span><br><span class="line">            other_type = type(other).__name__</span><br><span class="line">            msg = &quot;unsupported operand type(s) for +: &apos;&#123;&#125;&apos; and &apos;&#123;&#125;&apos;&quot;</span><br><span class="line">            raise TypeError(msg.format(self_type, other_type))</span><br><span class="line"></span><br><span class="line">    @classmethod</span><br><span class="line">    def _hook(cls, item):</span><br><span class="line">        if isinstance(item, dict):</span><br><span class="line">            return cls(item)</span><br><span class="line">        elif isinstance(item, (list, tuple)):</span><br><span class="line">            return type(item)(cls._hook(elem) for elem in item)</span><br><span class="line">        return item</span><br><span class="line"></span><br><span class="line">    def __getattr__(self, item):</span><br><span class="line">        return self.__getitem__(item)</span><br><span class="line"></span><br><span class="line">    def __getitem__(self, name):</span><br><span class="line">        print &apos;getitem name is &apos;, name</span><br><span class="line">        if name not in self:</span><br><span class="line">            print &quot;%s not in self&quot; % name</span><br><span class="line">            return Dict(__parent=self, __key=name)</span><br><span class="line">        return super(Dict, self).__getitem__(name)</span><br><span class="line"></span><br><span class="line">    def __delattr__(self, name):</span><br><span class="line">        del self[name]</span><br><span class="line"></span><br><span class="line">    def to_dict(self):</span><br><span class="line">        base = &#123;&#125;</span><br><span class="line">        for key, value in self.items():</span><br><span class="line">            if isinstance(value, type(self)):</span><br><span class="line">                base[key] = value.to_dict()</span><br><span class="line">            elif isinstance(value, (list, tuple)):</span><br><span class="line">                base[key] = type(value)(</span><br><span class="line">                    item.to_dict() if isinstance(item, type(self)) else</span><br><span class="line">                    item for item in value)</span><br><span class="line">            else:</span><br><span class="line">                base[key] = value</span><br><span class="line">        return base</span><br><span class="line"></span><br><span class="line">    def copy(self):</span><br><span class="line">        return copy.copy(self)</span><br><span class="line"></span><br><span class="line">    def deepcopy(self):</span><br><span class="line">        return copy.deepcopy(self)</span><br><span class="line"></span><br><span class="line">    def __deepcopy__(self, memo):</span><br><span class="line">        other = self.__class__()</span><br><span class="line">        memo[id(self)] = other</span><br><span class="line">        for key, value in self.items():</span><br><span class="line">            other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)</span><br><span class="line">        return other</span><br><span class="line"></span><br><span class="line">    def update(self, *args, **kwargs):</span><br><span class="line">        other = &#123;&#125;</span><br><span class="line">        if args:</span><br><span class="line">            if len(args) &gt; 1:</span><br><span class="line">                raise TypeError()</span><br><span class="line">            other.update(args[0])</span><br><span class="line">        other.update(kwargs)</span><br><span class="line">        for k, v in other.items():</span><br><span class="line">            if ((k not in self) or</span><br><span class="line">                (not isinstance(self[k], dict)) or</span><br><span class="line">                    (not isinstance(v, dict))):</span><br><span class="line">                self[k] = v</span><br><span class="line">            else:</span><br><span class="line">                self[k].update(v)</span><br><span class="line"></span><br><span class="line">    def __getnewargs__(self):</span><br><span class="line">        return tuple(self.items())</span><br><span class="line"></span><br><span class="line">    def __getstate__(self):</span><br><span class="line">        return self</span><br><span class="line"></span><br><span class="line">    def __setstate__(self, state):</span><br><span class="line">        self.update(state)</span><br><span class="line"></span><br><span class="line">    def setdefault(self, key, default=None):</span><br><span class="line">        if key in self:</span><br><span class="line">            return self[key]</span><br><span class="line">        else:</span><br><span class="line">            self[key] = default</span><br><span class="line">            return default</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">json_data = &#123;</span><br><span class="line">    &quot;a&quot;: &quot;a&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">test1 = Dict(json_data)</span><br><span class="line">test1.b.c = &quot;c&quot;</span><br><span class="line">test1.b.d.e = &quot;e&quot;</span><br><span class="line">pprint(test1.to_dict())</span><br></pre></td></tr></table></figure>
-<hr>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"> $ python a.py</span><br><span class="line">init kwargs is  &#123;&#125;</span><br><span class="line">setitem name is a, value is a </span><br><span class="line">getitem name is  b</span><br><span class="line">b not in self</span><br><span class="line">init kwargs is  &#123;&apos;__key&apos;: &apos;b&apos;, &apos;__parent&apos;: &#123;&apos;a&apos;: &apos;a&apos;&#125;&#125;</span><br><span class="line">setitem name is c, value is c </span><br><span class="line">parent is &#123;&apos;a&apos;: &apos;a&apos;&#125;</span><br><span class="line">key is b</span><br><span class="line">setitem name is b, value is &#123;&apos;c&apos;: &apos;c&apos;&#125; </span><br><span class="line">getitem name is  b</span><br><span class="line">getitem name is  d</span><br><span class="line">d not in self</span><br><span class="line">init kwargs is  &#123;&apos;__key&apos;: &apos;d&apos;, &apos;__parent&apos;: &#123;&apos;c&apos;: &apos;c&apos;&#125;&#125;</span><br><span class="line">setitem name is e, value is e </span><br><span class="line">parent is &#123;&apos;c&apos;: &apos;c&apos;&#125;</span><br><span class="line">key is d</span><br><span class="line">setitem name is d, value is &#123;&apos;e&apos;: &apos;e&apos;&#125; </span><br><span class="line">&#123;&apos;a&apos;: &apos;a&apos;, &apos;b&apos;: &#123;&apos;c&apos;: &apos;c&apos;, &apos;d&apos;: &#123;&apos;e&apos;: &apos;e&apos;&#125;&#125;&#125;</span><br></pre></td></tr></table></figure>
-
-          
+          最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。
+源码代码很少，补充一些关键变量用于了解整体实
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/06/17/将-Json-转换为-Python-Object2/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -799,11 +764,15 @@
       
         
           
-            <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">$ cat example.py </span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">JSONObject</span>:</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, dict)</span>:</span></span><br><span class="line">        vars(self).update(dict)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># this is valid json string</span></span><br><span class="line">data = <span class="string">'&#123;"channel":&#123;"lastBuild":"2013-11-12", "component":["test1", "test2"]&#125;&#125;'</span></span><br><span class="line"></span><br><span class="line">jsonobject = json.loads(data, object_hook=JSONObject)</span><br><span class="line"></span><br><span class="line">print(jsonobject.channel.component[<span class="number">0</span>])</span><br><span class="line">print(jsonobject.channel.lastBuild)</span><br></pre></td></tr></table></figure>
-<hr>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> python example.py</span></span><br><span class="line">test1</span><br><span class="line">2013-11-12</span><br></pre></td></tr></table></figure>
-
-          
+          1234567891011121314151617$ cat example.py import jsonclass JSONObject:    def __init__(self, dict):        vars(self).update(dict)# this is valid json
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/06/09/将-Json-转换为-Python-Object1/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -931,20 +900,18 @@
       
         
           
-            <p>工作中很多脚本都是用 Shell 和 Python 完成的，在上周环境中遇到了一个 Bug，导致部分功能失败，最后发现是 Shell 作用域的问题。</p>
-<h2 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"> $</span><span class="bash"> tree .</span></span><br><span class="line">.</span><br><span class="line">├── test.sh</span><br><span class="line">└── utils.sh</span><br><span class="line"></span><br><span class="line">0 directories, 2 files</span><br></pre></td></tr></table></figure>
-<hr>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat utils.sh</span></span><br><span class="line"><span class="meta">#</span><span class="bash">!/usr/bin/env bash</span></span><br><span class="line"></span><br><span class="line">function echo_test &#123;</span><br><span class="line">    for i in `seq 2 3`;do</span><br><span class="line">        echo "utils.sh" $i</span><br><span class="line">    done</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat test.sh</span></span><br><span class="line"><span class="meta">#</span><span class="bash">!<span class="comment">#/usr/bin/env bash</span></span></span><br><span class="line"></span><br><span class="line">. utils.sh</span><br><span class="line"></span><br><span class="line">for i in `seq 1 5`;do</span><br><span class="line">    echo "before utils.sh" $i</span><br><span class="line">    echo_test</span><br><span class="line">    echo "after utils.sh" $i</span><br><span class="line">    echo "#################"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
-<hr>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> bash test.sh</span></span><br><span class="line">before utils.sh 1</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 3</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 2</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 3</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 3</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 3</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 4</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 3</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 5</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 3</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br></pre></td></tr></table></figure>
-<hr>
-<h2 id="解决方式"><a href="#解决方式" class="headerlink" title="解决方式"></a>解决方式</h2><p>在 utils.sh 的函数中对所用变量加上 local 用来声明其作用域局限于函数内。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat utils.sh</span></span><br><span class="line"><span class="meta">#</span><span class="bash">!/usr/bin/env bash</span></span><br><span class="line"></span><br><span class="line">function echo_test &#123;</span><br><span class="line">    local i</span><br><span class="line">    for i in `seq 2 3`;do</span><br><span class="line">        echo "utils.sh" $i</span><br><span class="line">    done</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<hr>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> bash test.sh</span></span><br><span class="line">before utils.sh 1</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 1</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 2</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 2</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 3</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 3</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 4</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 4</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br><span class="line">before utils.sh 5</span><br><span class="line">utils.sh 2</span><br><span class="line">utils.sh 3</span><br><span class="line">after utils.sh 5</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">################</span></span></span><br></pre></td></tr></table></figure>
+          工作中很多脚本都是用 Shell 和 Python 完成的，在上周环境中遇到了一个 Bug，导致部分功能失败，最后发现是 Shell 作用域的问题。
+举例123456 $ tree ..├── test.sh└── utils.sh0 directories, 2 files
 
-          
+12345678$ 
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/06/08/奇怪的-Shell-作用域/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1072,36 +1039,21 @@
       
         
           
-            <p><strong>以A电脑的Hexo博客源文件迁移到B电脑为例：</strong></p>
-<h2 id="一、对A电脑的操作如下："><a href="#一、对A电脑的操作如下：" class="headerlink" title="一、对A电脑的操作如下："></a><strong>一、对A电脑的操作如下：</strong></h2><p>1.在github新建仓库名为blog</p>
-<p>2.上传A电脑本地Hexo博客的源文件夹至github的blog仓库，流程如下：</p>
-<p>（1）删除根目录和主题目录下的.git文件夹</p>
-<p>（2）修改根目录下的.gitignore文件为：</p>
-<blockquote>
-<p>/.deploy_git</p>
-<p>/public</p>
-</blockquote>
-<p>（3）依次执行以下指令，同步源文件至github</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash">  git init</span></span><br><span class="line"><span class="meta">$</span><span class="bash">  git add .</span></span><br><span class="line"><span class="meta">$</span><span class="bash">  git commit -m <span class="string">"xxxxx"</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash">  git remote add origin git@github.com:/blog_bak.git</span></span><br><span class="line"><span class="meta">$</span><span class="bash">  git push -u origin master</span></span><br></pre></td></tr></table></figure>
-<h2 id="二、对B电脑的操作如下："><a href="#二、对B电脑的操作如下：" class="headerlink" title="二、对B电脑的操作如下："></a>二、对B电脑的操作如下：</h2><p>1.安装Git，并配置github账号下的B电脑的.ssh<br>2.安装Node.js<br>3.使用npm指令安装Hexo</p>
-<blockquote>
-<p>$  npm install -g hexo-cli</p>
-<p>$ npm install hexo-asset-image –save 用于创建保存图片的文件夹</p>
-</blockquote>
-<p>4.使用Git bash随便选择一个文件夹,执行git clone</p>
-<blockquote>
-<p>$  git clone <a href="mailto:git@github.com" target="_blank" rel="noopener">git@github.com</a>:/blog.git</p>
-</blockquote>
-<h2 id="三、关于日常的改动流程（A，B两台电脑均使用的情况下）："><a href="#三、关于日常的改动流程（A，B两台电脑均使用的情况下）：" class="headerlink" title="三、关于日常的改动流程（A，B两台电脑均使用的情况下）："></a>三、关于日常的改动流程（A，B两台电脑均使用的情况下）：</h2><p>1.建议先检查更新git pull，将本地博客源文件更新至最新版本</p>
-<p><code>$  git pull</code></p>
-<p>2.然后可以新建或修改博客内容，进行预览等操作</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash">  hexo new <span class="string">"新的博客名称"</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash">  hexo server</span></span><br></pre></td></tr></table></figure>
-<p>3.新建博客后，先同步Hexo源文件，将修改后的源文件同步至github:</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash">  git add .</span></span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash">  git commit -m <span class="string">"更新描述"</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash">  git push origin master</span></span><br></pre></td></tr></table></figure>
-<p>4.然后再执行Hexo的生成文件和部署指令</p>
- <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash">  hexo generate</span></span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash">  hexo deploy</span></span><br></pre></td></tr></table></figure>
+          以A电脑的Hexo博客源文件迁移到B电脑为例：
+一、对A电脑的操作如下：1.在github新建仓库名为blog
+2.上传A电脑本地Hexo博客的源文件夹至github的blog仓库，流程如下：
+（1）删除根目录和主题目录下的.git文件夹
+（2）修改根目录下的.gitignore文件为：
 
-          
+/.de
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/05/29/Hexo-Git-管理/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1229,9 +1181,16 @@
       
         
           
-            <h3 id="Vim-插件"><a href="#Vim-插件" class="headerlink" title="Vim 插件"></a>Vim 插件</h3><p><a href="https://github.com/zdyxry/Dotfiles/tree/master/vim" target="_blank" rel="noopener">待填坑</a></p>
+          Vim 插件待填坑
 
           
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/05/29/Vim-配置/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1359,48 +1318,16 @@
       
         
           
-            <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>日常使用中，开发机通常只配置一块网卡，通常配置为 DHCP 自动获取 IP，这样就可以自动从 DHCP Server 获取 IP，网关，DNS Server 等配置，不用手动配置。</p>
-<p>最近在工作中存在一种场景，一台服务器，多块网卡，需要对不同的网卡配置各自网关，查找了一些资料，也踩了一些坑，记录一下过程。</p>
-<h3 id="配置过程"><a href="#配置过程" class="headerlink" title="配置过程"></a>配置过程</h3><ol>
-<li><p>官方配置<br>尝试在 <code>/etc/sysconfig/network-scripts/ifcfg-&lt;device&gt;</code> 中增加 GATEWAY 自动使之生效，实际上来看，多张网卡都配置 GATEWAY 字段会产生冲突，只能放弃通过网卡配置文件方式，尝试通过给网卡配置静态路由方式添加。<br>在 CentOS <a href="https://www.centos.org/docs/5/html/5.2/Deployment_Guide/s1-networkscripts-static-routes.html" target="_blank" rel="noopener">官方网站</a>查找配置静态路由方法，文档中提到通过编写网卡路由配置文件<code>/etc/sysconfig/network-scripts/route-_&lt;interface&gt;</code>  ，配置完成后重启网络可以自动生效。<br>官方这种方式我尝试了两种文件编写方式，一种为<code>192.168.64.0/20 via &lt;gateway&gt; dev &lt;device&gt;</code>，一种为 <code>ADDRESS0=xxxxx; NETMASK0=xxxxx; GATEWAY0=xxxxx</code>。两种配置方式均没有生效，只能放弃。</p>
-</li>
-<li><p>手动配置<br>可以通过 <code>route add</code> 命令临时给第二章网卡配置网关，通过 <code>route -n</code> 查看是可以生效。但是因为最终目标是让路由随着网络服务（公司内部未使用 NetworkManager）Network 启动而配置，因此在 /etc/rc.local 中假如 <code>route add</code> 类似命令无法走通。   </p>
-</li>
-<li><p>上述方法要么无法生效，要么存在无法持久化问题，均无法完成需求。 只能通过查看 网卡服务启动脚本来查找，查看 <code>/etc/init.d/network</code> （systemd 服务控制也是执行该文件），该文件是一个 Shell 脚本，找到路由配置相关：  </p>
-</li>
-</ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">  2     # Add non interface-specific static-routes.</span><br><span class="line">  1     if [ -f /etc/sysconfig/static-routes ]; then</span><br><span class="line">141        if [ -x /sbin/route ]; then</span><br><span class="line">  1            grep "^any" /etc/sysconfig/static-routes | while read ignore args ; do</span><br><span class="line">  2                    /sbin/route add -$args</span><br><span class="line">  3            done</span><br><span class="line">  4        else</span><br><span class="line">  5            net_log $"Legacy static-route support not available: /sbin/route not found"</span><br><span class="line">  6        fi</span><br><span class="line">  7     fi</span><br></pre></td></tr></table></figure>
-<p>可以看到，在网络服务 network 启动过程中，会判断 <code>/etc/sysconfig/static-routes</code> 文件是否存在，如果存在则会通过 <code>route</code> 命令对该文件中记录以 <code>any</code> 开头的路由进行添加，添加命令为 <code>/sbin/route add -$args</code>。<br>根据上述脚本，尝试编写 static-routes 文件：  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">any net 192.168.64.0/20 gw 192.168.64.1</span><br><span class="line">any net 10.0.10.0/24 gw 10.0.10.222</span><br></pre></td></tr></table></figure>
-<p>编写完成后，重启网络服务 <code>systemctl restart network</code> ，执行 <code>route -n</code> 查看是否生效：  </p>
-<pre><code class="bash">[root@scvm9 19:49:55 ~]<span class="variable">$route</span> -n
-Kernel IP routing table
-Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-0.0.0.0         192.168.64.1    0.0.0.0         UG    0      0        0 eth0
-10.0.10.0       0.0.0.0         255.255.255.0   U     0      0        0 eth2
-10.0.10.0       10.0.10.222     255.255.255.0   UG    0      0        0 eth2
-169.254.0.0     0.0.0.0         255.255.0.0     U     1002   0        0 eth0
-</code></pre>
-<p>看上去已经生效，因为实际环境中没有第二块网卡网关设备，临时指定一个不存在的 IP。<br>本以为已经搞定，结果在实际验证的时候，发现第二块网卡无法连接其他节点，哪怕其他节点与它二层联通；尝试将网关指定可以正常工作的 IP 节点，可以与其他节点联通，且 traceroute 也没有经过网关而是直接连接。</p>
-<h3 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h3><ol>
-<li>尝试将网关配置成可以正常工作的节点<ul>
-<li>各个节点可以正确联通</li>
-<li>traceroute 到其他节点未经过网关</li>
-</ul>
-</li>
-<li>尝试将网关配置成不存在节点<ul>
-<li>各个节点无法正确联通</li>
-</ul>
-</li>
-<li>尝试将网关掩码配置为网卡掩码的超集<ul>
-<li>各个节点可以正确联通</li>
-<li>traceroute 到其他节点未经过网关</li>
-</ul>
-</li>
-</ol>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>红帽系列发行版本配置静态路由可通过 /etc/sysconfig/static-routes 配置生效，但要注意在 static-routes 文件中的路由添加要添加网关节点对应的掩码而不是本地节点网卡掩码，网关掩码为本地网卡掩码的超集。</p>
-
-          
+          背景日常使用中，开发机通常只配置一块网卡，通常配置为 DHCP 自动获取 IP，这样就可以自动从 DHCP Server 获取 IP，网关，DNS Server 等配置，不用手动配置。
+最近在工作中存在一种场景，一台服务器，多块网卡，需要对不同的网卡配置各自网关，查找了一些资料，也踩了一些坑，记录一
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/05/29/CentOS-多网卡多网关配置/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1528,48 +1455,25 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
       
         
           
-            <h2 id="年终总结"><a href="#年终总结" class="headerlink" title="年终总结"></a>年终总结</h2><p>计划 32 本，实际读完 23 本。</p>
-<h2 id="已读"><a href="#已读" class="headerlink" title="已读"></a>已读</h2><ul>
-<li>《软技能*代码之外的生存指南》  </li>
-<li>《SRE：Google 运维解密》  </li>
-<li>《Vim 实用技巧》  </li>
-<li>《谈判力》  </li>
-<li>《黑客与画家》  </li>
-<li>《大话存储ⅰ》  </li>
-<li>《跟老齐学 Python》  </li>
-<li>《Python编程快速上手 让繁琐工作自动化》  </li>
-<li>《Think Python》  </li>
-<li>《奔跑吧 Ansible》  </li>
-<li>《Python核心编程（第二版）》  </li>
-<li>《Python 学习手册》  </li>
-<li>《嫌疑人X的献身》  </li>
-<li>《图解 HTTP》  </li>
-<li>《你是那人间的四月天》</li>
-<li>《失乐园》</li>
-<li>《活出生命的意义》</li>
-<li>《Python核心编程（第三版）》</li>
-<li>《深度工作》</li>
-<li>《深度实践 KVM》</li>
-<li>《Shell 脚本学习指南》</li>
-<li>《浪潮之巅》</li>
-<li>《人间失格》</li>
-</ul>
-<h2 id="在读"><a href="#在读" class="headerlink" title="在读"></a>在读</h2><ul>
-<li>《Flask Web开发：基于Python的Web应用开发实战》</li>
-<li>《哲学家们都干了些什么》</li>
-<li>《二手时间》</li>
-<li>《Python 算法教程》   </li>
-</ul>
-<h2 id="想读"><a href="#想读" class="headerlink" title="想读"></a>想读</h2><ul>
-<li>《Python Web开发实战》</li>
-<li>《problem solving with algorithms and data structure using python 中文版》</li>
-<li>《Fluent Python》</li>
-<li>《大话数据结构》</li>
-<li>《构建高性能WEB站点》</li>
-<li>《C和指针》</li>
-</ul>
-
-          
+          年终总结计划 32 本，实际读完 23 本。
+已读
+《软技能*代码之外的生存指南》  
+《SRE：Google 运维解密》  
+《Vim 实用技巧》  
+《谈判力》  
+《黑客与画家》  
+《大话存储ⅰ》  
+《跟老齐学 Python》  
+《Python编程快速上手 让繁琐工作自动化》  
+《Th
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/12/31/2017年读书记录/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1697,32 +1601,17 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
       
         
           
-            <p>I/O bursts with QEMU 2.6</p>
-<p>近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下.</p>
-<h3 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h3><p>首先,我将总结 QEMU 早期版本中已有的基本配置.<br>磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写进行单独限制. 下面列举了总共 6 个不同的参数.<br>I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 blocks_set_io_throttle 命令. 下面是两种情况下的参数列举:  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">-DRIVE               	BLOCK_SET_IO_THROTTLE</span><br><span class="line">throttling.iops-total	iops                 </span><br><span class="line">throttling.iops-read 	iops_rd              </span><br><span class="line">throttling.iops-write	iops_wr              </span><br><span class="line">throttling.bps-total 	bps                  </span><br><span class="line">throttling.bps-read  	bps_rd               </span><br><span class="line">throttling.bps-write 	bps_wr               </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以同时配置 IOPS 和 bps ,针对不同的场景我们可以选择是否配置读写限制,但是如果设置了 iops-total 参数, 那么不能配置 iops-read 和 iops-write. 这个规则同样适用于 bps-total 和 bps-read/write.<br>这些参数的默认值都是 0 , 表示没有任何限制.  <code>-drive file=hd0.qcow2,throttling.iops-total=100</code><br>最基本的用法,用户可以为 QEMU 添加一个驱动用于限制 100 IOPS : <code>-drive filehd0.qcow2,throttling.iops-total=100</code> </p>
-<p>我们可以使用 QMP 达到相同的配置. 在这种情况下,所有的参数都是必须配置的, 所有我们必须给无关参数配置为 0 ,参考配置:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123; &quot;execute&quot;: &quot;block_set_io_throttle&quot;,</span><br><span class="line">  &quot;arguments&quot;: &#123;</span><br><span class="line">     &quot;device&quot;: &quot;virtio0&quot;,</span><br><span class="line">     &quot;iops&quot;: 100,</span><br><span class="line">     &quot;iops_rd&quot;: 0,</span><br><span class="line">     &quot;iops_wr&quot;: 0,</span><br><span class="line">     &quot;bps&quot;: 0,</span><br><span class="line">     &quot;bps_rd&quot;: 0,</span><br><span class="line">     &quot;bps_wr&quot;: 0</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h3 id="突发I-O"><a href="#突发I-O" class="headerlink" title="突发I/O"></a>突发I/O</h3><p>在刚刚的基本配置中, 我们已经能够预防虚拟机抢占过多 I/O 资源, 偶尔允许用户超出参数限制范围可能会更有用. 通过这种方式, 我们能够拥有一个响应更快的虚拟机,用于应对更多的波峰情况,同时保持其他时间的平均限制.<br>从 QEMU 2.6 开始, 可以允许用户在可配置的时间区间内进行突发 I/O. 突发 I/O 可以超过基本配置, 有两个参数可以限制他们: 突发 I/O 长度和最大允许 I/O 数量. 这两个参数可以作用于上述基本配置中的每一个参数, 这里使用 iops-total  进行举例.<br>突发 I/O 限制使用 iops-total-max 进行配置, 最大长度(单位: s) 通过 iops-total-max-length 进行配置. 如果我们想要配置一个驱动器基本配置 IOPS 为 100, 同时允许在 60s 时间区间内发生突发 I/O IOPS 为2000. 可以使用如下配置:   </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">-drive file=hd0.qcow2,</span><br><span class="line">throttling.iops-total=100,</span><br><span class="line">throttling.iops-total-max=2000,</span><br><span class="line">throttling.iops-total-max-length=60</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>或者通过 QMP 进行配置:   </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;execute&quot;:&quot;block_set_io_throttle&quot;,</span><br><span class="line"> &quot;arguments&quot;:&#123;</span><br><span class="line">   &quot;device&quot;:&quot;virtio0&quot;,</span><br><span class="line">   &quot;iops&quot;:100,</span><br><span class="line">   &quot;iops_rd&quot;:0,</span><br><span class="line">   &quot;iops_wr&quot;:0,</span><br><span class="line">   &quot;bps&quot;:0</span><br><span class="line">   &quot;bps_rd&quot;:0</span><br><span class="line">   &quot;bps_wr&quot;:0</span><br><span class="line">   &quot;iops_max&quot;:2000,</span><br><span class="line">   &quot;iops_max_length&quot;:60,</span><br><span class="line"> &#125;&#125;</span><br></pre></td></tr></table></figure>
-<p>通过这种方式, 用户可以控制 hd0.qcow2 以 2000 IOPS 持续 1分钟运行, 然后被限制在基本配置的 100 IOPS 状态.<br>如果有有足够的时间没有使用 I/O, 用户可以再次进行突发 I/O.<br>iops-total-max 默认值为 0 ,表示不允许突发 I/O.  iops-total-max-length 只能在配置 iops-total-max的前提下进行配置, 默认值为 1秒.</p>
-<h3 id="控制-I-O-块大小"><a href="#控制-I-O-块大小" class="headerlink" title="控制 I/O 块大小"></a>控制 I/O 块大小</h3><p>当配置 IOPS 限制时, 所有的 I/O 操作都会被平等对待,不论 I/O 块大小. 这意味着用户可以利用这点来规避 I/O 限制,将一些小 I/O 替换为一个大块 I/O.<br>QEMU 提供了 throttling.iops-size  配置用来防止这种情况发生. 这个设置指定请求的每个 I/O 大小.过大的请求将会进行相应的统计.<br>比如, 如果 iops-size 设置为 4096, 那么 8KB 的 I/O 请求将会被记为 2 ,6KB 请求记为1.5. 该配置只作用于大于 iops-size 配置的 I/O 请求, 如果 I/O 请求小于该数值,则不论大小均记为 1.<br>iops-size默认值为 0 ,表示这个默认的 IOPS 限制不考虑每次 I/O 请求的块大小. </p>
-<h3 id="I-O-限制在磁盘组的应用"><a href="#I-O-限制在磁盘组的应用" class="headerlink" title="I/O 限制在磁盘组的应用"></a>I/O 限制在磁盘组的应用</h3><p>在刚刚的例子中我们已经看到如何去限制 I/O 在各个驱动器上, 但是 QEMU 同时允许将驱动器进行分组, 这样驱动器组具有相同的 I/O 限制.<br>这个功能在 QEMU 2.4 版本已经生效, 更多信息可以参考其他文档. </p>
-<h3 id="Leaky-Bucket-算法"><a href="#Leaky-Bucket-算法" class="headerlink" title="Leaky Bucket 算法"></a>Leaky Bucket 算法</h3><p>QEMU 中的 I/O 限制使用 Leaky Bucket 算法实现.</p>
-<p>该算法使用不断漏水的桶进行类比. 入水口比作在进行的 I/O, 当桶处于满状态时, 不再允许 I/O 下发.<br>想要查看 QEMU 中的 I/O 限制对应方式,可以参考如下数值:   </p>
-<pre><code>iops-total=100
-iops-total-max=2000
-iops-total-max-length=60
-
-- 水以 100 IOPS 的速度从桶中漏出
-- 水可以以 2000 IOPS 的速度添加到桶中
-- 桶的大小为 2000 * 60 = 120000
-- 如果 iops-total-max 没有配置, 那么桶的大小是 100
-</code></pre><p>最初, 桶状态为空, 可以向桶中添加水直到 2000 IOPS 速率满为止. 当桶满了后, 我们只能添加更可能多的水,因为桶在加水的同时也在漏水. 此时 I/O 速率下降至 100 IOPS. 如果我们添加的水少于泄露的水,那么我们可以再次进行突发 I/O.<br>注意, 在突发 I/O 期间,水从桶中泄露, 也需要超过 60s 的时间以 2000 IOPS 的速率填满. 当 60s 过后, 桶将泄露 100*60=6000 的水, 能够允许突发 I/O 再运行 3s.<br>而且, 由于算法的工作方式, 长时间的突发 I/O 也可以通过较低的 I/O 速率完成,比如 120s 内以 1000 IOPS 完成.</p>
-
-          
+          I/O bursts with QEMU 2.6
+近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下.
+基本配置首先,我将总结 QEMU 早期版本中已有的基本配置.磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps)
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/11/16/I-O-bursts-with-QEMU-2-6/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>

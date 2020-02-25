@@ -354,71 +354,15 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前写过一篇<a href="https://zdyxry.github.io/2019/06/15/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">《Kubernetes 实战-高可用集群部署》</a> 博客讲 K8S 高可用配置，当时采用的方式是使用 keepalived 配合 HAProxy 自建 LB 的方式，但是最近发现无论是 Kubespray 还是 Rancher RKE 都没有采用这种方式，而是在 worker node 上配置 nginx/haproxy 代理 APIServer 达到目的。今天来手动配置下这种方式，了解下注意事项。</p>
-<p>本文配置方式参考 Kubespray，主要是想加深自己对这方面的理解，如果只是单纯的想要搭建环境，那么直接使用 Kubespray 就好。</p>
-<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><table>
-<thead>
-<tr>
-<th>IP</th>
-<th>role</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>192.168.17.11</td>
-<td>ControlPlane1</td>
-</tr>
-<tr>
-<td>192.168.17.12</td>
-<td>ControlPlane2</td>
-</tr>
-<tr>
-<td>192.168.17.13</td>
-<td>ControlPlane3</td>
-</tr>
-<tr>
-<td>192.168.17.14</td>
-<td>WorkerNode1</td>
-</tr>
-</tbody>
-</table>
-<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="软件安装"><a href="#软件安装" class="headerlink" title="软件安装"></a>软件安装</h3><p>这部分准备工作与之前一样，没什么不同，因此不详细说明，需要安装 kubectl,kubeadm,kubelet 。</p>
-<h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><h3 id="ControlPlane1"><a href="#ControlPlane1" class="headerlink" title="ControlPlane1"></a>ControlPlane1</h3><p>kubeadm 配置文件如下：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@install1 17:55:09 tmp]$cat kubeadm.yaml</span><br><span class="line">---</span><br><span class="line">apiServer: &#123;&#125;</span><br><span class="line">apiVersion: kubeadm.k8s.io/v1beta1</span><br><span class="line">certificatesDir: ""</span><br><span class="line">clusterName: test</span><br><span class="line">controlPlaneEndpoint: "192.168.17.11:6443"</span><br><span class="line">controllerManager: &#123;&#125;</span><br><span class="line">dns:</span><br><span class="line">  type: ""</span><br><span class="line">etcd: &#123;&#125;</span><br><span class="line">imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers</span><br><span class="line">kind: ClusterConfiguration</span><br><span class="line">kubernetesVersion: ""</span><br><span class="line">networking:</span><br><span class="line">  dnsDomain: ""</span><br><span class="line">  podSubnet: 10.244.0.0/16</span><br><span class="line">  serviceSubnet: ""</span><br><span class="line">scheduler: &#123;&#125;</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line">apiVersion: kubeadm.k8s.io/v1beta1</span><br><span class="line">kind: InitConfiguration</span><br><span class="line">localAPIEndpoint:</span><br><span class="line">  advertiseAddress: "192.168.17.11"</span><br><span class="line">  bindPort: 6443</span><br><span class="line">nodeRegistration:</span><br><span class="line">  name: 'install1'</span><br></pre></td></tr></table></figure>
-<p>执行部署动作：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@install1 17:55:10 tmp]$kubeadm init --config kubeadm.yaml --upload-certs</span><br><span class="line">...</span><br><span class="line">You should now deploy a pod network to the cluster.</span><br><span class="line">Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:</span><br><span class="line">  https://kubernetes.io/docs/concepts/cluster-administration/addons/</span><br><span class="line"></span><br><span class="line">You can now join any number of the control-plane node running the following command on each as root:</span><br><span class="line"></span><br><span class="line">  kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 \</span><br><span class="line">    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef \</span><br><span class="line">    --control-plane --certificate-key 2368ee7ebe6697164c46812e358539638de1d7665b3111afde949bce73275029</span><br><span class="line"></span><br><span class="line">Please note that the certificate-key gives access to cluster sensitive data, keep it secret!</span><br><span class="line">As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use </span><br><span class="line">"kubeadm init phase upload-certs --upload-certs" to reload certs afterward.</span><br><span class="line"></span><br><span class="line">Then you can join any number of worker nodes by running the following on each as root:</span><br><span class="line"></span><br><span class="line">kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 \</span><br><span class="line">    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef</span><br></pre></td></tr></table></figure></p>
-<h3 id="ControlPlane2"><a href="#ControlPlane2" class="headerlink" title="ControlPlane2"></a>ControlPlane2</h3><p>kubeadm 配置文件如下：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@install2 17:40:52 tmp]$cat kubeadm.yaml</span><br><span class="line">apiVersion: kubeadm.k8s.io/v1beta2</span><br><span class="line">kind: JoinConfiguration</span><br><span class="line">discovery:</span><br><span class="line">  bootstrapToken:</span><br><span class="line">    apiServerEndpoint: 192.168.17.11:6443</span><br><span class="line">    token: 0xsbed.rcfk0ew0nlgrpjv0</span><br><span class="line">    unsafeSkipCAVerification: true</span><br><span class="line">  timeout: 5m0s</span><br><span class="line">  tlsBootstrapToken: 0xsbed.rcfk0ew0nlgrpjv0</span><br><span class="line">controlPlane:</span><br><span class="line">  localAPIEndpoint:</span><br><span class="line">    advertiseAddress: 192.168.17.12</span><br><span class="line">    bindPort: 6443</span><br><span class="line">  certificateKey: 2368ee7ebe6697164c46812e358539638de1d7665b3111afde949bce73275029</span><br><span class="line">nodeRegistration:</span><br><span class="line">  name: installer2</span><br></pre></td></tr></table></figure>
-<p>执行部署动作：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@install2 17:40:58 tmp]$kubeadm join --config kubeadm.yaml</span><br><span class="line">...</span><br><span class="line">This node has joined the cluster and a new control plane instance was created:</span><br><span class="line"></span><br><span class="line">* Certificate signing request was sent to apiserver and approval was received.</span><br><span class="line">* The Kubelet was informed of the new secure connection details.</span><br><span class="line">* Control plane (master) label and taint were applied to the new node.</span><br><span class="line">* The Kubernetes control plane instances scaled up.</span><br><span class="line">* A new etcd member was added to the local/stacked etcd cluster.</span><br><span class="line"></span><br><span class="line">To start administering your cluster from this node, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">        mkdir -p $HOME/.kube</span><br><span class="line">        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">        sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line"></span><br><span class="line">Run 'kubectl get nodes' to see this node join the cluster.</span><br></pre></td></tr></table></figure>
-<h3 id="ControlPlane3"><a href="#ControlPlane3" class="headerlink" title="ControlPlane3"></a>ControlPlane3</h3><p>kubeadm 配置文件如下：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@install3 17:47:24 tmp]$cat kubeadm.yaml</span><br><span class="line">apiVersion: kubeadm.k8s.io/v1beta2</span><br><span class="line">kind: JoinConfiguration</span><br><span class="line">discovery:</span><br><span class="line">  bootstrapToken:</span><br><span class="line">    apiServerEndpoint: 192.168.17.11:6443</span><br><span class="line">    token: 0xsbed.rcfk0ew0nlgrpjv0</span><br><span class="line">    unsafeSkipCAVerification: true</span><br><span class="line">  timeout: 5m0s</span><br><span class="line">  tlsBootstrapToken: 0xsbed.rcfk0ew0nlgrpjv0</span><br><span class="line">controlPlane:</span><br><span class="line">  localAPIEndpoint:</span><br><span class="line">    advertiseAddress: 192.168.17.13</span><br><span class="line">    bindPort: 6443</span><br><span class="line">  certificateKey: 2368ee7ebe6697164c46812e358539638de1d7665b3111afde949bce73275029</span><br><span class="line">nodeRegistration:</span><br><span class="line">  name: installer2</span><br></pre></td></tr></table></figure>
-<p>执行部署动作：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@install3 17:47:25 tmp]$kubeadm join --config kubeadm.yaml</span><br><span class="line">...</span><br><span class="line">This node has joined the cluster and a new control plane instance was created:</span><br><span class="line"></span><br><span class="line">* Certificate signing request was sent to apiserver and approval was received.</span><br><span class="line">* The Kubelet was informed of the new secure connection details.</span><br><span class="line">* Control plane (master) label and taint were applied to the new node.</span><br><span class="line">* The Kubernetes control plane instances scaled up.</span><br><span class="line">* A new etcd member was added to the local/stacked etcd cluster.</span><br><span class="line"></span><br><span class="line">To start administering your cluster from this node, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">        mkdir -p $HOME/.kube</span><br><span class="line">        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">        sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line"></span><br><span class="line">Run 'kubectl get nodes' to see this node join the cluster.</span><br></pre></td></tr></table></figure>
-<h3 id="node1"><a href="#node1" class="headerlink" title="node1"></a>node1</h3><p>3 个 ControlPlane 节点已经部署完成，我们可以通过 kubectl 命令获取对应的状态信息，因为没有部署 CNI，所以这里还是 NotReady 的：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@install1 18:00:50 tmp]$kubectl get node -o wide</span><br><span class="line">NAME         STATUS     ROLES    AGE     VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION                        CONTAINER-RUNTIME</span><br><span class="line">install1     NotReady   master   5m2s    v1.16.3   172.18.19.11    &lt;none&gt;        CentOS Linux 7 (Core)   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5</span><br><span class="line">installer2   NotReady   master   4m22s   v1.16.3   192.168.17.12   &lt;none&gt;        CentOS Linux 7 (Core)   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5</span><br><span class="line">installer3   NotReady   master   3m1s    v1.16.3   192.168.17.13   &lt;none&gt;        CentOS Linux 7 (Core)   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5</span><br><span class="line">[root@install1 18:00:53 tmp]$</span><br></pre></td></tr></table></figure>
-<p>现在要来部署 worker node，当我们有可用的 LB，时，我们无需关心 APIServer 的可用性，由 LB 来决定。那么现在没有可用的 LB，我们的 worker node 想要与 k8s 进行通信，就需要每个 worker node 自身启动一个 proxy，将自己的 kubelet 连接到自己本地，然后通过 proxy 到集群中已有的 APIServer 。</p>
-<h4 id="配置-Proxy"><a href="#配置-Proxy" class="headerlink" title="配置 Proxy"></a>配置 Proxy</h4><p>这里以 nginx 举例：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">[root@install4 18:05:03 ~]$mkdir /etc/nginx</span><br><span class="line">[root@install4 18:06:02 ~]$chmod 700 /etc/nginx</span><br><span class="line">[root@install4 18:14:23 ~]$cat /etc/nginx/nginx.conf</span><br><span class="line">error_log stderr notice;</span><br><span class="line"></span><br><span class="line">worker_processes 2;</span><br><span class="line">worker_rlimit_nofile 130048;</span><br><span class="line">worker_shutdown_timeout 10s;</span><br><span class="line"></span><br><span class="line">events &#123;</span><br><span class="line">  multi_accept on;</span><br><span class="line">  use epoll;</span><br><span class="line">  worker_connections 16384;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">stream &#123;</span><br><span class="line">  upstream kube_apiserver &#123;</span><br><span class="line">    least_conn;</span><br><span class="line">    server 192.168.17.11:6443;</span><br><span class="line">    server 192.168.17.12:6443;</span><br><span class="line">    server 192.168.17.13:6443;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  server &#123;</span><br><span class="line">    listen        127.0.0.1:6443;</span><br><span class="line">    proxy_pass    kube_apiserver;</span><br><span class="line">    proxy_timeout 10m;</span><br><span class="line">    proxy_connect_timeout 1s;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">  aio threads;</span><br><span class="line">  aio_write on;</span><br><span class="line">  tcp_nopush on;</span><br><span class="line">  tcp_nodelay on;</span><br><span class="line"></span><br><span class="line">  keepalive_timeout 5m;</span><br><span class="line">  keepalive_requests 100;</span><br><span class="line">  reset_timedout_connection on;</span><br><span class="line">  server_tokens off;</span><br><span class="line">  autoindex off;</span><br><span class="line"></span><br><span class="line">  server &#123;</span><br><span class="line">    listen 8081;</span><br><span class="line">    location /healthz &#123;</span><br><span class="line">      access_log off;</span><br><span class="line">      return 200;</span><br><span class="line">    &#125;</span><br><span class="line">    location /stub_status &#123;</span><br><span class="line">      stub_status on;</span><br><span class="line">      access_log off;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  &#125;</span><br><span class="line">[root@install4 18:18:29 manifests]$vim /etc/sysctl.conf </span><br><span class="line">[root@install4 18:18:54 manifests]$sysctl -p </span><br><span class="line">net.ipv4.ip_forward = 1</span><br><span class="line">net.ipv4.ip_local_reserved_ports = 30000-32767</span><br><span class="line">net.bridge.bridge-nf-call-iptables = 1</span><br><span class="line">net.bridge.bridge-nf-call-arptables = 1</span><br><span class="line">net.bridge.bridge-nf-call-ip6tables = 1</span><br></pre></td></tr></table></figure>
-<h4 id="加入-K8s-集群"><a href="#加入-K8s-集群" class="headerlink" title="加入 K8s 集群"></a>加入 K8s 集群</h4><p>执行部署动作：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@install4 18:31:10 tmp]$kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 \</span><br><span class="line">    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef </span><br><span class="line">[preflight] Running pre-flight checks</span><br><span class="line">        [WARNING IsDockerSystemdCheck]: detected "cgroupfs" as the Docker cgroup driver. The recommended driver is "systemd". Please follow the guide at https://kubernetes.io/docs/setup</span><br><span class="line">/cri/</span><br><span class="line">        [WARNING SystemVerification]: this Docker version is not on the list of validated versions: 19.03.5. Latest validated version: 18.09</span><br><span class="line">        [WARNING Hostname]: hostname "install4" could not be reached</span><br><span class="line">        [WARNING Hostname]: hostname "install4": lookup install4 on 192.168.31.215:53: no such host</span><br><span class="line">[preflight] Reading configuration from the cluster...</span><br><span class="line">[preflight] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -oyaml'</span><br><span class="line">[kubelet-start] Downloading configuration for the kubelet from the "kubelet-config-1.16" ConfigMap in the kube-system namespace</span><br><span class="line">[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"</span><br><span class="line">[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"</span><br><span class="line">[kubelet-start] Activating the kubelet service</span><br><span class="line">[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap...</span><br><span class="line"></span><br><span class="line">This node has joined the cluster:</span><br><span class="line">* Certificate signing request was sent to apiserver and a response was received.</span><br><span class="line">* The Kubelet was informed of the new secure connection details.</span><br><span class="line"></span><br><span class="line">Run 'kubectl get nodes' on the control-plane to see this node join the cluster.</span><br></pre></td></tr></table></figure>
-<p>此时在 K8s 集群中存在 4个节点，其中 3 个是 ControlPlane 节点，1 个是 worker 节点，但是此时 worker 节点是连接的 192.168.17.11:6443 APIServer，如果 这个 APIServer 故障了，那么的 worker 节点就无法正常与集群通讯了，需要进行以下操作：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">[root@install4 18:37:51 kubernetes]$systemctl stop kubelet docker</span><br><span class="line">[root@install4 18:38:09 manifests]$pwd</span><br><span class="line">/etc/kubernetes/manifests</span><br><span class="line">[root@install4 18:38:12 manifests]$cat nginx-proxy.yml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: nginx-proxy</span><br><span class="line">  namespace: kube-system</span><br><span class="line">  labels:</span><br><span class="line">    addonmanager.kubernetes.io/mode: Reconcile</span><br><span class="line">    k8s-app: kube-nginx</span><br><span class="line">  annotations:</span><br><span class="line">spec:</span><br><span class="line">  hostNetwork: true</span><br><span class="line">  dnsPolicy: ClusterFirstWithHostNet</span><br><span class="line">  nodeSelector:</span><br><span class="line">    beta.kubernetes.io/os: linux</span><br><span class="line">  priorityClassName: system-node-critical</span><br><span class="line">  containers:</span><br><span class="line">  - name: nginx-proxy</span><br><span class="line">    image: docker.io/library/nginx:1.17</span><br><span class="line">    imagePullPolicy: IfNotPresent</span><br><span class="line">    resources:</span><br><span class="line">      requests:</span><br><span class="line">        cpu: 25m</span><br><span class="line">        memory: 32M</span><br><span class="line">    securityContext:</span><br><span class="line">      privileged: true</span><br><span class="line">    livenessProbe:</span><br><span class="line">      httpGet:</span><br><span class="line">        path: /healthz</span><br><span class="line">        port: 8081</span><br><span class="line">    readinessProbe:</span><br><span class="line">      httpGet:</span><br><span class="line">        path: /healthz</span><br><span class="line">        port: 8081</span><br><span class="line">    volumeMounts:</span><br><span class="line">    - mountPath: /etc/nginx</span><br><span class="line">      name: etc-nginx</span><br><span class="line">      readOnly: true</span><br><span class="line">  volumes:</span><br><span class="line">  - name: etc-nginx</span><br><span class="line">    hostPath:</span><br><span class="line">      path: /etc/nginx</span><br></pre></td></tr></table></figure>
-<p>修改 kubelet 配置文件，将 Server 字段替换为 <code>127.0.0.1:6443</code> ，启动 kubelet 和 docker 即可。</p>
-<h2 id="配置修改"><a href="#配置修改" class="headerlink" title="配置修改"></a>配置修改</h2><p>最开始我以为到这里就结束了，结果在自己测试的过程中，发现了一点问题，使用 kubeadm 部署集群，在添加 ControlPlane 的时候，会将 kubelet 所连接的 APIServer 配置为 controlPlaneEndpoint 地址，这在没有 LB 的场景下是致命的，单点故障。</p>
-<p>所以我们需要依次的修改所有节点的 kubelet 配置，修改内容如下：</p>
-<h3 id="ControlPlane"><a href="#ControlPlane" class="headerlink" title="ControlPlane"></a>ControlPlane</h3><p>因为所有的 ControlPlane 节点都会自己运行 APIServer，那么 kubelet 连接自身即可。</p>
-<h3 id="Worker"><a href="#Worker" class="headerlink" title="Worker"></a>Worker</h3><p>Worker 节点因为没有 APIServer，所以我们刚刚通过配置本地的 Proxy 来达到相同的目的，这里无需再次修改。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里我们的集群已经配置完成了，无论是 ControlPlane 节点故障，还是 Worker 节点故障，都不是单点的，可以起到高可用的作用。这种方式其实是没有 LB 的一种妥协，这里引用 Kubespray 关于 HA 模式的文档：</p>
-<blockquote>
-<p>K8s components require a loadbalancer to access the apiservers via a reverse proxy. Kubespray includes support for an nginx-based proxy that resides on each non-master Kubernetes node. This is referred to as localhost loadbalancing. It is less efficient than a dedicated load balancer because it creates extra health checks on the Kubernetes apiserver, but is more practical for scenarios where an external LB or virtual IP management is inconvenient. </p>
-</blockquote>
-<p>如果有 LB 肯定还是优先 LB 的，但是在没有 LB 的情况下我们如何选择，就看我们自己的场景了，如果真的是自建 Keepalived &amp; HAProxy ，那么之后的集群管理是一个很麻烦的事情，而且 Keepalived 在使用上没有那么的友好，尤其是网络环境复杂之后（我之前碰到过一次 ovs &amp; keepalived 不工作的情况）。</p>
-<p>目前社区中关于 K8S 生命周期管理的工具越来越多，但是如果仔细看看，其实大家的做法都是大同小异。还是要自己了解一下具体的问题点在哪里，如何解决才是硬道理。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://github.com/kubernetes-sigs/kubespray" target="_blank" rel="noopener">https://github.com/kubernetes-sigs/kubespray</a></li>
-</ul>
-
-          
+          背景之前写过一篇《Kubernetes 实战-高可用集群部署》 博客讲 K8S 高可用配置，当时采用的方式是使用 keepalived 配合 HAProxy 自建 LB 的方式，但是最近发现无论是 Kubespray 还是 Rancher RKE 都没有采用这种方式，而是在 worker node 
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/12/19/Kubernetes-实战-高可用集群部署（无LB）/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -546,109 +490,18 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。</p>
-<h2 id="邻居发现协议（NDP）"><a href="#邻居发现协议（NDP）" class="headerlink" title="邻居发现协议（NDP）"></a>邻居发现协议（NDP）</h2><p>引用维基百科的介绍：</p>
-<blockquote>
-<p>The Neighbor Discovery Protocol (NDP, ND)[1] is a protocol in the Internet protocol suite used with Internet Protocol Version 6 (IPv6). It operates at the link layer of the Internet model (RFC 1122), and is responsible for gathering various information required for internet communication, including the configuration of local connections and the domain name servers and gateways used to communicate with more distant systems.[2]</p>
-</blockquote>
-<p>这里有两点需要关注：</p>
-<ol>
-<li>与 IPv6 一起使用</li>
-<li>工作在数据链路层（link layer）</li>
-</ol>
-<h3 id="IPv6-地址"><a href="#IPv6-地址" class="headerlink" title="IPv6 地址"></a>IPv6 地址</h3><p>在 IPv6 中，无论我们的网络环境是否存在 DHCP Server，我们只要配置网卡启动 IPv6 选项，将网卡置为 active 状态，就能获取到对应的 IPv6 地址，这是因为 IPv6中支持 IP 自动配置，大概流程如下：</p>
-<ol>
-<li>根据 MAC 地址产生链路本地地址（link-local address）</li>
-<li>发出邻居发现请求，进行重复地址检测，如果重复，则停止配置</li>
-<li>链路本地地址生效，发送路由请求报文（RS）</li>
-</ol>
-<h4 id="单播地址"><a href="#单播地址" class="headerlink" title="单播地址"></a>单播地址</h4><p>单播地址中又分为三类：</p>
-<ol>
-<li>可聚合的全局单播地址，相当于公网 IPv4 地址</li>
-<li>链路本地地址，相当于IPv4里面的169.254.0.0/16地址，一般自动生成</li>
-<li>独特本地单播地址</li>
-</ol>
-<h4 id="组播地址"><a href="#组播地址" class="headerlink" title="组播地址"></a>组播地址</h4><table>
-<thead>
-<tr>
-<th>IPv6 常用组播地址</th>
-<th>IPv4 常用组播地址</th>
-<th>组播组</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>节点-本地范围</td>
-<td>节点-本地范围</td>
-<td>节点-本地范围</td>
-</tr>
-<tr>
-<td>FF01::1</td>
-<td>224.0.0.1</td>
-<td>所有-节点地址</td>
-</tr>
-<tr>
-<td>FF01::2</td>
-<td>224.0.0.2</td>
-<td>所有-路由器地址</td>
-</tr>
-<tr>
-<td>链路-本地范围</td>
-<td>链路-本地范围</td>
-<td>链路-本地范围</td>
-</tr>
-<tr>
-<td>FF02::1</td>
-<td>224.0.0.1</td>
-<td>所有-节点地址</td>
-</tr>
-<tr>
-<td>FF02::2</td>
-<td>224.0.0.2</td>
-<td>所有-路由器地址</td>
-</tr>
-<tr>
-<td>FF02::5</td>
-<td>224.0.0.5</td>
-<td>OSPF IGP</td>
-</tr>
-<tr>
-<td>FF02::6</td>
-<td>224.0.0.6</td>
-<td>OSPF IGP DR</td>
-</tr>
-</tbody>
-</table>
-<h4 id="任播地址"><a href="#任播地址" class="headerlink" title="任播地址"></a>任播地址</h4><p>在 IPv6 中，没有广播的概念，而是使用任播代替。在任播中，网络地址与网络节点之前存在一对多的关系：每一个地址对应一群接收节点，但是在任何给定时间，只有其中之一可以接收到传送端发来的信息。</p>
-<p>邻居发现协议 NDP 是 IPv6 协议体系中一个重要的基础协议，替代了IPv4的 ARP 和 ICMP 路由器发现，定义了使用 ICMPv6 报文实现地址解析、跟踪邻居状态、重复地址检测、路由器发现以及重定向等功能。</p>
-<h2 id="IPv6-地址发现"><a href="#IPv6-地址发现" class="headerlink" title="IPv6 地址发现"></a>IPv6 地址发现</h2><p>因为我本人也没有完整阅读过相应 RFC 文档，在这里也不详细描述每个报文的具体格式及每个字段是什么意思了，直接看看怎么实现。</p>
-<h3 id="ping6-amp-组播"><a href="#ping6-amp-组播" class="headerlink" title="ping6 &amp; 组播"></a>ping6 &amp; 组播</h3><p>如果我们知道了一个主机的 IPv6 地址，我们可以通过 <code>ping6</code> 来检测是否联通：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ping6 fe80::5054:ff:fe80:95d9%eth0</span></span><br><span class="line">PING fe80::5054:ff:fe80:95d9%eth0(fe80::5054:ff:fe80:95d9%eth0) 56 data bytes</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=2 ttl=64 time=0.055 ms</span><br><span class="line">^C</span><br><span class="line">--- fe80::5054:ff:fe80:95d9%eth0 ping statistics ---</span><br><span class="line">2 packets transmitted, 2 received, 0% packet loss, time 999ms</span><br><span class="line">rtt min/avg/max/mdev = 0.045/0.050/0.055/0.005 ms</span><br></pre></td></tr></table></figure>
-<p>那么有了这个 <code>ping6</code> 命令和上面提到的组播地址，我们就可以通过 <code>ping6</code> 直接 ping 组播地址就能知道那些地址可以联通了，那么应该选择哪个？应该选择 <code>FF01::1</code> ，因为我们想要实现的是获取 IPv6 地址：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ping6 -c1 -I eth0 <span class="string">'ff02::1%eth0'</span></span></span><br><span class="line">PING ff02::1%eth0(ff02::1%eth0) from fe80::5054:ff:fe80:95d9%eth0 eth0: 56 data bytes</span><br><span class="line">64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms</span><br><span class="line"></span><br><span class="line">--- ff02::1%eth0 ping statistics ---</span><br><span class="line">1 packets transmitted, 1 received, 0% packet loss, time 0ms</span><br><span class="line">rtt min/avg/max/mdev = 0.045/0.045/0.045/0.000 ms</span><br></pre></td></tr></table></figure>
-<p>因为我的实验环境里节点太多，这里使用 <code>-c</code> 参数限制发送 ECHO_REQUEST 包的数量为 1。</p>
-<p>在发送组播之后，如果能够联通，那么系统会记录对应的 ARP 信息，我们可以通过 <code>ip</code> 命令直接获取：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ip -6 neighbor show dev eth0 | head -n 5</span></span><br><span class="line">fe80::8c6e:a0ff:fe19:f146 lladdr 8e:6e:a0:19:f1:46 DELAY</span><br><span class="line">fe80::8010:f1ff:fe02:af40 lladdr 82:10:f1:02:af:40 DELAY</span><br><span class="line">fe80::baca:3aff:feec:fdac lladdr b8:ca:3a:ec:fd:ac DELAY</span><br><span class="line">fe80::f11c:e35a:912:dbc9 lladdr 52:54:00:0a:b3:fc DELAY</span><br><span class="line">fe80::570d:aa51:dc3b:1f02 lladdr 00:50:56:9b:f6:6c DELAY</span><br></pre></td></tr></table></figure>
-<p>这样就拿到了自己节点在二层联通的所有 IPv6 地址了。</p>
-<h4 id="Nmap"><a href="#Nmap" class="headerlink" title="Nmap"></a>Nmap</h4><p>既然已经使用了 <code>ping6</code>，那么可以使用一些更高级的工具，比如 Nmap，Nmap可以检测目标主机是否在线、端口开放情况、侦测运行的服务类型及版本信息、侦测操作系统与设备类型等信息。 它通常用来评估网络系统安全。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> nmap -6 <span class="string">"--script=targets-ipv6-multicast-*"</span> | head -n 10</span></span><br><span class="line"></span><br><span class="line">Starting Nmap 6.40 ( http://nmap.org ) at 2019-12-12 07:22 CST</span><br><span class="line">Pre-scan script results:</span><br><span class="line">| targets-ipv6-multicast-echo:</span><br><span class="line">|   IP: fe80::e4a5:4fff:fea7:79af  MAC: e6:a5:4f:a7:79:af  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe85:647e   MAC: 00:50:56:85:64:7e  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9e:2473   MAC: 00:50:56:9e:24:73  IFACE: eth0</span><br><span class="line">|   IP: fe80::ae53:a418:ca0:83e8   MAC: 00:50:56:9f:43:ca  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9e:bcb6   MAC: 00:50:56:9e:bc:b6  IFACE: eth0</span><br><span class="line">|   IP: fe80::250:56ff:fe9f:6153   MAC: 00:50:56:9f:61:53  IFACE: eth0</span><br><span class="line">WARNING: No targets were specified, so 0 hosts scanned.</span><br></pre></td></tr></table></figure>
-<h2 id="更进一步"><a href="#更进一步" class="headerlink" title="更进一步"></a>更进一步</h2><p>往往我们的需求不只是获取到 IP 这么简单，我们现在更进一步，我们要求扫描的结果中与我们预期的版本相同，那么此时就需要与对应节点进行通信了。</p>
-<h3 id="HTTP"><a href="#HTTP" class="headerlink" title="HTTP"></a>HTTP</h3><p>一个比较简单的实现，就是在目标节点开机的时候自动启动一个 API server，提供一个 Entrypoint，比如：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> jsonify</span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route('/api/v1/version')</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">version</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> jsonify(&#123;<span class="string">"version"</span>:<span class="string">"v1.0.0"</span>&#125;)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    app.run(host=<span class="string">'::'</span>, port=<span class="number">5000</span>, debug=<span class="keyword">True</span>) <span class="comment"># 要兼容 IPv6</span></span><br></pre></td></tr></table></figure>
-<p>然后我们可以在得到 IPv6 地址后，通过 curl 或者 Python urllib2 来发送对应的请求：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:/tmp/nnn</span><br><span class="line"><span class="meta"> $</span><span class="bash"> curl -g -6 <span class="string">'http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version'</span></span></span><br><span class="line">&#123;</span><br><span class="line">  "version": "v1.0.0"</span><br><span class="line">&#125;#</span><br></pre></td></tr></table></figure>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> urllib2</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>res = urllib2.urlopen(<span class="string">"http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>res.read()</span><br><span class="line"><span class="string">'&#123;\n  "version": "v1.0.0"\n&#125;'</span></span><br></pre></td></tr></table></figure>
-<p>这样虽然可以达到我们想要的效果，但是效率太低了，要先后进行2次操作，一次是扫描对应的 IPv6 地址，一次是得到地址后进行 HTTP 请求。</p>
-<h3 id="Socket"><a href="#Socket" class="headerlink" title="Socket"></a>Socket</h3><p>我们可以通过 socket 通信来达到类似的效果，与 HTTP 不同的是，我们可以直接使用 socket 发送组播，来进行消息传递，这样上面的两步就可以通过一步来解决了，这里给出对应的 server 和 client 代码示例：</p>
-<h4 id="Server"><a href="#Server" class="headerlink" title="Server"></a>Server</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> select</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">server</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, <span class="number">1</span>)</span><br><span class="line">        s.bind((<span class="string">''</span>, <span class="number">30000</span>))</span><br><span class="line">        s.setblocking(<span class="keyword">False</span>)</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">            rlist, _, _ = select.select([s], [], [s], <span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> rlist:</span><br><span class="line">                string, address = s.recvfrom(<span class="number">20000</span>)</span><br><span class="line">                <span class="keyword">print</span> string, address</span><br><span class="line">                <span class="keyword">try</span>:</span><br><span class="line">                    data = json.loads(string)</span><br><span class="line">                <span class="keyword">except</span> Exception:</span><br><span class="line">                    <span class="keyword">pass</span></span><br><span class="line">                owner = data.get(<span class="string">"owner"</span>)</span><br><span class="line">                <span class="keyword">if</span> owner == <span class="string">"yiran"</span>:</span><br><span class="line">                    info = &#123;<span class="string">"version"</span>: <span class="string">"v1.0"</span>,</span><br><span class="line">                            <span class="string">"owner"</span>: <span class="string">"yiran"</span>,</span><br><span class="line">                            <span class="string">"nic"</span>: address[<span class="number">0</span>].split(<span class="string">"%"</span>, <span class="number">1</span>)[<span class="number">1</span>]&#125;</span><br><span class="line">                    s.sendto(json.dumps(info), address)</span><br><span class="line">    <span class="keyword">except</span> Exception:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    server()</span><br></pre></td></tr></table></figure>
-<h4 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> select</span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pprint <span class="keyword">import</span> pprint</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">client</span><span class="params">()</span>:</span></span><br><span class="line">    s= socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">    s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, <span class="number">5000000</span>)</span><br><span class="line">    nics = socket.getaddrinfo(<span class="string">"%s%%%s"</span> % (<span class="string">'ff02::1'</span>, <span class="string">'eth0'</span>), <span class="number">30000</span>, socket.AF_INET6, socket.SOCK_DGRAM)</span><br><span class="line">    data = &#123;<span class="string">"owner"</span>: <span class="string">"yiran"</span>&#125;</span><br><span class="line">    string = json.dumps(data)</span><br><span class="line">    results = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>):</span><br><span class="line">        <span class="keyword">for</span> nic <span class="keyword">in</span> nics:</span><br><span class="line">            _, _, _, _, address = nic</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                s.sendto(string, address)</span><br><span class="line">            <span class="keyword">except</span> Exception:</span><br><span class="line">                <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">        rlist, _, _ = select.select([s], [], [s], <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> rlist:</span><br><span class="line">            json_string, address = s.recvfrom(<span class="number">10000</span>)</span><br><span class="line">            results[address] = json_string</span><br><span class="line"></span><br><span class="line">    s.close()</span><br><span class="line">    ips = []</span><br><span class="line">    <span class="keyword">for</span> address, json_test <span class="keyword">in</span> results.iteritems():</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            data = json.loads(json_test)</span><br><span class="line">            <span class="keyword">if</span> data.get(<span class="string">"version"</span>, <span class="keyword">None</span>) == <span class="string">"v1.0"</span>:</span><br><span class="line">                info = &#123;&#125;</span><br><span class="line">                info[<span class="string">'ipv6_address'</span>] = address[<span class="number">0</span>]</span><br><span class="line">                info[<span class="string">'test'</span>] = data</span><br><span class="line"></span><br><span class="line">                ips.append(info)</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ips</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    pprint(client())</span><br></pre></td></tr></table></figure>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="http://www.ruijie.com.cn/fa/xw-hlw/83116/" target="_blank" rel="noopener">http://www.ruijie.com.cn/fa/xw-hlw/83116/</a></li>
-<li><a href="https://tools.ietf.org/html/rfc4861" target="_blank" rel="noopener">https://tools.ietf.org/html/rfc4861</a></li>
-<li><a href="https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses" target="_blank" rel="noopener">https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses</a></li>
-</ul>
+          背景在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。
+邻居发现协议（NDP）引用维基百科的介绍：
 
-          
+The Neighbor Discovery Protocol (NDP, ND)[1] is a pro
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/12/11/邻居发现协议（NDP）简易实现/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -776,73 +629,33 @@
       
         
           
-            <h2 id="年终总结"><a href="#年终总结" class="headerlink" title="年终总结"></a>年终总结</h2><ul>
-<li><a href="https://zdyxry.github.io/2016/12/31/2016%E5%B9%B4%E8%AF%BB%E4%B9%A6%E8%AE%B0%E5%BD%95/">2016</a><ul>
-<li>计划读 5 本，实际读 13 本。</li>
-</ul>
-</li>
-<li><a href="https://zdyxry.github.io/2017/12/31/2017%E5%B9%B4%E8%AF%BB%E4%B9%A6%E8%AE%B0%E5%BD%95/">2017</a><ul>
-<li>计划 32 本，实际读完 23 本。</li>
-</ul>
-</li>
-<li><a href="https://zdyxry.github.io/2018/12/30/2018%E5%B9%B4%E8%AF%BB%E4%B9%A6%E8%AE%B0%E5%BD%95/">2018</a><ul>
-<li>计划 30 本，实际25本。</li>
-</ul>
-</li>
-<li>2019<ul>
-<li>计划 30 本，实际 43 本。</li>
-</ul>
-</li>
-</ul>
-<p>今年是第 4 年写读书记录了，感觉手上这本 TLPI 年底之前是看不完了，就总结一下。与之前不同的是今年把周末的时间利用的比较好，通常周末两天会拿出一整天的时间来看书，保证自己的精力集中，效率会高很多。</p>
-<p>因为博客集成了豆瓣，所以就不列出 <code>在读</code> 和 <code>想读</code> 列表了，想的太多，耽误事。希望接下来读一些经典的技术书，把自己的基础知识补齐。</p>
-<h2 id="已读"><a href="#已读" class="headerlink" title="已读"></a>已读</h2><ol>
-<li>《用Python写网络爬虫》  </li>
-<li>《Wireshark网络分析就这么简单》  </li>
-<li>《如何有效阅读一本书 : 超实用笔记读书法》</li>
-<li>《冷场》  </li>
-<li>《Go程序设计语言》  </li>
-<li>《爱你就像爱生命》  </li>
-<li>《Go by Example》</li>
-<li>《显微镜下的大明》</li>
-<li>《流浪地球》</li>
-<li>《情感勒索》</li>
-<li>《Go语言实战》</li>
-<li>《活着》</li>
-<li>《悉达多》</li>
-<li>《Go in Practice》</li>
-<li>《奈飞文化手册》  </li>
-<li>《刻意练习》  </li>
-<li>《软件测试的艺术》  </li>
-<li>《Redis实战》  </li>
-<li>《雪崩》  </li>
-<li>《TCP/IP详解 卷1：协议》</li>
-<li>《Structure and Interpretation of Computer Programs - 2nd Edition (MIT)》</li>
-<li>《编码的奥秘》</li>
-<li>《Kubernetes in Action》</li>
-<li>《计算机组成：结构化方法》</li>
-<li>《人月神话》</li>
-<li>《自己动手写Docker》</li>
-<li>《好文案一句话就够了》</li>
-<li>《跟老男孩学Linux运维：Web集群实战》</li>
-<li>《计算机组成与设计》</li>
-<li>《简约至上》</li>
-<li>《Go Web编程》</li>
-<li>《大话数据结构》</li>
-<li>《Python Web开发实战》</li>
-<li>《Programming Kubernetes》</li>
-<li>《Istio入门与实战》</li>
-<li>《刷新》</li>
-<li>《奇特的一生》</li>
-<li>《图解密码技术（第3版）》</li>
-<li>《细节》</li>
-<li>《生活大爆炸里的科学》</li>
-<li>《操作系统导论》</li>
-<li>《RESTful Web APIs中文版》</li>
-<li>《正则表达式必知必会》</li>
-</ol>
+          年终总结
+2016
+计划读 5 本，实际读 13 本。
 
-          
+
+2017
+计划 32 本，实际读完 23 本。
+
+
+2018
+计划 30 本，实际25本。
+
+
+2019
+计划 30 本，实际 43 本。
+
+
+
+今年是第 4 年写读书记录了，感觉手上这本 TLPI 年底之前是看不完了，就总结一下。与之前不
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/12/09/2019年读书记录/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -970,59 +783,15 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>工作上使用的电脑因为各种各样的原因，被我安装为 Ubuntu 19.04，平时使用上没什么问题，但是最近发现它默认的 SSH 配置随着版本升级发生了变化，known_hosts 文件中记录的不再是 IP 地址，而是一串字符，这导致了当我想要删除某个主机的 key 时，无法准确的找到，因此想办法解决这个事情。</p>
-<h2 id="SSH"><a href="#SSH" class="headerlink" title="SSH"></a>SSH</h2><p>我们使用 Linux 系统的一个最基本的服务应该就是 SSH 了，除了偶尔我们通过 VNC 或者 KVM(Keyboard Virtual Manager)连接控制主机外，都是通过 SSH 到 Linux 主机上进行某些操作。那么 SSH 就是 Secure Shell，安全外壳协议。可在不安全的网络中为网络服务提供安全的传输环境。SSH 通过在网络中建立安全隧道来实现SSH客户端与服务器之间的连接。</p>
-<p>SSH 最重要的就是安全，采用的是非对称加密，关于加密相关的部分，可以看我之前写的一篇<a href="https://zdyxry.github.io/2019/09/14/%E3%80%8A%E5%9B%BE%E8%A7%A3%E5%AF%86%E7%A0%81%E6%8A%80%E6%9C%AF%E3%80%8B%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/">《图解密码技术》读书笔记
-</a> 里面有比较完整的相关知识。</p>
-<p>这里主要说一下使用密码登陆和密钥登陆的流程。</p>
-<h3 id="密码登陆"><a href="#密码登陆" class="headerlink" title="密码登陆"></a>密码登陆</h3><ol>
-<li>客户端向服务端发起连接请求</li>
-</ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# ssh 192.168.67.90</span><br><span class="line">The authenticity of host '192.168.67.90 (192.168.67.90)' can't be established.</span><br><span class="line">ECDSA key fingerprint is SHA256:ca9Zk/7pR4f6rrNP3wi1WK+CQMtG4Ka+kkouwQYU0nY.</span><br><span class="line">Are you sure you want to continue connecting (yes/no)?</span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li>客户端会提示，知道服务端的唯一标示，确认连接么</li>
-<li>确认连接，输入 yes</li>
-</ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# ssh 192.168.67.90</span><br><span class="line">The authenticity of host '192.168.67.90 (192.168.67.90)' can't be established.</span><br><span class="line">ECDSA key fingerprint is SHA256:ca9Zk/7pR4f6rrNP3wi1WK+CQMtG4Ka+kkouwQYU0nY.</span><br><span class="line">Are you sure you want to continue connecting (yes/no)? yes</span><br><span class="line">Warning: Permanently added '192.168.67.90' (ECDSA) to the list of known hosts.</span><br><span class="line">root@192.168.67.90's password:</span><br></pre></td></tr></table></figure>
-<ol start="4">
-<li>服务端传输公钥给客户端，客户端输入密码，使用服务端公钥加密并发送给服务端</li>
-<li>服务端使用私钥解密，验证密码正确，登陆成功</li>
-</ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# ssh 192.168.67.90</span><br><span class="line">The authenticity of host '192.168.67.90 (192.168.67.90)' can't be established.</span><br><span class="line">ECDSA key fingerprint is SHA256:ca9Zk/7pR4f6rrNP3wi1WK+CQMtG4Ka+kkouwQYU0nY.</span><br><span class="line">Are you sure you want to continue connecting (yes/no)? yes</span><br><span class="line">Warning: Permanently added '192.168.67.90' (ECDSA) to the list of known hosts.</span><br><span class="line">root@192.168.67.90's password:</span><br><span class="line">Last login: Fri Dec  6 21:51:00 2019 from 192.168.73.54</span><br><span class="line">[root@node90 22:30:29 ~]$</span><br></pre></td></tr></table></figure>
-<h3 id="密钥登陆"><a href="#密钥登陆" class="headerlink" title="密钥登陆"></a>密钥登陆</h3><ol>
-<li>客户端向服务端发起连接请求</li>
-<li>服务端收到客户端的请求，找到对应客户端的公钥，生成随机数</li>
-<li>服务端使用客户端的公钥对随机数进行加密，发送给客户端</li>
-<li>客户端使用私钥进行解密，得到随机数，并将随机数与 session key 拼接，并将结果通过 MD5 算出散列值</li>
-<li>服务端同样使用随机数与 session key 拼接，并将结果通过 MD5 算出散列值</li>
-<li>服务端对两个散列值进行校验，如果想通，则登陆成功</li>
-</ol>
-<h2 id="相关文件"><a href="#相关文件" class="headerlink" title="相关文件"></a>相关文件</h2><h3 id="ssh-id-rsa"><a href="#ssh-id-rsa" class="headerlink" title="~/.ssh/id_rsa"></a>~/.ssh/id_rsa</h3><p>当前节点生成的私钥，使用 RSA 算法。</p>
-<h3 id="ssh-id-rsa-pub"><a href="#ssh-id-rsa-pub" class="headerlink" title="~/.ssh/id_rsa.pub"></a>~/.ssh/id_rsa.pub</h3><p>当前节点生成的公钥，使用 RSA 算法，与 id_rsa 成对出现。</p>
-<h3 id="ssh-authorized-keys"><a href="#ssh-authorized-keys" class="headerlink" title="~/.ssh/authorized_keys"></a>~/.ssh/authorized_keys</h3><p>用于保存已经授权（信任）的客户端公钥。</p>
-<h3 id="ssh-known-hosts"><a href="#ssh-known-hosts" class="headerlink" title="~/.ssh/known_hosts"></a>~/.ssh/known_hosts</h3><p>known_hosts 中存放 SSH 自动维护并检查的一个数据库，该数据库包含曾经连接过的所有主机的标识。</p>
-<p>这个文件也是今天的主角。</p>
-<h2 id="known-hosts"><a href="#known-hosts" class="headerlink" title="known_hosts"></a>known_hosts</h2><p>当我们客户端尝试连接服务端，会有一条提示，服务端主机的唯一标示是xxx，确认连接么，如果输入yes，那么这个主机的标示就会记录到 known_hosts，一般我们的 known_hosts 会长这样：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# cat .ssh/known_hosts</span><br><span class="line">|1|+YgY28AEikbKxdosHK1Cxb6zJqs=|yEi41f2MIl6hU9uQOvXyzK0hByM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHJscGQ4nUV7b7+nUtHVFPgm38JrUJwMapVqkq+oF1RR7mniCGhrkIGpb2cqKINrcZFyKFRqWhuAgYtMyFALOrM=</span><br></pre></td></tr></table></figure>
-<p>或者长这样：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:~</span><br><span class="line">   head -n 1 .ssh/known_hosts</span><br><span class="line">192.168.70.250 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHNWt8CDe7sPvATsqx5zH5v9wJzYrFhu9fmYnshIYLEnuoXmCmVu2cGU8s/IjK2jU8hnFad4T1gMhst7cXLmqAo=</span><br></pre></td></tr></table></figure>
-<p>了解 https 相关知识的同学应该知道，证书的重要性。在 SSH 场景下，我们没有证书，那么就需要我们自己人为的确保我们要连接的服务端是可信的。如果我们第一次登陆 192.168.1.1 后，系统保存了主机唯一标示到了 ~/.ssh/known_hosts，如果我们下一次登陆 192.168.1.1 客户端发现主机唯一标示产生了变化，那么就会禁止我们登陆了。</p>
-<p>在工作中经常遇到这种场景，可能的原因有很多：系统重装、快照回滚、IP 冲突等等。通常我们的做法就是闭着眼睛删除 known_hosts 里面的对应主机信息，然后重新登陆就可以了。</p>
-<p>但是最近发现 Ubuntu 19.04 中记录的 known_hosts 是这样的：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# cat .ssh/known_hosts</span><br><span class="line">|1|+YgY28AEikbKxdosHK1Cxb6zJqs=|yEi41f2MIl6hU9uQOvXyzK0hByM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHJscGQ4nUV7b7+nUtHVFPgm38JrUJwMapVqkq+oF1RR7mniCGhrkIGpb2cqKINrcZFyKFRqWhuAgYtMyFALOrM=</span><br></pre></td></tr></table></figure>
-<p>是的，我们无法在一堆看似乱码中找到我们想要的主机并删掉它，这其实是 OpenSSH 新版本中的一项安全改进。</p>
-<p>在 <a href="https://zdyxry.github.io/2019/10/25/%E8%AE%B0%E4%B8%80%E6%AC%A1%E7%B3%BB%E7%BB%9F%E8%A2%AB%E5%85%A5%E4%BE%B5%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B/">记一次系统被入侵分析过程</a> 博客中有提到，现在好多病毒在入侵之后都是通过 SSH 相关信息进行横向扩散的，所以我们应该尽可能的少在系统中保存明文的 IP 地址相关信息。</p>
-<p>但是对我测试环境来说，是没什么关系的，因此我需要禁止这个安全配置，来达到我的目的。</p>
-<p>正确的姿势是修改 SSH 客户端的配置，将 <code>HashKnownHosts</code> 置为 no ，清空 known_hosts 文件，再连接服务端，就可以看到 known_hosts 已经显示 IP 地址了。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@test-hostname-ubuntu-s-1804:~# cat /etc/ssh/ssh_config |grep -i hash</span><br><span class="line">    HashKnownHosts no</span><br><span class="line">root@test-hostname-ubuntu-s-1804:~# cat .ssh/known_hosts</span><br><span class="line">192.168.67.90 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHJscGQ4nUV7b7+nUtHVFPgm38JrUJwMapVqkq+oF1RR7mniCGhrkIGpb2cqKINrcZFyKFRqWhuAgYtMyFALOrM=</span><br></pre></td></tr></table></figure>
-<p>当然如果你想搞破坏，可以尝试下这篇<a href="https://blog.rootshell.be/2010/11/03/bruteforcing-ssh-known_hosts-files/" target="_blank" rel="noopener">博客</a>中提供的脚本：<a href="https://blog.rootshell.be/wp-content/uploads/2010/11/known_hosts_bruteforcer.pl.txt" target="_blank" rel="noopener">https://blog.rootshell.be/wp-content/uploads/2010/11/known_hosts_bruteforcer.pl.txt</a> （谨慎使用）</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://zh.wikipedia.org/wiki/Secure_Shell" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/Secure_Shell</a></li>
-<li><a href="https://blog.rootshell.be/2010/11/03/bruteforcing-ssh-known_hosts-files/" target="_blank" rel="noopener">https://blog.rootshell.be/2010/11/03/bruteforcing-ssh-known_hosts-files/</a></li>
-<li><a href="https://unix.stackexchange.com/questions/31549/is-it-possible-to-find-out-the-hosts-in-the-known-hosts-file" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/31549/is-it-possible-to-find-out-the-hosts-in-the-known-hosts-file</a></li>
-</ul>
-
-          
+          背景工作上使用的电脑因为各种各样的原因，被我安装为 Ubuntu 19.04，平时使用上没什么问题，但是最近发现它默认的 SSH 配置随着版本升级发生了变化，known_hosts 文件中记录的不再是 IP 地址，而是一串字符，这导致了当我想要删除某个主机的 key 时，无法准确的找到，因此想办法解
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/12/06/SSH-known-hosts-显示-IP-地址/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1150,64 +919,15 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在平时工作中我自己可能80% 的时间都在使用 Linux 进行工作，无论是软件开发还是环境维护，那么对于 Linux 发行版自然也是有比较熟悉的，比如 RHEL 系列。平时大家可能多多少少都会听到或接触到一些命令（术语），比如：grub,chroot,isolinux,bios 等等。今天打算就用 CentOS 发行版的 ISO 来谈谈自己对于 Linux 系统引导，安装，启动的理解。</p>
-<p>CentOS ISO 目录树如下：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">├── CentOS_BuildTag</span><br><span class="line">├── EFI</span><br><span class="line">├── EULA</span><br><span class="line">├── GPL</span><br><span class="line">├── images</span><br><span class="line">├── isolinux</span><br><span class="line">├── LiveOS</span><br><span class="line">├── Packages</span><br><span class="line">├── repodata</span><br><span class="line">├── RPM-GPG-KEY-CentOS-7</span><br><span class="line">├── RPM-GPG-KEY-CentOS-Testing-7</span><br><span class="line">└── TRANS.TBL</span><br></pre></td></tr></table></figure>
-<h2 id="isolinux"><a href="#isolinux" class="headerlink" title="isolinux"></a>isolinux</h2><h3 id="ISO-9660"><a href="#ISO-9660" class="headerlink" title="ISO 9660"></a>ISO 9660</h3><p>ISO 9660 是一种文件系统，也是一种规范，它规定了 ISO 文件应该是什么样子，常见的 Linux 发行版 ISO 都符合该规范。</p>
-<h3 id="引导"><a href="#引导" class="headerlink" title="引导"></a>引导</h3><p>有了 ISO，有了计算机，那么我们需要使用 ISO 安装想要的操作系统，通常我们会将 ISO 通过光盘/USB/网络等方式挂载到计算机上，通过设置 BIOS/UEFI 选项，将启动项设置为 ISO，然后启动进行安装。接下来一个一个来说。</p>
-<p>BIOS/UEFI 通常存放在闪存中，在计算机开机自检完成后，加载引导程序（bootloader），这个初始化过程称为引导。BIOS/UEFI 通常允许用户设置加载选项，即从系统的众多设备中按照顺序进行加载，常见的比如：硬盘、光盘、网络、USB 等。当第一个设备加载失败后，会尝试第二个设备，以此类推，如果最终所有设备都无法加载，那么系统处于开机但未引导状态。</p>
-<h4 id="磁盘引导"><a href="#磁盘引导" class="headerlink" title="磁盘引导"></a>磁盘引导</h4><p>如果从硬盘引导，那么计算机首先会读取 MBR（主引导记录 or 主引导扇区），MBR 在硬盘上的三维地址为（柱面，磁头，扇区）＝（0，0，1）。有时也将其开头的 446 字节内容特指为“主引导记录”（MBR），其后是4个16字节的“磁盘分区表”（DPT），以及2字节的结束标志（55AA）。</p>
-<p>也就是说，如果我们的磁盘是一个包含 MBR 的磁盘，那么它的 446 字节到 446 + 16 * 4 = 510 字节部分是引导记录，而 510 字节地址记录的应该是 <code>55AA</code> 这个结束标志，我们来找个磁盘看下是否是这样：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> dd <span class="keyword">if</span>=/dev/vda of=a bs=512 count=1</span></span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">512字节(512 B)已复制，0.000403482 秒，1.3 MB/秒</span><br><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> hexdump a</span></span><br><span class="line">0000000 63eb 1090 d08e 00bc b8b0 0000 d88e c08e</span><br><span class="line">...</span><br><span class="line">00001f0 0000 0000 0000 0000 0000 0000 0000 aa55</span><br><span class="line">0000200</span><br></pre></td></tr></table></figure>
-<p>在确认了磁盘可引导之后，BIOS 将 MBR 中的 446 字节内容复制到内存中，并将控制权转给引导设备（即磁盘），之后根据 MBR 中的引导程序（bootloader）进行后续工作。这里 UEFI 与 BIOS 略有不同，UEFI 是通过查找磁盘上 FAT 分区中加载 EFI loader 来进行引导，可以说 UEFI 是基于文件系统的。</p>
-<p>到这里，我们已经进行了引导的第一步，也是最关键的一步，那么现在运行的 bootloader 是什么呢？Linux 常见的有两种：LILO 全称 LInux LOader，是一种 Linux 引导程序，它自身很简单，甚至说简陋，目前使用场景很少。GRUB 全称 GNU GRUB，是一种引导程序，它允许启动不同的操作系统或者不同的内核，目前大多数 Linux 发行版均采用 GRUB 作为引导程序。</p>
-<p>当引导程序为 GRUB 时，因为 MBR 大小有限，因此存放在 MBR 中的内容是 boot.img，作用是加载真正的 GRUB core.img，GRUB 运行后，会根据 grub.cfg 选项来加载真正的内核映像，并进入到 OS 启动阶段。</p>
-<p>GRUB 加载的文件有两个：vmlinuz 和 initrd.img 。</p>
-<p>vmlinuz(vmlinux)，压缩后可引导的 Linux kernel 内核映像，VM 代表 Virtual Memory，通常是 bzImage 格式。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/boot</span><br><span class="line"><span class="meta"> $</span><span class="bash"> file vmlinuz-3.10.0-693.11.6.el7.x86_64</span></span><br><span class="line">vmlinuz-3.10.0-693.11.6.el7.x86_64: Linux kernel x86 boot executable bzImage, version 3.10.0-693.11.6.el7.x86_64 (builder@kbuilder.dev.centos.org) #1, RO-rootFS, swap_dev 0x5, Normal VGA</span><br></pre></td></tr></table></figure>
-<p>initramfs.img（init ramdisk.img），有了可引导的内核映像还不够，因为我们不能确保我们的硬件设备是 kernel 可以直接识别的，往往需要加载一些启动来保证硬件的识别，这时候就需要 initramfs.img 来提供一个临时文件系统，运行在内存中。</p>
-<p>有时候我们也会看到 initrd.img 文件，initrd 是 initramfs 出现之前的方式，因为它内部有文件系统，运行在内存中造成了一定的空间浪费，而 initramfs 是 tmpfs，在使用上更方便。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/boot</span><br><span class="line"><span class="meta"> $</span><span class="bash"> file initrd-plymouth.img</span></span><br><span class="line">initrd-plymouth.img: gzip compressed data, from Unix, last modified: Wed Mar 28 13:41:54 2018, max compression</span><br><span class="line">root@yiran-30-250:/boot</span><br><span class="line"><span class="meta"> $</span><span class="bash"> file initramfs-3.10.0-693.11.6.el7.x86_64.img</span></span><br><span class="line">initramfs-3.10.0-693.11.6.el7.x86_64.img: ASCII cpio archive (SVR4 with no CRC)</span><br></pre></td></tr></table></figure>
-<p>到这里已经比较清楚了，接下来就是挂载相应配置的文件系统，执行 systemd（pid 为1）的进程，这里不再详细描述。</p>
-<h4 id="光盘引导"><a href="#光盘引导" class="headerlink" title="光盘引导"></a>光盘引导</h4><p>在介绍了常规的磁盘引导后，我们来看看光盘引导的流程。</p>
-<p>根据 El-Torito 规范，BIOS 会读取 ISO 的准确地址进行判断，ISO 是否可以进行引导启动（在第 71 字节地址保存引导目录）。如果判断可引导，那么就加载对应的引导程序（bootloader）。</p>
-<p>常见的引导程序有：SYSLINUX,ISOLINUX,PXELINUX,EXTLINUX 等，这些可以统称为 Syslinux，目前最常见的应该是 ISOLINUX。PXELINUX 用于从网络引导，EXTLINUX 用于 ext 系列文件系统引导。</p>
-<p>注意：由于目前 UEFI 的普遍性，部分 LiveCD ISO 会同时带有 ISOLINUX 和 GRUB 两种引导程序。</p>
-<p>我们来看看 ISO 中 isolinux 路径下放了什么文件：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"> $</span><span class="bash"> tree </span></span><br><span class="line">├── boot.cat # 启动目录</span><br><span class="line">├── boot.msg # 启动信息</span><br><span class="line">├── grub.conf # GRUB 配置文件</span><br><span class="line">├── initrd.img # 临时文件系统</span><br><span class="line">├── isolinux.bin # ISOLINUX 引导程序</span><br><span class="line">├── isolinux.cfg # ISOLINUX 引导配置文件</span><br><span class="line">├── memtest # 内存测试可执行文件</span><br><span class="line">├── splash.png # ISOLINUX 引导背景图片</span><br><span class="line">├── TRANS.TBL # 扩展文件名</span><br><span class="line">├── vesamenu.c32 # Menu 配置</span><br><span class="line">└── vmlinuz # 内核映像</span><br></pre></td></tr></table></figure>
-<p>根据以上文件信息及用途描述，我们来看下光盘引导的大概流程：</p>
-<ol>
-<li>加载 isolinux.bin</li>
-<li>加载 isolinux.cfg,vesamenu.c32,splash.png 生成启动菜单</li>
-<li>根据选项决定是否加载 vmlinuz, initrd.img </li>
-</ol>
-<p>关于 isolinux 目录和 Linux 引导部分大概是这样，主要是要理清楚整个流程。</p>
-<h2 id="EFI"><a href="#EFI" class="headerlink" title="EFI"></a>EFI</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"> $</span><span class="bash"> tree </span></span><br><span class="line">.</span><br><span class="line">├── BOOT</span><br><span class="line">│   ├── BOOTIA32.EFI  # 32位系统 EFI 启动程序</span><br><span class="line">│   ├── BOOTX64.EFI # 64位系统 EFI 启动程序</span><br><span class="line">│   ├── fonts # 字体</span><br><span class="line">│   │   ├── TRANS.TBL</span><br><span class="line">│   │   └── unicode.pf2</span><br><span class="line">│   ├── grub.cfg # GRUB 配置</span><br><span class="line">│   ├── grubia32.efi # GRUB 32位引导程序</span><br><span class="line">│   ├── grubx64.efi # GRUB 64位引导程序</span><br><span class="line">│   ├── mmia32.efi # 内存测试 32 位执行程序</span><br><span class="line">│   ├── mmx64.efi # 内存测试 64 位执行程序</span><br><span class="line">│   └── TRANS.TBL</span><br><span class="line">└── TRANS.TBL</span><br></pre></td></tr></table></figure>
-<p>有了前面 isolinux 关于引导部分的介绍，这里 EFI 完全可以一一对应，如果计算器启动模式为 BIOS，那么是通过 ISOLINUX 引导，如果启动模式是 UEFI，那么是通过 EFI（GRUB）引导。</p>
-<h2 id="images"><a href="#images" class="headerlink" title="images"></a>images</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"> $</span><span class="bash"> tree </span></span><br><span class="line">├── efiboot.img</span><br><span class="line">├── pxeboot</span><br><span class="line">│   ├── initrd.img</span><br><span class="line">│   ├── TRANS.TBL</span><br><span class="line">│   └── vmlinuz</span><br><span class="line">└── TRANS.TBL</span><br></pre></td></tr></table></figure>
-<p>这个路径文件很突兀，没有什么配置文件，看上去系统也没有用到，其实这里是为了文件复用而把 vmlinuz 和 initrd.img 提取出来了，在 EFI 路径下的 BOOT/grub.cfg 中有很多选项都是使用的 pxeboot/vmlinuz 。当然它最大的作用也是跟路径名一样，images，当你要配置一个发行版作为网络安装时，需要对应的 vmlinuz 和 initrd.img，那么可以从这个路径下获取，不会造成我要通过 PXELINUX 引导，却需要去 EFI 路径下获取文件的困扰。</p>
-<h2 id="LiveOS"><a href="#LiveOS" class="headerlink" title="LiveOS"></a>LiveOS</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"> $</span><span class="bash"> tree </span></span><br><span class="line">├── squashfs.img</span><br><span class="line">└── TRANS.TBL</span><br></pre></td></tr></table></figure>
-<p>LiveOS，字面意思就是运行在内存中的 OS，现在大多数发行版为了让用户第一时间不用安装到磁盘上即可体验发行版的某些功能，而支持将 OS 运行在内存中，简单快捷。</p>
-<blockquote>
-<p>squashfs.img，是一套供Linux核心使用的GPL 开源只读压缩档案系统。Squashfs能够为档案系统内的档案、inode及目录结构进行压缩，并支援最大1024 千位元组的区段，以提供更大的压缩比。</p>
-</blockquote>
-<p>根据维基百科描述，squashfs.img 应该是包含了一个完整的 Linux映像的，我们来尝试挂载查看下：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ls squashfs.img</span></span><br><span class="line">squashfs.img</span><br><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> file squashfs.img</span></span><br><span class="line">squashfs.img: Squashfs filesystem, little endian, version 4.0, 368572502 bytes, 3 inodes, blocksize: 131072 bytes, created: Tue Sep  5 21:35:03 2017</span><br><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> mount -t squashfs squashfs.img /tmp/yiran</span></span><br><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ls /tmp/yiran/LiveOS/rootfs.img</span></span><br><span class="line">/tmp/yiran/LiveOS/rootfs.img</span><br><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> file /tmp/yiran/LiveOS/rootfs.img</span></span><br><span class="line">/tmp/yiran/LiveOS/rootfs.img: Linux rev 1.0 ext4 filesystem data, UUID=e2fddbe2-a003-4b98-b272-3defe7b377c4, volume name "Anaconda" (extents) (64bit) (huge files)</span><br><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> mount /tmp/yiran/LiveOS/rootfs.img /tmp/yiran-root</span></span><br><span class="line">root@yiran-30-250:/tmp</span><br><span class="line"><span class="meta"> $</span><span class="bash"> ls /tmp/yiran-root</span></span><br><span class="line">bin  dev  etc  firmware  lib  lib64  lost+found  mnt  modules  proc  root  run  sbin  sys  tmp  usr  var</span><br></pre></td></tr></table></figure>
-<p>既然是一个完整的 Linux 映像，我们可以直接通过 chroot 命令切换根目录：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran-30-250 00:24:30 yiran-root]$pwd</span><br><span class="line">/tmp/yiran-root</span><br><span class="line">[root@yiran-30-250 00:24:31 yiran-root]$ls</span><br><span class="line">bin  dev  etc  firmware  lib  lib64  lost+found  mnt  modules  proc  root  run  sbin  sys  tmp  usr  var</span><br><span class="line">[root@yiran-30-250 00:24:32 yiran-root]$chroot .</span><br><span class="line">bash: /var/log/bash.log: 只读文件系统</span><br><span class="line">[root@yiran-30-250 16:24:34 /]$cat /etc/hosts</span><br><span class="line">127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4</span><br><span class="line">::1         localhost localhost.localdomain localhost6 localhost6.localdomain6</span><br><span class="line">bash: /var/log/bash.log: 只读文件系统</span><br><span class="line">[root@yiran-30-250 16:24:36 /]$exit</span><br></pre></td></tr></table></figure>
-<p>因为文件系统是只读的，所以我们只是进行了简单的读取操作。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过 CentOS 发行版，我们一点点从计算机上电开始，走通整个流程，这只是一个最简单的流程，之前博客也多少提到过通过 KickStart 或者其他自动化方式安装等方式，这里不再描述。</p>
-<p>在做事情之前最好把整个流程想通，再去研究细节部分。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://wiki.osdev.org/ISO_9660#The_Boot_Record" target="_blank" rel="noopener">https://wiki.osdev.org/ISO_9660#The_Boot_Record</a></li>
-<li><a href="https://wiki.syslinux.org/wiki/index.php?title=Doc/isolinux" target="_blank" rel="noopener">https://wiki.syslinux.org/wiki/index.php?title=Doc/isolinux</a></li>
-<li><a href="https://wiki.osdev.org/El-Torito" target="_blank" rel="noopener">https://wiki.osdev.org/El-Torito</a></li>
-<li><a href="https://wiki.syslinux.org/wiki/index.php?title=ISOLINUX" target="_blank" rel="noopener">https://wiki.syslinux.org/wiki/index.php?title=ISOLINUX</a></li>
-<li><a href="https://zh.wikipedia.org/wiki/SquashFS" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/SquashFS</a></li>
-<li></li>
-</ul>
-
-          
+          背景在平时工作中我自己可能80% 的时间都在使用 Linux 进行工作，无论是软件开发还是环境维护，那么对于 Linux 发行版自然也是有比较熟悉的，比如 RHEL 系列。平时大家可能多多少少都会听到或接触到一些命令（术语），比如：grub,chroot,isolinux,bios 等等。今天打算就
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/12/01/Linux-引导那些事儿/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1335,27 +1055,15 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近在折腾 Cluster API 的时候，因为目前社区中比较成熟的方案是通过 Cloud-init 执行 kubeadm 命令部署 k8s ，因此需要使用 Cloud-init 进行功能验证，但是 Cloud-init 通常执行的前提条件是系统初次启动时，自动执行配置，这点对于调试很不友好，因此需要找到一个无需重启即可执行 Cloud-init 配置的方式。</p>
-<h2 id="Cloud-init"><a href="#Cloud-init" class="headerlink" title="Cloud-init"></a>Cloud-init</h2><p>使用过公有云或者私有云的同学应该都知道在创建虚拟机的时候可以传递一个脚本用于在机器置备的时候执行某些动作，尤其在批量执行的时候，通常会很方便。这个其实就是 Cloud-init 所做的工作，就跟它的名字一样，针对 Cloud 场景执行 init 动作。</p>
-<p>引用官网介绍：</p>
-<blockquote>
-<p>Cloud-init is the industry standard multi-distribution method for cross-platform cloud instance initialization. It is supported across all major public cloud providers, provisioning systems for private cloud infrastructure, and bare-metal installations. </p>
-</blockquote>
-<h2 id="NoCloud"><a href="#NoCloud" class="headerlink" title="NoCloud"></a>NoCloud</h2><p>Cloud-init 官方支持云平台种类很多常见的公有云如 Aliyun、AWS、Azure，常见的私有云解决方案如 OpenStack、ZStack、OVF 等都有支持。</p>
-<p>但是如果我不使用已经支持的私有云，而是自己通过 Libvirt 配合 Ceph 实现了一套虚拟化平台，想要使用 Cloud-init，则可以使用 ConfigDrive 或者 NoCloud 方式。本文采用的是 NoCloud 方式。</p>
-<h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><p>使用默认配置就好，Cloud-init 在没有指定 Datasource 的情况下，会自己依次尝试：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cat /etc/cloud/cloud.cfg</span></span><br><span class="line">users:</span><br><span class="line"> - default</span><br><span class="line"></span><br><span class="line">disable_root: 1</span><br><span class="line">ssh_pwauth:   0</span><br><span class="line"></span><br><span class="line">mount_default_fields: [~, ~, <span class="string">'auto'</span>, <span class="string">'defaults,nofail,x-systemd.requires=cloud-init.service'</span>, <span class="string">'0'</span>, <span class="string">'2'</span>]</span><br><span class="line">resize_rootfs_tmp: /dev</span><br><span class="line">ssh_deletekeys:   0</span><br><span class="line">ssh_genkeytypes:  ~</span><br><span class="line">syslog_fix_perms: ~</span><br><span class="line">disable_vmware_customization: <span class="literal">false</span></span><br></pre></td></tr></table></figure>
-<h3 id="Metadata"><a href="#Metadata" class="headerlink" title="Metadata"></a>Metadata</h3><p>这里我们指定 NoCloud 的路径，并配置 Metadata 文件：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost nocloud]# pwd</span><br><span class="line">/var/lib/cloud/seed/nocloud</span><br><span class="line">[root@localhost nocloud]# cat meta-data</span><br><span class="line">instance-id: yiran</span><br><span class="line">hostname: yiran</span><br></pre></td></tr></table></figure>
-<h3 id="Userdata"><a href="#Userdata" class="headerlink" title="Userdata"></a>Userdata</h3><p>我们在 Cloud-init 自动配置时，执行命令 echo 保存信息到文件中</p>
-<figure class="highlight plain"><figcaption><span>l l</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost nocloud]# pwd</span><br><span class="line">/var/lib/cloud/seed/nocloud</span><br><span class="line">[root@localhost nocloud]# cat user-data</span><br><span class="line">## template: jinja</span><br><span class="line">#cloud-config</span><br><span class="line"></span><br><span class="line">runcmd:</span><br><span class="line">  - &apos;echo yiran test cloud-init with nocloud &gt; /root/file&apos;</span><br></pre></td></tr></table></figure>
-<h2 id="手动执行-Cloud-init"><a href="#手动执行-Cloud-init" class="headerlink" title="手动执行 Cloud-init"></a>手动执行 Cloud-init</h2><p>在了解 Cloud-init 工作流程后执行比较简单，因此这里直接贴出操作步骤：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# pwd</span><br><span class="line">/root</span><br><span class="line">[root@localhost ~]# ls</span><br><span class="line">anaconda-ks.cfg</span><br><span class="line">[root@localhost ~]# cloud-init init</span><br><span class="line">Cloud-init v. 18.5 running 'init' at Fri, 29 Nov 2019 14:02:10 +0000. Up 635.10 seconds.</span><br><span class="line">ci-info: +++++++++++++++++++++++++++++++++++++++Net device info+++++++++++++++++++++++++++++++++++++++</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: | Device |  Up  |           Address            |      Mask     | Scope  |     Hw-Address    |</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: |  eth0  | True |        192.168.77.158        | 255.255.240.0 | global | 52:54:00:2f:d9:44 |</span><br><span class="line">ci-info: |  eth0  | True | fe80::108b:ab9c:1a1a:9ab8/64 |       .       |  link  | 52:54:00:2f:d9:44 |</span><br><span class="line">ci-info: |   lo   | True |          127.0.0.1           |   255.0.0.0   |  host  |         .         |</span><br><span class="line">ci-info: |   lo   | True |           ::1/128            |       .       |  host  |         .         |</span><br><span class="line">ci-info: +--------+------+------------------------------+---------------+--------+-------------------+</span><br><span class="line">ci-info: +++++++++++++++++++++++++++++++Route IPv4 info+++++++++++++++++++++++++++++++</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: | Route | Destination  |    Gateway     |    Genmask    | Interface | Flags |</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: |   0   |   0.0.0.0    | 192.168.64.215 |    0.0.0.0    |    eth0   |   UG  |</span><br><span class="line">ci-info: |   1   | 192.168.64.0 |    0.0.0.0     | 255.255.240.0 |    eth0   |   U   |</span><br><span class="line">ci-info: +-------+--------------+----------------+---------------+-----------+-------+</span><br><span class="line">ci-info: +++++++++++++++++++Route IPv6 info+++++++++++++++++++</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">ci-info: | Route | Destination | Gateway | Interface | Flags |</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">ci-info: |   9   |  fe80::/64  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: |   10  |  fe80::/64  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: |   14  |   ff00::/8  |    ::   |    eth0   |   U   |</span><br><span class="line">ci-info: +-------+-------------+---------+-----------+-------+</span><br><span class="line">[root@localhost ~]# cloud-init modules -m config</span><br><span class="line">Cloud-init v. 18.5 running 'modules:config' at Fri, 29 Nov 2019 14:02:18 +0000. Up 643.31 seconds.</span><br><span class="line">[root@localhost ~]# cloud-init modules -m final</span><br><span class="line">Cloud-init v. 18.5 running 'modules:final' at Fri, 29 Nov 2019 14:02:21 +0000. Up 646.27 seconds.</span><br><span class="line">ci-info: no authorized ssh keys fingerprints found for user centos.</span><br><span class="line">Cloud-init v. 18.5 finished at Fri, 29 Nov 2019 14:02:21 +0000. Datasource DataSourceNoCloudNet [seed=/var/lib/cloud/seed/nocloud][dsmode=net].  Up 646.44 seconds</span><br><span class="line">[root@localhost ~]# ls</span><br><span class="line">anaconda-ks.cfg  file</span><br><span class="line">[root@localhost ~]# cat file</span><br><span class="line">yiran test cloud-init with nocloud</span><br></pre></td></tr></table></figure>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://cloudinit.readthedocs.io/en/latest/" target="_blank" rel="noopener">https://cloudinit.readthedocs.io/en/latest/</a></li>
-</ul>
-
-          
+          背景最近在折腾 Cluster API 的时候，因为目前社区中比较成熟的方案是通过 Cloud-init 执行 kubeadm 命令部署 k8s ，因此需要使用 Cloud-init 进行功能验证，但是 Cloud-init 通常执行的前提条件是系统初次启动时，自动执行配置，这点对于调试很不友好，因
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/11/29/Cloud-init-无需重启执行/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1483,10 +1191,16 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>有时候在运行代码的时候，想要程序在接收到 Ctrl+C 指令的时候做一些平滑的处理，来写一下在 Python 和 Golang 中如何接收 Ctrl+C 指令。</p>
-<h2 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> signal</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run_program</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">        print(<span class="string">"Test code..."</span>)</span><br><span class="line">        time.sleep(<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">exit_gracefully</span><span class="params">(signum, frame)</span>:</span></span><br><span class="line">    signal.signal(signal.SIGINT, original_sigint)</span><br><span class="line">    print(<span class="string">"Receive Ctrl+C."</span>)</span><br><span class="line">    sys.exit(<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    original_sigint = signal.getsignal(signal.SIGINT)</span><br><span class="line">    signal.signal(signal.SIGINT, exit_gracefully)</span><br><span class="line">    run_program()</span><br></pre></td></tr></table></figure>
-<h2 id="Golang"><a href="#Golang" class="headerlink" title="Golang"></a>Golang</h2><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">	<span class="string">"os"</span></span><br><span class="line">	<span class="string">"os/signal"</span></span><br><span class="line">	<span class="string">"sync"</span></span><br><span class="line">	<span class="string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WaitForCtrlC</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> end_waiter sync.WaitGroup</span><br><span class="line">	end_waiter.Add(<span class="number">1</span>)</span><br><span class="line">	<span class="keyword">var</span> signal_channel <span class="keyword">chan</span> os.Signal</span><br><span class="line">	signal_channel = <span class="built_in">make</span>(<span class="keyword">chan</span> os.Signal, <span class="number">1</span>)</span><br><span class="line">	signal.Notify(signal_channel, os.Interrupt)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		&lt;-signal_channel</span><br><span class="line">		end_waiter.Done()</span><br><span class="line">	&#125;()</span><br><span class="line">	end_waiter.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">testCode</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		fmt.Println(<span class="string">"Test code..."</span>)</span><br><span class="line">		time.Sleep(time.Duration(<span class="number">1</span>) * time.Second)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	fmt.Printf(<span class="string">"Press Ctrl+C to end\n"</span>)</span><br><span class="line">	<span class="keyword">go</span> testCode()</span><br><span class="line">	WaitForCtrlC()</span><br><span class="line">	fmt.Printf(<span class="string">"Receive Ctrl+C.\n"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
+          背景有时候在运行代码的时候，想要程序在接收到 Ctrl+C 指令的时候做一些平滑的处理，来写一下在 Python 和 Golang 中如何接收 Ctrl+C 指令。
+Python123456789101112131415161718192021import signalimport timeimpo
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/11/23/如何捕捉-Ctrl-C-指令/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1614,93 +1328,17 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Ansible 作为一款配置管理和应用部署的软件，日常使用的场景很多，我自己也是重度用户。最近在使用 Ansible 进行文件传输的时候踩了个坑，借此机会整理下 Ansible 传输文件的几种方式。</p>
-<p>实验环境：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran ~]<span class="comment"># ansible --version</span></span><br><span class="line">ansible 2.7.12</span><br><span class="line">  config file = None</span><br><span class="line">  configured module search path = [u<span class="string">'/root/.ansible/plugins/modules'</span>, u<span class="string">'/usr/share/ansible/plugins/modules'</span>]</span><br><span class="line">  ansible python module location = /usr/lib/python2.7/site-packages/ansible</span><br><span class="line">  executable location = /usr/bin/ansible</span><br><span class="line">  python version = 2.7.5 (default, Aug  7 2019, 00:51:29) [GCC 4.8.5 20150623 (Red Hat 4.8.5-39)]</span><br></pre></td></tr></table></figure>
-<h2 id="Template"><a href="#Template" class="headerlink" title="Template"></a>Template</h2><p><a href="https://docs.ansible.com/ansible/latest/modules/template_module.html" target="_blank" rel="noopener">https://docs.ansible.com/ansible/latest/modules/template_module.html</a></p>
-<p>Ansible 一个常用的功能就是配置管理，通过 Ansible 批量分发配置文件，达到统一版本管理的效果，如果我们想要进行少量的文件传输，从控制节点传输到被管理节点，那么可以采用这种方式来完成。</p>
-<p>具体的使用<a href="https://docs.ansible.com/ansible/latest/modules/template_module.html" target="_blank" rel="noopener">官方文档</a> 已经讲的很详细了，这里不再啰嗦。</p>
-<p>因为版本是通过 Jinja2 模板传输，支持模板渲染<br>虽然我们可以在模版中不制定任何参数，直接将其拷贝，但是相比 Copy/Fetch 模块还是需要有模版渲染的一步，速度要慢一些</p>
-<h2 id="Copy-Fetch-模块"><a href="#Copy-Fetch-模块" class="headerlink" title="Copy/Fetch 模块"></a>Copy/Fetch 模块</h2><p><a href="https://docs.ansible.com/ansible/latest/modules/copy_module.html" target="_blank" rel="noopener">https://docs.ansible.com/ansible/latest/modules/copy_module.html</a></p>
-<p><a href="https://docs.ansible.com/ansible/latest/modules/fetch_module.html" target="_blank" rel="noopener">https://docs.ansible.com/ansible/latest/modules/fetch_module.html</a></p>
-<p>如果说我们通过模板来传输文件优点歪门邪道，那么通过 Copy/Fetch 就是 Ansible 官方提供的两个正统模块。</p>
-<p>Copy 用于把文件（或文件夹）从控制节点（或远程节点）分发到被管理节点，Copy 在拷贝过程中不会修改文件中的内容或编码，仅仅做传输工作。</p>
-<p>Fetch 用于从被管理节点传输文件到控制节点。需要注意的是 Fetch 只能拉取文件，而 Copy 是可以传输文件或者文件夹的。</p>
-<h3 id="不算坑的坑"><a href="#不算坑的坑" class="headerlink" title="不算坑的坑"></a>不算坑的坑</h3><p>在使用 Copy/Fetch 时，总体感受是比较好的，但是有一点需要注意，如果你拷贝的文件过多，或者单个文件大小过大，那么最好不要使用 Copy/Fetch。</p>
-<p>Ansible 默认配置中，使用 SFTP 作为文件传输协议：</p>
-<blockquote>
-<p>There’s really no reason to change this unless problems are encountered, and then there’s also no real drawback to managing the switch. Most environments support SFTP by default and this doesn’t usually need to be changed.</p>
-</blockquote>
-<p>SFTP 是基于 SSH 协议的，与 FTP 没啥关系。SFTP 并不以性能渐长，甚至可以说性能很差，至少与 FTP、Rsync 没办法相比。</p>
-<p>关于 SFTP 为什么速度这么慢，StackOverFlow 有个回答写的很详细，这里引用一段：</p>
-<blockquote>
-<p>I’m the author of HPN-SSH and I was asked by a commenter here to weigh in. I’d like to start with a couple of background items. First off, it’s important to keep in mind that SSHv2 is a multiplexed protocol - multiple channels over a single TCP connection. As such, the SSH channels are essentially unaware of the underlying flow control algorithm used by TCP. This means that SSHv2 has to implement its own flow control algorithm. The most common implementation basically reimplements sliding windows. The means that you have the SSH sliding window riding on top of the TCP sliding window. The end results is that the effective size of the receive buffer is the minimum of the receive buffers of the two sliding windows.</p>
-</blockquote>
-<h2 id="Synchronize"><a href="#Synchronize" class="headerlink" title="Synchronize"></a>Synchronize</h2><p>上面提到的两个模块性能都不好，总会有个性能好的来解决这个问题，就是 Synchronize。Synchronize 是通过 rsync 来达到文件传输的目的，是 rsync 的封装。</p>
-<p>在使用上因为是调用的 rsync，所以控制节点需要安装 rsync ，Synchronize 模块的并不会完全实现 rsync 所有功能，只是通过 rsync 来达到我们想要的快速同步的功能。</p>
-<h3 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h3><p>在使用 Ansible 过程中，通常会使用普通用户配合密钥的形式来进行用户验证，如果需要 root 权限那么通过 become 关键字来提权。</p>
-<p>在 sudo 的早期版本中， <code>/etc/sudoers</code> 中有这么一条配置，高版本取消了 tty 的限制：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Disable &quot;ssh hostname sudo &lt;cmd&gt;&quot;, because it will show the password in clear.</span><br><span class="line">#         You have to run &quot;ssh -t hostname sudo &lt;cmd&gt;&quot;.</span><br><span class="line">#</span><br><span class="line">Defaults    requiretty</span><br></pre></td></tr></table></figure>
-<p>这个配置会导致 Ansible 调用 rsync 执行时失败，可以通过修改 <code>/etc/sudoers</code> 或者升级 sudo 软件包来解决。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>那么说了以上这三种方式，就需要来一个总结对比，看看什么场景下使用什么模块更方便：</p>
-<table>
-<thead>
-<tr>
-<th>模块</th>
-<th>传输文件</th>
-<th>传输文件夹</th>
-<th>文件修改</th>
-<th>文件编码</th>
-<th>速度</th>
-<th>文件源</th>
-<th>权限配置</th>
-<th>文件验证</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Template</td>
-<td>Y</td>
-<td>N</td>
-<td>Y</td>
-<td>Y</td>
-<td>慢</td>
-<td>控制节点</td>
-<td>Y</td>
-<td>Y </td>
-</tr>
-<tr>
-<td>Copy/Fetch</td>
-<td>Y</td>
-<td>Y/N</td>
-<td>N</td>
-<td>N</td>
-<td>慢</td>
-<td>控制节点/远程节点</td>
-<td>Y</td>
-<td>Y </td>
-</tr>
-<tr>
-<td>Synchronize</td>
-<td>N</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-<td>快</td>
-<td>控制节点</td>
-<td>Y</td>
-<td>N </td>
-</tr>
-</tbody>
-</table>
-<p>各个模块没有具体的好坏，全看个人需求来使用合适的模块就好。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://docs.ansible.com/ansible/latest/modules/template_module.html" target="_blank" rel="noopener">https://docs.ansible.com/ansible/latest/modules/template_module.html</a> </li>
-<li><a href="https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/" target="_blank" rel="noopener">https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/</a></li>
-<li><a href="https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp" target="_blank" rel="noopener">https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp</a></li>
-</ul>
-
-          
+          背景Ansible 作为一款配置管理和应用部署的软件，日常使用的场景很多，我自己也是重度用户。最近在使用 Ansible 进行文件传输的时候踩了个坑，借此机会整理下 Ansible 传输文件的几种方式。
+实验环境：
+1234567[root@yiran ~]# ansible --versionan
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/11/22/使用-Ansible-传输文件的几种方式/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1828,28 +1466,16 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>自己一直通过 mdadm 在软件层面对多块磁盘进行 RAID1 配置，一个主要的原因是 mdadm 是 KickStart 默认软件。因为只是 RAID1，所以使用起来也是比较方便，虽然有些小坑，但总体来说还好。<br>最近遇到一个问题， mdadm 在配置 RAID1 时，磁盘同步很慢。</p>
-<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>先说下磁盘构成，一般情况下是这样：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran 20:23:48 ~]<span class="variable">$lsblk</span></span><br><span class="line">NAME      MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT</span><br><span class="line">sda         8:0    0  59.6G  0 disk</span><br><span class="line">├─sda1      8:1    0   256M  0 part  /boot/efi</span><br><span class="line">└─sda2      8:2    0   512M  0 part  /boot</span><br><span class="line">sdb         8:16   0 223.6G  0 disk</span><br><span class="line">└─sdb1      8:17   0    45G  0 part</span><br><span class="line">  └─md127   9:127  0    45G  0 raid1 /</span><br><span class="line">sdc         8:32   0 223.6G  0 disk</span><br><span class="line">└─sdc1      8:33   0    45G  0 part</span><br><span class="line">  └─md127   9:127  0    45G  0 raid1 /</span><br></pre></td></tr></table></figure>
-<p>两块 SSD 各自分区，并将第一个分区通过 mdadm 做 RAID1，保证系统分区高可用，分区大小是 45G，但是因为是 SSD 磁盘，所以速度也不会慢到哪去。</p>
-<p>最近遇到的问题就是我觉得最不应该有问题的地方：同步速度很慢，非常慢，慢到离谱：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran 20:28:00 ~]<span class="variable">$mdadm</span> -D /dev/md127</span><br><span class="line">/dev/md127:</span><br><span class="line">           Version : 1.2</span><br><span class="line">     Creation Time : Thu Nov 14 10:06:52 2019</span><br><span class="line">        Raid Level : raid1</span><br><span class="line">        Array Size : 47153152 (44.97 GiB 48.28 GB)</span><br><span class="line">     Used Dev Size : 47153152 (44.97 GiB 48.28 GB)</span><br><span class="line">      Raid Devices : 2</span><br><span class="line">     Total Devices : 2</span><br><span class="line">       Persistence : Superblock is persistent</span><br><span class="line"></span><br><span class="line">     Intent Bitmap : Internal</span><br><span class="line"></span><br><span class="line">       Update Time : Fri Nov 15 20:28:01 2019</span><br><span class="line">             State : clean, degraded, recovering</span><br><span class="line">    Active Devices : 1</span><br><span class="line">   Working Devices : 2</span><br><span class="line">    Failed Devices : 0</span><br><span class="line">     Spare Devices : 1</span><br><span class="line"></span><br><span class="line">Consistency Policy : bitmap</span><br><span class="line"></span><br><span class="line">    Rebuild Status : 0% complete</span><br><span class="line"></span><br><span class="line">              Name : localhost:root</span><br><span class="line">              UUID : 257cd7f6:effadd5a:3e16dac1:9a28362d</span><br><span class="line">            Events : 90</span><br><span class="line"></span><br><span class="line">    Number   Major   Minor   RaidDevice State</span><br><span class="line">       0       8       17        0      active sync   /dev/sdb1</span><br><span class="line">       1       8       33        1      spare rebuilding   /dev/sdc1</span><br><span class="line">[root@yiran 20:28:04 ~]<span class="variable">$cat</span> /proc/mdstat</span><br><span class="line">Personalities : [raid1]</span><br><span class="line">md127 : active raid1 sdc1[1] sdb1[0]</span><br><span class="line">      47153152 blocks super 1.2 [2/1] [U_]</span><br><span class="line">      [&gt;....................]  recovery =  0.0% (8832/47153152) finish=621.6min speed=1261K/sec</span><br><span class="line">      bitmap: 1/1 pages [4KB], 65536KB chunk</span><br><span class="line"></span><br><span class="line">unused devices: &lt;none&gt;</span><br></pre></td></tr></table></figure>
-<h2 id="调查"><a href="#调查" class="headerlink" title="调查"></a>调查</h2><p>确认硬件没问题之后，尝试通过 <code>/proc/mdstat</code> 可以看到同步速度只有 1M 左右，通过 <code>iostat</code> 命令看磁盘读写状态发现磁盘没有任何压力，使用率也是正常水平。</p>
-<p>到这里没啥想法了，想到一点，系统是如何设置软 raid 同步速度的呢？</p>
-<p>软 raid 在进行同步时，肯定会对磁盘进行大量的读写来保证磁盘数据正确性，如果是 RAID1 ，那就是完全的镜像了。如果 RAID 分区上正在进行非常重要的业务读写，但是 mdadm 又占用了比较大的读写带宽，肯定会影响到我们的业务，所以系统应该是存在一个上限值的。</p>
-<p>经过搜索，查到了两个系统参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/proc/sys/dev/raid/speed_limit_max</span><br><span class="line">/proc/sys/dev/raid/speed_limit_min</span><br></pre></td></tr></table></figure>
-<p>看一下系统默认值，发现 speed_limit_max 是200M，也就是说我现在的速度远远达不到上限，还有其他原因。</p>
-<p>可惜的是，我查看了系统 /var/log/messages 和 dmesg ，都没有发现什么线索。</p>
-<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>因为这个问题虽然不重要，但是比较紧急，所以就在不知道原因的情况下先修复了它，我们可以在 <code>/etc/sysctl.conf</code> 中添加这两项配置来更改相应的数值。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran 20:59:34 ~]<span class="variable">$cat</span> /etc/sysctl.conf</span><br><span class="line"><span class="comment"># sysctl settings are defined through files in</span></span><br><span class="line"><span class="comment"># /usr/lib/sysctl.d/, /run/sysctl.d/, and /etc/sysctl.d/.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Vendors settings live in /usr/lib/sysctl.d/.</span></span><br><span class="line"><span class="comment"># To override a whole file, create a new file with the same in</span></span><br><span class="line"><span class="comment"># /etc/sysctl.d/ and put new settings there. To override</span></span><br><span class="line"><span class="comment"># only specific settings, add a file with a lexically later</span></span><br><span class="line"><span class="comment"># name in /etc/sysctl.d/ and put new settings there.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># For more information, see sysctl.conf(5) and sysctl.d(5).</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">dev.raid.speed_limit_min = 100000</span><br><span class="line">dev.raid.speed_limit_max = 200000</span><br><span class="line">[root@yiran 20:59:42 ~]<span class="variable">$sysctl</span> -p</span><br><span class="line">dev.raid.speed_limit_min = 100000</span><br><span class="line">dev.raid.speed_limit_max = 200000</span><br></pre></td></tr></table></figure>
-<p>在<a href="https://www.cyberciti.biz/tips/linux-raid-increase-resync-rebuild-speed.html" target="_blank" rel="noopener">这篇博客</a> 中还提到了其他方式能够提升软 raid 的同步速度，比如设置 read-ahead、条带大小、Bitmap 等，但是都不如 sysctl 调整系统参数来的方便，而且副作用也没有那么大。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>提交了一个不知道问题原因的修复 Patch，内心还是有些慌的，如果有读者看到并知道原因，麻烦留言告诉我，谢谢。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://www.cyberciti.biz/tips/linux-raid-increase-resync-rebuild-speed.html" target="_blank" rel="noopener">https://www.cyberciti.biz/tips/linux-raid-increase-resync-rebuild-speed.html</a></li>
-</ul>
-
-          
+          背景自己一直通过 mdadm 在软件层面对多块磁盘进行 RAID1 配置，一个主要的原因是 mdadm 是 KickStart 默认软件。因为只是 RAID1，所以使用起来也是比较方便，虽然有些小坑，但总体来说还好。最近遇到一个问题， mdadm 在配置 RAID1 时，磁盘同步很慢。
+现象先说下磁
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/11/15/为什么你的-mdadm-同步这么慢/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1977,88 +1603,18 @@
       
         
           
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>交换机和路由器大家应该都听说过，大部分也用过，但是它俩有啥联系，又有啥区别？</p>
-<p>P.S. 最近看《OSTEP》看的脑子有点短路，趁着周末看点网络的东西。</p>
-<h2 id="路由器"><a href="#路由器" class="headerlink" title="路由器"></a>路由器</h2><blockquote>
-<p>路由器（英语：Router，又称路径器）是一种电讯网络设备，提供路由与转送两种重要机制，可以决定封包从来源端到目的端所经过的路由路径（host 到 host 之间的传输路径），这个过程称为路由；将路由器输入端的封包移送至适当的路由器输出端（在路由器内部进行），这称为转送。路由工作在OSI模型的第三层——即网络层，例如网际协议（IP）。</p>
-</blockquote>
-<p>路由器主要具有两个职能：</p>
-<ul>
-<li>路由器确保信息不到达不需要到达的位置</li>
-<li>路由器确保信息到达所需要的正确目的地</li>
-</ul>
-<p>在执行以上这两种职能中，路由器连接两个网络，将信息从一个网络传送至另一个网络。在某些情况下，还执行两个网络间的多种协议的翻译职能。此外它还确保网络之间通信路由的相互独立，预防其中一个网络上的多余流量溢出到另一个网络上。该过程称为路由选择。</p>
-<p>路由选择是 OSI 模型第三层（网络层的）一个功能。路由器通过网络层协议头如 IP 头（包含源地址和目的地址）和路由表，选择转发数据包的最佳路径。为选择任意两个主机间的最佳路由，实现路由器间的通信，通常需要应用如 ICMP 这样的路由选择协议。</p>
-<h2 id="交换机"><a href="#交换机" class="headerlink" title="交换机"></a>交换机</h2><blockquote>
-<p>网络交换机（Network switch）是一种网络数据转发设备，能够对数据包进行高速的“交换”。二层交换机工作于OSI参考模型的第二层，即数据链路层。</p>
-</blockquote>
-<blockquote>
-<p>交换机内部的CPU会在每个端口成功连接时，通过将MAC地址和端口对应，形成一张 MAC 表。在今后的通讯中，发往该MAC地址的数据包将仅送往其对应的端口，而不是所有的端口。交换机对数据包的转发是建立在MAC (Media Access Control) 地址–物理地址基础之上的，对于IP 网络协议来说，它是透明的，即交换机在转发数据包时，不知道也无须知道信源机和信宿机的IP 地址，只需知其物理地址即MAC 地址。</p>
-</blockquote>
-<blockquote>
-<p>交换机在操作过程当中会不断的收集资料去建立它本身的一个地址表，这个表相当简单，它说明了某个MAC 地址是在哪个端口上被发现的，所以当交换机收到一个TCP/IP 封包时，它便会看一下该数据包的目的 MAC 地址，核对一下自己的地址表以确认应该从哪个端口把数据包发出去。由于这个过程比较简单，加上这功能由一崭新硬件进行——ASIC (Application Specific Integrated Circuit) ，因此速度相当快，一般只需几十微秒，交换机便可决定一个IP 封包该往那里送。</p>
-</blockquote>
-<blockquote>
-<p>值得一提的是：万一交换机收到一个不认识的封包，就是说如果目的地MAC 地址不能在地址表中找到时，交换机会把IP 封包”扩散”出去，即把它从每一个端口中送出去，就如交换机在处理一个收到的广播封包时一样。</p>
-</blockquote>
-<blockquote>
-<p>二层交换机的弱点正是它处理广播封包的手法不太有效，比方说，当一个交换机收到一个从TCP/IP 工作站上发出来的广播封包时，他便会把该封包传到所有其他端口去，哪怕有些端口上连的是IPX 或DECnet 工作站。这样一来，非TCP/IP 节点的带宽便会受到负面的影响，就算同样的TCP/IP 节点，如果他们的子网跟发送那个广播封包的工作站的子网相同，那么他们也会无原无故地收到一些与他们毫不相干的网络广播，整个网络的效率因此会大打折扣。</p>
-</blockquote>
-<h2 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h2><table>
-<thead>
-<tr>
-<th></th>
-<th>路由器</th>
-<th>交换机</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>OSI</td>
-<td>网络层</td>
-<td>数据链路层</td>
-</tr>
-<tr>
-<td>数据传输地址</td>
-<td>IP 地址</td>
-<td>MAC 地址</td>
-</tr>
-<tr>
-<td>使用范围</td>
-<td>局域网/广域网</td>
-<td>局域网</td>
-</tr>
-<tr>
-<td>存储信息</td>
-<td>路由表</td>
-<td>MAC 地址与端口映射表</td>
-</tr>
-<tr>
-<td>传输方式</td>
-<td>全双工</td>
-<td>全双工</td>
-</tr>
-<tr>
-<td>隔离方式</td>
-<td>划分子网</td>
-<td>划分 VLAN</td>
-</tr>
-<tr>
-<td>具体用途</td>
-<td>连接多个网络</td>
-<td>连接一个网络内的多个设备</td>
-</tr>
-</tbody>
-</table>
-<p>那么路由器和交换机可以互相替换么？</p>
-<p>路由器通常带有 WAN 口和多个 LAN 口，其中多个 LAN 口可以看作一个小型的交换机，只是端口数量较少。二层交换机无法替换路由器，因为不具有路由转发的功能。但是现在存在三层交换机，可以实现路由器中的路由转发功能，甚至看到部分三层交换机已经支持了 NAT 功能，那么当不同 VLAN 之间的网络设备想要进行通信，就可以直接通过三层交换机找到对应路由，交换机学习到了 MAC 地址与 IP 地址的对应关系后，后续直接通过二层联通，不需要经过查找路由这一步了。</p>
-<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
-<li><a href="https://pc.net/helpcenter/answers/difference_between_switch_and_router" target="_blank" rel="noopener">https://pc.net/helpcenter/answers/difference_between_switch_and_router</a></li>
-<li><a href="https://www.diffen.com/difference/Router_vs_Switch" target="_blank" rel="noopener">https://www.diffen.com/difference/Router_vs_Switch</a></li>
-<li><a href="https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8" target="_blank" rel="noopener">https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8</a></li>
-</ul>
-
-          
+          背景交换机和路由器大家应该都听说过，大部分也用过，但是它俩有啥联系，又有啥区别？
+P.S. 最近看《OSTEP》看的脑子有点短路，趁着周末看点网络的东西。
+路由器
+路由器（英语：Router，又称路径器）是一种电讯网络设备，提供路由与转送两种重要机制，可以决定封包从来源端到目的端所经过的路由路径（h
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/11/09/路由器-vs-交换机/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
