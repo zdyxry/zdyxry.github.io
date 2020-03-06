@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景现在大多数 Linux 发行版是由 systemd 来进行系统管理了， systemd 也是越来越复杂，但是常用的操作就那么多，今天来说说自己常用的操作及配置。 操作daemon-reload在给系统新增服务的时候，通常要不断的改 test.service 配置文件，在改配置文件后，通常需要执行 systemctl daemon-reload 来重新加在 systemd 配置。 no-page">
+<meta name="keywords" content="Linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="systemd 常用操作及配置">
+<meta property="og:url" content="https://zdyxry.github.io/2020/03/06/systemd-常用操作及配置/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景现在大多数 Linux 发行版是由 systemd 来进行系统管理了， systemd 也是越来越复杂，但是常用的操作就那么多，今天来说说自己常用的操作及配置。 操作daemon-reload在给系统新增服务的时候，通常要不断的改 test.service 配置文件，在改配置文件后，通常需要执行 systemctl daemon-reload 来重新加在 systemd 配置。 no-page">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-03-06T13:03:45.055Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="systemd 常用操作及配置">
+<meta name="twitter:description" content="背景现在大多数 Linux 发行版是由 systemd 来进行系统管理了， systemd 也是越来越复杂，但是常用的操作就那么多，今天来说说自己常用的操作及配置。 操作daemon-reload在给系统新增服务的时候，通常要不断的改 test.service 配置文件，在改配置文件后，通常需要执行 systemctl daemon-reload 来重新加在 systemd 配置。 no-page">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2020/03/06/systemd-常用操作及配置/">
+
+
+
+
+
+  <title>systemd 常用操作及配置 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/03/06/systemd-常用操作及配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">systemd 常用操作及配置</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-03-06T21:02:49+08:00">
+                2020-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/03/06/systemd-常用操作及配置/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/03/06/systemd-常用操作及配置/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>现在大多数 Linux 发行版是由 systemd 来进行系统管理了， systemd 也是越来越复杂，但是常用的操作就那么多，今天来说说自己常用的操作及配置。</p>
+<h2 id="操作"><a href="#操作" class="headerlink" title="操作"></a>操作</h2><h3 id="daemon-reload"><a href="#daemon-reload" class="headerlink" title="daemon-reload"></a>daemon-reload</h3><p>在给系统新增服务的时候，通常要不断的改 test.service 配置文件，在改配置文件后，通常需要执行 <code>systemctl daemon-reload</code> 来重新加在 systemd 配置。</p>
+<h3 id="no-page"><a href="#no-page" class="headerlink" title="no-page"></a>no-page</h3><p>通常使用 journalctl 查看服务日志，但是当日志超过当前行可显示最大字符数时，默认会将日志截断，此时可以使用 <code>journalctl &lt;service&gt; --no-age</code> 来让日志自动折行。</p>
+<h3 id="disk-usage"><a href="#disk-usage" class="headerlink" title="disk-usage"></a>disk-usage</h3><p>systemd 日志配置文件在 <code>/etc/systemd/journald.conf</code> ，那么如果我想查看一个服务的日志占用空间，可以用 <code>journalctl &lt;servie&gt; --disk-usage</code> 命令查看。</p>
+<h3 id="poweroff"><a href="#poweroff" class="headerlink" title="poweroff"></a>poweroff</h3><p>Linux 下关机命令有很多， <code>init</code>,<code>shutdown</code>,<code>poweroff</code> ，但是如果你注意过会发现以下事实：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@localhost:~ </span><br><span class="line"><span class="meta"> $</span><span class="bash"> ll `<span class="built_in">which</span> init`</span></span><br><span class="line">lrwxrwxrwx. 1 root root 22 8月  22 2019 /usr/sbin/init -&gt; ../lib/systemd/systemd</span><br><span class="line">root@localhost:~ </span><br><span class="line"><span class="meta"> $</span><span class="bash"> ll `<span class="built_in">which</span> poweroff`</span></span><br><span class="line">lrwxrwxrwx. 1 root root 16 8月  22 2019 /usr/sbin/poweroff -&gt; ../bin/systemctl</span><br><span class="line">root@localhost:~ </span><br><span class="line"><span class="meta"> $</span><span class="bash"> ll `<span class="built_in">which</span> shutdown`</span></span><br><span class="line">lrwxrwxrwx. 1 root root 16 8月  22 2019 /usr/sbin/shutdown -&gt; ../bin/systemctl</span><br></pre></td></tr></table></figure>
+<p>是的，systemd 大法好，systemd 通过判断 <code>$0</code> 名称来执行对应命令，那我们就可以执行 <code>systemctl poweroff</code> 来进行关机。</p>
+<h3 id="list-dependencies"><a href="#list-dependencies" class="headerlink" title="list-dependencies"></a>list-dependencies</h3><p>systemd 可以指定服务的依赖，在关键字 <code>After</code>,<code>Before</code>,<code>Requires</code> 来指定，通过 <code>systemctl list-dependencies &lt;service&gt;</code> 来显示服务的具体依赖路径。</p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><h3 id="Restart"><a href="#Restart" class="headerlink" title="Restart"></a>Restart</h3><p>大部分服务都是一个常驻进程，我们通常希望它能在 crash、kill、异常中断等情况下仍保持运行，所以我们可以在 <code>[Servie]</code> 中指定 <code>Restart=on-failure</code> 来完成目的。</p>
+<h3 id="TimeoutStopSec"><a href="#TimeoutStopSec" class="headerlink" title="TimeoutStopSec"></a>TimeoutStopSec</h3><p>在通过 <code>systemctl stop</code> 进行服务停止时，如果在 <code>ExecStop</code> 中指定的操作耗时较长，我们可以通过添加 <code>TimeoutStopSec=10s</code> 来设置超时时间。</p>
+<h3 id="RefuseManualStop"><a href="#RefuseManualStop" class="headerlink" title="RefuseManualStop"></a>RefuseManualStop</h3><p>如果有些服务我们只想让它处于启动状态，或者通过依赖自动启动，而不想受人为因素干扰，那么我们可以通过设置 <code>RefuseManualStop=true</code> 来保证服务无法被人工停止，比如 rdma.service：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@yiran 21:10:36 ~]$systemctl stop rdma</span><br><span class="line">Failed to stop rdma.service: Operation refused, unit rdma.service may be requested by dependency only (it is configured to refuse manual start/stop).</span><br><span class="line">See system logs and 'systemctl status rdma.service' for details.</span><br></pre></td></tr></table></figure>
+<h3 id="PartOf"><a href="#PartOf" class="headerlink" title="PartOf"></a><code>PartOf</code></h3><p>与 Requires= 类似， 不同之处在于：仅作用于单元的停止或重启。 其含义是，当停止或重启这里列出的某个单元时， 也会同时停止或重启该单元自身。 注意，这个依赖是单向的， 该单元自身的停止或重启并不影响这里列出的单元。</p>
+<p>如果 a.service 中包含了 PartOf=b.service ，那么这个依赖关系将在 b.service 的属性列表中显示为 ConsistsOf=a.service 。 也就是说，不能直接设置 ConsistsOf= 依赖。</p>
+<h3 id><a href="#" class="headerlink" title="@"></a><code>@</code></h3><p>在 Linux 上配置过 openvpn 的同学应该都看到过一些 <a href="mailto:`openvpn@client.service" target="_blank" rel="noopener">`openvpn@client.service</a>` 这样的例子：</p>
+<blockquote>
+<p>若需在系统启动时自动启动 OpenVPN，对服务器端与客户端，都可以采用在对应机器上 启用 openvpn@<configuration>.service 的方式配置。例如，如果客户端配置文件是 /etc/openvpn/client.conf，则服务名称应为 <a href="mailto:openvpn@client.service" target="_blank" rel="noopener">openvpn@client.service</a>。或者，如果服务器端配置文件是 /etc/openvpn/server.conf，则服务名称应为 <a href="mailto:openvpn@server.service" target="_blank" rel="noopener">openvpn@server.service</a>。 </configuration></p>
+</blockquote>
+<p>我们来看下对应的 systemd 配置文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">yiran@t480:~/Downloads </span><br><span class="line"> $ cat /lib/systemd/system/openvpn@.service</span><br><span class="line"></span><br><span class="line">[Unit]</span><br><span class="line">Description=OpenVPN connection to %i</span><br><span class="line">PartOf=openvpn.service</span><br><span class="line">ReloadPropagatedFrom=openvpn.service</span><br><span class="line">Before=systemd-user-sessions.service</span><br><span class="line">After=network-online.target</span><br><span class="line">Wants=network-online.target</span><br><span class="line">Documentation=man:openvpn(8)</span><br><span class="line">Documentation=https://community.openvpn.net/openvpn/wiki/Openvpn24ManPage</span><br><span class="line">Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Type=notify</span><br><span class="line">PrivateTmp=true</span><br><span class="line">WorkingDirectory=/etc/openvpn</span><br><span class="line">ExecStart=/usr/sbin/openvpn --daemon ovpn-%i --status /run/openvpn/%i.status 10 --cd /etc/openvpn --script-security 2 --config /etc/openvpn/%i.conf --writepid /run/openvpn/%i.pid</span><br><span class="line">PIDFile=/run/openvpn/%i.pid</span><br><span class="line">KillMode=process</span><br><span class="line">ExecReload=/bin/kill -HUP $MAINPID</span><br><span class="line">CapabilityBoundingSet=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_SETGID CAP_SETUID CAP_SYS_CHROOT CAP_DAC_OVERRIDE CAP_AUDIT_WRITE</span><br><span class="line">LimitNPROC=100</span><br><span class="line">DeviceAllow=/dev/null rw</span><br><span class="line">DeviceAllow=/dev/net/tun rw</span><br><span class="line">ProtectSystem=true</span><br><span class="line">ProtectHome=true</span><br><span class="line">RestartSec=5s</span><br><span class="line">Restart=on-failure</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+<p>可以看到其实我们 <code>@</code> 后面的字段，对应的就是配置文件中的 <code>%i</code> ，这样可以让我们很方便的针对同一个应用的不同实例来创建对应的服务。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>systemd 大法好，博大精深。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://wiki.archlinux.org/index.php/OpenVPN_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#systemd_%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE" target="_blank" rel="noopener">https://wiki.archlinux.org/index.php/OpenVPN_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#systemd_%E6%9C%8D%E5%8A%A1%E9%85%8D%E7%BD%AE</a></li>
+<li><a href="http://www.huzs.net/?p=2180" target="_blank" rel="noopener">http://www.huzs.net/?p=2180</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/03/02/RDMA-概念/" rel="next" title="DMA & RDMA 基本概念">
+                <i class="fa fa-chevron-left"></i> DMA & RDMA 基本概念
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">114</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">29</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#操作"><span class="nav-number">2.</span> <span class="nav-text">操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#daemon-reload"><span class="nav-number">2.1.</span> <span class="nav-text">daemon-reload</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#no-page"><span class="nav-number">2.2.</span> <span class="nav-text">no-page</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#disk-usage"><span class="nav-number">2.3.</span> <span class="nav-text">disk-usage</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#poweroff"><span class="nav-number">2.4.</span> <span class="nav-text">poweroff</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-dependencies"><span class="nav-number">2.5.</span> <span class="nav-text">list-dependencies</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置"><span class="nav-number">3.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Restart"><span class="nav-number">3.1.</span> <span class="nav-text">Restart</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TimeoutStopSec"><span class="nav-number">3.2.</span> <span class="nav-text">TimeoutStopSec</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RefuseManualStop"><span class="nav-number">3.3.</span> <span class="nav-text">RefuseManualStop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PartOf"><span class="nav-number">3.4.</span> <span class="nav-text">PartOf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#"><span class="nav-number">3.5.</span> <span class="nav-text">@</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">5.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2020/03/06/systemd-常用操作及配置/';
+          this.page.identifier = '2020/03/06/systemd-常用操作及配置/';
+          this.page.title = 'systemd 常用操作及配置';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
