@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景在我们内部产品中，一直有关于网络性能数据监控需求，我们之前是直接使用 ping 命令收集结果，每台服务器去 ping (N-1) 台，也就是 N^2 的复杂度，稳定性和性能都存在一些问题，最近打算对这部分进行重写，在重新调研期间看到了 Pingmesh 这篇论文，Pingmesh 是微软用来监控数据中心网络情况而开发的软件，通过阅读这篇论文来学习下他们是怎么做的。 数据中心自身是极为复杂的，其">
+<meta name="keywords" content="Linux,KVM,Ops">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文阅读 《Pingmesh: A Large-Scale System for Data Center Network Latency Measurement and Analysis》">
+<meta property="og:url" content="https://zdyxry.github.io/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景在我们内部产品中，一直有关于网络性能数据监控需求，我们之前是直接使用 ping 命令收集结果，每台服务器去 ping (N-1) 台，也就是 N^2 的复杂度，稳定性和性能都存在一些问题，最近打算对这部分进行重写，在重新调研期间看到了 Pingmesh 这篇论文，Pingmesh 是微软用来监控数据中心网络情况而开发的软件，通过阅读这篇论文来学习下他们是怎么做的。 数据中心自身是极为复杂的，其">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://zdyxry.github.io/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/pingmesh-1.png">
+<meta property="og:image" content="https://zdyxry.github.io/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/pingmesh-2.png">
+<meta property="og:updated_time" content="2020-03-27T14:15:01.486Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="论文阅读 《Pingmesh: A Large-Scale System for Data Center Network Latency Measurement and Analysis》">
+<meta name="twitter:description" content="背景在我们内部产品中，一直有关于网络性能数据监控需求，我们之前是直接使用 ping 命令收集结果，每台服务器去 ping (N-1) 台，也就是 N^2 的复杂度，稳定性和性能都存在一些问题，最近打算对这部分进行重写，在重新调研期间看到了 Pingmesh 这篇论文，Pingmesh 是微软用来监控数据中心网络情况而开发的软件，通过阅读这篇论文来学习下他们是怎么做的。 数据中心自身是极为复杂的，其">
+<meta name="twitter:image" content="https://zdyxry.github.io/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/pingmesh-1.png">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/">
+
+
+
+
+
+  <title>论文阅读 《Pingmesh: A Large-Scale System for Data Center Network Latency Measurement and Analysis》 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">论文阅读 《Pingmesh: A Large-Scale System for Data Center Network Latency Measurement and Analysis》</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-03-26T20:24:09+08:00">
+                2020-03-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在我们内部产品中，一直有关于网络性能数据监控需求，我们之前是直接使用 <code>ping</code> 命令收集结果，每台服务器去 ping (N-1) 台，也就是 N^2 的复杂度，稳定性和性能都存在一些问题，最近打算对这部分进行重写，在重新调研期间看到了 Pingmesh 这篇论文，Pingmesh 是微软用来监控数据中心网络情况而开发的软件，通过阅读这篇论文来学习下他们是怎么做的。</p>
+<p>数据中心自身是极为复杂的，其中网络涉及到的设备很多就显得更为复杂，一个大型数据中心都有成百上千的节点、网卡、交换机、路由器以及无数的网线、光纤。在这些硬件设备基础上构建了很多软件，比如搜索引擎、分布式文件系统、分布式存储等等。在这些系统运行过程中，面临一些问题：如何判断一个故障是网络故障？如何定义和追踪网络的 SLA？出了故障如何去排查？</p>
+<p>基于这几点问题，微软设计开发了 Pingmesh，用来记录和分析数据中心的网络情况。在微软内部 Pingmesh 每天会记录 24TB 数据，进行 2k 亿次 ping 探测，通过这些数据，微软可以很好的进行网络故障判定和及时的修复。</p>
+<h2 id="数据中心网络"><a href="#数据中心网络" class="headerlink" title="数据中心网络"></a>数据中心网络</h2><p>常见的数据中心网络拓扑：</p>
+<img src="/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/pingmesh-1.png" title="pingmesh-1">
+<p>网络延时计算方式：server A 发送消息到 server B 接受消息的时间。最终使用 RTT 时间，RTT 一个好处是绝对时间，与时钟不相关。</p>
+<p>在大多数情况下，大家不会去关心延时具体是什么导致的，都是直接归结于网络原因，让网络团队去排查，实际上是浪费了很多人力成本。延时变高有很多原因：CPU 繁忙、服务自身 Bug、网络原因等等。往往丢包会伴随着延时升高，因为丢包意味着会发生重传，所以丢包也是需要观察的重点。</p>
+<p>因为 Pingmesh 运行在微软内部，所以依托于微软自己的基础架构，有自动化管理系统 Autopilot，有大数据系统 Cosmos，也有类似于 SQL 的脚本语言 SCOPE。</p>
+<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p>根据上面的需求，Pingmesh 先评估了现有的开源工具，不符合的原因有很多，大多数工具都是以命令行形式呈现，一般是出现故障了去使用工具排查，而且工具提供的数据也不全面，有可能正在运行工具问题已经解决了。当然这并不是说已有的工具没有用，只能说不适合 Pingmesh。</p>
+<p>Pingmesh 是松耦合设计，每个组件都是可以独立运行的，分为 3 个组件。在设计的时候需要考虑几点：</p>
+<ul>
+<li>因为要运行在所有的 server 上，所以不能占用太多的计算资源或网络资源</li>
+<li>需要是灵活配置的且高可用的的</li>
+<li>记录的数据需要进行合理的汇总分析</li>
+</ul>
+<p>Pingmesh 架构设计：</p>
+<img src="/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/pingmesh-2.png" title="pingmesh-2">
+<h3 id="Controller"><a href="#Controller" class="headerlink" title="Controller"></a>Controller</h3><p>Controller 主要负责生成 pinglist 文件，这个文件是 XML 格式的，pinglist 的生成是很重要的，需要根据实际的数据中心网络拓扑进行及时更新。</p>
+<p>在生成 pinglist 时， Controller 为了避免开销，分为3 个级别：</p>
+<ol>
+<li>在机架内部，让所有的 server 互相 ping，每个 server ping （N-1） 个 server</li>
+<li>在机架之间，则每个机架选几个 server ping 其他机架的 server，保证 server 所属的 ToR 不同</li>
+<li>在数据中心之间，则选择不同的数据中心的几个不同机架的 server 来ping </li>
+</ol>
+<p>Controller 在生成 pinglist 文件后，通过 HTTP 提供出去，Agent 会定期获取 pinglist 来更新 agent 自己的配置，也就是我们说的“拉”模式。Controller 需要保证高可用，因此需要在 VIP 后面配置多个实例，每个实例的算法一致，pinglist 文件内容也一致，保证可用性。</p>
+<h3 id="Agent"><a href="#Agent" class="headerlink" title="Agent"></a>Agent</h3><p>微软数据中心的每个 server 都会运行 Agent，用来真正做 ping 动作的服务。为了保证获取结果与真实的服务一致，Pingmesh 没有采用 ICMP ping，而是采用的 TCP/HTTP ping。所以每个 Agent 即是 Server 也是 Client。每个 ping 动作都开启一个新的连接，主要为了减少 Pingmesh 造成的 TCP 并发。</p>
+<p>Agent 要保证自己是可靠的，不会造成一些严重的后果，其次要保证自己使用的资源要足够的少，毕竟要运行在每个 server 上。两个server ping 的周期最小是 10s，Packet 大小最大 64kb。针对灵活配置的需求，Agent 会定期去 Controller 上拉取 pinglist，如果 3 次拉取不到，那么就会删除本地已有 pinglist，停止 ping 动作。</p>
+<p>在进行 ping 动作后，会将结果保存在内存中，当保存结果超过一定阈值或者到达了超时时间，就将结果上传到 Cosmos 中用于分析，如果上传失败，会有重试，超过重试次数则将数据丢弃，保证 Agent 的内存使用。</p>
+<h3 id="Analysis"><a href="#Analysis" class="headerlink" title="Analysis"></a>Analysis</h3><p>拿到了数据就要进行分析，Pingmesh 会以 10min，1hour，1天的粒度进行统计汇总，数据的实时性最快也就是 10min ，Pingmesh 还借助内部的基础设施能够拿到 5min 级别的数据结果，算是一种“实时”监控吧。</p>
+<h2 id="网络状况"><a href="#网络状况" class="headerlink" title="网络状况"></a>网络状况</h2><p>根据论文中提到的，不同负载的数据中心的数据是有很大差异的，在 P99.9 时延时大概在 10-20ms，在 P99.99 延时大概在100+ms 。关于丢包率的计算，因为没有用 ICMP ping 的方式，所以这里是一种新的计算方式，（一次失败 + 二次失败）次数/（成功次数）= 丢包率。这里是每次 ping 的 timeout 是 3s，windows 重传机制等待时间是 3s，下一次 ping 的 timeout 时间是 3s，加一起也就是 9s。所以这里跟 Agent 最小探测周期 10s 是有关联的。二次失败的时间就是 （2 * RTT）+ RTO 时间。</p>
+<p>Pingmesh 的判断依据有两个，如果超过就报警：</p>
+<ul>
+<li>延时超过 5ms</li>
+<li>丢包率超过 10^(-3) </li>
+</ul>
+<p>在论文中还提到了其他的网络故障场景，交换机的静默丢包。有可能是 A 可以连通 B，但是不能连通 C。还有可能是 A 的 i 端口可以连通 B 的 j 端口，但是 A 的 m 端口不能连通 B 的 j 端口，这些都属于交换机的静默丢包的范畴。Pingmesh 通过统计这种数据，然后给交换机进行打分，当超过一定阈值时就会通过 Autopilot 来自动重启交换机，恢复交换机的能力。</p>
+<h2 id="经验学习"><a href="#经验学习" class="headerlink" title="经验学习"></a>经验学习</h2><ol>
+<li>找到可信数据，只有数据来源可信，那么分析才是有效的</li>
+<li>让服务作为 daemon 运行，保证持续的收集数据</li>
+<li>松耦合设计，每个组件都可以独立工作</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实我们自己的系统是有 Prometheus 这样的监控系统的，但是当遇到交换机级别的间歇性故障时，Prometheus 也是故障的状态，所以也就不会收集 exporter 汇报的数据，也就更没办法产生告警了。所以如果遇到那种长时间持续的故障反而是好事，至少我们有一个足够的状态去排查哪里出了问题，否则真的是间歇性故障仅仅依靠 ping, traceroute, iperf, netstat 之类的工具去排查是没什么效果的，只有我们知道过去一段时间的网络情况，才能去排查。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://conferences.sigcomm.org/sigcomm/2015/pdf/papers/p139.pdf" target="_blank" rel="noopener">https://conferences.sigcomm.org/sigcomm/2015/pdf/papers/p139.pdf</a></li>
+<li><a href="http://ninjadq.com/2017/04/01/linux-rto" target="_blank" rel="noopener">http://ninjadq.com/2017/04/01/linux-rto</a></li>
+<li><a href="https://yi-ran.github.io/2019/03/27/Pingmesh-SIGCOMM-2015/" target="_blank" rel="noopener">https://yi-ran.github.io/2019/03/27/Pingmesh-SIGCOMM-2015/</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/03/20/2020-第12周-LeetCode-记录/" rel="next" title="2020 第12周 LeetCode 记录">
+                <i class="fa fa-chevron-left"></i> 2020 第12周 LeetCode 记录
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">120</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">29</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据中心网络"><span class="nav-number">2.</span> <span class="nav-text">数据中心网络</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设计"><span class="nav-number">3.</span> <span class="nav-text">设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Controller"><span class="nav-number">3.1.</span> <span class="nav-text">Controller</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Agent"><span class="nav-number">3.2.</span> <span class="nav-text">Agent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Analysis"><span class="nav-number">3.3.</span> <span class="nav-text">Analysis</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络状况"><span class="nav-number">4.</span> <span class="nav-text">网络状况</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#经验学习"><span class="nav-number">5.</span> <span class="nav-text">经验学习</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">7.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/';
+          this.page.identifier = '2020/03/26/论文阅读-《Pingmesh-A-Large-Scale-System-for-Data-Center-Network-Latency-Measurement-and-Analysis》/';
+          this.page.title = '论文阅读 《Pingmesh: A Large-Scale System for Data Center Network Latency Measurement and Analysis》';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
