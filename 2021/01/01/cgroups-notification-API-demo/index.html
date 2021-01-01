@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,cgroups,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="cgroups notification API demo12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758package mainimport (        &quot;flag&quot;        &quot;fmt&quot;        &quot;io/iouti">
+<meta name="keywords" content="Linux,cgroups">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cgroups notification API demo">
+<meta property="og:url" content="https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="cgroups notification API demo12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758package mainimport (        &quot;flag&quot;        &quot;fmt&quot;        &quot;io/iouti">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-01-01T10:32:47.325Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="cgroups notification API demo">
+<meta name="twitter:description" content="cgroups notification API demo12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758package mainimport (        &quot;flag&quot;        &quot;fmt&quot;        &quot;io/iouti">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/">
+
+
+
+
+
+  <title>cgroups notification API demo | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">cgroups notification API demo</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-01-01T18:28:00+00:00">
+                2021-01-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/01/01/cgroups-notification-API-demo/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/01/01/cgroups-notification-API-demo/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="cgroups-notification-API-demo"><a href="#cgroups-notification-API-demo" class="headerlink" title="cgroups notification API demo"></a>cgroups notification API demo</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">        <span class="string">"flag"</span></span><br><span class="line">        <span class="string">"fmt"</span></span><br><span class="line">        <span class="string">"io/ioutil"</span></span><br><span class="line">        <span class="string">"os"</span></span><br><span class="line">        <span class="string">"path/filepath"</span></span><br><span class="line"></span><br><span class="line">        <span class="string">"golang.org/x/sys/unix"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">        cgName := flag.String(<span class="string">"cgName"</span>, <span class="string">"yiran"</span>, <span class="string">"cgroup path"</span>)</span><br><span class="line">        flag.Parse()</span><br><span class="line">        level := <span class="string">"critical"</span></span><br><span class="line">        cgDir := filepath.Join(<span class="string">"/sys/fs/cgroup/memory/"</span>, *cgName)</span><br><span class="line">        evName := <span class="string">"memory.pressure_level"</span></span><br><span class="line">        fmt.Printf(<span class="string">"cgroup name is: %s\n"</span>, *cgName)</span><br><span class="line">        fmt.Printf(<span class="string">"cgroup path is: %s\n"</span>, cgDir)</span><br><span class="line">        fmt.Printf(<span class="string">"cgroup event name is: %s\n"</span>, evName)</span><br><span class="line"></span><br><span class="line">        evFile, err := os.Open(filepath.Join(cgDir, evName))</span><br><span class="line">        <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">                <span class="built_in">panic</span>(err)</span><br><span class="line">        &#125;</span><br><span class="line">        fd, err := unix.Eventfd(<span class="number">0</span>, unix.EFD_CLOEXEC)</span><br><span class="line">        <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">                evFile.Close()</span><br><span class="line">                <span class="built_in">panic</span>(err)</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        eventfd := os.NewFile(<span class="keyword">uintptr</span>(fd), <span class="string">"eventfd"</span>)</span><br><span class="line"></span><br><span class="line">        eventControlPath := filepath.Join(cgDir, <span class="string">"cgroup.event_control"</span>)</span><br><span class="line">        data := fmt.Sprintf(<span class="string">"%d %d %s"</span>, eventfd.Fd(), evFile.Fd(), level)</span><br><span class="line">        <span class="keyword">if</span> err := ioutil.WriteFile(eventControlPath, []<span class="keyword">byte</span>(data), <span class="number">0700</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">                eventfd.Close()</span><br><span class="line">                evFile.Close()</span><br><span class="line">                <span class="built_in">panic</span>(err)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">                eventfd.Close()</span><br><span class="line">                evFile.Close()</span><br><span class="line">        &#125;()</span><br><span class="line"></span><br><span class="line">        buf := <span class="built_in">make</span>([]<span class="keyword">byte</span>, <span class="number">8</span>)</span><br><span class="line">        <span class="keyword">for</span> &#123;</span><br><span class="line">                fmt.Println(<span class="string">"start..."</span>)</span><br><span class="line">                <span class="keyword">if</span> _, err := eventfd.Read(buf); err != <span class="literal">nil</span> &#123;</span><br><span class="line">                        <span class="built_in">panic</span>(err)</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> _, err := os.Lstat(eventControlPath); os.IsNotExist(err) &#123;</span><br><span class="line">                        <span class="built_in">panic</span>(err)</span><br><span class="line">                &#125;</span><br><span class="line">                fmt.Println(<span class="string">"test success ..."</span>)</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>准备 memory cgroup 配置，并限制内存上限：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">go build /tmp/demo.go</span><br><span class="line">mkdir /sys/fs/cgroup/memory/yiran/</span><br><span class="line"><span class="built_in">echo</span> 10M &gt;  /sys/fs/cgroup/memory/yiran/memory.limit_in_bytes</span><br><span class="line"><span class="built_in">echo</span> $$ &gt; /sys/fs/cgroup/memory/yiran/tasks</span><br><span class="line">nohup /tmp/demo -cgName=yiran &amp; </span><br><span class="line">dd <span class="keyword">if</span>=/dev/zero | <span class="built_in">read</span> x</span><br></pre></td></tr></table></figure>
+<p><code>tailf /tmp/nohup.out</code> 查看输出结果。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt" target="_blank" rel="noopener">https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+            <a href="/tags/cgroups/" rel="tag"># cgroups</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/12/31/2020-年终总结/" rel="next" title="2020 年终总结">
+                <i class="fa fa-chevron-left"></i> 2020 年终总结
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">158</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#cgroups-notification-API-demo"><span class="nav-number">1.</span> <span class="nav-text">cgroups notification API demo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">2.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/';
+          this.page.identifier = '2021/01/01/cgroups-notification-API-demo/';
+          this.page.title = 'cgroups notification API demo';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
