@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Python,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。 MasterGunicorn 启动入口： 123WSGIApplication(&amp;quot;%(prog)s [OPTIONS] [APP_MODULE]&amp;quot;).run()    BaseApplication().run()        Arbit">
+<meta name="keywords" content="Python">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Gunicorn 信号处理">
+<meta property="og:url" content="https://zdyxry.github.io/2021/06/27/Gunicorn-信号处理/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。 MasterGunicorn 启动入口： 123WSGIApplication(&amp;quot;%(prog)s [OPTIONS] [APP_MODULE]&amp;quot;).run()    BaseApplication().run()        Arbit">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-06-27T10:57:57.557Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Gunicorn 信号处理">
+<meta name="twitter:description" content="背景最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。 MasterGunicorn 启动入口： 123WSGIApplication(&amp;quot;%(prog)s [OPTIONS] [APP_MODULE]&amp;quot;).run()    BaseApplication().run()        Arbit">
+<meta name="twitter:creator" content="@zhouyiran1994">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2021/06/27/Gunicorn-信号处理/">
+
+
+
+
+
+  <title>Gunicorn 信号处理 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2021/06/27/Gunicorn-信号处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Gunicorn 信号处理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-06-27T18:55:41+00:00">
+                2021-06-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/06/27/Gunicorn-信号处理/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/06/27/Gunicorn-信号处理/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。</p>
+<h3 id="Master"><a href="#Master" class="headerlink" title="Master"></a>Master</h3><p>Gunicorn 启动入口：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">WSGIApplication(&quot;%(prog)s [OPTIONS] [APP_MODULE]&quot;).run()</span><br><span class="line">    BaseApplication().run()</span><br><span class="line">        Arbiter(self).run()</span><br></pre></td></tr></table></figure>
+<p>Master 主要控制逻辑实现在 <code>Arbiter</code> 中，包括信号处理和主循环逻辑。在调用 <code>Arbiter().run()</code> 会最终调用到 <code>Arbiter.init_signals()</code> ，在该函数中会将 Master 中定义的需要处理的信号函数进行相应的注册：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Arbiter().run():</span><br><span class="line">    Arbiter().start() </span><br><span class="line">        Arbiter().init_signals() # 初始化 Master 信号处理</span><br><span class="line">            # initialize all signals</span><br><span class="line">            for s in self.SIGNALS: # &quot;HUP QUIT INT TERM TTIN TTOU USR1 USR2 WINCH&quot;</span><br><span class="line">                signal.signal(s, self.signal)</span><br><span class="line">            signal.signal(signal.SIGCHLD, self.handle_chld)</span><br></pre></td></tr></table></figure>
+<p>所有定义的信号处理函数都是 <code>Aribiter().signal()</code> ，该函数将接收到的信号存放在 <code>Arbiter.SIG_QUEUE</code> 中，最多保留 5 个信号，然后触发 <code>Arbiter().wakeup()</code> ，在 <code>Arbiter().wakeup()</code> 中，向 <code>Arbiter.PIPE</code> 管道写入数据，主要作用是唤醒 Master loop。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">def signal(self, sig, frame):</span><br><span class="line">    if len(self.SIG_QUEUE) &lt; 5:</span><br><span class="line">        self.SIG_QUEUE.append(sig)</span><br><span class="line">        self.wakeup()</span><br><span class="line"></span><br><span class="line">def wakeup(self):</span><br><span class="line">    &quot;&quot;&quot;\</span><br><span class="line">    Wake up the arbiter by writing to the PIPE</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    try:</span><br><span class="line">        os.write(self.PIPE[1], b&apos;.&apos;)</span><br><span class="line">    except IOError as e:</span><br><span class="line">        if e.errno not in [errno.EAGAIN, errno.EINTR]:</span><br><span class="line">            raise</span><br></pre></td></tr></table></figure>
+<p>在 Arbiter 类中会实现相应的信号函数处理逻辑，针对 TERM 和 INT 信号处理的主要差异为是否会先执行 <code>Arbiter().stop(False)</code> ，最后都会 <code>raise StopIteration</code> 。对于 <code>HUP</code> 信号是执行自身的 <code>Arbiter().reload()</code> 逻辑。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">def handle_hup(self):</span><br><span class="line">    &quot;&quot;&quot;\</span><br><span class="line">    HUP handling.</span><br><span class="line">    - Reload configuration</span><br><span class="line">    - Start the new worker processes with a new configuration</span><br><span class="line">    - Gracefully shutdown the old worker processes</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    self.log.info(&quot;Hang up: %s&quot;, self.master_name)</span><br><span class="line">    self.reload()</span><br><span class="line"></span><br><span class="line">def handle_term(self):</span><br><span class="line">    &quot;SIGTERM handling&quot;</span><br><span class="line">    raise StopIteration</span><br><span class="line"></span><br><span class="line">def handle_int(self):</span><br><span class="line">    &quot;SIGINT handling&quot;</span><br><span class="line">    self.stop(False)</span><br><span class="line">    raise StopIteration</span><br><span class="line"></span><br><span class="line">def handle_quit(self):</span><br><span class="line">    &quot;SIGQUIT handling&quot;</span><br><span class="line">    self.stop(False)</span><br><span class="line">    raise StopIteration</span><br><span class="line"></span><br><span class="line">def handle_ttin(self):</span><br><span class="line">    &quot;&quot;&quot;\</span><br><span class="line">    SIGTTIN handling.</span><br><span class="line">    Increases the number of workers by one.</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    self.num_workers += 1</span><br><span class="line">    self.manage_workers()</span><br></pre></td></tr></table></figure>
+<p>在 Master 进行信号处理初始化动作后，进入到 Master loop 阶段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">try:</span><br><span class="line">    self.manage_workers()           # 启动 Worker，如果 Worker 数量不足则启动；如果数量超过预期则 kill。</span><br><span class="line"></span><br><span class="line">    while True:</span><br><span class="line">        self.maybe_promote_master()</span><br><span class="line"></span><br><span class="line">        sig = self.SIG_QUEUE.pop(0) if self.SIG_QUEUE else None</span><br><span class="line">        if sig is None:</span><br><span class="line">            self.sleep() # 如果 Master 没有接收到信号，则进入到 `Arbiter().sleep()` ，该函数从 `Arbiter.PIPE` 读取数据（阻塞），直到 `Arbiter.PIPE` 有数据后才返回</span><br><span class="line">            self.murder_workers() # 如果在当前循环中，接收到信号，则进行 worker 处理，清理无用 Worker</span><br><span class="line">            self.manage_workers() # 重新进入创建、清理 Worker 逻辑</span><br><span class="line">            continue # 进入下一循环，在下一次循环中，sig 为刚刚唤醒 Master 的信号</span><br><span class="line"></span><br><span class="line">        if sig not in self.SIG_NAMES:  # 如果接收到的信号不需要处理，则忽略</span><br><span class="line">            self.log.info(&quot;Ignoring unknown signal: %s&quot;, sig)</span><br><span class="line">            continue</span><br><span class="line"></span><br><span class="line">        signame = self.SIG_NAMES.get(sig) # 获取信号名称</span><br><span class="line">        handler = getattr(self, &quot;handle_%s&quot; % signame, None) # 获取 Master 针对该信号的处理函数</span><br><span class="line">        if not handler:</span><br><span class="line">            self.log.error(&quot;Unhandled signal: %s&quot;, signame)</span><br><span class="line">            continue</span><br><span class="line">        self.log.info(&quot;Handling signal: %s&quot;, signame)</span><br><span class="line">        handler() # 执行信号处理</span><br><span class="line">        self.wakeup() </span><br><span class="line">except (StopIteration, KeyboardInterrupt): # 如果信号为 TERM 或 INT，则会触发 Exception，进入到 `Arbiter().halt()` 逻辑，清理配置并退出进程</span><br><span class="line">    self.halt()</span><br></pre></td></tr></table></figure>
+<h3 id="Worker"><a href="#Worker" class="headerlink" title="Worker"></a>Worker</h3><p>Master 创建 Worker 时，先执行 <code>worker.init_process()</code> 用来初始化进程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">self.init_signals()</span><br><span class="line">...</span><br><span class="line"># Enter main run loop</span><br><span class="line">self.booted = True</span><br><span class="line">self.run()</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">def init_signals(self):</span><br><span class="line">    # reset signaling</span><br><span class="line">    for s in self.SIGNALS:</span><br><span class="line">        signal.signal(s, signal.SIG_DFL)</span><br><span class="line"></span><br><span class="line">    # init new signaling </span><br><span class="line">    signal.signal(signal.SIGQUIT, self.handle_quit)</span><br><span class="line">    signal.signal(signal.SIGTERM, self.handle_exit)</span><br><span class="line">    signal.signal(signal.SIGINT, self.handle_quit)</span><br><span class="line">    signal.signal(signal.SIGWINCH, self.handle_winch)</span><br><span class="line">    signal.signal(signal.SIGUSR1, self.handle_usr1)</span><br><span class="line">    signal.signal(signal.SIGABRT, self.handle_abort)</span><br><span class="line"></span><br><span class="line">    # Don&apos;t let SIGTERM and SIGUSR1 disturb active requests</span><br><span class="line">    # by interrupting system calls</span><br><span class="line">    signal.siginterrupt(signal.SIGTERM, False)</span><br><span class="line">    signal.siginterrupt(signal.SIGUSR1, False)</span><br><span class="line"></span><br><span class="line">    if hasattr(signal, &apos;set_wakeup_fd&apos;):</span><br><span class="line">        signal.set_wakeup_fd(self.PIPE[1])</span><br></pre></td></tr></table></figure>
+<p>在 Worker 中，所有的信号处理函数都是直接触发，没有采用 Master 的 <code>SIG_QUEUE</code> 形式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">def handle_usr1(self, sig, frame):</span><br><span class="line">    self.log.reopen_files()</span><br><span class="line"></span><br><span class="line">def handle_exit(self, sig, frame):</span><br><span class="line">    self.alive = False</span><br><span class="line"></span><br><span class="line">def handle_quit(self, sig, frame):</span><br><span class="line">    self.alive = False</span><br><span class="line">    # worker_int callback</span><br><span class="line">    self.cfg.worker_int(self)</span><br><span class="line">    time.sleep(0.1)</span><br><span class="line">    sys.exit(0)</span><br><span class="line"></span><br><span class="line">def handle_abort(self, sig, frame):</span><br><span class="line">    self.alive = False</span><br><span class="line">    self.cfg.worker_abort(self)</span><br><span class="line">    sys.exit(1)</span><br></pre></td></tr></table></figure>
+<p>在 Worker 的 loop 逻辑中，优先检查 <code>self.alive</code> 是否为 True，如果为 True ，则进入请求处理逻辑：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">def run_for_one(self, timeout):</span><br><span class="line">    listener = self.sockets[0]</span><br><span class="line">    while self.alive:</span><br><span class="line">        self.notify()</span><br><span class="line"></span><br><span class="line">        # Accept a connection. If we get an error telling us</span><br><span class="line">        # that no connection is waiting we fall down to the</span><br><span class="line">        # select which is where we&apos;ll wait for a bit for new</span><br><span class="line">        # workers to come give us some love.</span><br><span class="line">        try:</span><br><span class="line">            self.accept(listener)</span><br><span class="line">            # Keep processing clients until no one is waiting. This</span><br><span class="line">            # prevents the need to select() for every client that we</span><br><span class="line">            # process.</span><br><span class="line">            continue</span><br><span class="line"></span><br><span class="line">        except EnvironmentError as e:</span><br><span class="line">            if e.errno not in (errno.EAGAIN, errno.ECONNABORTED,</span><br><span class="line">                               errno.EWOULDBLOCK):</span><br><span class="line">                raise</span><br><span class="line"></span><br><span class="line">        if not self.is_parent_alive():</span><br><span class="line">            return</span><br><span class="line"></span><br><span class="line">        try:</span><br><span class="line">            self.wait(timeout)</span><br><span class="line">        except StopWaiting:</span><br><span class="line">            return</span><br></pre></td></tr></table></figure>
+<h2 id="完整流程"><a href="#完整流程" class="headerlink" title="完整流程"></a>完整流程</h2><p>以 HUP 信号为例，在 Gunicorn 文档中，HUP 可以优雅的重启 Worker 进程：</p>
+<blockquote>
+<p>HUP: Reload the configuration, start the new worker processes with a new configuration and gracefully shutdown older workers. If the application is not preloaded (using the preload_app option), Gunicorn will also load the new version of it.</p>
+</blockquote>
+<p>当 Master 进程收到 HUP 信号后：</p>
+<ul>
+<li>Master loop 唤醒，进入 <code>murder_workers</code> 和 <code>manage_workers</code> 处理</li>
+<li>Master loop 进入下一循环，获取到 HUP 信号处理函数</li>
+<li>执行 <code>Arbiter().handle_hup()</code> </li>
+<li>执行 <code>Arbiter().reload()</code> 重新加载配置，重新加载 WSGI app，并按照 Worker 配置启动新 Worker ，启动完成后，执行 <code>manage_workers</code> 进行原有 Worker 处理，因为此时 Worker 数量为预期的一倍，因此会进入停掉原有 Worker 处理逻辑，执行 <code>Arbiter().kill_worker()</code> 逻辑，执行 <code>os.kill</code> ，传递信号为 TERM</li>
+<li>此时 Master 信号处理完成，执行 <code>Arbiter().wakeup()</code> 使其重新进入 loop 阻塞逻辑。</li>
+</ul>
+<p>当 Worker 进程收到 TERM 信号后：</p>
+<ul>
+<li>执行 <code>Worker().handle_exit()</code> 逻辑，将 <code>self.alive</code> 置为 False</li>
+<li>在 Worker 的 loop 逻辑中，优先检查 <code>self.alive</code> 是否为 True，如果不为True，则处理完成当前逻辑后，下一次循环退出，以此来实现 graceful shutdown</li>
+</ul>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="http://flaneur2020.github.io/2020/01/12/note-about-graceful-shutdown/" target="_blank" rel="noopener">http://flaneur2020.github.io/2020/01/12/note-about-graceful-shutdown/</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Python/" rel="tag"># Python</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/05/22/OSTree-背景介绍/" rel="next" title="OSTree 背景介绍">
+                <i class="fa fa-chevron-left"></i> OSTree 背景介绍
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">162</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zhouyiran1994" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Master"><span class="nav-number">1.1.</span> <span class="nav-text">Master</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Worker"><span class="nav-number">1.2.</span> <span class="nav-text">Worker</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#完整流程"><span class="nav-number">2.</span> <span class="nav-text">完整流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">3.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2021/06/27/Gunicorn-信号处理/';
+          this.page.identifier = '2021/06/27/Gunicorn-信号处理/';
+          this.page.title = 'Gunicorn 信号处理';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
