@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景最近遇到了一个故障，在集群软件升级过程中，发现某一个磁盘分区变为只读，导致存储应用识别该磁盘不可用。调查发现集群升级过程中，会重新生成每个节点的 GRUB 配置文件，在执行 grub2-mkconfig 过程中导致的磁盘分区只读。记录下 grub2-mkconfig 命令执行到真正磁盘只读指令下发的流程。 调查grub2-mkconfig在执行 grub2-mkconfig 命令时，如果没有指">
+<meta name="keywords" content="Linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CentOS 执行 grub2-mkconfig 导致磁盘只读">
+<meta property="og:url" content="https://zdyxry.github.io/2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景最近遇到了一个故障，在集群软件升级过程中，发现某一个磁盘分区变为只读，导致存储应用识别该磁盘不可用。调查发现集群升级过程中，会重新生成每个节点的 GRUB 配置文件，在执行 grub2-mkconfig 过程中导致的磁盘分区只读。记录下 grub2-mkconfig 命令执行到真正磁盘只读指令下发的流程。 调查grub2-mkconfig在执行 grub2-mkconfig 命令时，如果没有指">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-10-01T23:45:42.730Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CentOS 执行 grub2-mkconfig 导致磁盘只读">
+<meta name="twitter:description" content="背景最近遇到了一个故障，在集群软件升级过程中，发现某一个磁盘分区变为只读，导致存储应用识别该磁盘不可用。调查发现集群升级过程中，会重新生成每个节点的 GRUB 配置文件，在执行 grub2-mkconfig 过程中导致的磁盘分区只读。记录下 grub2-mkconfig 命令执行到真正磁盘只读指令下发的流程。 调查grub2-mkconfig在执行 grub2-mkconfig 命令时，如果没有指">
+<meta name="twitter:creator" content="@zdyxry">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/">
+
+
+
+
+
+  <title>CentOS 执行 grub2-mkconfig 导致磁盘只读 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">CentOS 执行 grub2-mkconfig 导致磁盘只读</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-10-02T07:30:09+00:00">
+                2021-10-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近遇到了一个故障，在集群软件升级过程中，发现某一个磁盘分区变为只读，导致存储应用识别该磁盘不可用。调查发现集群升级过程中，会重新生成每个节点的 GRUB 配置文件，在执行 <code>grub2-mkconfig</code> 过程中导致的磁盘分区只读。记录下 <code>grub2-mkconfig</code> 命令执行到真正磁盘只读指令下发的流程。</p>
+<h2 id="调查"><a href="#调查" class="headerlink" title="调查"></a>调查</h2><h3 id="grub2-mkconfig"><a href="#grub2-mkconfig" class="headerlink" title="grub2-mkconfig"></a><code>grub2-mkconfig</code></h3><p>在执行 <code>grub2-mkconfig</code> 命令时，如果没有指定配置 <code>GRUB_DISABLE_OS_PROBER=true</code> 时，则 GRUB 会调用 os-prober （/etc/grub.d/30_os-prober）用于扫描其他操作系统进行后续配置。</p>
+<h3 id="os-prober"><a href="#os-prober" class="headerlink" title="os-prober"></a>os-prober</h3><p>os-prober 是用来探测其他磁盘中存在操作系统的情况。通常由各个发行版本提供，源码地址：<a href="https://salsa.debian.org/installer-team/os-prober" target="_blank" rel="noopener">https://salsa.debian.org/installer-team/os-prober</a> 。</p>
+<p>CentOS 默认包含的 os-prober 与源码版本并不相同，包含了一些额外的配置，通过 RPM changelog 可以查看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">Name        : os-prober</span><br><span class="line">Version     : 1.58</span><br><span class="line">Release     : 9.el7</span><br><span class="line">Architecture: x86_64</span><br><span class="line">Install Date: Wed 18 Aug 2021 03:44:43 PM CST</span><br><span class="line">Group       : System Environment/Base</span><br><span class="line">Size        : 97946</span><br><span class="line">License     : GPLv2+ and GPL+</span><br><span class="line">Signature   : RSA/SHA256, Mon 21 Nov 2016 03:50:19 AM CST, Key ID 24c6a8a7f4a80eb5</span><br><span class="line">Source RPM  : os-prober-1.58-9.el7.src.rpm</span><br><span class="line">Build Date  : Sun 06 Nov 2016 11:30:02 AM CST</span><br><span class="line">Build Host  : worker1.bsys.centos.org</span><br><span class="line">Relocations : (not relocatable)</span><br><span class="line">Packager    : CentOS BuildSystem &lt;http://bugs.centos.org&gt;</span><br><span class="line">Vendor      : CentOS</span><br><span class="line">URL         : http://kitenet.net/~joey/code/os-prober/</span><br><span class="line">Summary     : Probes disks on the system for installed operating systems</span><br><span class="line">Description :</span><br><span class="line">This package detects other OSes available on a system and outputs the results</span><br><span class="line">in a generic machine-readable format. Support for new OSes and Linux</span><br><span class="line">distributions can be added easily.</span><br><span class="line">* Wed Sep 14 2016 rmarshall@redhat.com - 1.58-9</span><br><span class="line">- Fix regular expression that missed a corner case when detecting</span><br><span class="line">extended dos partitions.</span><br><span class="line">Resolves: rhbz#1322957</span><br><span class="line">        </span><br><span class="line">* Wed Jul 06 2016 rmarshall@redhat.com - 1.58-8</span><br><span class="line">- Resolve some coverity concerns with how the previous patch detected</span><br><span class="line">whether or not a partition was a device mapper device.</span><br><span class="line">Related: rhbz#1300262</span><br><span class="line">        </span><br><span class="line">* Tue Jul 05 2016 rmarshall@redhat.com - 1.58-7</span><br><span class="line">- Do not resolve device mapper links when generating stanzas</span><br><span class="line">for bootloader.</span><br><span class="line">Resolves: rhbz#1300262</span><br><span class="line">        </span><br><span class="line">* Wed May 04 2016 rmarshall@redhat.com - 1.58-6</span><br><span class="line">- Adding handling to skip probing extended dos partitions</span><br><span class="line">Resolves: rhbz#1322957</span><br><span class="line">- Improve Windows detection for dual boot and support Windows 10</span><br><span class="line">Resolves: rhbz#1322956</span><br><span class="line">- Suppress non-blocking dmraid sector size warning message</span><br><span class="line">Resolves: rhbz#1198918</span><br><span class="line">        </span><br><span class="line">* Fri Jan 24 2014 Daniel Mach &lt;dmach@redhat.com&gt; - 1.58-5</span><br><span class="line">- Mass rebuild 2014-01-24</span><br><span class="line">        </span><br><span class="line">* Mon Jan 20 2014 Peter Jones &lt;pjones@redhat.com&gt; - 1.58-4</span><br><span class="line">- Add man pages.</span><br><span class="line">Resolves: rhbz#948848</span><br></pre></td></tr></table></figure>
+<p>通过下载 os-prober 的 source RPM 可以查看具体改动内容，查看 os-prober.spec 文件，查看额外的 Patch 列表：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">Name:           os-prober</span><br><span class="line">Version:        1.58</span><br><span class="line">Release:        9%&#123;?dist&#125;</span><br><span class="line">Summary:        Probes disks on the system for installed operating systems</span><br><span class="line">            </span><br><span class="line">Group:          System Environment/Base</span><br><span class="line"># For more information about licensing, see copyright file.</span><br><span class="line">License:        GPLv2+ and GPL+</span><br><span class="line">URL:            http://kitenet.net/~joey/code/os-prober/</span><br><span class="line">Source0:        http://ftp.de.debian.org/debian/pool/main/o/os-prober/%&#123;name&#125;_%&#123;version&#125;.tar.gz</span><br><span class="line"># move newns binary outside of os-prober subdirectory, so that debuginfo</span><br><span class="line"># can be automatically generated for it</span><br><span class="line">Patch0001: 0001-Change-filepath-to-newns.patch</span><br><span class="line">Patch0002: 0002-Don-t-count-dummy-mach_kernel-as-MacOS-X-811412.patch</span><br><span class="line">Patch0003: 0003-Detect-OS-installed-to-mdraid-partition-752402.patch</span><br><span class="line">Patch0004: 0004-Yaboot-allows-spaces-in-append-825041.patch</span><br><span class="line">Patch0005: 0005-Detect-ld.so-after-usr-move-826754.patch</span><br><span class="line">Patch0006: 0006-Use-shell-processing-instead-of-basename-875356.patch</span><br><span class="line">Patch0007: 0007-Add-option-for-less-logging-893997.patch</span><br><span class="line">Patch0008: 0008-Improve-btrfs-detection-support-888341.patch</span><br><span class="line">Patch0009: 0009-Support-detection-on-btrfs-software-raid-906847.patch</span><br><span class="line">Patch0010: 0010-Name-lvm-boot-partitions-by-fstab-entry-893472.patch</span><br><span class="line">Patch0011: 0011-Set-correct-boot-partition-906886.patch</span><br><span class="line">Patch0012: 0012-Factor-out-unnecessary-logger-calls-875356.patch</span><br><span class="line">Patch0013: 0013-Issue-with-EFI-detection-in-logger-873207.patch</span><br><span class="line">Patch0014: 0014-Man-pages-missing-948848.patch</span><br><span class="line">Patch0015: 0015-Properly-handle-extended-dos-partitions-1322957.patch</span><br><span class="line">Patch0016: 0016-Windows-detection-requires-binary-grep-1322956.patch</span><br><span class="line">Patch0017: 0017-Add-Windows-10-detection-support-1322956.patch</span><br><span class="line">Patch0018: 0018-Suppress-non-blocking-dmraid-error-info-1198918.patch</span><br><span class="line">Patch0019: 0019-Do-not-resolve-device-mapper-symlinks-1300262.patch</span><br><span class="line">Patch0020: 0020-Use-POSIX-shell-syntax-1300262.patch</span><br><span class="line">Patch0021: 0021-Fix-extended-dos-partition-regex-1322957.patch</span><br></pre></td></tr></table></figure>
+<p>单独查看每一个 Patch 很麻烦，直接看操作系统上已经安装的 os-prober 相关文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">$rpm -ql os-prober</span><br><span class="line">/usr/bin/linux-boot-prober</span><br><span class="line">/usr/bin/os-prober</span><br><span class="line">/usr/libexec/linux-boot-probes</span><br><span class="line">/usr/libexec/linux-boot-probes/50mounted-tests</span><br><span class="line">/usr/libexec/linux-boot-probes/mounted</span><br><span class="line">/usr/libexec/linux-boot-probes/mounted/40grub</span><br><span class="line">/usr/libexec/linux-boot-probes/mounted/40grub2</span><br><span class="line">/usr/libexec/linux-boot-probes/mounted/50lilo</span><br><span class="line">/usr/libexec/linux-boot-probes/mounted/90fallback</span><br><span class="line">/usr/libexec/newns</span><br><span class="line">/usr/libexec/os-probes</span><br><span class="line">/usr/libexec/os-probes/50mounted-tests</span><br><span class="line">/usr/libexec/os-probes/init</span><br><span class="line">/usr/libexec/os-probes/init/10filesystems</span><br><span class="line">/usr/libexec/os-probes/mounted</span><br><span class="line">/usr/libexec/os-probes/mounted/05efi</span><br><span class="line">/usr/libexec/os-probes/mounted/10freedos</span><br><span class="line">/usr/libexec/os-probes/mounted/10qnx</span><br><span class="line">/usr/libexec/os-probes/mounted/20macosx</span><br><span class="line">/usr/libexec/os-probes/mounted/20microsoft</span><br><span class="line">/usr/libexec/os-probes/mounted/30utility</span><br><span class="line">/usr/libexec/os-probes/mounted/40lsb</span><br><span class="line">/usr/libexec/os-probes/mounted/70hurd</span><br><span class="line">/usr/libexec/os-probes/mounted/80minix</span><br><span class="line">/usr/libexec/os-probes/mounted/83haiku</span><br><span class="line">/usr/libexec/os-probes/mounted/90linux-distro</span><br><span class="line">/usr/libexec/os-probes/mounted/90solaris</span><br><span class="line">/usr/libexec/os-probes/mounted/efi</span><br><span class="line">/usr/libexec/os-probes/mounted/efi/10elilo</span><br><span class="line">/usr/libexec/os-probes/mounted/efi/20microsoft</span><br><span class="line">/usr/share/doc/os-prober-1.58</span><br><span class="line">/usr/share/doc/os-prober-1.58/README</span><br><span class="line">/usr/share/doc/os-prober-1.58/TODO</span><br><span class="line">/usr/share/doc/os-prober-1.58/changelog</span><br><span class="line">/usr/share/doc/os-prober-1.58/copyright</span><br><span class="line">/usr/share/man/man1/linux-boot-prober.1.gz</span><br><span class="line">/usr/share/man/man1/os-prober.1.gz</span><br><span class="line">/usr/share/os-prober</span><br><span class="line">/usr/share/os-prober/common.sh</span><br><span class="line">/var/lib/os-prober</span><br></pre></td></tr></table></figure>
+<h3 id="grub2-mkconfig-调用-os-prober-流程"><a href="#grub2-mkconfig-调用-os-prober-流程" class="headerlink" title="grub2-mkconfig 调用 os-prober 流程"></a>grub2-mkconfig 调用 os-prober 流程</h3><p><code>grub2-mkconfig</code> 最终目的是生成 grub.cfg ，在执行过程中，会通过调用 <code>/etc/grub.d/</code> 路径下的配置脚本来依次执行，在 CentOS 存在 <code>/etc/grub.d/30_os-prober</code> 配置脚本。</p>
+<p>执行 <code>os-prober</code> 的具体代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">OSPROBED=&quot;`os-prober | tr &apos; &apos; &apos;^&apos; | paste -s -d &apos; &apos;`&quot;</span><br><span class="line">if [ -z &quot;$&#123;OSPROBED&#125;&quot; ] ; then</span><br><span class="line">  # empty os-prober output, nothing doing</span><br><span class="line">  exit 0</span><br><span class="line">fi</span><br></pre></td></tr></table></figure></p>
+<h3 id="CentOS-os-prober-执行流程"><a href="#CentOS-os-prober-执行流程" class="headerlink" title="CentOS os-prober 执行流程"></a>CentOS os-prober 执行流程</h3><ul>
+<li>创建新的 namespace，在调试 os-prober 过程中建议注释掉该行为</li>
+<li>确保所有的文件系统类型是支持的，执行 <code>/usr/libexec/os-prober/init/*</code></li>
+<li>获取节点处于已挂载分区信息、swap 分区信息、RAID 设备分区信息</li>
+<li><p>获取节点所有 partition 信息</p>
+<ul>
+<li>如果 partition 已经存在于swap 分区信息或 RAID 设备分区信息中，则跳过</li>
+<li><p>通过 <code>blkid -o value -S type $path</code> 获取文件系统信息作为 type，比如：<br>  -</p>
+<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$blkid -o value -s TYPE /dev/vdb1</span><br><span class="line">xfs_external_log</span><br></pre></td></tr></table></figure>
+</code></pre><ul>
+<li>如果 type == btrfs，则判断是否为 btrfs volume，如果是则过滤；如果不是，则使用 <code>/usr/libexec/os-probes/50mounted-tests</code> 针对该分区进行探测</li>
+<li>如果分区不在已挂载分区信息中，则使用 <code>/usr/libexec/os-probes/50mounted-tests</code> 路径下的所有方式进行探测，遍历执行</li>
+<li>如果分区处于已挂载分区信息中，则使用 <code>/usr/libexec/os-probes/50mounted-tests</code> 路径下的所有方式进行探测，遍历执行</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>探测结束</li>
+</ul>
+<h3 id="CentOS-usr-libexec-os-probes-50mounted-tests-探测流程"><a href="#CentOS-usr-libexec-os-probes-50mounted-tests-探测流程" class="headerlink" title="CentOS /usr/libexec/os-probes/50mounted-tests 探测流程"></a>CentOS <code>/usr/libexec/os-probes/50mounted-tests</code> 探测流程</h3><ul>
+<li>参数校验，获取 partition 的 fs type 属性<ul>
+<li>如果 type 处于未探测、空、LVM、swap、ctypto、ntfs则直接退出</li>
+</ul>
+</li>
+<li>如果 type == btrfs ，则针对 subvolume 进行探测流程</li>
+<li>如果节点存在 grub-mount ，存在 grub2-probe 则判断 partition 是否被GRUB 挂载</li>
+<li>如果上述分支都没有进入，则将分区置为只读<ul>
+<li>blockdev –setro $partition</li>
+<li>并通过 trap 设置信号处理函数，当接收到 EXIT,HUP,INT,QUIT,TERM 信号时，则将partition 重新置为可读可写</li>
+</ul>
+</li>
+<li>将分区根据当前 type 类型挂载到临时挂载点下，试用 <code>/usr/libexec/os-probes/mounted/</code> 路径下的探测方式进行探测，遍历执行</li>
+<li>探测结束</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>如果你的节点上存在处于未被挂载，且文件系统类型不为空的情况，那么建议通过设置 GRUB 配置：<code>GRUB_DISABLE_OS_PROBER=true</code> 来禁用 os-prober 的执行，防止磁盘分区变为只读。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://tracker.ceph.com/issues/11298" target="_blank" rel="noopener">https://tracker.ceph.com/issues/11298</a></li>
+<li><a href="https://www.thegeekdiary.com/how-to-disable-os-prober-in-centos-rhel-7/" target="_blank" rel="noopener">https://www.thegeekdiary.com/how-to-disable-os-prober-in-centos-rhel-7/</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/08/15/Linux-audit-buffer-配置/" rel="next" title="Linux audit buffer 配置">
+                <i class="fa fa-chevron-left"></i> Linux audit buffer 配置
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">165</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zdyxry" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调查"><span class="nav-number">2.</span> <span class="nav-text">调查</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#grub2-mkconfig"><span class="nav-number">2.1.</span> <span class="nav-text">grub2-mkconfig</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#os-prober"><span class="nav-number">2.2.</span> <span class="nav-text">os-prober</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#grub2-mkconfig-调用-os-prober-流程"><span class="nav-number">2.3.</span> <span class="nav-text">grub2-mkconfig 调用 os-prober 流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CentOS-os-prober-执行流程"><span class="nav-number">2.4.</span> <span class="nav-text">CentOS os-prober 执行流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CentOS-usr-libexec-os-probes-50mounted-tests-探测流程"><span class="nav-number">2.5.</span> <span class="nav-text">CentOS /usr/libexec/os-probes/50mounted-tests 探测流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">4.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/';
+          this.page.identifier = '2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/';
+          this.page.title = 'CentOS 执行 grub2-mkconfig 导致磁盘只读';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
