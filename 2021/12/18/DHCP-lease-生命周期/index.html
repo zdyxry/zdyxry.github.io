@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景昨天配合一个同事排查虚拟机 IP 发生了变化的问题，正好整理一下 DHCP lease 生命周期以及变化流程。 DHCP lease 生命周期 Allocation：一个客户端开始时没有有效的租约，因此也没有 DHCP 分配的地址。它通过一个分配过程获得一个租约。 Reallocation：如果一个客户端已经有了一个来自现有租约的地址，那么当它重启或关闭后启动时，它将与授予它租约的 DHCP">
+<meta name="keywords" content="Linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DHCP lease 生命周期">
+<meta property="og:url" content="https://zdyxry.github.io/2021/12/18/DHCP-lease-生命周期/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景昨天配合一个同事排查虚拟机 IP 发生了变化的问题，正好整理一下 DHCP lease 生命周期以及变化流程。 DHCP lease 生命周期 Allocation：一个客户端开始时没有有效的租约，因此也没有 DHCP 分配的地址。它通过一个分配过程获得一个租约。 Reallocation：如果一个客户端已经有了一个来自现有租约的地址，那么当它重启或关闭后启动时，它将与授予它租约的 DHCP">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-12-18T10:59:35.960Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="DHCP lease 生命周期">
+<meta name="twitter:description" content="背景昨天配合一个同事排查虚拟机 IP 发生了变化的问题，正好整理一下 DHCP lease 生命周期以及变化流程。 DHCP lease 生命周期 Allocation：一个客户端开始时没有有效的租约，因此也没有 DHCP 分配的地址。它通过一个分配过程获得一个租约。 Reallocation：如果一个客户端已经有了一个来自现有租约的地址，那么当它重启或关闭后启动时，它将与授予它租约的 DHCP">
+<meta name="twitter:creator" content="@zdyxry">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2021/12/18/DHCP-lease-生命周期/">
+
+
+
+
+
+  <title>DHCP lease 生命周期 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2021/12/18/DHCP-lease-生命周期/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">DHCP lease 生命周期</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-12-18T18:42:08+00:00">
+                2021-12-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/12/18/DHCP-lease-生命周期/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/12/18/DHCP-lease-生命周期/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>昨天配合一个同事排查虚拟机 IP 发生了变化的问题，正好整理一下 DHCP lease 生命周期以及变化流程。</p>
+<h2 id="DHCP-lease-生命周期"><a href="#DHCP-lease-生命周期" class="headerlink" title="DHCP lease 生命周期"></a>DHCP lease 生命周期</h2><ul>
+<li>Allocation：一个客户端开始时没有有效的租约，因此也没有 DHCP 分配的地址。它通过一个分配过程获得一个租约。</li>
+<li>Reallocation：如果一个客户端已经有了一个来自现有租约的地址，那么当它重启或关闭后启动时，它将与授予它租约的 DHCP 服务器联系，以确认租约并获得操作参数。这有时被称为重新分配；它与完全分配过程相似，但时间更短。</li>
+<li>Normal Operation：一旦租约被激活，客户端就会正常工作，在租约周期内使用其分配的IP地址和其他参数。客户端被称为与租约和地址绑定。</li>
+<li>Renewal：在租约时间的某一部分过期后，客户端将试图联系最初授予租约的服务器，以更新租约，这样它就可以继续使用其 IP 地址。</li>
+<li>Rebinding：如果与最初的租约服务器续约失败（例如，因为该服务器已经下线），那么客户端将尝试重新绑定到任何活跃的 DHCP 服务器，试图在任何允许它这样做的服务器上延长其当前租约。</li>
+<li>Release：客户端可以在任何时候决定它不再希望使用它被分配的IP地址，并可以终止租约，释放 IP 地址。</li>
+</ul>
+<h2 id="Allocation-流程"><a href="#Allocation-流程" class="headerlink" title="Allocation 流程"></a>Allocation 流程</h2><pre><code>- 1.客户端创建 DHCPDISCOVER 消息
+  客户端开始处于INIT（初始化）状态。它没有IP地址，甚至不知道网络上是否有 DHCP 服务器或在哪里。为了找到一个，它创建了一个 DHCPDISCOVER 消息，包括以下信息。
+    - 在消息的 CHAddr 字段中包含自己的硬件地址，用来识别自身。
+    - 一个随机的交易标识符，放在 XID 字段中，这被用来识别以后的消息是同一事务的一部分。
+    - 另外，客户可以使用 `Requested IP Address` DHCP 选项请求一个特定的IP地址，使用IP地址 `Lease Time` 选项请求一个特定的租约长度，或通过在报文中加入`Parameter Request List`选项请求特定的配置参数。
+- 2.客户端发送 DHCPDISCOVER 消息
+  客户端在本地网络上广播 DHCPDISCOVER 消息。客户端过渡到 SELECTING 状态，在那里等待对其消息的回复。
+- 3.服务器接收并处理 DHCPDISCOVER 消息
+  本地网络上的每个 DHCP 服务器都会收到客户的 DHCPDISCOVER 消息并进行检查。服务器在其数据库中查找客户的硬件地址，并确定它是否能够为客户提供租约，以及租约的条款是什么。如果客户对一个特定的IP地址、租约长度或其他参数提出了要求，服务器将试图满足这些要求，但并不要求这样做。如果一个服务器没有被设定为为某一特定客户提供服务，它没有剩余的IP地址，或出于其他原因，它可以决定不向该客户提供租约。
+- 4.服务器创建 DHCPOFFER 消息
+  每个选择响应客户端的服务器都会创建一个包括以下信息的DHCPOFFER消息。
+    - 在 YIAddr 字段中包含要分配给客户的IP地址，如果服务器以前曾为该客户租用过，它将尝试重新使用上次使用的 IP 地址。如果没有，它将尝试使用客户要求的地址（如果存在）；否则，它将选择任何可用的地址。
+    - 所提供的租约长度。
+    - 客户端要求的任何特定于客户端的配置参数，或者在服务器返回给客户端的参数。
+    - 任何要返回给所有客户端或该客户端类别中的一般配置参数。
+    - DHCP 服务器标识符选项中的服务器标识符。
+    - 与 DHCPDISCOVER 消息中使用的交易ID（XID）相同。
+- 5. 服务器探测，保留提供的地址（可选）
+  DHCP标准规定，在向客户发送DHCPOFFER之前，服务器 &quot;应该 &quot;通过向该地址发送一个 ICMP Echo 消息来检查该IP地址是否已经被使用。如果探测到该地址正在使用，服务器当然不会将其提供给客户。这可以由管理员禁用。它被认为是DHCP服务器冲突检测功能的一个关键部分。
+  无论它是否探测所提供的地址，服务器也可以保留该地址，以便如果客户决定使用它，它将是可用的。这不是强制性的，因为正如我们将在下面看到的，协议会处理提供的租约被收回的情况。如果服务器保留地址，效率会更高，但如果IP地址非常短缺，这种保留可能并不实际。
+- 6. 服务器发送 DHCPOFFER 消息
+  每个服务器都会发送其 DHCPOFFER 消息。当然，它们不一定都是在完全相同的时间发送。如前所述，这些消息可以是单播的，也可以是广播的。
+- 7. 客户端收集和处理 DHCPOFFER 消息
+  客户端等待 DHCPOFFER 消息的到来，作为对其 DHCPDISCOVER 的回应。客户端在这里的确切行为是与实现有关的。为了方便起见，客户可能决定简单地接受它收到的第一个提议。或者它也可以选择通过等待一段时间来进行比较。然后它可以处理每一个 DHCPOFFER，并选择具有最有利条件的 DHCPOFFER--例如，具有最长租期的那一个。
+  如果没有收到 DHCPOFFER 消息，客户端将进入重传模式，并尝试在一段时间内再次发送DHCPDISCOVER。
+- 8. 客户端创建 DHCPREQUEST 消息
+  客户端为其选择的服务器 DHCPOFFER 创建一个 DHCPREQUEST 消息。这个消息有两个作用：它告诉客户接受其提议的服务器 &quot;是的，我接受你的提议，假设它仍然可用&quot;，同时也告诉其他服务器 &quot;对不起，你的提议被拒绝&quot;。在这个消息中，客户端包括以下信息。
+    - 在 DHCP 服务器标识符选项中，被选中的服务器的标识符。
+    - DHCP 服务器在 DHCPOFFER 消息中分配给客户的 IP 地址，客户在 `Requested IP Address` DHCP选项中把它作为确认地址
+    - 它在消息中的参数请求列表选项中想要的任何其他配置参数。
+- 9. 客户端发送 DHCPREQUEST 消息
+  客户端发送 DHCPREQUEST 消息。由于它不只是针对选定的 DHCP 服务器，而是针对所有的DHCP 服务器，所以它是广播的。这样做之后，客户端过渡到 REQUESTING 状态，在那里它等待来自所选服务器的回复。
+- 10. 服务器接收和处理 DHCPREQUEST 消息
+  每个服务器都接收并处理客户的请求信息。未被选中的服务器将把该消息视为拒绝。然而，请注意，客户可能会选择一个OFFER ，试图请求租约单没有成功完成。然后，客户可以通过发送包含不同服务器标识符的 DHCPREQUEST 来尝试其 &quot;第二选择 &quot;的 OFFER。这意味着，如果服务器A收到一个服务器标识符为服务器B的单一DHCPREQUEST，这并不一定意味着服务器A已经完成了。由于这个原因，&quot;被拒绝 &quot;的服务器在向另一个客户提供先前提供的租约之前会等待一段时间。
+- 11. 服务器发送 DHCPACK 或 DHCPNAK 消息
+  被选中的服务器将看到它的租约已被选中。如果它以前没有保留提供给客户的 IP 地址，它必须检查以确保它仍然可用。如果不是，服务器会发回一个 DHCPNAK（否定确认）消息。通常情况下，服务器仍然拥有该租约。它将为该客户创建一个绑定，并发回一个 DHCPACK（确认）消息，确认该租约并包含该客户端的所有相关配置参数。
+- 12. 客户端接收并处理 DHCPACK 或 DHCPNAK 消息
+  客户端收到对其请求的肯定或否定的确认。如果该消息是DHCPNAK，客户端过渡到 INIT 状态并重新开始：回到原点（步骤#1）。如果是DHCPACK，客户端从 YIAddr 字段中读取 IP 地址，并从各种消息字段和 DHCP 选项中记录租约长度和其他参数。
+  如果客户端没有收到任何消息，它可以将 DHCPREQUEST 消息重传一次或多次。如果它继续什么也没听到，那么它必须得出结论，服务器已经失效，并回到步骤#1。
+- 13. 客户端检查地址是否正在使用
+  客户端设备应该进行最后的检查，以确保新地址在结束租约过程之前没有被使用。这通常是通过在本地网络上生成一个 ARP 请求来完成的，看看是否有其他设备认为它已经拥有该客户端刚刚租赁的IP地址。如果有其他设备响应，客户端就向服务器发送一个 DHCPDECLINE 消息，然后，客户端回到步骤1，重新开始。
+- 14. 客户端最终完成租约分配
+  假设该地址还没有被使用，客户端最终确定租约并过渡到 BOUND 状态。它还设置了它的两个租赁计时器，T1 和T2。现在它已经准备好进行正常操作了。
+</code></pre><h2 id="Reallocation-流程"><a href="#Reallocation-流程" class="headerlink" title="Reallocation 流程"></a>Reallocation 流程</h2><pre><code>- 1. 客户端创建 DHCPREQUEST 消息
+  客户端以 INIT-REBOOT 状态而不是 INIT 状态开始。它创建了一个 DHCPREQUEST 消息，试图找到一个具有其当前租约信息的服务器。注意，这可能不是最初授予租约的服务器；理论上，负责租约的服务器可能在客户端获得租约后发生变化。因此，与分配过程中第8步的 DHCPREQUEST 消息不同，客户端不包括DHCP 服务器标识符选项。它确实包括以下信息。
+    - 在消息的 CHAddr 字段中包含它自己的硬件地址，以识别自己。
+    - 在 `Requested IP Address` DHCP选项中包含其现有租约的IP地址，这个地址没有被放到CIAddr 字段中。
+    - 一个随机的交易标识符，放在XID字段中。这被用来识别以后的信息是同一事务的一部分。
+    - 任何它想要的额外配置参数，放在消息中的参数请求列表选项中。
+- 2. 客户端发送DHCPREQUEST消息
+  客户端广播了 DHCPREQUEST 消息。然后，它过渡到 REBOOTING 状态，等待来自服务器的回复。
+- 3. 服务器接收和处理 DHCPREQUEST 消息并生成回复
+  网络上的每个 DHCP 服务器都接收并处理客户端的请求。服务器在其数据库中查找客户端，试图找到有关租约的信息。然后每个 DHCP 服务器决定如何回复客户端。
+    - 服务器拥有有效的客户租约信息。服务器拥有客户的租约信息。它发送一个 DHCPACK 消息来确认租约。它还将重申客户应该使用的任何参数。
+    - 服务器确定客户端租约无效。服务器确定客户的租约不再有效。发生这种情况的常见原因是客户在搬到一个不同的网络后试图确认租约，或者在事实上至少已经过期后。在这种情况下，服务器会发送一个 DHCPNAK 消息来否定租赁请求。
+    - 服务器没有关于客户租约的明确信息。没有租约信息的服务器不作回应。除非一个服务器的信息被保证是准确的，否则它也被要求不做回应。例如，如果一个服务器知道一个过期的租约，它不能假定该租约不再有效并发送 DHCPNAK，除非它也知道没有其他服务器为该客户提供更新的、有效的租约。
+- 4. 服务器发送回复
+  将要对客户的 DHCPREQUEST 做出响应的服务器会发送他们的DHCPACK或DHCPNAK消息。
+- 5. 客户端接收并处理 DHCPACK 或 DHCPNAK 消息
+  客户端等待一段时间以获得对其请求的回复。同样，有三种可能性，与上一步中的三种可能性相匹配。
+    - 正面确认。客户端收到一个 DHCPACK 消息；这确认了租赁的有效性。客户端将准备再次开始使用该租约，并继续进行下面的步骤。
+    - 否定的确认。该消息是一个 DHCPNAK ，它告诉客户端，它的租约不再有效。客户端过渡到 INIT 状态，以获得一个新的租约--分配过程中的第1步。
+    - 没有回复。如果客户端根本没有收到回复，它可以重新发送 DHCPREQUEST 消息。如果在一段时间后没有收到回复，它将得出结论，没有服务器拥有它的租约信息，并将返回 INIT 状态，尝试获得新的租约。
+- 6. 客户端检查地址是否正在使用
+  在恢复使用其租约之前，客户端设备应该执行最后的检查，以确保新地址没有被使用。尽管在租约已经存在的情况下不应该这样做，但作为一种安全措施，还是要这样做。该检查与分配过程的第13步所述相同：在本地网络上发出一个 ARP 请求，看看是否有其他设备认为它已经拥有该客户端刚刚租赁的 IP 地址。如果有其他设备响应，客户端就向服务器发送一个 DHCPDECLINE 消息，告诉它租约无效，因为有其他设备正在使用这个地址。然后，客户端回到INIT状态，获得一个新的租约。
+- 7. 客户端最终完成租约的分配
+  假设该地址还没有被使用，客户端最终完成租约并过渡到 BOUND 状态。现在它已经准备好进行正常操作了。
+</code></pre><h2 id="Renewal-amp-Rebinding-流程"><a href="#Renewal-amp-Rebinding-流程" class="headerlink" title="Renewal &amp; Rebinding 流程"></a>Renewal &amp; Rebinding 流程</h2><pre><code>- 1. 续约定时器（T1）过期
+  续约定时器，T1，默认设置为租赁长度的50%。当定时器关闭时，客户端从 BOUND 状态过渡到RENEWING状态。
+  客户端可以在 T1 定时器到期前启动租约更新。
+- 2. 客户端发送 DHCPREQUEST 更新消息
+  客户端创建一个 DHCPREQUEST 消息，标识自己和它的租约。然后，它将消息直接传送给最初授予租约的服务器，单播。这与分配/再分配过程中使用的 DHCPREQUEST 消息不同，后者的DHCPREQUEST是广播的。客户端可以请求一个特定的新租约长度，就像它在分配过程中请求租约长度一样，服务器对租约长度做最后的决定。
+- 3. 服务器接收和处理 DHCPREQUEST 消息并创建回复
+  假设服务器可以到达，它将接收并处理客户的更新请求。有两种可能的回应。
+    - 服务器同意更新客户租约。服务器决定客户的租约可以被续约。它准备向客户发送一个DHCPACK消息，以确认租约的更新，指出新的租约长度以及自租约创建或最后一次更新以来可能发生变化的任何参数。
+    - 服务器拒绝更新客户租约。服务器出于任何原因决定不更新客户的租约。它将创建一个DHCPNAK消息。
+- 4. 服务器发送回复
+  服务器将DHCPACK或DHCPNAK消息发回给客户。
+- 5. 客户端接收并处理服务器回复
+  客户端对服务器的回复采取适当的行动。
+    - 正面确认。客户端收到一个DHCPACK消息，更新租约。客户端注意到新的租约到期时间和服务器发送的任何变化的参数，重置T1和T2定时器，并过渡到BOUND状态。注意，客户端在更新时不需要做ARP IP地址检查。
+    - 否定确认。该消息是一个DHCPNAK，它告诉客户端它的续租请求被拒绝了。客户端将立即过渡到INIT状态，以获得一个新的租约--分配过程中的第1步。
+- 6. 重新绑定定时器（T2）过期
+  如果客户端没有收到服务器的回复，它将保持在 RENEWING 状态，并定期向服务器重传单播DHCPREQUEST。在这段时间内，从用户的角度来看，客户端仍在正常运行。如果没有收到来自服务器的响应，最终重新绑定计时器（T2）会过期。这将导致客户端过渡到REBINDING状态。回顾一下，默认情况下，T2定时器被设置为租赁长度的87.5%（8分之7）。
+- 7. 客户端发送DHCPREQUEST重新绑定消息
+  由于没有收到最初授予租约的服务器的回应，客户端 放弃该服务器，并试图联系任何可能能够延长其现有租约的服务器。它创建了一个DHCPREQUEST消息，并把它的IP地址放在CIAddr字段中，明确表示它目前拥有该地址。然后，它在本地网络上广播该请求。
+- 8. 服务器接收和处理DHCPREQUEST消息并发送回复
+  每台 DHCP 服务器都会收到请求，并根据它所掌握的客户信息作出回应。
+    - 服务器同意重新绑定客户租约。服务器拥有客户的租约信息并同意延长租约。它为客户准备了一个DHCPACK消息，以确认租约的更新，并指出自租约创建或最后一次更新以来可能发生的任何参数。
+    - 服务器决定客户不能延长其当前租约。服务器决定，无论出于什么原因，这个客户的租约不应该被延长。它准备向客户发送一个DHCPNAK消息。
+- 9. 服务器发送回复
+  每个响应客户的服务器都会发送其DHCPACK或DHCPNAK消息。
+- 10. 客户端收到服务器回复
+  客户端对上一步中的两种可能性采取适当的行动。
+    - 正面确认。客户端收到一个DHCPACK消息，重新绑定租约。客户端注意到现在负责这个租约的服务器，新的租约到期时间，以及服务器发送的任何改变的参数。它重置了T1和T2计时器，并过渡到BOUND状态。(它也可以像在常规租约分配期间那样探测新地址)。
+    - 否定确认。该消息是一个DHCPNAK，它告诉客户端，一些服务器已经确定租约不应该被延长。客户端立即过渡到INIT状态，以获得一个新的租约--分配过程中的第1步。
+- 11. 租约过期
+      如果客户端没有收到对其广播重新绑定请求的响应，它将像在RENEWING状态下一样，定期重发该请求。如果在租约到期时没有收到任何响应，它将过渡到INIT状态以获得新的租约。
+</code></pre>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/10/02/CentOS-执行-grub2-mkconfig-导致磁盘只读/" rel="next" title="CentOS 执行 grub2-mkconfig 导致磁盘只读">
+                <i class="fa fa-chevron-left"></i> CentOS 执行 grub2-mkconfig 导致磁盘只读
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">166</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zdyxry" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DHCP-lease-生命周期"><span class="nav-number">2.</span> <span class="nav-text">DHCP lease 生命周期</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Allocation-流程"><span class="nav-number">3.</span> <span class="nav-text">Allocation 流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reallocation-流程"><span class="nav-number">4.</span> <span class="nav-text">Reallocation 流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Renewal-amp-Rebinding-流程"><span class="nav-number">5.</span> <span class="nav-text">Renewal &amp; Rebinding 流程</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2021/12/18/DHCP-lease-生命周期/';
+          this.page.identifier = '2021/12/18/DHCP-lease-生命周期/';
+          this.page.title = 'DHCP lease 生命周期';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
