@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,Container,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景关注过 Bare Metal 相关项目的同学应该都了解过系统的启动流程、如何快速的置备一台物理服务器等之类的实现方式，通常都需要运行一个 LiveOS 来实现某些动作。在 Tinkerbell 项目中，使用 Linuxkit 来作为 LiveOS，Plunder 项目中使用 BOOTy 来作为 LiveOS。前几天 @thebsdbox 将 BOOTy 中的一部分抽离了出来，作为 ginit">
+<meta name="keywords" content="Linux,Container">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 init 进程运行 Container">
+<meta property="og:url" content="https://zdyxry.github.io/2022/03/05/使用-init-进程运行-Container/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景关注过 Bare Metal 相关项目的同学应该都了解过系统的启动流程、如何快速的置备一台物理服务器等之类的实现方式，通常都需要运行一个 LiveOS 来实现某些动作。在 Tinkerbell 项目中，使用 Linuxkit 来作为 LiveOS，Plunder 项目中使用 BOOTy 来作为 LiveOS。前几天 @thebsdbox 将 BOOTy 中的一部分抽离了出来，作为 ginit">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-03-05T07:38:22.935Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用 init 进程运行 Container">
+<meta name="twitter:description" content="背景关注过 Bare Metal 相关项目的同学应该都了解过系统的启动流程、如何快速的置备一台物理服务器等之类的实现方式，通常都需要运行一个 LiveOS 来实现某些动作。在 Tinkerbell 项目中，使用 Linuxkit 来作为 LiveOS，Plunder 项目中使用 BOOTy 来作为 LiveOS。前几天 @thebsdbox 将 BOOTy 中的一部分抽离了出来，作为 ginit">
+<meta name="twitter:creator" content="@zdyxry">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2022/03/05/使用-init-进程运行-Container/">
+
+
+
+
+
+  <title>使用 init 进程运行 Container | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2022/03/05/使用-init-进程运行-Container/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">使用 init 进程运行 Container</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2022-03-05T15:10:39+00:00">
+                2022-03-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2022/03/05/使用-init-进程运行-Container/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2022/03/05/使用-init-进程运行-Container/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>关注过 Bare Metal 相关项目的同学应该都了解过系统的启动流程、如何快速的置备一台物理服务器等之类的实现方式，通常都需要运行一个 LiveOS 来实现某些动作。<br>在 Tinkerbell 项目中，使用 Linuxkit 来作为 LiveOS，Plunder 项目中使用 BOOTy 来作为 LiveOS。前几天 @thebsdbox 将 BOOTy 中的一部分抽离了出来，作为 ginit 展示主要的实现方式，可以更好的让我们理解安装环节中的具体细节。 今天来看一下这个项目。</p>
+<p>如果安装一个 CentOS，那么通常是会通过 kernel + initramfs.img 启动，initramfs.img 中会包含 systemd 、anaconda、dracut 等一些列组件，然后通过 systemd 指定不同的 Target 所属/依赖/顺序来完成最终 Anaconda 调用。Anaconda 通过解析 <code>/proc/cmdline</code> 中的 KickStart 参数来决定自己的安装方式。</p>
+<p>ginit 项目展示了以下内容：</p>
+<ul>
+<li>制作 initramfs.img </li>
+<li>通过 Container image 制作一个 RAW image</li>
+<li>通过 QEMU 使用 RAW image 和 Linux Kernel 来运行一个虚拟机</li>
+<li>ginit 自动运行 Container 中 entrypoint 指令</li>
+</ul>
+<h2 id="流程演示"><a href="#流程演示" class="headerlink" title="流程演示"></a>流程演示</h2><h3 id="通过-Container-image-制作一个-RAW-image"><a href="#通过-Container-image-制作一个-RAW-image" class="headerlink" title="通过 Container image 制作一个 RAW image"></a>通过 Container image 制作一个 RAW image</h3><p>RAW image 中最终不会包含 Kernel 部分，以 Nginx Container 为例。提取 nginx:latest image 中的 <code>Entrypoint</code> ，通过 <code>dd</code> 置备一个 RAW image，并格式化为 ext4 ，raw image 作为 loop 设备挂载到本地，通过 <code>docker export</code> 将 Nginx Image 拷贝到挂载点下，卸载挂载点，最终 RAW image 包含了 Nginx Container 的所有内容。这里的 RAW image 因为不包含 kernel，所以无法直接启动，只是作为后续动作的依赖。</p>
+<p>Nginx Container 默认的 <code>Entrypoint</code> 是 <code>docker-entrypoint.sh</code> ，通过这个脚本来做一些参数检查动作。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line">echo &quot;Lets build you a disk image!&quot;</span><br><span class="line">docker pull $1</span><br><span class="line">ENTRYPOINT=$(docker inspect -f &apos;&#123;&#123;.Config.Entrypoint&#125;&#125;&apos; $1 | sed &apos;s/[][]//g&apos;)</span><br><span class="line">echo &quot;Creating a 200MB Disk&quot;</span><br><span class="line">dd if=/dev/zero of=disk.img bs=1024k count=200</span><br><span class="line">mkfs.ext4 -F disk.img</span><br><span class="line">mkdir -p /tmp/disk</span><br><span class="line">mount -t ext4 -o loop disk.img /tmp/disk/</span><br><span class="line">echo &quot;Converting $1 to disk image&quot;</span><br><span class="line">docker create --name exporter $1 null</span><br><span class="line">docker export exporter | tar xv -C /tmp/disk</span><br><span class="line">docker rm exporter</span><br><span class="line">umount /tmp/disk</span><br><span class="line">echo The command $ENTRYPOINT will start this container</span><br></pre></td></tr></table></figure>
+<h3 id="使用-ginit-制作-initramfs-img"><a href="#使用-ginit-制作-initramfs-img" class="headerlink" title="使用 ginit 制作 initramfs.img"></a>使用 ginit 制作 initramfs.img</h3><p>静态编译 ginit；下载并编译 busybox ，将 ginit 编译结果 init 放置到 <code>/</code> 路径下，通过 cpio 将 busybox 归档，使用 gzip 进行压缩。所有流程完成后，将最终得到的 initramfs.cpio.gz 拷贝到项目路径下。 initramfs 最终包含的是 busybox + ginit 。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"># syntax=docker/dockerfile:experimental</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># Build ginit as an init</span><br><span class="line">FROM golang:1.17-alpine as dev</span><br><span class="line">RUN apk add --no-cache git ca-certificates gcc linux-headers musl-dev</span><br><span class="line">COPY . /go/src/github.com/thebsdbox/ginit/</span><br><span class="line">WORKDIR /go/src/github.com/thebsdbox/ginit</span><br><span class="line">ENV GO111MODULE=on</span><br><span class="line">RUN --mount=type=cache,sharing=locked,id=gomod,target=/go/pkg/mod/cache \</span><br><span class="line">    --mount=type=cache,sharing=locked,id=goroot,target=/root/.cache/go-build \</span><br><span class="line">    CGO_ENABLED=1 GOOS=linux go build -a -ldflags &quot;-linkmode external -extldflags &apos;-static&apos; -s -w&quot; -o init</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line"># Build Busybox</span><br><span class="line">FROM gcc:10.1.0 as Busybox</span><br><span class="line">RUN apt-get update; apt-get install -y cpio</span><br><span class="line">RUN curl -O https://busybox.net/downloads/busybox-1.31.1.tar.bz2</span><br><span class="line">RUN tar -xf busybox*bz2</span><br><span class="line">WORKDIR busybox-1.31.1</span><br><span class="line">RUN make defconfig; make LDFLAGS=-static CONFIG_PREFIX=./initramfs install</span><br><span class="line"></span><br><span class="line">WORKDIR initramfs </span><br><span class="line">COPY --from=dev /go/src/github.com/thebsdbox/ginit/init .</span><br><span class="line"></span><br><span class="line"># Package initramfs</span><br><span class="line">RUN find . -print0 | cpio --null -ov --format=newc &gt; ../initramfs.cpio </span><br><span class="line">RUN gzip ../initramfs.cpio</span><br><span class="line">RUN mv ../initramfs.cpio.gz /</span><br><span class="line"></span><br><span class="line">FROM scratch</span><br><span class="line">COPY --from=Busybox /initramfs.cpio.gz .</span><br></pre></td></tr></table></figure>
+<h3 id="通过-QEMU-运行-Container-中的-EntryPoint-指令"><a href="#通过-QEMU-运行-Container-中的-EntryPoint-指令" class="headerlink" title="通过 QEMU 运行 Container 中的 EntryPoint 指令"></a>通过 QEMU 运行 Container 中的 EntryPoint 指令</h3><p>到目前状态，我们得到了 initramfs.img ，得到了 raw image，但是还缺少 Linux Kernel 。可以直接从 Ubuntu 提供的 <a href="http://archive.ubuntu.com/ubuntu/dists/focal-updates/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/" target="_blank" rel="noopener">netboot</a> 下载 <code>boot executable bzImage</code> 文件。</p>
+<p>现在所有的准备工作都进行完成了，我们可以直接通过 QEMU 来运行虚拟机，其中 Nginx 所需运行环境在 RAW Image 中，ginit 所需运行环境在 initramfs 中。</p>
+<p>前面有提到，Nginx Container 默认的 <code>Entrypoint</code> 是 <code>docker-entrypoint.sh</code>，用来做一些参数包装，所以这里我将参数改为了 <code>/usr/sbin/nginx</code> ：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 -nographic \</span><br><span class="line">  -kernel ./linux \</span><br><span class="line">  -append &quot;entrypoint=/usr/sbin/nginx root=/dev/sda console=ttyS0&quot; \</span><br><span class="line">  -initrd ./initramfs.cpio.gz \</span><br><span class="line">  -hda ./disk.img \</span><br><span class="line">  -m 1G</span><br></pre></td></tr></table></figure>
+<p>虚拟机 console 是 <code>ttyS0</code> ，通过终端运行可以直接查看启动日志：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">[    1.469920] rtc_cmos 00:00: setting system clock to 2022-03-05T06:36:19 UTC (1646462179)</span><br><span class="line">[    1.525397] ata1.00: ATA-7: QEMU HARDDISK, 2.5+, max UDMA/100</span><br><span class="line">[    1.525579] ata1.00: 409600 sectors, multi 16: LBA48 </span><br><span class="line">[    1.532980] ata2.00: ATAPI: QEMU DVD-ROM, 2.5+, max UDMA/100</span><br><span class="line">[    1.540741] scsi 0:0:0:0: Direct-Access     ATA      QEMU HARDDISK    2.5+ PQ: 0 ANSI: 5</span><br><span class="line">[    1.545673] sd 0:0:0:0: [sda] 409600 512-byte logical blocks: (210 MB/200 MiB)</span><br><span class="line">[    1.547063] sd 0:0:0:0: [sda] Write Protect is off</span><br><span class="line">[    1.547515] sd 0:0:0:0: Attached scsi generic sg0 type 0</span><br><span class="line">[    1.548188] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn&apos;t support DPO or FUA</span><br><span class="line">[    1.550227] scsi 1:0:0:0: CD-ROM            QEMU     QEMU DVD-ROM     2.5+ PQ: 0 ANSI: 5</span><br><span class="line">[    1.568178] sd 0:0:0:0: [sda] Attached SCSI disk</span><br><span class="line">[    1.578345] sr 1:0:0:0: [sr0] scsi3-mmc drive: 4x/4x cd/rw xa/form2 tray</span><br><span class="line">[    1.578736] cdrom: Uniform CD-ROM driver Revision: 3.20</span><br><span class="line">[    1.582611] sr 1:0:0:0: Attached scsi generic sg1 type 5</span><br><span class="line">[    1.595655] Freeing unused decrypted memory: 2040K</span><br><span class="line">[    1.666044] Freeing unused kernel image memory: 2712K</span><br><span class="line">[    1.666482] Write protecting the kernel read-only data: 22528k</span><br><span class="line">[    1.669246] Freeing unused kernel image memory: 2008K</span><br><span class="line">[    1.670507] Freeing unused kernel image memory: 1192K</span><br><span class="line">[    1.742691] x86/mm: Checked W+X mappings: passed, no W+X pages found.</span><br><span class="line">[    1.743002] Run /init as init process</span><br><span class="line">INFO[0000] Folder created [dev] -&gt; [/dev]          </span><br><span class="line">INFO[0000] Folder created [proc] -&gt; [/proc]        </span><br><span class="line">INFO[0000] Folder created [sys] -&gt; [/sys]          </span><br><span class="line">INFO[0000] Folder created [tmp] -&gt; [/tmp]          </span><br><span class="line">INFO[0000] Mounted [dev] -&gt; [/dev]                 </span><br><span class="line">INFO[0000] Mounted [proc] -&gt; [/proc]               </span><br><span class="line">INFO[0000] Mounted [sys] -&gt; [/sys]                 </span><br><span class="line">INFO[0000] Mounted [tmp] -&gt; [/tmp]                 </span><br><span class="line">INFO[0000] Starting DHCP client                    </span><br><span class="line">INFO[0000] Starting ginit                          </span><br><span class="line">ERRO[0000] Error finding adapter [Link not found]  </span><br><span class="line">[    2.209227] tsc: Refined TSC clocksource calibration: 2893.182 MHz</span><br><span class="line">[    2.209573] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x29b41aa25d4, max_idle_ns: 440795325238 ns</span><br><span class="line">[    2.209984] clocksource: Switched to clocksource tsc</span><br><span class="line">INFO[0002] Beginning provisioning process          </span><br><span class="line">ERRO[0002] route ip+net: no such network interface </span><br><span class="line">INFO[0002] Folder created [root] -&gt; [/mnt]         </span><br><span class="line">[    3.902861] random: fast init done</span><br><span class="line">[    3.912319] EXT4-fs (sda): recovery complete</span><br><span class="line">[    3.913757] EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)</span><br><span class="line">[    3.914463] ext4 filesystem being mounted at /mnt supports timestamps until 2038 (0x7fffffff)</span><br><span class="line">INFO[0002] Mounted [root] -&gt; [/mnt]                </span><br><span class="line">INFO[0002] Mounted [dev] -&gt; [/mnt/dev]             </span><br><span class="line">INFO[0002] Mounted [proc] -&gt; [/mnt/proc]           </span><br><span class="line">INFO[0002] Starting Shell                          </span><br><span class="line">INFO[0002] Waiting for command to finish...        </span><br><span class="line">/ #</span><br></pre></td></tr></table></figure>
+<p>其中 <code>[    1.743002] Run /init as init process</code> 中的 <code>/init</code> 已经是我们上面编译的 <code>ginit</code> ，<code>ginit</code> 运行的日志输出为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">INFO[0000] Folder created [dev] -&gt; [/dev]          </span><br><span class="line">INFO[0000] Folder created [proc] -&gt; [/proc]        </span><br><span class="line">INFO[0000] Folder created [sys] -&gt; [/sys]          </span><br><span class="line">INFO[0000] Folder created [tmp] -&gt; [/tmp]          </span><br><span class="line">INFO[0000] Mounted [dev] -&gt; [/dev]                 </span><br><span class="line">INFO[0000] Mounted [proc] -&gt; [/proc]               </span><br><span class="line">INFO[0000] Mounted [sys] -&gt; [/sys]                 </span><br><span class="line">INFO[0000] Mounted [tmp] -&gt; [/tmp]                 </span><br><span class="line">INFO[0000] Starting DHCP client                    </span><br><span class="line">INFO[0000] Starting ginit                          </span><br><span class="line">ERRO[0000] Error finding adapter [Link not found]  </span><br><span class="line">[    2.209227] tsc: Refined TSC clocksource calibration: 2893.182 MHz</span><br><span class="line">[    2.209573] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x29b41aa25d4, max_idle_ns: 440795325238 ns</span><br><span class="line">[    2.209984] clocksource: Switched to clocksource tsc</span><br><span class="line">INFO[0002] Beginning provisioning process          </span><br><span class="line">ERRO[0002] route ip+net: no such network interface </span><br><span class="line">INFO[0002] Folder created [root] -&gt; [/mnt]         </span><br><span class="line">[    3.902861] random: fast init done</span><br><span class="line">[    3.912319] EXT4-fs (sda): recovery complete</span><br><span class="line">[    3.913757] EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)</span><br><span class="line">[    3.914463] ext4 filesystem being mounted at /mnt supports timestamps until 2038 (0x7fffffff)</span><br><span class="line">INFO[0002] Mounted [root] -&gt; [/mnt]                </span><br><span class="line">INFO[0002] Mounted [dev] -&gt; [/mnt/dev]             </span><br><span class="line">INFO[0002] Mounted [proc] -&gt; [/mnt/proc]           </span><br><span class="line">INFO[0002] Starting Shell                          </span><br><span class="line">INFO[0002] Waiting for command to finish...</span><br></pre></td></tr></table></figure>
+<p>主要做了几件事情：创建必要的路径，创建对应的设备，启动一个 DHCP Client 来获取 IP 地址，挂载 RAW Image 到 /mnt 下，通过 <code>chroot</code> 运行 <code>entrypoint</code> 参数中指定的程序，在这里是 <code>/usr/sbin/nginx</code> ，最终提供一个 Shell 环境给用户。我们可以通过 <code>ps</code> 命令查看当前所运行的进程：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">/ # ps -ef |grep -v &apos;\[&apos;</span><br><span class="line">PID   USER     TIME  COMMAND</span><br><span class="line">    1 0         0:01 /init</span><br><span class="line">  178 0         0:00 nginx: master process /usr/sbin/nginx</span><br><span class="line">  179 0         0:00 /bin/sh</span><br><span class="line">  180 101       0:00 nginx: worker process</span><br><span class="line">  193 0         0:00 ps -ef</span><br><span class="line">/ # df </span><br><span class="line">Filesystem           1K-blocks      Used Available Use% Mounted on</span><br><span class="line">devtmpfs                497020         4    497016   0% /dev</span><br><span class="line">tmpfs                   502392         0    502392   0% /tmp</span><br><span class="line">/dev/sda                181984    150940     16708  90% /mnt</span><br><span class="line">devtmpfs                497020         4    497016   0% /mnt/dev</span><br><span class="line">/ # ls /mnt/docker-entrypoint.sh </span><br><span class="line">/mnt/docker-entrypoint.sh</span><br><span class="line">/ # ls /mnt/usr/sbin/nginx</span><br><span class="line">/mnt/usr/sbin/nginx</span><br><span class="line">/ # ls -hl /init</span><br><span class="line">-rwxr-xr-x    1 0        0           3.4M Mar  5 04:20 /init</span><br></pre></td></tr></table></figure>
+<p>现在我们已经将一个 Container Image 中要运行的指令，通过 Linux kernel 配合 initramfs 来运行了起来，在 Bare Metal 场景下，我们可以将 Nginx 内置到 initramfs 中，将 Nginx 替换为 Docker 或者 Container 然后暴露出去，物理服务器作为 Docker Server，置备服务器作为 Docker Client 连接物理服务器进行指定容器的运行，最终完成物理服务器 OS 的安装，这也是目前 TinkerBell 的实现方式。</p>
+<h2 id="ginit-具体实现"><a href="#ginit-具体实现" class="headerlink" title="ginit 具体实现"></a>ginit 具体实现</h2><h3 id="创建系统设备并挂载"><a href="#创建系统设备并挂载" class="headerlink" title="创建系统设备并挂载"></a>创建系统设备并挂载</h3><p>在 <code>DefaultMounts</code> 和 <code>DefaultDevices</code> 中定义了一些必须的设备如 <code>/dev/null</code>, <code>/dev/random</code>, <code>/dev/urandom</code> ，和挂载点，如 <code>/dev</code>,<code>/proc</code>, <code>/tmp</code>, <code>/sys</code> 。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">urandom := Device&#123;</span><br><span class="line">		CreateDevice: false,</span><br><span class="line"></span><br><span class="line">		Name:  &quot;urandom&quot;,</span><br><span class="line">		Path:  &quot;/dev/urandom&quot;,</span><br><span class="line">		Mode:  syscall.S_IFCHR,</span><br><span class="line">		Major: 1,</span><br><span class="line">		Minor: 9,</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">dev := Mount&#123;</span><br><span class="line">		CreateMount: false,</span><br><span class="line">		EnableMount: false,</span><br><span class="line">		Name:        &quot;dev&quot;,</span><br><span class="line">		Source:      &quot;devtmpfs&quot;,</span><br><span class="line">		Path:        &quot;/dev&quot;,</span><br><span class="line">		FSType:      &quot;devtmpfs&quot;,</span><br><span class="line">		Flags:       syscall.MS_MGC_VAL,</span><br><span class="line">		Mode:        0777,</span><br><span class="line">	&#125;</span><br><span class="line">	m.Mount = append(m.Mount, dev)</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">//cmd.Execute()</span><br><span class="line">m := realm.DefaultMounts()</span><br><span class="line">d := realm.DefaultDevices()</span><br><span class="line">dev := m.GetMount(&quot;dev&quot;)</span><br><span class="line">dev.CreateMount = true</span><br><span class="line">dev.EnableMount = true</span><br><span class="line"></span><br><span class="line">proc := m.GetMount(&quot;proc&quot;)</span><br><span class="line">proc.CreateMount = true</span><br><span class="line">proc.EnableMount = true</span><br><span class="line"></span><br><span class="line">tmp := m.GetMount(&quot;tmp&quot;)</span><br><span class="line">tmp.CreateMount = true</span><br><span class="line">tmp.EnableMount = true</span><br><span class="line"></span><br><span class="line">sys := m.GetMount(&quot;sys&quot;)</span><br><span class="line">sys.CreateMount = true</span><br><span class="line">sys.EnableMount = true</span><br><span class="line"></span><br><span class="line">// Create all folders</span><br><span class="line">m.CreateFolder()</span><br><span class="line">// Ensure that /dev is mounted (first)</span><br><span class="line">m.MountNamed(&quot;dev&quot;, true)</span><br><span class="line"></span><br><span class="line">// Create all devices</span><br><span class="line">d.CreateDevice()</span><br><span class="line"></span><br><span class="line">// Mount any additional mounts</span><br><span class="line">m.MountAll()</span><br></pre></td></tr></table></figure>
+<p>在基本环境准备完成后，启动 DHCP Client，获取 IP 地址：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">log.Println(&quot;Starting DHCP client&quot;)</span><br><span class="line">	go realm.DHCPClient()</span><br><span class="line"></span><br><span class="line">	// HERE IS WHERE THE MAIN CODE GOES</span><br><span class="line">	log.Infoln(&quot;Starting ginit&quot;)</span><br><span class="line">	time.Sleep(time.Second * 2)</span><br><span class="line"></span><br><span class="line">	log.Infoln(&quot;Beginning provisioning process&quot;)</span><br><span class="line"></span><br><span class="line">	mac, err := realm.GetMAC()</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		log.Errorln(err)</span><br><span class="line">		//realm.Shell()</span><br><span class="line">	&#125;</span><br><span class="line">	fmt.Print(mac)</span><br></pre></td></tr></table></figure>
+<p>现在系统环境准备好了，网络也准备好了，那么可以运行具体的指令了，获取指令的方式是通过解析 <code>/proc/cmdline</code> ，<code>/proc/cmdline</code> 是通过我们在创建 VM 的时候通过 <code>--append</code> 传递的：</p>
+<p>在解析到 <code>root</code> 和 <code>entrypoint</code> 参数值后，通过 <code>Mount</code> 将 <code>root</code> 挂载到对应的挂载点，通过 <code>chroot</code> 运行 <code>entrypoint</code>。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">   stuffs, err := ParseCmdLine(CmdlinePath)</span><br><span class="line">if err != nil &#123;</span><br><span class="line">	log.Errorln(err)</span><br><span class="line">&#125;</span><br><span class="line">_, err = realm.MountRootVolume(stuffs[&quot;root&quot;])</span><br><span class="line">if err != nil &#123;</span><br><span class="line">	log.Errorf(&quot;Disk Error: [%v]&quot;, err)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">cmd := exec.Command(&quot;/usr/sbin/chroot&quot;, []string&#123;&quot;/mnt&quot;, stuffs[&quot;entrypoint&quot;]&#125;...)</span><br><span class="line">cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr</span><br><span class="line"></span><br><span class="line">err = cmd.Start()</span><br><span class="line">if err != nil &#123;</span><br><span class="line">	log.Errorf(&quot;command error [%v]&quot;, err)</span><br><span class="line">&#125;</span><br><span class="line">err = cmd.Wait()</span><br><span class="line">if err != nil &#123;</span><br><span class="line">	log.Errorf(&quot;error [%v]&quot;, err)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">realm.Shell()</span><br></pre></td></tr></table></figure>
+<p>所有程序运行完成后，提供一个Shell 环境给用户：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">// Shell will Start a userland shell</span><br><span class="line">func Shell() &#123;</span><br><span class="line">	// Shell stuff</span><br><span class="line">	log.Println(&quot;Starting Shell&quot;)</span><br><span class="line"></span><br><span class="line">	// TTY hack to support ctrl+c</span><br><span class="line">	cmd := exec.Command(&quot;/usr/bin/setsid&quot;, &quot;cttyhack&quot;, &quot;/bin/sh&quot;)</span><br><span class="line">	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr</span><br><span class="line"></span><br><span class="line">	err := cmd.Start()</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		log.Errorf(&quot;Shell error [%v]&quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">	log.Printf(&quot;Waiting for command to finish...&quot;)</span><br><span class="line">	err = cmd.Wait()</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		log.Errorf(&quot;Shell error [%v]&quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>ginit 作为一个最小实现方便我们快速了解 init 具体做了什么，将 ginit 替换为 systemd 同理，但是直接看 systemd bootup 容易迷失在成堆的 Target 依赖中。在查找资料的过程中还看到了 <a href="https://github.com/QuentinPerez/busygox" target="_blank" rel="noopener">https://github.com/QuentinPerez/busygox</a> 做了类似的事情，可以作为参考。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/thebsdbox/ginit" target="_blank" rel="noopener">https://github.com/thebsdbox/ginit</a></li>
+<li><a href="https://unix.stackexchange.com/questions/146284/minimal-linux-with-kernel-and-busybox-etc-inittab-is-ignored-only-init-is-ex/147688#147688" target="_blank" rel="noopener">https://unix.stackexchange.com/questions/146284/minimal-linux-with-kernel-and-busybox-etc-inittab-is-ignored-only-init-is-ex/147688#147688</a></li>
+<li><a href="https://github.com/QuentinPerez/busygox" target="_blank" rel="noopener">https://github.com/QuentinPerez/busygox</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+            <a href="/tags/Container/" rel="tag"># Container</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2022/02/26/编写一个友好的命令行工具/" rel="next" title="编写一个友好的命令行工具">
+                <i class="fa fa-chevron-left"></i> 编写一个友好的命令行工具
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">170</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zdyxry" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#流程演示"><span class="nav-number">2.</span> <span class="nav-text">流程演示</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#通过-Container-image-制作一个-RAW-image"><span class="nav-number">2.1.</span> <span class="nav-text">通过 Container image 制作一个 RAW image</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-ginit-制作-initramfs-img"><span class="nav-number">2.2.</span> <span class="nav-text">使用 ginit 制作 initramfs.img</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通过-QEMU-运行-Container-中的-EntryPoint-指令"><span class="nav-number">2.3.</span> <span class="nav-text">通过 QEMU 运行 Container 中的 EntryPoint 指令</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ginit-具体实现"><span class="nav-number">3.</span> <span class="nav-text">ginit 具体实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建系统设备并挂载"><span class="nav-number">3.1.</span> <span class="nav-text">创建系统设备并挂载</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">5.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2022/03/05/使用-init-进程运行-Container/';
+          this.page.identifier = '2022/03/05/使用-init-进程运行-Container/';
+          this.page.title = '使用 init 进程运行 Container';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
