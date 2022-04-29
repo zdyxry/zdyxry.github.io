@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Linux,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景公司产品最终交付形态是 ISO，在涉及一个产品的多个 OEM 场景时，会选择在标准版本的基础上，删除某些软件包，新增某些软件包的形式来减少构建时间。产品的 BaseOS 是 CentOS，包管理器是 RPM 系，也就需要使用 rpm / yum 等命令来实现。其中新增某些软件包是使用 yumdownloader 来完成的。在 Yum Repository 中会包含同一软件包的多个版本，预期 y">
+<meta name="keywords" content="Linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Yum 寻找 Best Package 评分机制">
+<meta property="og:url" content="https://zdyxry.github.io/2022/04/29/Yum-寻找-Best-Package-评分机制/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景公司产品最终交付形态是 ISO，在涉及一个产品的多个 OEM 场景时，会选择在标准版本的基础上，删除某些软件包，新增某些软件包的形式来减少构建时间。产品的 BaseOS 是 CentOS，包管理器是 RPM 系，也就需要使用 rpm / yum 等命令来实现。其中新增某些软件包是使用 yumdownloader 来完成的。在 Yum Repository 中会包含同一软件包的多个版本，预期 y">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-04-29T15:08:20.194Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Yum 寻找 Best Package 评分机制">
+<meta name="twitter:description" content="背景公司产品最终交付形态是 ISO，在涉及一个产品的多个 OEM 场景时，会选择在标准版本的基础上，删除某些软件包，新增某些软件包的形式来减少构建时间。产品的 BaseOS 是 CentOS，包管理器是 RPM 系，也就需要使用 rpm / yum 等命令来实现。其中新增某些软件包是使用 yumdownloader 来完成的。在 Yum Repository 中会包含同一软件包的多个版本，预期 y">
+<meta name="twitter:creator" content="@zdyxry">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2022/04/29/Yum-寻找-Best-Package-评分机制/">
+
+
+
+
+
+  <title>Yum 寻找 Best Package 评分机制 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2022/04/29/Yum-寻找-Best-Package-评分机制/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Yum 寻找 Best Package 评分机制</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2022-04-29T23:04:16+00:00">
+                2022-04-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2022/04/29/Yum-寻找-Best-Package-评分机制/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2022/04/29/Yum-寻找-Best-Package-评分机制/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>公司产品最终交付形态是 ISO，在涉及一个产品的多个 OEM 场景时，会选择在标准版本的基础上，删除某些软件包，新增某些软件包的形式来减少构建时间。产品的 BaseOS 是 CentOS，包管理器是 RPM 系，也就需要使用 <code>rpm</code> / <code>yum</code> 等命令来实现。<br>其中新增某些软件包是使用 <code>yumdownloader</code> 来完成的。在 Yum Repository 中会包含同一软件包的多个版本，预期 <code>yumdownloader</code> 会下载 Yum Repository 中某个软件最新版本的包，比如 <code>yumdownloader zbs-5.1.2*</code> ，则会下载 zbs-5.1.2 大版本的最新 release 版本。</p>
+<p>但是最近发现，从某个版本开始 <code>yumdownloader</code> 没有下载最新的软件包，反而停在了一个两个月之前构建的版本，于是开始调查原因。</p>
+<h2 id="Yumdownloader"><a href="#Yumdownloader" class="headerlink" title="Yumdownloader"></a>Yumdownloader</h2><p><code>yumdownloader</code> 工具集是由 <code>yum-utils</code> 提供，同时还提供了 <code>repotrack</code>，<code>repoquery</code>, <code>reposync</code> 等有用的工具。<code>yumdownloader</code> 使用方式是 <code>yumdownloader $pkg</code> 即可。在 <code>yum-utils</code> 中会大量引用 <code>yum</code> module，因此需要同时查找两个 Git repo。</p>
+<p><code>yum-utils</code> 代码仓库地址： <a href="https://github.com/rpm-software-management/yum-utils/blob/master/yumdownloader.py" target="_blank" rel="noopener">https://github.com/rpm-software-management/yum-utils/blob/master/yumdownloader.py</a><br><code>yum</code> 代码仓库地址：<a href="https://github.com/rpm-software-management/yum" target="_blank" rel="noopener">https://github.com/rpm-software-management/yum</a></p>
+<h3 id="下载逻辑"><a href="#下载逻辑" class="headerlink" title="下载逻辑"></a>下载逻辑</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">def main(self):</span><br><span class="line">    # Add command line option specific to yumdownloader</span><br><span class="line">    self.addCmdOptions()</span><br><span class="line">    ...</span><br><span class="line">    # make yumdownloader work as non root user.</span><br><span class="line">    if not self.setCacheDir():</span><br><span class="line">        self.logger.error(&quot;Error: Could not make cachedir, exiting&quot;)</span><br><span class="line">        sys.exit(50)</span><br><span class="line">    ...</span><br><span class="line">    # Setup yum (Ts, RPM db, Repo &amp; Sack)</span><br><span class="line">    self.doUtilYumSetup()</span><br><span class="line">    # Do the real action</span><br><span class="line">    self.exit_code = self.downloadPackages(opts)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>解析命令行参数</li>
+<li>检查执行用户权限</li>
+<li>配置 Yum Repo 正确性</li>
+<li>下载 RPM</li>
+</ul>
+<p>其中前几项不是很重要，直接看 <code>self.downloadPackages(opts)</code> 逻辑。主要做了以下几件事情：  </p>
+<ol>
+<li>根据 PKG 列表进行 Repo 中的查询，查询出所有的软件包；  </li>
+<li>根据查询结果，进行解析匹配，其中精确匹配和模糊匹配会进行后续处理；</li>
+<li>根据 RPM <code>name+arch</code> 作为 key 来将所有的 Pkg 列表转换为 Dict；</li>
+<li>遍历 Dict，从列表中找到 Best Package ，并将其添加到下载列表中；</li>
+<li>根据下载列表信息进行下载。</li>
+</ol>
+<p>Github: <a href="https://github.com/rpm-software-management/yum-utils/blob/master/yumdownloader.py#L136" target="_blank" rel="noopener">https://github.com/rpm-software-management/yum-utils/blob/master/yumdownloader.py#L136</a><br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">downloadPackages</span><span class="params">(self,opts)</span>:</span></span><br><span class="line">    </span><br><span class="line">    toDownload = [] <span class="comment"># 最终要下载的 RPM</span></span><br><span class="line"></span><br><span class="line">    packages = self.cmds</span><br><span class="line">    <span class="keyword">for</span> pkg <span class="keyword">in</span> packages:</span><br><span class="line">        toActOn = []</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> pkg <span class="keyword">or</span> pkg[<span class="number">0</span>] != <span class="string">'@'</span>:</span><br><span class="line">            pkgnames = [pkg] <span class="comment"># 如果 PKG 名称不以 `@` 开头，那么就是单个软件包；如果以 `@` 开头，那么表示是一个 Group；</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="comment"># Group 处理逻辑，忽略</span></span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">        pos = self.pkgSack.returnPackages(patterns=pkgnames) <span class="comment"># 在 Yum repo 中根据 pkgnames 来获取查询到的包列表</span></span><br><span class="line">        exactmatch, matched, unmatched = parsePackages(pos, pkgnames) <span class="comment"># 根据 pkgnames 名称 从 pos 中解析具体的匹配结果，其中如果精确匹配则添加到 exactmatch，如果模糊匹配则添加到 matched。在本文场景下所有匹配为模糊匹配，所以在 matched 列表中</span></span><br><span class="line">        installable = (exactmatch + matched) <span class="comment"># 最终可安装的是精确匹配和模糊匹配的集合</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> installable:</span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> newpkg <span class="keyword">in</span> installable:</span><br><span class="line">            toActOn.extend(_best_convert_pkg2srcpkgs(self, opts, newpkg)) <span class="comment"># 根据解析结果，将所有处于 installable 中的包都找到具体来源</span></span><br><span class="line">        <span class="keyword">if</span> toActOn:</span><br><span class="line">            pkgGroups = self._groupPackages(toActOn) <span class="comment"># 使用 RPM `name` 和 `arch` 针对 toActOn 列表进行初步分组，转换为 dict</span></span><br><span class="line">            <span class="keyword">for</span> group <span class="keyword">in</span> pkgGroups:</span><br><span class="line">                pkgs = pkgGroups[group]</span><br><span class="line">                <span class="keyword">if</span> opts.source:</span><br><span class="line">                    ...     <span class="comment"># 根据 yumdownloader 命令参数进行额外的处理，忽略</span></span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    toDownload.extend(self.bestPackagesFromList(pkgs)) <span class="comment"># 从 pkgs 列表中选择 best Package，然后添加到 toDownload 列表中</span></span><br><span class="line">                        </span><br><span class="line">    ...</span><br><span class="line">    <span class="comment"># set localpaths</span></span><br><span class="line">    <span class="keyword">for</span> pkg <span class="keyword">in</span> toDownload:</span><br><span class="line">        pkg.repo.copy_local = <span class="keyword">True</span></span><br><span class="line">        pkg.repo.cache = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># use downloader from YumBase</span></span><br><span class="line">    exit_code = <span class="number">0</span></span><br><span class="line">    probs = self.downloadPkgs(toDownload) <span class="comment"># 下载具体 RPM </span></span><br><span class="line">    <span class="keyword">if</span> probs:</span><br><span class="line">        exit_code = <span class="number">2</span></span><br><span class="line">        <span class="keyword">for</span> key <span class="keyword">in</span> probs:</span><br><span class="line">            <span class="keyword">for</span> error <span class="keyword">in</span> probs[key]:</span><br><span class="line">                self.logger.error(<span class="string">'%s: %s'</span>, key, error)</span><br><span class="line">    <span class="keyword">return</span> exit_code</span><br></pre></td></tr></table></figure></p>
+<p>在我的场景中，问题出在查找 Best Package 步骤中，相关日志如下，可以观察到在 Yum repo 中查询到了 zbs-5.1.2 所有的 release RPM，分别为 rc1 ,rc2 一直到 rc14 ，排序方式是字母序。 parsePackages 解析出所有的 PKG 均在 matched 中，因为都是模糊匹配，最终传入 bestPackagesFromList 方法中的参数是所有到的 release RPM，预期是返回最新的 release RPM ，即 zbs-5.1.2-rc14，但是返回的是 rc7 。接下来需要调查 bestPackagesFromList 是如何判断的。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[<span class="string">'zbs-5.1.2*'</span>]</span><br><span class="line">pos: [&lt;YumAvailablePackageSqlite : zbs-5.1.2-rc1.0.release.git.g0cb56434e.el7.SMTX.HCI.x86_64 (0x2bf6e50)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc10.0.release.git.g228f49070.el7.SMTX.HCI.x86_64 (0x2bf6dd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc11.0.release.git.g6d5d763ee.el7.SMTX.HCI.x86_64 (0x2bf6d90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc12.0.release.git.g9a6400652.el7.SMTX.HCI.x86_64 (0x2bf6bd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc13.0.release.git.g339708733.el7.SMTX.HCI.x86_64 (0x2bf6f90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc14.0.release.git.g42733ba17.el7.SMTX.HCI.x86_64 (0x2bf6fd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc2.0.release.git.gfa5212d39.el7.SMTX.HCI.x86_64 (0x2c03050)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc3.0.release.git.ge4ecabe7b.el7.SMTX.HCI.x86_64 (0x2c03090)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc4.0.release.git.g6e9ed979b.el7.SMTX.HCI.x86_64 (0x2c030d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc5.0.release.git.gfa8bab6ad.el7.SMTX.HCI.x86_64 (0x2c03110)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc6.0.release.git.g51f0f1277.el7.SMTX.HCI.x86_64 (0x2c03150)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc7.0.release.git.gccd6dbf2a.el7.SMTX.HCI.x86_64 (0x2c03190)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc8.0.release.git.g763bb9046.el7.SMTX.HCI.x86_64 (0x2c031d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc9.0.release.git.g238ab2320.el7.SMTX.HCI.x86_64 (0x2c03210)&gt;]</span><br><span class="line">exactmatch: []</span><br><span class="line">matched: [&lt;YumAvailablePackageSqlite : zbs-5.1.2-rc14.0.release.git.g42733ba17.el7.SMTX.HCI.x86_64 (0x2bf6fd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc13.0.release.git.g339708733.el7.SMTX.HCI.x86_64 (0x2bf6f90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc2.0.release.git.gfa5212d39.el7.SMTX.HCI.x86_64 (0x2c03050)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc7.0.release.git.gccd6dbf2a.el7.SMTX.HCI.x86_64 (0x2c03190)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc3.0.release.git.ge4ecabe7b.el7.SMTX.HCI.x86_64 (0x2c03090)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc9.0.release.git.g238ab2320.el7.SMTX.HCI.x86_64 (0x2c03210)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc6.0.release.git.g51f0f1277.el7.SMTX.HCI.x86_64 (0x2c03150)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc4.0.release.git.g6e9ed979b.el7.SMTX.HCI.x86_64 (0x2c030d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc10.0.release.git.g228f49070.el7.SMTX.HCI.x86_64 (0x2bf6dd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc8.0.release.git.g763bb9046.el7.SMTX.HCI.x86_64 (0x2c031d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc12.0.release.git.g9a6400652.el7.SMTX.HCI.x86_64 (0x2bf6bd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc11.0.release.git.g6d5d763ee.el7.SMTX.HCI.x86_64 (0x2bf6d90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc1.0.release.git.g0cb56434e.el7.SMTX.HCI.x86_64 (0x2bf6e50)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc5.0.release.git.gfa8bab6ad.el7.SMTX.HCI.x86_64 (0x2c03110)&gt;]</span><br><span class="line">unmatched: []</span><br><span class="line">pkgGroups: &#123;<span class="string">'zbs.x86_64'</span>: [&lt;YumAvailablePackageSqlite : zbs-5.1.2-rc14.0.release.git.g42733ba17.el7.SMTX.HCI.x86_64 (0x2bf6fd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc13.0.release.git.g339708733.el7.SMTX.HCI.x86_64 (0x2bf6f90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc2.0.release.git.gfa5212d39.el7.SMTX.HCI.x86_64 (0x2c03050)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc7.0.release.git.gccd6dbf2a.el7.SMTX.HCI.x86_64 (0x2c03190)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc3.0.release.git.ge4ecabe7b.el7.SMTX.HCI.x86_64 (0x2c03090)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc9.0.release.git.g238ab2320.el7.SMTX.HCI.x86_64 (0x2c03210)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc6.0.release.git.g51f0f1277.el7.SMTX.HCI.x86_64 (0x2c03150)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc4.0.release.git.g6e9ed979b.el7.SMTX.HCI.x86_64 (0x2c030d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc10.0.release.git.g228f49070.el7.SMTX.HCI.x86_64 (0x2bf6dd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc8.0.release.git.g763bb9046.el7.SMTX.HCI.x86_64 (0x2c031d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc12.0.release.git.g9a6400652.el7.SMTX.HCI.x86_64 (0x2bf6bd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc11.0.release.git.g6d5d763ee.el7.SMTX.HCI.x86_64 (0x2bf6d90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc1.0.release.git.g0cb56434e.el7.SMTX.HCI.x86_64 (0x2bf6e50)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc5.0.release.git.gfa8bab6ad.el7.SMTX.HCI.x86_64 (0x2c03110)&gt;]&#125;</span><br><span class="line">pkgs: [&lt;YumAvailablePackageSqlite : zbs-5.1.2-rc14.0.release.git.g42733ba17.el7.SMTX.HCI.x86_64 (0x2bf6fd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc13.0.release.git.g339708733.el7.SMTX.HCI.x86_64 (0x2bf6f90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc2.0.release.git.gfa5212d39.el7.SMTX.HCI.x86_64 (0x2c03050)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc7.0.release.git.gccd6dbf2a.el7.SMTX.HCI.x86_64 (0x2c03190)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc3.0.release.git.ge4ecabe7b.el7.SMTX.HCI.x86_64 (0x2c03090)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc9.0.release.git.g238ab2320.el7.SMTX.HCI.x86_64 (0x2c03210)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc6.0.release.git.g51f0f1277.el7.SMTX.HCI.x86_64 (0x2c03150)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc4.0.release.git.g6e9ed979b.el7.SMTX.HCI.x86_64 (0x2c030d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc10.0.release.git.g228f49070.el7.SMTX.HCI.x86_64 (0x2bf6dd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc8.0.release.git.g763bb9046.el7.SMTX.HCI.x86_64 (0x2c031d0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc12.0.release.git.g9a6400652.el7.SMTX.HCI.x86_64 (0x2bf6bd0)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc11.0.release.git.g6d5d763ee.el7.SMTX.HCI.x86_64 (0x2bf6d90)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc1.0.release.git.g0cb56434e.el7.SMTX.HCI.x86_64 (0x2bf6e50)&gt;, &lt;YumAvailablePackageSqlite : zbs-5.1.2-rc5.0.release.git.gfa8bab6ad.el7.SMTX.HCI.x86_64 (0x2c03110)&gt;]</span><br><span class="line">toDownload: [&lt;YumAvailablePackageSqlite : zbs-5.1.2-rc7.0.release.git.gccd6dbf2a.el7.SMTX.HCI.x86_64 (0x2c03190)&gt;]</span><br></pre></td></tr></table></figure>
+<h2 id="Yum"><a href="#Yum" class="headerlink" title="Yum"></a>Yum</h2><p><code>yumdownloader</code> 是 <code>yum</code> module 的功能分装，具体的 <code>bestPackagesFromList</code> 是在 <code>yum</code> module 中实现的。<code>bestPackagesFromList</code> 自身先根据 pkg arch 来进行分类，其中判断依据为：</p>
+<p>Github： <a href="https://github.com/rpm-software-management/yum/blob/master/rpmUtils/arch.py#L153:5" target="_blank" rel="noopener">https://github.com/rpm-software-management/yum/blob/master/rpmUtils/arch.py#L153:5</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># dict mapping arch -&gt; ( multicompat, best personality, biarch personality )</span><br><span class="line">multilibArches = &#123; &quot;x86_64&quot;:  ( &quot;athlon&quot;, &quot;x86_64&quot;, &quot;athlon&quot; ),</span><br><span class="line">                   &quot;sparc64v&quot;: ( &quot;sparcv9v&quot;, &quot;sparcv9v&quot;, &quot;sparc64v&quot; ),</span><br><span class="line">                   &quot;sparc64&quot;: ( &quot;sparcv9&quot;, &quot;sparcv9&quot;, &quot;sparc64&quot; ),</span><br><span class="line">                   &quot;ppc64&quot;:   ( &quot;ppc&quot;, &quot;ppc&quot;, &quot;ppc64&quot; ),</span><br><span class="line">                   &quot;s390x&quot;:   ( &quot;s390&quot;, &quot;s390x&quot;, &quot;s390&quot; ),</span><br><span class="line">                   &#125;</span><br></pre></td></tr></table></figure></p>
+<p>Github: <a href="https://github.com/rpm-software-management/yum/blob/master/yum/__init__.py#L4432" target="_blank" rel="noopener">https://github.com/rpm-software-management/yum/blob/master/yum/__init__.py#L4432</a>  </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">bestPackagesFromList</span><span class="params">(self, pkglist, arch=None, single_name=False,</span></span></span><br><span class="line"><span class="function"><span class="params">                            req=None)</span>:</span></span><br><span class="line">    <span class="string">"""Return the best packages from a list of packages.  This</span></span><br><span class="line"><span class="string">    function is multilib aware, so that it will not compare</span></span><br><span class="line"><span class="string">    multilib to singlelib packages.</span></span><br><span class="line"><span class="string">    :param pkglist: the list of packages to return the best</span></span><br><span class="line"><span class="string">        packages from</span></span><br><span class="line"><span class="string">    :param arch: packages will be selected that are compatible</span></span><br><span class="line"><span class="string">        with the architecture specified by *arch*</span></span><br><span class="line"><span class="string">    :param single_name: whether to return a single package name</span></span><br><span class="line"><span class="string">    :param req: the requirement from the user</span></span><br><span class="line"><span class="string">    :return: a list of the best packages from *pkglist*</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    returnlist = []</span><br><span class="line">    compatArchList = self.arch.get_arch_list(arch)</span><br><span class="line">    multiLib = []</span><br><span class="line">    singleLib = []</span><br><span class="line">    noarch = []</span><br><span class="line">    <span class="keyword">for</span> po <span class="keyword">in</span> pkglist: <span class="comment"># 根据架构来进行筛选，x86_64 是 multiLibArch</span></span><br><span class="line">        <span class="keyword">if</span> po.arch <span class="keyword">not</span> <span class="keyword">in</span> compatArchList:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="keyword">elif</span> po.arch <span class="keyword">in</span> (<span class="string">"noarch"</span>):</span><br><span class="line">            noarch.append(po)</span><br><span class="line">        <span class="keyword">elif</span> isMultiLibArch(arch=po.arch):</span><br><span class="line">            multiLib.append(po) <span class="comment"># 最终所有 pkg 添加到 multiLib 中</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            singleLib.append(po)</span><br><span class="line">            </span><br><span class="line">    <span class="comment"># we now have three lists.  find the best package(s) of each</span></span><br><span class="line">    multi = self._bestPackageFromList(multiLib, req=req) <span class="comment"># 根据不同架构找到 best package</span></span><br><span class="line">    single = self._bestPackageFromList(singleLib, req=req)</span><br><span class="line">    no = self._bestPackageFromList(noarch, req=req)</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> returnlist</span><br></pre></td></tr></table></figure>
+<p>继续追踪 <code>_bestPackageFromList</code> 的实现，可以看到</p>
+<p>Github: <a href="https://github.com/rpm-software-management/yum/blob/master/yum/__init__.py#L4409" target="_blank" rel="noopener">https://github.com/rpm-software-management/yum/blob/master/yum/__init__.py#L4409</a></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_bestPackageFromList</span><span class="params">(self, pkglist, req=None)</span>:</span></span><br><span class="line">    <span class="string">"""take list of package objects and return the best package object.</span></span><br><span class="line"><span class="string">        If the list is empty, return None. </span></span><br><span class="line"><span class="string">        </span></span><br><span class="line"><span class="string">        Note: this is not aware of multilib so make sure you're only</span></span><br><span class="line"><span class="string">        passing it packages of a single arch group.</span></span><br><span class="line"><span class="string">        :param pkglist: the list of packages to return the best</span></span><br><span class="line"><span class="string">            packages from</span></span><br><span class="line"><span class="string">        :param req: the requirement from the user</span></span><br><span class="line"><span class="string">        :return: a list of the best packages from *pkglist*</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    ...</span><br><span class="line">    bestlist = self._compare_providers(pkglist, reqpo=<span class="keyword">None</span>, req=req)</span><br><span class="line">    <span class="keyword">return</span> bestlist[<span class="number">0</span>][<span class="number">0</span>]</span><br></pre></td></tr></table></figure>
+<p>终于找到最关键的部分： <code>_compare_providers</code> ，这是一个巨大的函数，300行，根据注释可以看到主要用户给 pkg 打分：</p>
+<p>Github: <a href="https://github.com/rpm-software-management/yum/blob/master/yum/depsolve.py#L1465" target="_blank" rel="noopener">https://github.com/rpm-software-management/yum/blob/master/yum/depsolve.py#L1465</a><br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_compare_providers</span><span class="params">(self, pkgs, reqpo, req=None)</span>:</span></span><br><span class="line">    <span class="string">"""take the list of pkgs and score them based on the requesting package</span></span><br><span class="line"><span class="string">        return a dictionary of po=score"""</span></span><br><span class="line">    self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">            _(<span class="string">"Running compare_providers() for %s"</span>) %(str(pkgs)))</span><br></pre></td></tr></table></figure></p>
+<p>接下来是具体的打分流程，先根据 repo id 的字母序进行过滤，如果多个 repo 均提供了同一版本的 PKG，那么会根据 repo 字母序进行选取：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Do a NameArch filtering, based on repo. __cmp__</span></span><br><span class="line">unique_nevra_pkgs = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> pkg <span class="keyword">in</span> pkgs:</span><br><span class="line">    <span class="keyword">if</span> (pkg.pkgtup <span class="keyword">in</span> unique_nevra_pkgs <span class="keyword">and</span></span><br><span class="line">        unique_nevra_pkgs[pkg.pkgtup].repo &lt;= pkg.repo):</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    unique_nevra_pkgs[pkg.pkgtup] = pkg</span><br><span class="line">pkgs = unique_nevra_pkgs.values()</span><br></pre></td></tr></table></figure>
+<p>其中 pkg.repo 的实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Repository</span>:</span></span><br><span class="line">    <span class="string">"""this is an actual repository object"""</span>       </span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, repoid)</span>:</span></span><br><span class="line">        self.id = repoid</span><br><span class="line">        self.quick_enable_disable = &#123;&#125;</span><br><span class="line">        self.disable()</span><br><span class="line">        self._xml2sqlite_local = <span class="keyword">False</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__cmp__</span><span class="params">(self, other)</span>:</span></span><br><span class="line">        <span class="string">""" Sort base class repos. by alphanumeric on their id, also</span></span><br><span class="line"><span class="string">            see __cmp__ in YumRepository(). """</span></span><br><span class="line">        <span class="keyword">if</span> self.id &gt; other.id:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span></span><br><span class="line">        <span class="keyword">elif</span> self.id &lt; other.id:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>初始化 pkgresults ，其中 value 是对应的分数，第一步打分是检查目标 pkg 是否已经存在于当前主机上，会通过查询 rpmdb 来获取信息，如果已经存在了，那么这种情况是升级情况，需要与当前主机上 newest 的 pkg 进行比较，如果当前主机上最新的包版本小于 pkg，则 +5 分，如果等于则 +1000 分，如果小于则 -1024 分。如果当前主机上没有，则跳过。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">pkgresults = &#123;&#125;</span><br><span class="line">penalize = set()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> pkg <span class="keyword">in</span> pkgs:</span><br><span class="line">    pkgresults[pkg] = <span class="number">0</span> <span class="comment"># 初始化各个 pkg 的分数为 0 </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># hand this off to our plugins</span></span><br><span class="line">self.plugins.run(<span class="string">"compare_providers"</span>, providers_dict=pkgresults, </span><br><span class="line">                              reqpo=reqpo)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> pkg <span class="keyword">in</span> pkgresults.keys():</span><br><span class="line">    rpmdbpkgs = self.rpmdb.searchNevra(name=pkg.name)</span><br><span class="line">    <span class="keyword">if</span> rpmdbpkgs:</span><br><span class="line">        <span class="comment">#  We only want to count things as "installed" if they are</span></span><br><span class="line">        <span class="comment"># older than what we are comparing, because this then an update</span></span><br><span class="line">        <span class="comment"># so we give preference. If they are newer then obsoletes/etc.</span></span><br><span class="line">        <span class="comment"># could play a part ... this probably needs a better fix.</span></span><br><span class="line">        newest = sorted(rpmdbpkgs)[<span class="number">-1</span>]</span><br><span class="line">        <span class="keyword">if</span> newest.verLT(pkg):</span><br><span class="line">            <span class="comment"># give pkgs which are updates just a SLIGHT edge</span></span><br><span class="line">            <span class="comment"># we should also make sure that any pkg</span></span><br><span class="line">            <span class="comment"># we are giving an edge to is not obsoleted by</span></span><br><span class="line">            <span class="comment"># something else in the transaction. :(</span></span><br><span class="line">            <span class="comment"># there are many ways I hate this - this is but one</span></span><br><span class="line">            pkgresults[pkg] += <span class="number">5</span></span><br><span class="line">        <span class="keyword">elif</span> newest.verEQ(pkg):</span><br><span class="line">            <span class="comment">#  We get here from bestPackagesFromList(), give a giant</span></span><br><span class="line">            <span class="comment"># bump to stuff that is already installed.</span></span><br><span class="line">            pkgresults[pkg] += <span class="number">1000</span></span><br><span class="line">        <span class="keyword">elif</span> newest.verGT(pkg):</span><br><span class="line">            <span class="comment"># if the version we're looking at is older than what we have installed</span></span><br><span class="line">            <span class="comment"># score it down like we would an obsoleted pkg</span></span><br><span class="line">            pkgresults[pkg] -= <span class="number">1024</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="comment"># just b/c they're not installed pkgs doesn't mean they should</span></span><br><span class="line">        <span class="comment"># be ignored entirely. Just not preferred</span></span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<p>O(n^2)遍历 pkgs，先获取 Yum repo 中 newest version，然后保存下来，进行比对，如果当前 pkg 不等于 newest version，则 -1024 分。当前 repo 中匹配的 pkgs 列表一共 14 个， 遍历结束后每个 pkg 的分数应该是 13 * (-1024) = -13312。如果 pkg 被 nextpkg 所废除，那么 pkg 分数继续 -1024。如果传递了 arch 相关参数，那么会根据 arch 进行比较，如果哪个 pkg 提供了当前 arch 的包，那么会 +5 分。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">lpos = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> po <span class="keyword">in</span> pkgs:</span><br><span class="line">    <span class="keyword">for</span> nextpo <span class="keyword">in</span> pkgs:</span><br><span class="line">        <span class="keyword">if</span> po == nextpo:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">#  If this package isn't the latest version of said package,</span></span><br><span class="line">        <span class="comment"># treat it like it's obsoleted. The problem here is X-1</span></span><br><span class="line">        <span class="comment"># accidentally provides FOO, so you release X-2 without the</span></span><br><span class="line">        <span class="comment"># provide, but X-1 is still picked over a real provider.</span></span><br><span class="line">        <span class="keyword">if</span> po.name <span class="keyword">not</span> <span class="keyword">in</span> lpos:</span><br><span class="line">            lpos[po.name] = self.pkgSack.returnNewestByName(po.name)[:<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> lpos[po.name] <span class="keyword">or</span> <span class="keyword">not</span> po.verEQ(lpos[po.name][<span class="number">0</span>]):</span><br><span class="line">            pkgresults[po] -= <span class="number">1024</span></span><br><span class="line"></span><br><span class="line">        obsoleted = <span class="keyword">False</span></span><br><span class="line">        <span class="keyword">if</span> po.obsoletedBy([nextpo]):</span><br><span class="line">            obsoleted = <span class="keyword">True</span></span><br><span class="line">            pkgresults[po] -= <span class="number">1024</span></span><br><span class="line">                        </span><br><span class="line">            self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">                _(<span class="string">"%s obsoletes %s"</span>) % (nextpo, po))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> reqpo:</span><br><span class="line">            arches = (reqpo.arch, self.arch.bestarch)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            arches = (self.arch.bestarch,)</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span> thisarch <span class="keyword">in</span> arches:</span><br><span class="line">            res = _compare_arch_distance(po, nextpo, thisarch)</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> res:</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">            self.verbose_logger.log(logginglevels.DEBUG_4,                   </span><br><span class="line">               _(<span class="string">'archdist compared %s to %s on %s\n  Winner: %s'</span> % (po, nextpo, thisarch, res)))</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> res == po:</span><br><span class="line">                pkgresults[po] += <span class="number">5</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># End of O(N*N): for nextpo in pkgs:</span></span><br></pre></td></tr></table></figure>
+<p>接下来会根据 pkg 是否存在 source rpm，是否是弱引用，是否是直接引用，是否存在冲突等进行分数的增减。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># End of O(N*N): for nextpo in pkgs:</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Respect the repository priority for each provider, the default is 80</span></span><br><span class="line">pkgresults[po] += (<span class="number">100</span> - po.repo.compare_providers_priority) * <span class="number">10</span></span><br><span class="line">self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">    _(<span class="string">'compare_providers_priority for %s is %s'</span> % (po, po.repo.compare_providers_priority)))</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> _common_sourcerpm(po, reqpo):</span><br><span class="line">    self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">        _(<span class="string">'common sourcerpm %s and %s'</span> % (po, reqpo)))</span><br><span class="line">    pkgresults[po] += <span class="number">20</span></span><br><span class="line"><span class="keyword">if</span> _weak_req(po, reqpo):</span><br><span class="line">    self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">        _(<span class="string">'weak req %s and %s'</span> % (po, reqpo)))</span><br><span class="line">    pkgresults[po] += <span class="number">666</span></span><br><span class="line"><span class="keyword">if</span> _info_req(po, reqpo):</span><br><span class="line">    self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">        _(<span class="string">'informational req %s and %s'</span> % (po, reqpo)))</span><br><span class="line">    pkgresults[po] += <span class="number">333</span></span><br><span class="line"><span class="keyword">if</span> _conflict_req(po, reqpo):</span><br><span class="line">    self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">        _(<span class="string">'conflict req %s and %s'</span> % (po, reqpo)))</span><br><span class="line">    penalize.add(po)</span><br><span class="line"><span class="keyword">if</span> self.isPackageInstalled(po.base_package_name):</span><br><span class="line">    self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">        _(<span class="string">'base package %s is installed for %s'</span> % (po.base_package_name, po)))</span><br><span class="line">    pkgresults[po] += <span class="number">5</span> <span class="comment"># Same as before - - but off of base package name</span></span><br><span class="line"><span class="keyword">if</span> reqpo:</span><br><span class="line">    cpl = _common_prefix_len(po.name, reqpo.name)</span><br><span class="line">    <span class="keyword">if</span> cpl &gt; <span class="number">2</span>:</span><br><span class="line">        self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">            _(<span class="string">'common prefix of %s between %s and %s'</span> % (cpl, po, reqpo)))</span><br><span class="line">    </span><br><span class="line">        pkgresults[po] += cpl*<span class="number">2</span></span><br></pre></td></tr></table></figure>
+<p>当基本分数进行打分完成后， 还存在多个 best pkg，那么会根据当前 OS 安装 pkg 所需依赖数量进行判定，依赖数量越少，则分数越高，最终依赖数量少的 pkg 分数 +1。此时部分 pkg 分数从 -13112 变为 -13111。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#  If we have more than one "best", see what would happen if we picked</span></span><br><span class="line"><span class="comment"># each package ... ie. what things do they require that _aren't_ already</span></span><br><span class="line"><span class="comment"># installed/to-be-installed. In theory this can screw up due to:</span></span><br><span class="line"><span class="comment">#   pkgA =&gt; requires pkgX</span></span><br><span class="line"><span class="comment">#   pkgB =&gt; requires pkgY, requires pkgZ</span></span><br><span class="line"><span class="comment"># ...but pkgX requires 666 other things. Going recursive is</span></span><br><span class="line"><span class="comment"># "non-trivial" though, python != prolog. This seems to do "better"</span></span><br><span class="line"><span class="comment"># from simple testing though.</span></span><br><span class="line">bestnum = max(pkgresults.values()) <span class="comment"># 将当前 pkg 分数最大的置为 bestnum</span></span><br><span class="line">rec_depsolve = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> po <span class="keyword">in</span> pkgs:</span><br><span class="line">    <span class="keyword">if</span> pkgresults[po] != bestnum: <span class="comment"># 如果当前 pkg 分数不等于最高分，跳过</span></span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    rec_depsolve[po] = <span class="number">0</span></span><br><span class="line"><span class="keyword">if</span> len(rec_depsolve) &gt; <span class="number">1</span>: <span class="comment"># 如果仍有多个 pkg，则进行依赖判定</span></span><br><span class="line">    <span class="keyword">for</span> po <span class="keyword">in</span> rec_depsolve:</span><br><span class="line">        fake_txmbr = TransactionMember(po)</span><br><span class="line"></span><br><span class="line">        <span class="comment">#  Note that this is just requirements, so you could also have</span></span><br><span class="line">        <span class="comment"># 4 requires for a single package. This might be fixable, if</span></span><br><span class="line">        <span class="comment"># needed, but given the above it's probably better to leave it</span></span><br><span class="line">        <span class="comment"># like this.</span></span><br><span class="line">        reqs = self._checkInstall(fake_txmbr) <span class="comment"># 检查安装 pkg 所需依赖</span></span><br><span class="line">        rec_depsolve[po] = len(reqs) <span class="comment"># 将依赖数量置为当前 pkg 的分数</span></span><br><span class="line"></span><br><span class="line">    bestnum = min(rec_depsolve.values()) <span class="comment"># 找到依赖数量最少的分数作为 bestnum </span></span><br><span class="line">    self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">                            _(<span class="string">'requires minimal: %d'</span>) % bestnum)</span><br><span class="line">    <span class="keyword">for</span> po <span class="keyword">in</span> rec_depsolve:</span><br><span class="line">        <span class="keyword">if</span> rec_depsolve[po] == bestnum: </span><br><span class="line">            self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">                    _(<span class="string">' Winner: %s'</span>) % po)</span><br><span class="line">            pkgresults[po] += <span class="number">1</span> <span class="comment"># 将依赖数量结果填充会 pkgresults 中，依赖数量最少的分数 +1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            num = rec_depsolve[po]</span><br><span class="line">            self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">                    _(<span class="string">' Loser(with %d): %s'</span>) % (num, po))</span><br></pre></td></tr></table></figure>
+<p>将当前分数最高的置为 bestnum，遍历 pkgs，如果当前 pkg 分数等于 bestnum，则将其分数 +1000，并将其分数 +(pkg.name)*-1 。如果 -13111 + 1000 +(-3) = -12114。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#  We don't want to decide to use a "shortest first", if something else</span></span><br><span class="line"><span class="comment"># has told us to pick something else. But we want to pick between</span></span><br><span class="line"><span class="comment"># multiple "best" packages. So we spike all the best packages (so</span></span><br><span class="line"><span class="comment"># only those can win) and then bump them down by package name length.</span></span><br><span class="line">bestnum = max(pkgresults.values())</span><br><span class="line"><span class="keyword">for</span> po <span class="keyword">in</span> pkgs:</span><br><span class="line">    <span class="keyword">if</span> pkgresults[po] != bestnum:</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    pkgresults[po] += <span class="number">1000</span></span><br><span class="line">    pkgresults[po] += (len(po.name)*<span class="number">-1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Bump down any packages that we identified as "last-resort" in such a</span></span><br><span class="line"><span class="comment"># way that they all score below the worst overall score whilst keeping</span></span><br><span class="line"><span class="comment"># their relative differences.</span></span><br><span class="line">shift = max(pkgresults.values()) - min(pkgresults.values()) + <span class="number">1</span></span><br><span class="line"><span class="keyword">for</span> po <span class="keyword">in</span> penalize:</span><br><span class="line">    pkgresults[po] -= shift</span><br><span class="line"></span><br><span class="line">bestorder = sorted(pkgresults.items(),</span><br><span class="line">                   key=<span class="keyword">lambda</span> x: (x[<span class="number">1</span>], x[<span class="number">0</span>]), reverse=<span class="keyword">True</span>)</span><br><span class="line">self.verbose_logger.log(logginglevels.DEBUG_4,</span><br><span class="line">        _(<span class="string">'Best Order: %s'</span> % str(bestorder)))</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> bestorder</span><br></pre></td></tr></table></figure>
+<p>最终根据 pkg 分数进行重新排序，返回第一个结果。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>发现这个问题最初是猜测是 Yum Repository 配置问题，阅读代码之后判定是 RPM 在某个版本依赖发生了改变，增加了某些依赖项，导致了 Yum 打分认为其分数较低，从而无法通过 yumdownloader 下载最新的 RPM。与相关同事确认，rc8 版本开始增加了部分依赖，调查结束。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2022/03/05/使用-init-进程运行-Container/" rel="next" title="使用 init 进程运行 Container">
+                <i class="fa fa-chevron-left"></i> 使用 init 进程运行 Container
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">171</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">30</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zdyxry" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Yumdownloader"><span class="nav-number">2.</span> <span class="nav-text">Yumdownloader</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#下载逻辑"><span class="nav-number">2.1.</span> <span class="nav-text">下载逻辑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Yum"><span class="nav-number">3.</span> <span class="nav-text">Yum</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2022/04/29/Yum-寻找-Best-Package-评分机制/';
+          this.page.identifier = '2022/04/29/Yum-寻找-Best-Package-评分机制/';
+          this.page.title = 'Yum 寻找 Best Package 评分机制';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
