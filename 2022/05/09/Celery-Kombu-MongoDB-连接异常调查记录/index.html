@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next gemini" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="cR4Tgq6nOHr_Wo0dm8HUK3feA45_XLr5RkA2UC-tXxc">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/yiran.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/yiran.png?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Python,Celery,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Yiran's Blog" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="背景产品组件 JobCenter 使用 Celery 实现异步任务中心，同时会运行 job-center-worker （celery worker） 和 job-center-scheduler(celery beat) 两个进程，使用 MongoDB 作为 Backend 存储 message 等信息（Celery 官方已说明不再维护对 MongoDB 的支持）。其中 MongoDB 配置了">
+<meta name="keywords" content="Python,Celery">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Celery&#x2F;Kombu MongoDB 连接异常调查记录">
+<meta property="og:url" content="https://zdyxry.github.io/2022/05/09/Celery-Kombu-MongoDB-连接异常调查记录/index.html">
+<meta property="og:site_name" content="Yiran&#39;s Blog">
+<meta property="og:description" content="背景产品组件 JobCenter 使用 Celery 实现异步任务中心，同时会运行 job-center-worker （celery worker） 和 job-center-scheduler(celery beat) 两个进程，使用 MongoDB 作为 Backend 存储 message 等信息（Celery 官方已说明不再维护对 MongoDB 的支持）。其中 MongoDB 配置了">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-05-10T00:58:53.815Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Celery&#x2F;Kombu MongoDB 连接异常调查记录">
+<meta name="twitter:description" content="背景产品组件 JobCenter 使用 Celery 实现异步任务中心，同时会运行 job-center-worker （celery worker） 和 job-center-scheduler(celery beat) 两个进程，使用 MongoDB 作为 Backend 存储 message 等信息（Celery 官方已说明不再维护对 MongoDB 的支持）。其中 MongoDB 配置了">
+<meta name="twitter:creator" content="@zdyxry">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://zdyxry.github.io/2022/05/09/Celery-Kombu-MongoDB-连接异常调查记录/">
+
+
+
+
+
+  <title>Celery/Kombu MongoDB 连接异常调查记录 | Yiran's Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-136220198-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Yiran's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-books">
+          <a href="/books" rel="section">
+            
+            读书
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-movies">
+          <a href="/movies" rel="section">
+            
+            观影
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://zdyxry.github.io/2022/05/09/Celery-Kombu-MongoDB-连接异常调查记录/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yiran">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/yiran.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yiran's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Celery/Kombu MongoDB 连接异常调查记录</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2022-05-09T14:44:42+00:00">
+                2022-05-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2022/05/09/Celery-Kombu-MongoDB-连接异常调查记录/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2022/05/09/Celery-Kombu-MongoDB-连接异常调查记录/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>产品组件 JobCenter 使用 Celery 实现异步任务中心，同时会运行 job-center-worker （celery worker） 和 job-center-scheduler(celery beat) 两个进程，使用 MongoDB 作为 Backend 存储 message 等信息（Celery 官方已说明不再维护对 MongoDB 的支持）。其中 MongoDB 配置了 ReplicaSet 保证高可用。</p>
+<p>近期 Celery/Kombu 中遇到了 <a href="https://github.com/celery/kombu/issues/1504#event-6304977800" target="_blank" rel="noopener"><code>No free channel ids</code> 问题</a>，经过排查在这个 <a href="https://github.com/celery/kombu/commit/1c2b9723851db3caa913b8da19d6ccad447f3568" target="_blank" rel="noopener">PR</a> 中解决了该问题，在考虑 cherry-pick 的工作量和可维护性考虑，最终将产品中的 celery 和 kombu 组件从 3.x 统一升级到了 4.x 版本。</p>
+<p>测试同学反馈近期在进行可靠性测试时，发现将 MongoDB 节点的存储网络 <code>ifdown</code> 会导致 JobCenter hang. 针对该问题进行调查。</p>
+<h2 id="调查"><a href="#调查" class="headerlink" title="调查"></a>调查</h2><h3 id="Celery"><a href="#Celery" class="headerlink" title="Celery"></a>Celery</h3><p>先尝试复现该问题，首先尝试 ifdown Primary 节点存储网络，现象复现；尝试 ifdown Secondary 节点存储网络，无法复现；<br>尝试 stop MongoDB service 替代 ifdown，Primary 或 Secondary 均无法复现。推测与 MongoDB 连接处理有关。</p>
+<p>观察现象复现的日志，在存储网络异常时，日志无任何输出，在存储网络恢复正常后，可以看到 Celery 记录在尝试连接 Broker （MongoDB）时发生了异常，尝试重连。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">[2022-05-07 10:13:01,362: WARNING/MainProcess] consumer: Connection to broker lost. Trying to re-establish the connection...</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/celery/worker/consumer/consumer.py"</span>, line 318, <span class="keyword">in</span> start</span><br><span class="line">    blueprint.start(self)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/celery/bootsteps.py"</span>, line 119, <span class="keyword">in</span> start</span><br><span class="line">    step.start(parent)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/celery/worker/consumer/consumer.py"</span>, line 596, <span class="keyword">in</span> start</span><br><span class="line">    c.loop(*c.loop_args())</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/celery/worker/loops.py"</span>, line 121, <span class="keyword">in</span> synloop</span><br><span class="line">    connection.drain_events(timeout=2.0)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/connection.py"</span>, line 315, <span class="keyword">in</span> drain_events</span><br><span class="line">    <span class="built_in">return</span> self.transport.drain_events(self.connection, **kwargs)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py"</span>, line 963, <span class="keyword">in</span> drain_events</span><br><span class="line">    get(self._deliver, timeout=timeout)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/utils/scheduling.py"</span>, line 56, <span class="keyword">in</span> get</span><br><span class="line">    <span class="built_in">return</span> self.fun(resource, callback, **kwargs)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py"</span>, line 1001, <span class="keyword">in</span> _drain_channel</span><br><span class="line">    <span class="built_in">return</span> channel.drain_events(callback=callback, timeout=timeout)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py"</span>, line 745, <span class="keyword">in</span> drain_events</span><br><span class="line">    <span class="built_in">return</span> self._poll(self.cycle, callback, timeout=timeout)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py"</span>, line 402, <span class="keyword">in</span> _poll</span><br><span class="line">    <span class="built_in">return</span> cycle.get(callback)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/utils/scheduling.py"</span>, line 56, <span class="keyword">in</span> get</span><br><span class="line">    <span class="built_in">return</span> self.fun(resource, callback, **kwargs)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py"</span>, line 405, <span class="keyword">in</span> _get_and_deliver</span><br><span class="line">    message = self._get(queue)</span><br><span class="line">  File <span class="string">"/usr/lib/python2.7/site-packages/kombu/transport/mongodb.py"</span>, line 141, <span class="keyword">in</span> _get</span><br><span class="line">    remove=True,</span><br><span class="line">  File <span class="string">"/usr/lib64/python2.7/site-packages/pymongo/collection.py"</span>, line 2315, <span class="keyword">in</span> find_and_modify</span><br><span class="line">    allowable_errors=[_NO_OBJ_ERROR])</span><br><span class="line">  File <span class="string">"/usr/lib64/python2.7/site-packages/pymongo/collection.py"</span>, line 205, <span class="keyword">in</span> _command</span><br><span class="line">    read_concern=read_concern)</span><br><span class="line">  File <span class="string">"/usr/lib64/python2.7/site-packages/pymongo/pool.py"</span>, line 218, <span class="keyword">in</span> <span class="built_in">command</span></span><br><span class="line">    self._raise_connection_failure(error)</span><br><span class="line">  File <span class="string">"/usr/lib64/python2.7/site-packages/pymongo/pool.py"</span>, line 346, <span class="keyword">in</span> _raise_connection_failure</span><br><span class="line">    raise error</span><br><span class="line">AutoReconnect: connection closed</span><br><span class="line">[2022-05-07 10:13:01,363: WARNING/MainProcess] Restoring 1 unacknowledged message(s)</span><br></pre></td></tr></table></figure>
+<p>对应 Celery 代码在 worker/consumer/consumer.py，Blueprint 是 Celery 启动入口，可以看到在 <code>blueprint.start(self)</code> 阶段进行了异常处理，针对 <code>self.connection_errors</code> 来触发重连接。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">CONNECTION_RETRY = <span class="string">"""\</span></span><br><span class="line"><span class="string">consumer: Connection to broker lost. \</span></span><br><span class="line"><span class="string">Trying to re-establish the connection...\</span></span><br><span class="line"><span class="string">"""</span></span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">start</span><span class="params">(self)</span>:</span></span><br><span class="line">    blueprint = self.blueprint</span><br><span class="line">    <span class="keyword">while</span> blueprint.state != CLOSE:</span><br><span class="line">        maybe_shutdown()</span><br><span class="line">        <span class="keyword">if</span> self.restart_count:</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                self._restart_state.step()</span><br><span class="line">            <span class="keyword">except</span> RestartFreqExceeded <span class="keyword">as</span> exc:</span><br><span class="line">                crit(<span class="string">'Frequent restarts detected: %r'</span>, exc, exc_info=<span class="number">1</span>)</span><br><span class="line">                sleep(<span class="number">1</span>)</span><br><span class="line">        self.restart_count += <span class="number">1</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            blueprint.start(self)</span><br><span class="line">        <span class="keyword">except</span> self.connection_errors <span class="keyword">as</span> exc:</span><br><span class="line">            <span class="comment"># If we're not retrying connections, no need to catch</span></span><br><span class="line">            <span class="comment"># connection errors</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> self.app.conf.broker_connection_retry:</span><br><span class="line">                <span class="keyword">raise</span></span><br><span class="line">            <span class="keyword">if</span> isinstance(exc, OSError) <span class="keyword">and</span> exc.errno == errno.EMFILE:</span><br><span class="line">                <span class="keyword">raise</span>  <span class="comment"># Too many open files</span></span><br><span class="line">            maybe_shutdown()</span><br><span class="line">            <span class="keyword">if</span> blueprint.state != CLOSE:</span><br><span class="line">                <span class="keyword">if</span> self.connection:</span><br><span class="line">                    self.on_connection_error_after_connected(exc)</span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    self.on_connection_error_before_connected(exc)</span><br><span class="line">                self.on_close()</span><br><span class="line">                blueprint.restart(self)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">on_connection_error_before_connected</span><span class="params">(self, exc)</span>:</span></span><br><span class="line">    error(CONNECTION_ERROR, self.conninfo.as_uri(), exc,</span><br><span class="line">          <span class="string">'Trying to reconnect...'</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">on_connection_error_after_connected</span><span class="params">(self, exc)</span>:</span></span><br><span class="line">    warn(CONNECTION_RETRY, exc_info=<span class="keyword">True</span>)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        self.connection.collect()</span><br><span class="line">    <span class="keyword">except</span> Exception:</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<p><code>self.connection_errors</code> 对应的其实是 Kombu 中 Transport 定义的 ，可以在 <code>kombu/kombu/transport/mongodb.py</code> 中查看，在当前版本中，定义为 <code>pymongo.errors.ConnectionFailure</code> ，pymongo 中常见的网络连接异常 <code>AutoReconnect</code> 或 <code>NetworkTimeout</code> 均继承自 <code>ConnectionFailure</code> 。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Transport</span><span class="params">(virtual.Transport)</span>:</span></span><br><span class="line">    Channel = Channel</span><br><span class="line"></span><br><span class="line">    can_parse_url = <span class="keyword">True</span></span><br><span class="line">    polling_interval = <span class="number">1</span></span><br><span class="line">    default_port = DEFAULT_PORT</span><br><span class="line">    connection_errors = (</span><br><span class="line">        virtual.Transport.connection_errors + (errors.ConnectionFailure, )</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<p>从目前来看，Celery 可以正确处理 kombu 上报的异常，但是在存储网络异常时，Kombu 没有抛出异常，于是问题调查从 Celery 转到 Kombu。</p>
+<h3 id="Kombu"><a href="#Kombu" class="headerlink" title="Kombu"></a>Kombu</h3><p>主要看 MongoDB Transport 关于建立连接部分的处理，代码执行路径依次是： <code>client</code> -&gt; <code>_create_client</code> -&gt; <code>_open</code> -&gt; <code>_parse_uri</code> ，其中 <code>_open</code> 是真正建立连接的处理，连接所采用的参数是在 <code>_parse_uri</code> 返回的，<code>_parse_uri</code> 最终调用的是 <code>pymongo.uri_parser.parse_uri</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_open</span><span class="params">(self, scheme=<span class="string">'mongodb://'</span>)</span>:</span></span><br><span class="line">    hostname, dbname, options = self._parse_uri(scheme=scheme)</span><br><span class="line"></span><br><span class="line">    conf = self._prepare_client_options(options)</span><br><span class="line">    conf[<span class="string">'host'</span>] = hostname</span><br><span class="line"></span><br><span class="line">    env = _detect_environment()</span><br><span class="line">    <span class="keyword">if</span> env == <span class="string">'gevent'</span>:</span><br><span class="line">        <span class="keyword">from</span> gevent <span class="keyword">import</span> monkey</span><br><span class="line">        monkey.patch_all()</span><br><span class="line">    <span class="keyword">elif</span> env == <span class="string">'eventlet'</span>:</span><br><span class="line">        <span class="keyword">from</span> eventlet <span class="keyword">import</span> monkey_patch</span><br><span class="line">        monkey_patch()</span><br><span class="line"></span><br><span class="line">    mongoconn = MongoClient(**conf)</span><br><span class="line">    database = mongoconn[dbname]</span><br><span class="line"></span><br><span class="line">    version_str = mongoconn.server_info()[<span class="string">'version'</span>]</span><br><span class="line">    version = tuple(map(int, version_str.split(<span class="string">'.'</span>)))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> version &lt; (<span class="number">1</span>, <span class="number">3</span>):</span><br><span class="line">        <span class="keyword">raise</span> VersionMismatch(E_SERVER_VERSION.format(version_str))</span><br><span class="line">    <span class="keyword">elif</span> self.ttl <span class="keyword">and</span> version &lt; (<span class="number">2</span>, <span class="number">2</span>):</span><br><span class="line">        <span class="keyword">raise</span> VersionMismatch(E_NO_TTL_INDEXES.format(version_str))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> database</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_parse_uri</span><span class="params">(self, scheme=<span class="string">'mongodb://'</span>)</span>:</span></span><br><span class="line">    <span class="comment"># See mongodb uri documentation:</span></span><br><span class="line">    <span class="comment"># http://docs.mongodb.org/manual/reference/connection-string/</span></span><br><span class="line">    client = self.connection.client</span><br><span class="line">    hostname = client.hostname</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> hostname.startswith(scheme):</span><br><span class="line">        hostname = scheme + hostname</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> hostname[len(scheme):]:</span><br><span class="line">        hostname += self.default_hostname</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> client.userid <span class="keyword">and</span> <span class="string">'@'</span> <span class="keyword">not</span> <span class="keyword">in</span> hostname:</span><br><span class="line">        head, tail = hostname.split(<span class="string">'://'</span>)</span><br><span class="line">        credentials = client.userid</span><br><span class="line">        <span class="keyword">if</span> client.password:</span><br><span class="line">            credentials += <span class="string">':'</span> + client.password</span><br><span class="line">        hostname = head + <span class="string">'://'</span> + credentials + <span class="string">'@'</span> + tail</span><br><span class="line"></span><br><span class="line">    port = client.port <span class="keyword">if</span> client.port <span class="keyword">else</span> self.default_port</span><br><span class="line">    parsed = uri_parser.parse_uri(hostname, port)</span><br><span class="line">    dbname = parsed[<span class="string">'database'</span>] <span class="keyword">or</span> client.virtual_host</span><br><span class="line">    <span class="keyword">if</span> dbname <span class="keyword">in</span> (<span class="string">'/'</span>, <span class="keyword">None</span>):</span><br><span class="line">        dbname = self.default_database</span><br><span class="line">    options = &#123;</span><br><span class="line">        <span class="string">'auto_start_request'</span>: <span class="keyword">True</span>,</span><br><span class="line">        <span class="string">'ssl'</span>: self.ssl,</span><br><span class="line">        <span class="string">'connectTimeoutMS'</span>: (int(self.connect_timeout * <span class="number">1000</span>)</span><br><span class="line">                             <span class="keyword">if</span> self.connect_timeout <span class="keyword">else</span> <span class="keyword">None</span>),</span><br><span class="line">    &#125;</span><br><span class="line">    options.update(parsed[<span class="string">'options'</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> hostname, dbname, options</span><br></pre></td></tr></table></figure>
+<p>假设我们连接参数是 <code>mongodb://192.168.1.1:27017,192.168.1.2:27017/yiran</code> ，那么 <code>pymongo.uri_parser.parse_uri</code> 解析的结果会是： <code>{&#39;username&#39;: None, &#39;nodelist&#39;: [(&#39;192.168.1.1&#39;, 27017), (&#39;192.168.1.2&#39;, 27017)], &#39;database&#39;: &#39;yiran&#39;, &#39;collection&#39;: None, &#39;password&#39;: None, &#39;options&#39;: {}}</code> 。</p>
+<p>socketTimeoutMS在我们的环境中，MongoDB 的 URI 中并没有指定 options，所以 <code>pymongo.uri_parser.parse_uri</code> 结果的 <code>options</code> 为空。最终连接所使用的 <code>options</code> 就是在 <code>_parse_uri</code> 中定义的 options ，其中类变量 <code>connect_timeout</code> 在 Channel 定义为 None，所以最终 Kombu 建立 MongoDB 连接并没有设置 <code>socketTimeoutMS</code>，如果不设置 <code>socketTimeoutMS</code> ，默认是 None，永久等待。当网络出现异常时，直观看到的现象会是 hang 住。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Channel</span><span class="params">(virtual.Channel)</span>:</span></span><br><span class="line">    <span class="string">"""MongoDB Channel."""</span></span><br><span class="line"></span><br><span class="line">    supports_fanout = <span class="keyword">True</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Mutable container. Shared by all class instances</span></span><br><span class="line">    _fanout_queues = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Options</span></span><br><span class="line">    ssl = <span class="keyword">False</span></span><br><span class="line">    ttl = <span class="keyword">False</span></span><br><span class="line">    connect_timeout = <span class="keyword">None</span></span><br><span class="line">    capped_queue_size = <span class="number">100000</span></span><br><span class="line">    calc_queue_size = <span class="keyword">True</span></span><br></pre></td></tr></table></figure>
+<h3 id="Celery-与-Kombu-参数传递"><a href="#Celery-与-Kombu-参数传递" class="headerlink" title="Celery 与 Kombu 参数传递"></a>Celery 与 Kombu 参数传递</h3><p>现在观察到连接参数不符合预期，为什么之前的 3.x 版本没有问题？切换到 3.x 分支查看对应的代码，可以看到大体逻辑都是类似的，关于 options 的处理，3.x 存在一行 ： <code>options.update(client.transport_options)</code> ，这里的 client 在函数最开始赋值，对应的是 <code>self.connection.client</code> ，<code>self.connection</code> 是 Transport 构造传入的参数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">_parse_uri</span><span class="params">(self, scheme=<span class="string">'mongodb://'</span>)</span>:</span></span><br><span class="line">    <span class="comment"># See mongodb uri documentation:</span></span><br><span class="line">    <span class="comment"># http://docs.mongodb.org/manual/reference/connection-string/</span></span><br><span class="line">    client = self.connection.client</span><br><span class="line">    hostname = client.hostname</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> hostname.startswith(scheme):</span><br><span class="line">        hostname = scheme + hostname</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> hostname[len(scheme):]:</span><br><span class="line">        hostname += DEFAULT_HOST</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> client.userid <span class="keyword">and</span> <span class="string">'@'</span> <span class="keyword">not</span> <span class="keyword">in</span> hostname:</span><br><span class="line">        head, tail = hostname.split(<span class="string">'://'</span>)</span><br><span class="line"></span><br><span class="line">        credentials = client.userid</span><br><span class="line">        <span class="keyword">if</span> client.password:</span><br><span class="line">            credentials += <span class="string">':'</span> + client.password</span><br><span class="line"></span><br><span class="line">        hostname = head + <span class="string">'://'</span> + credentials + <span class="string">'@'</span> + tail</span><br><span class="line"></span><br><span class="line">    port = client.port <span class="keyword">if</span> client.port <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span> <span class="keyword">else</span> DEFAULT_PORT</span><br><span class="line"></span><br><span class="line">    parsed = uri_parser.parse_uri(hostname, port)</span><br><span class="line"></span><br><span class="line">    dbname = parsed[<span class="string">'database'</span>] <span class="keyword">or</span> client.virtual_host</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> dbname <span class="keyword">in</span> (<span class="string">'/'</span>, <span class="keyword">None</span>):</span><br><span class="line">        dbname = <span class="string">'kombu_default'</span></span><br><span class="line"></span><br><span class="line">    options = &#123;</span><br><span class="line">        <span class="string">'auto_start_request'</span>: <span class="keyword">True</span>,</span><br><span class="line">        <span class="string">'ssl'</span>: client.ssl,</span><br><span class="line">        <span class="string">'connectTimeoutMS'</span>: (int(client.connect_timeout * <span class="number">1000</span>)</span><br><span class="line">                             <span class="keyword">if</span> client.connect_timeout <span class="keyword">else</span> <span class="keyword">None</span>),</span><br><span class="line">    &#125;</span><br><span class="line">    options.update(client.transport_options)</span><br><span class="line">    options.update(parsed[<span class="string">'options'</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> hostname, dbname, options</span><br></pre></td></tr></table></figure>
+<p><code>connection</code> 对应的就是 Kombu 中的 <code>Connection</code> ，Kombu 对外隐藏了 Transport ，Celery 在初始化阶段，会建立连接，调用路径是 <code>celery/app/base.py:Celery._connection</code> -&gt; <code>celery/app/amqp.py:AMQP.Connection</code> -&gt; <code>kombu/connection.py:Connection</code> 。传递参数 <code>transport_options</code> 就是在 Celery app 声明时配置的参数，具体可配置参数可以参考文档： <a href="https://docs.celeryq.dev/en/stable/userguide/configuration.html。" target="_blank" rel="noopener">https://docs.celeryq.dev/en/stable/userguide/configuration.html。</a></p>
+<p>在我们的场景中，声明了以下参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">BROKER_TRANSPORT_OPTIONS = &#123;</span><br><span class="line">    &quot;connect&quot;: False,</span><br><span class="line">    &quot;maxPoolSize&quot;: 5 if &quot;worker&quot; in process_cmdline else 2,</span><br><span class="line">    &quot;socketTimeoutMS&quot;: 5000,</span><br><span class="line">    &quot;connectTimeoutMS&quot;: 5000,</span><br><span class="line">    &quot;serverSelectionTimeoutMS&quot;: 5000,</span><br><span class="line">    &quot;w&quot;: 0,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 Kombu 使用 MongoDB Transport 时，最终会带有这些参数创建 MongoDB 连接，所以不会出现此问题说描述的现象。</p>
+<h2 id="Celery-改动背景"><a href="#Celery-改动背景" class="headerlink" title="Celery 改动背景"></a>Celery 改动背景</h2><p>@rmihael 上报了一个问题： <a href="https://github.com/celery/celery/issues/1047" target="_blank" rel="noopener">Celery events are not removed from MongoDB broker #1047</a> ，表示在使用 Celery Flower（Celery 监控组件）后，<code>messages</code> 中的事件不会清除，导致占用了大量的 MongoDB 存储空间。该 Issue 中讨论最终决定使用 MongoDB TTL 来解决此问题。</p>
+<p>在 Kombu 4.x 开发周期中，@daevaorn 提交了 <a href="https://github.com/celery/kombu/pull/537" target="_blank" rel="noopener">MongoDB TTL support and refactorings #537</a> 用来支持 MongoDB TTL，在该 PR 中包含了大量与 TTL 无关的 commit，并且包含了一定的重构，commit 如下：</p>
+<ul>
+<li>Complete unit tests suit for MongoDB transport</li>
+<li>Optional TTL support for MongoDB transport. AMQP TTL headers: x-messa… </li>
+<li>Rearrange methods at MongoDB channel class</li>
+<li>Another MongoDB transport clean up and refactor. Use of transport opt… </li>
+<li>Opt-out for queue size calculation</li>
+<li>Use natural sort for more FIFO semantic</li>
+<li>Fix docstrings</li>
+</ul>
+<p>其中 <code>Optional TTL support for MongoDB transport.</code> 是最关键的改动，忽略 TTL 的改动，主要看建立 MongoDB 连接的改动。在 <code>Channel</code> Class 中新增了一些类变量用于标识当前配置，在 <code>_parse_uri</code> 中，将 SSL,connectTImeoutMS 从 <code>client</code> 替换为了 <code>self</code> ，并删除了 <code>options.update(client.transport_options)</code> 。其中删除了 <code>options.update(client.transport_options)</code> 是导致这个问题的关键。</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"> class Channel(virtual.Channel):</span><br><span class="line">     _client = None</span><br><span class="line">     supports_fanout = True</span><br><span class="line"><span class="addition">+</span></span><br><span class="line"><span class="addition">+    # Mutable containers. Shared by all class instances</span></span><br><span class="line">     _fanout_queues = &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="addition">+    # Options</span></span><br><span class="line"><span class="addition">+    connect_timeout = None</span></span><br><span class="line"><span class="addition">+    ssl = False</span></span><br><span class="line"><span class="addition">+    capped_queue_size = 100000</span></span><br><span class="line"><span class="addition">+    ttl = False</span></span><br><span class="line"><span class="addition">+</span></span><br><span class="line"><span class="addition">+    from_transport_options = (</span></span><br><span class="line"><span class="addition">+        virtual.Channel.from_transport_options</span></span><br><span class="line"><span class="addition">+        + ('connect_timeout', 'ssl', 'ttl', 'capped_queue_size'))</span></span><br><span class="line"><span class="addition">+</span></span><br><span class="line"><span class="addition">+</span></span><br><span class="line">     def __init__(self, *vargs, **kwargs):</span><br><span class="line">         super(Channel, self).__init__(*vargs, **kwargs)</span><br><span class="line">         ...</span><br><span class="line"></span><br><span class="line">         ...</span><br><span class="line"></span><br><span class="line">    def _parse_uri(self, scheme='mongodb://'):</span><br><span class="line">        ...</span><br><span class="line">         options = &#123;</span><br><span class="line">             'auto_start_request': True,</span><br><span class="line"><span class="deletion">-            'ssl': client.ssl,</span></span><br><span class="line"><span class="deletion">-            'connectTimeoutMS': (int(client.connect_timeout * 1000)</span></span><br><span class="line"><span class="deletion">-                                 if client.connect_timeout else None),</span></span><br><span class="line"><span class="addition">+            'ssl': self.ssl,</span></span><br><span class="line"><span class="addition">+            'connectTimeoutMS': (int(self.connect_timeout * 1000)</span></span><br><span class="line"><span class="addition">+                                 if self.connect_timeout else None),</span></span><br><span class="line">         &#125;</span><br><span class="line"><span class="deletion">-        options.update(client.transport_options)</span></span><br><span class="line">         options.update(parsed['options'])</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Celery Kombu 代码管理感觉有些不清晰，在多个分支上想要对比非常困难。必要组件升级大版本进行全集测试是必要的。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Python/" rel="tag"># Python</a>
+          
+            <a href="/tags/Celery/" rel="tag"># Celery</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2022/04/29/Yum-寻找-Best-Package-评分机制/" rel="next" title="Yum 寻找 Best Package 评分机制">
+                <i class="fa fa-chevron-left"></i> Yum 寻找 Best Package 评分机制
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/yiran.png" alt="yiran">
+            
+              <p class="site-author-name" itemprop="name">yiran</p>
+              <p class="site-description motion-element" itemprop="description">Normal is boring</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">172</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/zdyxry" target="_blank" title="GitHub">
+                      GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:zdyxry@gmail.com" target="_blank" title="E-Mail">
+                      E-Mail</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/zdyxry" target="_blank" title="Twitter">
+                      Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.douban.com/people/62229099/" target="_blank" title="Douban">
+                      Douban</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://winkidney.com/" title="amao" target="_blank">amao</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://jiajunhuang.com/" title="jiajun" target="_blank">jiajun</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://liuliqiang.info/" title="liqiang" target="_blank">liqiang</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调查"><span class="nav-number">2.</span> <span class="nav-text">调查</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Celery"><span class="nav-number">2.1.</span> <span class="nav-text">Celery</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kombu"><span class="nav-number">2.2.</span> <span class="nav-text">Kombu</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Celery-与-Kombu-参数传递"><span class="nav-number">2.3.</span> <span class="nav-text">Celery 与 Kombu 参数传递</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Celery-改动背景"><span class="nav-number">3.</span> <span class="nav-text">Celery 改动背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2016 &mdash; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yiran</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://zdyxry.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://zdyxry.github.io/2022/05/09/Celery-Kombu-MongoDB-连接异常调查记录/';
+          this.page.identifier = '2022/05/09/Celery-Kombu-MongoDB-连接异常调查记录/';
+          this.page.title = 'Celery/Kombu MongoDB 连接异常调查记录';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://zdyxry.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
