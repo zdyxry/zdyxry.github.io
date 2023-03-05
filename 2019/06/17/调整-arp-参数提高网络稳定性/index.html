@@ -1,39 +1,39 @@
-<!doctype html><html lang=zh-cn><head><title>调整 arp 参数提高网络稳定性 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 链接到标题 最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。
-问题 链接到标题 在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。 今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :
+<!doctype html><html lang=en><head><title>调整 arp 参数提高网络稳定性 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 Link to heading 最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。
+问题 Link to heading 在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。 今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :
 No buffer space available 根据这个提示，感觉像是某些系统参数配置的小了，于是查了一下，发现跟 arp 有关。什么是 arp ？
 相信对网络稍微有些概念的同学都不陌生，这里我直接引用维基百科：
 地址解析协议（英语：Address Resolution Protocol，缩写：ARP）。在以太网协议中规定，同一局域网中的一台主机要和另一台主机进行直接通信，必须要知道目标主机的MAC地址。而在TCP/IP协议中，网络层和传输层只关心目标主机的IP地址。这就导致在以太网中使用IP协议时，数据链路层的以太网协议接到上层IP协议提供的数据中，只包含目的主机的IP地址。于是需要一种方法，根据目的主机的IP地址，获得其MAC地址。这就是ARP协议要做的事情。所谓地址解析（address resolution）就是主机在发送帧前将目标IP地址转换成目标MAC地址的过程。
 另外，当发送主机和目的主机不在同一个局域网中时，即便知道对方的MAC地址，两者也不能直接通信，必须经过路由转发才可以。所以此时，发送主机通过ARP协议获得的将不是目的主机的真实MAC地址，而是一台可以通往局域网外的路由器的MAC地址。于是此后发送主机发往目的主机的所有帧，都将发往该路由器，通过它向外发送。这种情况称为委托ARP或ARP代理（ARP Proxy）。
-解决 链接到标题 知道了原因，那么我们来调整参数就好：
-gc_thresh1 (since Linux 2.2) The minimum number of entries to keep in the ARP cache. The garbage collector will not run if there are fewer than this number of entries in the cache."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="调整 arp 参数提高网络稳定性"><meta name=twitter:description content="背景 链接到标题 最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。
-问题 链接到标题 在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。 今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :
+解决 Link to heading 知道了原因，那么我们来调整参数就好：
+gc_thresh1 (since Linux 2.2) The minimum number of entries to keep in the ARP cache. The garbage collector will not run if there are fewer than this number of entries in the cache."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="调整 arp 参数提高网络稳定性"><meta name=twitter:description content="背景 Link to heading 最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。
+问题 Link to heading 在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。 今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :
 No buffer space available 根据这个提示，感觉像是某些系统参数配置的小了，于是查了一下，发现跟 arp 有关。什么是 arp ？
 相信对网络稍微有些概念的同学都不陌生，这里我直接引用维基百科：
 地址解析协议（英语：Address Resolution Protocol，缩写：ARP）。在以太网协议中规定，同一局域网中的一台主机要和另一台主机进行直接通信，必须要知道目标主机的MAC地址。而在TCP/IP协议中，网络层和传输层只关心目标主机的IP地址。这就导致在以太网中使用IP协议时，数据链路层的以太网协议接到上层IP协议提供的数据中，只包含目的主机的IP地址。于是需要一种方法，根据目的主机的IP地址，获得其MAC地址。这就是ARP协议要做的事情。所谓地址解析（address resolution）就是主机在发送帧前将目标IP地址转换成目标MAC地址的过程。
 另外，当发送主机和目的主机不在同一个局域网中时，即便知道对方的MAC地址，两者也不能直接通信，必须经过路由转发才可以。所以此时，发送主机通过ARP协议获得的将不是目的主机的真实MAC地址，而是一台可以通往局域网外的路由器的MAC地址。于是此后发送主机发往目的主机的所有帧，都将发往该路由器，通过它向外发送。这种情况称为委托ARP或ARP代理（ARP Proxy）。
-解决 链接到标题 知道了原因，那么我们来调整参数就好：
-gc_thresh1 (since Linux 2.2) The minimum number of entries to keep in the ARP cache. The garbage collector will not run if there are fewer than this number of entries in the cache."><meta property="og:title" content="调整 arp 参数提高网络稳定性"><meta property="og:description" content="背景 链接到标题 最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。
-问题 链接到标题 在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。 今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :
+解决 Link to heading 知道了原因，那么我们来调整参数就好：
+gc_thresh1 (since Linux 2.2) The minimum number of entries to keep in the ARP cache. The garbage collector will not run if there are fewer than this number of entries in the cache."><meta property="og:title" content="调整 arp 参数提高网络稳定性"><meta property="og:description" content="背景 Link to heading 最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。
+问题 Link to heading 在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。 今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :
 No buffer space available 根据这个提示，感觉像是某些系统参数配置的小了，于是查了一下，发现跟 arp 有关。什么是 arp ？
 相信对网络稍微有些概念的同学都不陌生，这里我直接引用维基百科：
 地址解析协议（英语：Address Resolution Protocol，缩写：ARP）。在以太网协议中规定，同一局域网中的一台主机要和另一台主机进行直接通信，必须要知道目标主机的MAC地址。而在TCP/IP协议中，网络层和传输层只关心目标主机的IP地址。这就导致在以太网中使用IP协议时，数据链路层的以太网协议接到上层IP协议提供的数据中，只包含目的主机的IP地址。于是需要一种方法，根据目的主机的IP地址，获得其MAC地址。这就是ARP协议要做的事情。所谓地址解析（address resolution）就是主机在发送帧前将目标IP地址转换成目标MAC地址的过程。
 另外，当发送主机和目的主机不在同一个局域网中时，即便知道对方的MAC地址，两者也不能直接通信，必须经过路由转发才可以。所以此时，发送主机通过ARP协议获得的将不是目的主机的真实MAC地址，而是一台可以通往局域网外的路由器的MAC地址。于是此后发送主机发往目的主机的所有帧，都将发往该路由器，通过它向外发送。这种情况称为委托ARP或ARP代理（ARP Proxy）。
-解决 链接到标题 知道了原因，那么我们来调整参数就好：
+解决 Link to heading 知道了原因，那么我们来调整参数就好：
 gc_thresh1 (since Linux 2.2) The minimum number of entries to keep in the ARP cache. The garbage collector will not run if there are fewer than this number of entries in the cache."><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2019/06/17/%E8%B0%83%E6%95%B4-arp-%E5%8F%82%E6%95%B0%E6%8F%90%E9%AB%98%E7%BD%91%E7%BB%9C%E7%A8%B3%E5%AE%9A%E6%80%A7/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-06-17T21:20:04+00:00"><meta property="article:modified_time" content="2019-06-17T21:20:04+00:00"><link rel=canonical href=https://zdyxry.github.io/2019/06/17/%E8%B0%83%E6%95%B4-arp-%E5%8F%82%E6%95%B0%E6%8F%90%E9%AB%98%E7%BD%91%E7%BB%9C%E7%A8%B3%E5%AE%9A%E6%80%A7/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
 <input type=checkbox id=menu-toggle>
 <label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2019/06/17/%E8%B0%83%E6%95%B4-arp-%E5%8F%82%E6%95%B0%E6%8F%90%E9%AB%98%E7%BD%91%E7%BB%9C%E7%A8%B3%E5%AE%9A%E6%80%A7/>调整 arp 参数提高网络稳定性</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
 <time datetime=2019-06-17T21:20:04Z>June 17, 2019</time></span>
 <span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
-阅读时间：1 分钟</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+One-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
 <span class=tag><a href=/tags/Linux/>Linux</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#问题>问题</a></li><li><a href=#解决>解决</a></li></ul></nav><div class=post-content><h2 id=背景>背景
-<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。</p><h2 id=问题>问题
-<a class=heading-link href=#%e9%97%ae%e9%a2%98><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>最近发现一直使用的机房网络不稳定，时常出现网络无法联通，过一会又可以联通的情况，今天又遇到了，要彻底解决它。</p><h2 id=问题>问题
+<a class=heading-link href=#%e9%97%ae%e9%a2%98><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在机房网络规划中，地区 A 和地区 B 是通过 OpenVPN 连接的，也就是说每个地区的网关是一台虚拟机，提供 DHCP 服务。
 今天地区 A 的机器又无法连接地区 B 了，我登陆网关尝试从网关 ping 目标主机，发现直接提示 :</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>No buffer space available
 </span></span></code></pre></div><p>根据这个提示，感觉像是某些系统参数配置的小了，于是查了一下，发现跟 arp 有关。什么是 arp ？</p><p>相信对网络稍微有些概念的同学都不陌生，这里我直接引用维基百科：</p><blockquote><p>地址解析协议（英语：Address Resolution Protocol，缩写：ARP）。在以太网协议中规定，同一局域网中的一台主机要和另一台主机进行直接通信，必须要知道目标主机的MAC地址。而在TCP/IP协议中，网络层和传输层只关心目标主机的IP地址。这就导致在以太网中使用IP协议时，数据链路层的以太网协议接到上层IP协议提供的数据中，只包含目的主机的IP地址。于是需要一种方法，根据目的主机的IP地址，获得其MAC地址。这就是ARP协议要做的事情。所谓地址解析（address resolution）就是主机在发送帧前将目标IP地址转换成目标MAC地址的过程。</p></blockquote><blockquote><p>另外，当发送主机和目的主机不在同一个局域网中时，即便知道对方的MAC地址，两者也不能直接通信，必须经过路由转发才可以。所以此时，发送主机通过ARP协议获得的将不是目的主机的真实MAC地址，而是一台可以通往局域网外的路由器的MAC地址。于是此后发送主机发往目的主机的所有帧，都将发往该路由器，通过它向外发送。这种情况称为委托ARP或ARP代理（ARP Proxy）。</p></blockquote><h2 id=解决>解决
-<a class=heading-link href=#%e8%a7%a3%e5%86%b3><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>知道了原因，那么我们来调整参数就好：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>gc_thresh1 (since Linux 2.2)
+<a class=heading-link href=#%e8%a7%a3%e5%86%b3><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>知道了原因，那么我们来调整参数就好：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>gc_thresh1 (since Linux 2.2)
 </span></span><span style=display:flex><span>The minimum number of entries to keep in the ARP cache. The garbage collector will not run <span style=font-weight:700>if</span> there are fewer than this number of entries in the cache. Defaults to 128.
 </span></span><span style=display:flex><span>gc_thresh2 (since Linux 2.2)
 </span></span><span style=display:flex><span>The soft maximum number of entries to keep in the ARP cache. The garbage collector will allow the number of entries to exceed this <span style=font-weight:700>for</span> 5 seconds before collection will be performed. Defaults to 512.
@@ -56,6 +56,6 @@ gc_thresh1 (since Linux 2.2) The minimum number of entries to keep in the ARP ca
 2023
 Yiran Zhou
 ·
-技术支持 <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
 <script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>
