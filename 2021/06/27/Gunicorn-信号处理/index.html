@@ -1,0 +1,185 @@
+<!doctype html><html lang=en><head><title>Gunicorn 信号处理 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 Link to heading 最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。
+Master Link to heading Gunicorn 启动入口：
+WSGIApplication(&#34;%(prog)s [OPTIONS] [APP_MODULE]&#34;).run() BaseApplication().run() Arbiter(self).run() Master 主要控制逻辑实现在 Arbiter 中，包括信号处理和主循环逻辑。在调用 Arbiter().run() 会最终调用到 Arbiter.init_signals() ，在该函数中会将 Master 中定义的需要处理的信号函数进行相应的注册：
+Arbiter().run(): Arbiter().start() Arbiter().init_signals() # 初始化 Master 信号处理 # initialize all signals for s in self.SIGNALS: # &#34;HUP QUIT INT TERM TTIN TTOU USR1 USR2 WINCH&#34; signal.signal(s, self.signal) signal.signal(signal.SIGCHLD, self.handle_chld) 所有定义的信号处理函数都是 Aribiter().signal() ，该函数将接收到的信号存放在 Arbiter.SIG_QUEUE 中，最多保留 5 个信号，然后触发 Arbiter()."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Gunicorn 信号处理"><meta name=twitter:description content="背景 Link to heading 最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。
+Master Link to heading Gunicorn 启动入口：
+WSGIApplication(&#34;%(prog)s [OPTIONS] [APP_MODULE]&#34;).run() BaseApplication().run() Arbiter(self).run() Master 主要控制逻辑实现在 Arbiter 中，包括信号处理和主循环逻辑。在调用 Arbiter().run() 会最终调用到 Arbiter.init_signals() ，在该函数中会将 Master 中定义的需要处理的信号函数进行相应的注册：
+Arbiter().run(): Arbiter().start() Arbiter().init_signals() # 初始化 Master 信号处理 # initialize all signals for s in self.SIGNALS: # &#34;HUP QUIT INT TERM TTIN TTOU USR1 USR2 WINCH&#34; signal.signal(s, self.signal) signal.signal(signal.SIGCHLD, self.handle_chld) 所有定义的信号处理函数都是 Aribiter().signal() ，该函数将接收到的信号存放在 Arbiter.SIG_QUEUE 中，最多保留 5 个信号，然后触发 Arbiter()."><meta property="og:title" content="Gunicorn 信号处理"><meta property="og:description" content="背景 Link to heading 最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。
+Master Link to heading Gunicorn 启动入口：
+WSGIApplication(&#34;%(prog)s [OPTIONS] [APP_MODULE]&#34;).run() BaseApplication().run() Arbiter(self).run() Master 主要控制逻辑实现在 Arbiter 中，包括信号处理和主循环逻辑。在调用 Arbiter().run() 会最终调用到 Arbiter.init_signals() ，在该函数中会将 Master 中定义的需要处理的信号函数进行相应的注册：
+Arbiter().run(): Arbiter().start() Arbiter().init_signals() # 初始化 Master 信号处理 # initialize all signals for s in self.SIGNALS: # &#34;HUP QUIT INT TERM TTIN TTOU USR1 USR2 WINCH&#34; signal.signal(s, self.signal) signal.signal(signal.SIGCHLD, self.handle_chld) 所有定义的信号处理函数都是 Aribiter().signal() ，该函数将接收到的信号存放在 Arbiter.SIG_QUEUE 中，最多保留 5 个信号，然后触发 Arbiter()."><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2021/06/27/Gunicorn-%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2021-06-27T18:55:41+00:00"><meta property="article:modified_time" content="2021-06-27T18:55:41+00:00"><link rel=canonical href=https://zdyxry.github.io/2021/06/27/Gunicorn-%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2021/06/27/Gunicorn-%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86/>Gunicorn 信号处理</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2021-06-27T18:55:41Z>June 27, 2021</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+4-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Python/>Python</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a><ul><li><a href=#master>Master</a></li><li><a href=#worker>Worker</a></li></ul></li><li><a href=#完整流程>完整流程</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。</p><h3 id=master>Master
+<a class=heading-link href=#master><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>Gunicorn 启动入口：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>WSGIApplication(&#34;%(prog)s [OPTIONS] [APP_MODULE]&#34;).run()
+</span></span><span style=display:flex><span>    BaseApplication().run()
+</span></span><span style=display:flex><span>        Arbiter(self).run()
+</span></span></code></pre></div><p>Master 主要控制逻辑实现在 <code>Arbiter</code> 中，包括信号处理和主循环逻辑。在调用 <code>Arbiter().run()</code> 会最终调用到 <code>Arbiter.init_signals()</code> ，在该函数中会将 Master 中定义的需要处理的信号函数进行相应的注册：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>Arbiter().run():
+</span></span><span style=display:flex><span>    Arbiter().start() 
+</span></span><span style=display:flex><span>        Arbiter().init_signals() # 初始化 Master 信号处理
+</span></span><span style=display:flex><span>            # initialize all signals
+</span></span><span style=display:flex><span>            for s in self.SIGNALS: # &#34;HUP QUIT INT TERM TTIN TTOU USR1 USR2 WINCH&#34;
+</span></span><span style=display:flex><span>                signal.signal(s, self.signal)
+</span></span><span style=display:flex><span>            signal.signal(signal.SIGCHLD, self.handle_chld)
+</span></span></code></pre></div><p>所有定义的信号处理函数都是 <code>Aribiter().signal()</code> ，该函数将接收到的信号存放在 <code>Arbiter.SIG_QUEUE</code> 中，最多保留 5 个信号，然后触发 <code>Arbiter().wakeup()</code> ，在 <code>Arbiter().wakeup()</code> 中，向 <code>Arbiter.PIPE</code> 管道写入数据，主要作用是唤醒 Master loop。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>    def signal(self, sig, frame):
+</span></span><span style=display:flex><span>        if len(self.SIG_QUEUE) &lt; 5:
+</span></span><span style=display:flex><span>            self.SIG_QUEUE.append(sig)
+</span></span><span style=display:flex><span>            self.wakeup()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def wakeup(self):
+</span></span><span style=display:flex><span>        &#34;&#34;&#34;\
+</span></span><span style=display:flex><span>        Wake up the arbiter by writing to the PIPE
+</span></span><span style=display:flex><span>        &#34;&#34;&#34;
+</span></span><span style=display:flex><span>        try:
+</span></span><span style=display:flex><span>            os.write(self.PIPE[1], b&#39;.&#39;)
+</span></span><span style=display:flex><span>        except IOError as e:
+</span></span><span style=display:flex><span>            if e.errno not in [errno.EAGAIN, errno.EINTR]:
+</span></span><span style=display:flex><span>                raise
+</span></span></code></pre></div><p>在 Arbiter 类中会实现相应的信号函数处理逻辑，针对 TERM 和 INT 信号处理的主要差异为是否会先执行 <code>Arbiter().stop(False)</code> ，最后都会 <code>raise StopIteration</code> 。对于 <code>HUP</code> 信号是执行自身的 <code>Arbiter().reload()</code> 逻辑。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>    def handle_hup(self):
+</span></span><span style=display:flex><span>        &#34;&#34;&#34;\
+</span></span><span style=display:flex><span>        HUP handling.
+</span></span><span style=display:flex><span>        - Reload configuration
+</span></span><span style=display:flex><span>        - Start the new worker processes with a new configuration
+</span></span><span style=display:flex><span>        - Gracefully shutdown the old worker processes
+</span></span><span style=display:flex><span>        &#34;&#34;&#34;
+</span></span><span style=display:flex><span>        self.log.info(&#34;Hang up: %s&#34;, self.master_name)
+</span></span><span style=display:flex><span>        self.reload()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def handle_term(self):
+</span></span><span style=display:flex><span>        &#34;SIGTERM handling&#34;
+</span></span><span style=display:flex><span>        raise StopIteration
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def handle_int(self):
+</span></span><span style=display:flex><span>        &#34;SIGINT handling&#34;
+</span></span><span style=display:flex><span>        self.stop(False)
+</span></span><span style=display:flex><span>        raise StopIteration
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def handle_quit(self):
+</span></span><span style=display:flex><span>        &#34;SIGQUIT handling&#34;
+</span></span><span style=display:flex><span>        self.stop(False)
+</span></span><span style=display:flex><span>        raise StopIteration
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def handle_ttin(self):
+</span></span><span style=display:flex><span>        &#34;&#34;&#34;\
+</span></span><span style=display:flex><span>        SIGTTIN handling.
+</span></span><span style=display:flex><span>        Increases the number of workers by one.
+</span></span><span style=display:flex><span>        &#34;&#34;&#34;
+</span></span><span style=display:flex><span>        self.num_workers += 1
+</span></span><span style=display:flex><span>        self.manage_workers()
+</span></span></code></pre></div><p>在 Master 进行信号处理初始化动作后，进入到 Master loop 阶段：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>        try:
+</span></span><span style=display:flex><span>            self.manage_workers()           # 启动 Worker，如果 Worker 数量不足则启动；如果数量超过预期则 kill。
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            while True:
+</span></span><span style=display:flex><span>                self.maybe_promote_master()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                sig = self.SIG_QUEUE.pop(0) if self.SIG_QUEUE else None
+</span></span><span style=display:flex><span>                if sig is None:
+</span></span><span style=display:flex><span>                    self.sleep() # 如果 Master 没有接收到信号，则进入到 `Arbiter().sleep()` ，该函数从 `Arbiter.PIPE` 读取数据（阻塞），直到 `Arbiter.PIPE` 有数据后才返回
+</span></span><span style=display:flex><span>                    self.murder_workers() # 如果在当前循环中，接收到信号，则进行 worker 处理，清理无用 Worker
+</span></span><span style=display:flex><span>                    self.manage_workers() # 重新进入创建、清理 Worker 逻辑
+</span></span><span style=display:flex><span>                    continue # 进入下一循环，在下一次循环中，sig 为刚刚唤醒 Master 的信号
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                if sig not in self.SIG_NAMES:  # 如果接收到的信号不需要处理，则忽略
+</span></span><span style=display:flex><span>                    self.log.info(&#34;Ignoring unknown signal: %s&#34;, sig)
+</span></span><span style=display:flex><span>                    continue
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                signame = self.SIG_NAMES.get(sig) # 获取信号名称
+</span></span><span style=display:flex><span>                handler = getattr(self, &#34;handle_%s&#34; % signame, None) # 获取 Master 针对该信号的处理函数
+</span></span><span style=display:flex><span>                if not handler:
+</span></span><span style=display:flex><span>                    self.log.error(&#34;Unhandled signal: %s&#34;, signame)
+</span></span><span style=display:flex><span>                    continue
+</span></span><span style=display:flex><span>                self.log.info(&#34;Handling signal: %s&#34;, signame)
+</span></span><span style=display:flex><span>                handler() # 执行信号处理
+</span></span><span style=display:flex><span>                self.wakeup() 
+</span></span><span style=display:flex><span>        except (StopIteration, KeyboardInterrupt): # 如果信号为 TERM 或 INT，则会触发 Exception，进入到 `Arbiter().halt()` 逻辑，清理配置并退出进程
+</span></span><span style=display:flex><span>            self.halt()
+</span></span></code></pre></div><h3 id=worker>Worker
+<a class=heading-link href=#worker><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>Master 创建 Worker 时，先执行 <code>worker.init_process()</code> 用来初始化进程</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>        self.init_signals()
+</span></span><span style=display:flex><span>        ...
+</span></span><span style=display:flex><span>        # Enter main run loop
+</span></span><span style=display:flex><span>        self.booted = True
+</span></span><span style=display:flex><span>        self.run()
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>    def init_signals(self):
+</span></span><span style=display:flex><span>        # reset signaling
+</span></span><span style=display:flex><span>        for s in self.SIGNALS:
+</span></span><span style=display:flex><span>            signal.signal(s, signal.SIG_DFL)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        # init new signaling 
+</span></span><span style=display:flex><span>        signal.signal(signal.SIGQUIT, self.handle_quit)
+</span></span><span style=display:flex><span>        signal.signal(signal.SIGTERM, self.handle_exit)
+</span></span><span style=display:flex><span>        signal.signal(signal.SIGINT, self.handle_quit)
+</span></span><span style=display:flex><span>        signal.signal(signal.SIGWINCH, self.handle_winch)
+</span></span><span style=display:flex><span>        signal.signal(signal.SIGUSR1, self.handle_usr1)
+</span></span><span style=display:flex><span>        signal.signal(signal.SIGABRT, self.handle_abort)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        # Don&#39;t let SIGTERM and SIGUSR1 disturb active requests
+</span></span><span style=display:flex><span>        # by interrupting system calls
+</span></span><span style=display:flex><span>        signal.siginterrupt(signal.SIGTERM, False)
+</span></span><span style=display:flex><span>        signal.siginterrupt(signal.SIGUSR1, False)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        if hasattr(signal, &#39;set_wakeup_fd&#39;):
+</span></span><span style=display:flex><span>            signal.set_wakeup_fd(self.PIPE[1])
+</span></span></code></pre></div><p>在 Worker 中，所有的信号处理函数都是直接触发，没有采用 Master 的 <code>SIG_QUEUE</code> 形式：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>    def handle_usr1(self, sig, frame):
+</span></span><span style=display:flex><span>        self.log.reopen_files()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def handle_exit(self, sig, frame):
+</span></span><span style=display:flex><span>        self.alive = False
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def handle_quit(self, sig, frame):
+</span></span><span style=display:flex><span>        self.alive = False
+</span></span><span style=display:flex><span>        # worker_int callback
+</span></span><span style=display:flex><span>        self.cfg.worker_int(self)
+</span></span><span style=display:flex><span>        time.sleep(0.1)
+</span></span><span style=display:flex><span>        sys.exit(0)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    def handle_abort(self, sig, frame):
+</span></span><span style=display:flex><span>        self.alive = False
+</span></span><span style=display:flex><span>        self.cfg.worker_abort(self)
+</span></span><span style=display:flex><span>        sys.exit(1)
+</span></span></code></pre></div><p>在 Worker 的 loop 逻辑中，优先检查 <code>self.alive</code> 是否为 True，如果为 True ，则进入请求处理逻辑：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>    def run_for_one(self, timeout):
+</span></span><span style=display:flex><span>        listener = self.sockets[0]
+</span></span><span style=display:flex><span>        while self.alive:
+</span></span><span style=display:flex><span>            self.notify()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            # Accept a connection. If we get an error telling us
+</span></span><span style=display:flex><span>            # that no connection is waiting we fall down to the
+</span></span><span style=display:flex><span>            # select which is where we&#39;ll wait for a bit for new
+</span></span><span style=display:flex><span>            # workers to come give us some love.
+</span></span><span style=display:flex><span>            try:
+</span></span><span style=display:flex><span>                self.accept(listener)
+</span></span><span style=display:flex><span>                # Keep processing clients until no one is waiting. This
+</span></span><span style=display:flex><span>                # prevents the need to select() for every client that we
+</span></span><span style=display:flex><span>                # process.
+</span></span><span style=display:flex><span>                continue
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            except EnvironmentError as e:
+</span></span><span style=display:flex><span>                if e.errno not in (errno.EAGAIN, errno.ECONNABORTED,
+</span></span><span style=display:flex><span>                                   errno.EWOULDBLOCK):
+</span></span><span style=display:flex><span>                    raise
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            if not self.is_parent_alive():
+</span></span><span style=display:flex><span>                return
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            try:
+</span></span><span style=display:flex><span>                self.wait(timeout)
+</span></span><span style=display:flex><span>            except StopWaiting:
+</span></span><span style=display:flex><span>                return
+</span></span></code></pre></div><h2 id=完整流程>完整流程
+<a class=heading-link href=#%e5%ae%8c%e6%95%b4%e6%b5%81%e7%a8%8b><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>以 HUP 信号为例，在 Gunicorn 文档中，HUP 可以优雅的重启 Worker 进程：</p><blockquote><p>HUP: Reload the configuration, start the new worker processes with a new configuration and gracefully shutdown older workers. If the application is not preloaded (using the preload_app option), Gunicorn will also load the new version of it.</p></blockquote><p>当 Master 进程收到 HUP 信号后：</p><ul><li>Master loop 唤醒，进入 <code>murder_workers</code> 和 <code>manage_workers</code> 处理</li><li>Master loop 进入下一循环，获取到 HUP 信号处理函数</li><li>执行 <code>Arbiter().handle_hup()</code></li><li>执行 <code>Arbiter().reload()</code> 重新加载配置，重新加载 WSGI app，并按照 Worker 配置启动新 Worker ，启动完成后，执行 <code>manage_workers</code> 进行原有 Worker 处理，因为此时 Worker 数量为预期的一倍，因此会进入停掉原有 Worker 处理逻辑，执行 <code>Arbiter().kill_worker()</code> 逻辑，执行 <code>os.kill</code> ，传递信号为 TERM</li><li>此时 Master 信号处理完成，执行 <code>Arbiter().wakeup()</code> 使其重新进入 loop 阻塞逻辑。</li></ul><p>当 Worker 进程收到 TERM 信号后：</p><ul><li>执行 <code>Worker().handle_exit()</code> 逻辑，将 <code>self.alive</code> 置为 False</li><li>在 Worker 的 loop 逻辑中，优先检查 <code>self.alive</code> 是否为 True，如果不为True，则处理完成当前逻辑后，下一次循环退出，以此来实现 graceful shutdown</li></ul><h2 id=参考链接>参考链接
+<a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><ul><li><a href=http://flaneur2020.github.io/2020/01/12/note-about-graceful-shutdown/>http://flaneur2020.github.io/2020/01/12/note-about-graceful-shutdown/</a></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>

@@ -1,0 +1,246 @@
+<!doctype html><html lang=en><head><title>Linux 下常用故障模拟方法 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 Link to heading 在日常开发时，有时候需要保证自己代码的健壮性，需要模拟各种故障测试，比如：磁盘、网络、端口等，今天来汇总一下平时使用最多的几种故障模拟方法
+磁盘 Link to heading 插入拔出 Link to heading 服务器的存储控制器如果是直通模式，那么在 OS 中能够直接获取到磁盘插入与拔出事件，有时候我们需要检测到相应的事件来自动化的做某些动作，具体的实现方式见之前的文章 Linux 下磁盘设备自动发现方式 。
+那么我们写完了代码想要测试，不想去机房物理操作，怎么模拟呢？
+Hypervisor Link to heading 如果你的代码部署的机器是一台虚拟机，那么在 Hypervisor 层面一般都会有对应的接口来完成相应的操作。
+比如 Vsphere ESXi 中可以直接编辑虚拟机，在磁盘选项中有一个“移除”按钮，可以直接移除磁盘：
+再比如 KVM 下，可以通过 Libvirt 接口来 detach 磁盘。
+当然对于插入动作，Hypervisor 也会提供对应的功能。
+物理服务器 Link to heading 如果 OS 不是在 Hypervisor 上，而是直接安装在了物理服务器上，我们怎么做呢？
+通常我们服务器上的磁盘都是 SCSI 设备，会实现完整的 SCSI（接口），可以通过修改相应设备的标置文件来达到目的。
+示例： 节点存在设备 /dev/sda ，修改标置文件，在系统中会发现磁盘已经被移除了。
+[root@yiran ~]# lsblk NAME MAJ:MIN RM SIZE RO TYPE MOUNTPOINT sda 8:0 0 10G 0 disk sr0 11:0 1 4."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Linux 下常用故障模拟方法"><meta name=twitter:description content="背景 Link to heading 在日常开发时，有时候需要保证自己代码的健壮性，需要模拟各种故障测试，比如：磁盘、网络、端口等，今天来汇总一下平时使用最多的几种故障模拟方法
+磁盘 Link to heading 插入拔出 Link to heading 服务器的存储控制器如果是直通模式，那么在 OS 中能够直接获取到磁盘插入与拔出事件，有时候我们需要检测到相应的事件来自动化的做某些动作，具体的实现方式见之前的文章 Linux 下磁盘设备自动发现方式 。
+那么我们写完了代码想要测试，不想去机房物理操作，怎么模拟呢？
+Hypervisor Link to heading 如果你的代码部署的机器是一台虚拟机，那么在 Hypervisor 层面一般都会有对应的接口来完成相应的操作。
+比如 Vsphere ESXi 中可以直接编辑虚拟机，在磁盘选项中有一个“移除”按钮，可以直接移除磁盘：
+再比如 KVM 下，可以通过 Libvirt 接口来 detach 磁盘。
+当然对于插入动作，Hypervisor 也会提供对应的功能。
+物理服务器 Link to heading 如果 OS 不是在 Hypervisor 上，而是直接安装在了物理服务器上，我们怎么做呢？
+通常我们服务器上的磁盘都是 SCSI 设备，会实现完整的 SCSI（接口），可以通过修改相应设备的标置文件来达到目的。
+示例： 节点存在设备 /dev/sda ，修改标置文件，在系统中会发现磁盘已经被移除了。
+[root@yiran ~]# lsblk NAME MAJ:MIN RM SIZE RO TYPE MOUNTPOINT sda 8:0 0 10G 0 disk sr0 11:0 1 4."><meta property="og:title" content="Linux 下常用故障模拟方法"><meta property="og:description" content="背景 Link to heading 在日常开发时，有时候需要保证自己代码的健壮性，需要模拟各种故障测试，比如：磁盘、网络、端口等，今天来汇总一下平时使用最多的几种故障模拟方法
+磁盘 Link to heading 插入拔出 Link to heading 服务器的存储控制器如果是直通模式，那么在 OS 中能够直接获取到磁盘插入与拔出事件，有时候我们需要检测到相应的事件来自动化的做某些动作，具体的实现方式见之前的文章 Linux 下磁盘设备自动发现方式 。
+那么我们写完了代码想要测试，不想去机房物理操作，怎么模拟呢？
+Hypervisor Link to heading 如果你的代码部署的机器是一台虚拟机，那么在 Hypervisor 层面一般都会有对应的接口来完成相应的操作。
+比如 Vsphere ESXi 中可以直接编辑虚拟机，在磁盘选项中有一个“移除”按钮，可以直接移除磁盘：
+再比如 KVM 下，可以通过 Libvirt 接口来 detach 磁盘。
+当然对于插入动作，Hypervisor 也会提供对应的功能。
+物理服务器 Link to heading 如果 OS 不是在 Hypervisor 上，而是直接安装在了物理服务器上，我们怎么做呢？
+通常我们服务器上的磁盘都是 SCSI 设备，会实现完整的 SCSI（接口），可以通过修改相应设备的标置文件来达到目的。
+示例： 节点存在设备 /dev/sda ，修改标置文件，在系统中会发现磁盘已经被移除了。
+[root@yiran ~]# lsblk NAME MAJ:MIN RM SIZE RO TYPE MOUNTPOINT sda 8:0 0 10G 0 disk sr0 11:0 1 4."><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2019/08/31/Linux-%E4%B8%8B%E5%B8%B8%E7%94%A8%E6%95%85%E9%9A%9C%E6%A8%A1%E6%8B%9F%E6%96%B9%E6%B3%95/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-08-31T07:47:00+00:00"><meta property="article:modified_time" content="2019-08-31T07:47:00+00:00"><link rel=canonical href=https://zdyxry.github.io/2019/08/31/Linux-%E4%B8%8B%E5%B8%B8%E7%94%A8%E6%95%85%E9%9A%9C%E6%A8%A1%E6%8B%9F%E6%96%B9%E6%B3%95/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2019/08/31/Linux-%E4%B8%8B%E5%B8%B8%E7%94%A8%E6%95%85%E9%9A%9C%E6%A8%A1%E6%8B%9F%E6%96%B9%E6%B3%95/>Linux 下常用故障模拟方法</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2019-08-31T07:47:00Z>August 31, 2019</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+6-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Linux/>Linux</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#磁盘>磁盘</a><ul><li><a href=#插入拔出>插入拔出</a></li><li><a href=#延迟>延迟</a></li><li><a href=#io-中断>IO 中断</a></li><li><a href=#io-error>IO Error</a></li></ul></li><li><a href=#网络>网络</a><ul><li><a href=#故障>故障</a></li><li><a href=#延迟-1>延迟</a></li></ul></li><li><a href=#端口>端口</a><ul><li><a href=#占用>占用</a></li></ul></li><li><a href=#总结>总结</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在日常开发时，有时候需要保证自己代码的健壮性，需要模拟各种故障测试，比如：磁盘、网络、端口等，今天来汇总一下平时使用最多的几种故障模拟方法</p><h2 id=磁盘>磁盘
+<a class=heading-link href=#%e7%a3%81%e7%9b%98><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><h3 id=插入拔出>插入拔出
+<a class=heading-link href=#%e6%8f%92%e5%85%a5%e6%8b%94%e5%87%ba><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>服务器的存储控制器如果是直通模式，那么在 OS 中能够直接获取到磁盘插入与拔出事件，有时候我们需要检测到相应的事件来自动化的做某些动作，具体的实现方式见之前的文章 <a href=https://zdyxry.github.io/2019/08/02/Linux-%E4%B8%8B%E7%A3%81%E7%9B%98%E8%AE%BE%E5%A4%87%E8%87%AA%E5%8A%A8%E5%8F%91%E7%8E%B0%E6%96%B9%E5%BC%8F/>Linux 下磁盘设备自动发现方式</a> 。</p><p>那么我们写完了代码想要测试，不想去机房物理操作，怎么模拟呢？</p><h4 id=hypervisor>Hypervisor
+<a class=heading-link href=#hypervisor><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>如果你的代码部署的机器是一台虚拟机，那么在 Hypervisor 层面一般都会有对应的接口来完成相应的操作。</p><p>比如 Vsphere ESXi 中可以直接编辑虚拟机，在磁盘选项中有一个“移除”按钮，可以直接移除磁盘：</p><p><img src=vsphere.png alt></p><p>再比如 KVM 下，可以通过 Libvirt 接口来 <a href=https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/virtualization_administration_guide/sect-managing_guest_virtual_machines_with_virsh-attaching_and_updating_a_device_with_virsh>detach 磁盘</a>。</p><p>当然对于插入动作，Hypervisor 也会提供对应的功能。</p><h4 id=物理服务器>物理服务器
+<a class=heading-link href=#%e7%89%a9%e7%90%86%e6%9c%8d%e5%8a%a1%e5%99%a8><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>如果 OS 不是在 Hypervisor 上，而是直接安装在了物理服务器上，我们怎么做呢？</p><p>通常我们服务器上的磁盘都是 SCSI 设备，会实现完整的 SCSI（接口），可以通过修改相应设备的标置文件来达到目的。</p><p>示例：
+节点存在设备 <code>/dev/sda</code> ，修改标置文件，在系统中会发现磁盘已经被移除了。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># lsblk</span>
+</span></span><span style=display:flex><span>NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+</span></span><span style=display:flex><span>sda               8:0    0   10G  0 disk
+</span></span><span style=display:flex><span>sr0              11:0    1  4.3G  0 rom  /run/media/root/CentOS 7 x86_64
+</span></span><span style=display:flex><span>vda             252:0    0  100G  0 disk
+</span></span><span style=display:flex><span>├─vda1          252:1    0    1G  0 part /boot
+</span></span><span style=display:flex><span>└─vda2          252:2    0   99G  0 part
+</span></span><span style=display:flex><span>  ├─centos-root 253:0    0   50G  0 lvm  /
+</span></span><span style=display:flex><span>  ├─centos-swap 253:1    0  3.9G  0 lvm
+</span></span><span style=display:flex><span>  └─centos-home 253:2    0 45.1G  0 lvm  /home
+</span></span><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># ls /sys/block/sda/device/delete</span>
+</span></span><span style=display:flex><span>/sys/block/sda/device/delete
+</span></span><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># echo 1 &gt; /sys/block/sda/device/delete</span>
+</span></span><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># lsblk</span>
+</span></span><span style=display:flex><span>NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+</span></span><span style=display:flex><span>sr0              11:0    1  4.3G  0 rom  /run/media/root/CentOS 7 x86_64
+</span></span><span style=display:flex><span>vda             252:0    0  100G  0 disk
+</span></span><span style=display:flex><span>├─vda1          252:1    0    1G  0 part /boot
+</span></span><span style=display:flex><span>└─vda2          252:2    0   99G  0 part
+</span></span><span style=display:flex><span>  ├─centos-root 253:0    0   50G  0 lvm  /
+</span></span><span style=display:flex><span>  ├─centos-swap 253:1    0  3.9G  0 lvm
+</span></span><span style=display:flex><span>  └─centos-home 253:2    0 45.1G  0 lvm  /home
+</span></span></code></pre></div><p>如果我们新开一个终端，可以通过 <code>udevadm</code> 命令查看到设备移除过程：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># udevadm monitor</span>
+</span></span><span style=display:flex><span>monitor will print the received events <span style=font-weight:700>for</span>:
+</span></span><span style=display:flex><span>UDEV - the event which udev sends out after rule processing
+</span></span><span style=display:flex><span>KERNEL - the kernel uevent
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>KERNEL[1255.635671] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/bsg/2:0:0:0 (bsg)
+</span></span><span style=display:flex><span>KERNEL[1255.636247] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_generic/sg1 (scsi_generic)
+</span></span><span style=display:flex><span>KERNEL[1255.636265] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_device/2:0:0:0 (scsi_device)
+</span></span><span style=display:flex><span>KERNEL[1255.636357] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_disk/2:0:0:0 (scsi_disk)
+</span></span><span style=display:flex><span>UDEV  [1255.637109] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/bsg/2:0:0:0 (bsg)
+</span></span><span style=display:flex><span>KERNEL[1255.638351] remove   /devices/virtual/bdi/8:0 (bdi)
+</span></span><span style=display:flex><span>UDEV  [1255.638369] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_device/2:0:0:0 (scsi_device)
+</span></span><span style=display:flex><span>KERNEL[1255.638385] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/block/sda (block)
+</span></span><span style=display:flex><span>UDEV  [1255.638397] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_disk/2:0:0:0 (scsi_disk)
+</span></span><span style=display:flex><span>KERNEL[1255.638417] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0 (scsi)
+</span></span><span style=display:flex><span>UDEV  [1255.639174] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_generic/sg1 (scsi_generic)
+</span></span><span style=display:flex><span>UDEV  [1255.639192] remove   /devices/virtual/bdi/8:0 (bdi)
+</span></span><span style=display:flex><span>UDEV  [1255.641850] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/block/sda (block)
+</span></span><span style=display:flex><span>UDEV  [1255.642914] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0 (scsi)
+</span></span><span style=display:flex><span>KERNEL[1255.643143] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0 (scsi)
+</span></span><span style=display:flex><span>UDEV  [1255.643608] remove   /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0 (scsi)
+</span></span></code></pre></div><p>说完了拔出磁盘，那么该如何插入呢？最简单的办法肯定是重启 OS，毕竟我们不是真正的拔出了设备，重启 OS 之后设备肯定会重新发现。我们也可以通过修改对应的标置文件来手动重新执行设备扫描动作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># lsblk</span>
+</span></span><span style=display:flex><span>NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+</span></span><span style=display:flex><span>sr0              11:0    1  4.3G  0 rom  /run/media/root/CentOS 7 x86_64
+</span></span><span style=display:flex><span>vda             252:0    0  100G  0 disk
+</span></span><span style=display:flex><span>├─vda1          252:1    0    1G  0 part /boot
+</span></span><span style=display:flex><span>└─vda2          252:2    0   99G  0 part
+</span></span><span style=display:flex><span>  ├─centos-root 253:0    0   50G  0 lvm  /
+</span></span><span style=display:flex><span>  ├─centos-swap 253:1    0  3.9G  0 lvm
+</span></span><span style=display:flex><span>  └─centos-home 253:2    0 45.1G  0 lvm  /home
+</span></span><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># for i in `ls /sys/class/scsi_host/`;do echo &#34;- - -&#34; &gt; /sys/class/scsi_host/$i/scan;done</span>
+</span></span><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># lsblk</span>
+</span></span><span style=display:flex><span>NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+</span></span><span style=display:flex><span>sda               8:0    0   10G  0 disk
+</span></span><span style=display:flex><span>sr0              11:0    1  4.3G  0 rom  /run/media/root/CentOS 7 x86_64
+</span></span><span style=display:flex><span>vda             252:0    0  100G  0 disk
+</span></span><span style=display:flex><span>├─vda1          252:1    0    1G  0 part /boot
+</span></span><span style=display:flex><span>└─vda2          252:2    0   99G  0 part
+</span></span><span style=display:flex><span>  ├─centos-root 253:0    0   50G  0 lvm  /
+</span></span><span style=display:flex><span>  ├─centos-swap 253:1    0  3.9G  0 lvm
+</span></span><span style=display:flex><span>  └─centos-home 253:2    0 45.1G  0 lvm  /home
+</span></span></code></pre></div><p>同样，在另一个终端可以看到 udev 事件：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># udevadm monitor</span>
+</span></span><span style=display:flex><span>monitor will print the received events <span style=font-weight:700>for</span>:
+</span></span><span style=display:flex><span>UDEV - the event which udev sends out after rule processing
+</span></span><span style=display:flex><span>KERNEL - the kernel uevent
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>KERNEL[1506.675351] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0 (scsi)
+</span></span><span style=display:flex><span>KERNEL[1506.675416] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0 (scsi)
+</span></span><span style=display:flex><span>KERNEL[1506.675523] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_disk/2:0:0:0 (scsi_disk)
+</span></span><span style=display:flex><span>KERNEL[1506.675562] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_device/2:0:0:0 (scsi_device)
+</span></span><span style=display:flex><span>KERNEL[1506.676417] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_generic/sg1 (scsi_generic)
+</span></span><span style=display:flex><span>KERNEL[1506.676555] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/bsg/2:0:0:0 (bsg)
+</span></span><span style=display:flex><span>UDEV  [1506.677524] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0 (scsi)
+</span></span><span style=display:flex><span>KERNEL[1506.677662] add      /devices/virtual/bdi/8:0 (bdi)
+</span></span><span style=display:flex><span>UDEV  [1506.682939] add      /devices/virtual/bdi/8:0 (bdi)
+</span></span><span style=display:flex><span>KERNEL[1506.682968] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/block/sda (block)
+</span></span><span style=display:flex><span>UDEV  [1506.683015] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0 (scsi)
+</span></span><span style=display:flex><span>UDEV  [1506.683036] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_disk/2:0:0:0 (scsi_disk)
+</span></span><span style=display:flex><span>UDEV  [1506.683053] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_device/2:0:0:0 (scsi_device)
+</span></span><span style=display:flex><span>UDEV  [1506.689442] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/scsi_generic/sg1 (scsi_generic)
+</span></span><span style=display:flex><span>UDEV  [1506.690861] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/bsg/2:0:0:0 (bsg)
+</span></span><span style=display:flex><span>UDEV  [1506.711146] add      /devices/pci0000:00/0000:00:07.0/virtio3/host2/target2:0:0/2:0:0:0/block/sda (block)
+</span></span></code></pre></div><h3 id=延迟>延迟
+<a class=heading-link href=#%e5%bb%b6%e8%bf%9f><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>为了测试软件在高 IO 延迟下的表现，现在我们需要给一块磁盘设置指定的 IO 延迟（latency），可以使用 dm-delay 来实现：</p><p>dm-delay具体参数为：<code>&lt;device> &lt;offset> &lt;delay> [&lt;write_device> &lt;write_offset> &lt;write_delay>]</code></p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@node90 10:45:54 ~]$modprobe brd rd_nr=1 rd_size=10485760 <span style=font-style:italic># 创建10G ram disk</span>
+</span></span><span style=display:flex><span>[root@node90 10:46:23 ~]$blockdev --getsize /dev/ram0
+</span></span><span style=display:flex><span>20971520
+</span></span><span style=display:flex><span>[root@node90 10:46:23 ~]$size=<span style=font-weight:700>$(</span>blockdev --getsize /dev/ram0<span style=font-weight:700>)</span> <span style=font-style:italic># Size in 512-bytes sectors</span>
+</span></span><span style=display:flex><span>[root@node90 10:46:23 ~]$echo <span style=font-style:italic>&#34;0 </span>$size<span style=font-style:italic> delay /dev/ram0 0 500&#34;</span> | dmsetup create delayed <span style=font-style:italic># 设置读延迟 500</span>
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@node90 10:45:54 ~]cat fio.conf
+</span></span><span style=display:flex><span>[random]
+</span></span><span style=display:flex><span>filename=/dev/dm-0
+</span></span><span style=display:flex><span>readwrite=randread
+</span></span><span style=display:flex><span>blocksize=4k
+</span></span><span style=display:flex><span>ioengine=sync
+</span></span><span style=display:flex><span>direct=1
+</span></span><span style=display:flex><span>time_based=1
+</span></span><span style=display:flex><span>runtime=10
+</span></span><span style=display:flex><span>[root@node90 10:45:54 ~]fio fio.conf
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span>clat (usec): min=500769, max=502110, avg=501122.35, stdev=357.23 <span style=font-style:italic>#写入延迟 500ms</span>
+</span></span><span style=display:flex><span>     lat (usec): min=500770, max=502111, avg=501123.45, stdev=357.20
+</span></span><span style=display:flex><span>...
+</span></span></code></pre></div><p>通过 dm-delay，我们可以来进行各种排列组合来模拟磁盘状态，如：读延迟高，写延迟正常；读延迟高，写延迟高；读延迟低，写延迟高等。</p><h3 id=io-中断>IO 中断
+<a class=heading-link href=#io-%e4%b8%ad%e6%96%ad><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>dm-delay 支持设置 IO 中断，具体命令为：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>$ sudo dmsetup suspend /dev/dm-0
+</span></span><span style=display:flex><span>$ sudo dmsetup resume  /dev/dm-0
+</span></span></code></pre></div><p>若在执行 fio 过程中设置 IO 中断， 会看到 iops 为0 的现象：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@node90 10:45:54 ~]fio fio.conf
+</span></span><span style=display:flex><span>Starting 1 process
+</span></span><span style=display:flex><span>Jobs: 1 (f=1): [r(1)] [0.0% <span style=font-weight:700>done</span>] [0KB/0KB/0KB /s] [0/0/0 iops] [eta 34d:09h:15m:48s]
+</span></span></code></pre></div><h3 id=io-error>IO Error
+<a class=heading-link href=#io-error><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>有时我们也要求验证磁盘突然出现 IO Error 情况，可以通过 <a href=https://www.kernel.org/doc/Documentation/device-mapper/dm-flakey.txt>dm-flakey</a> 实现：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@node90 11:06:44 ~]$modprobe brd rd_nr=1 rd_size=10485760 <span style=font-style:italic>#10G</span>
+</span></span><span style=display:flex><span>[root@node90 11:06:58 ~]$size=<span style=font-weight:700>$(</span>blockdev --getsize /dev/ram0<span style=font-weight:700>)</span>
+</span></span><span style=display:flex><span>[root@node90 11:06:58 ~]$echo <span style=font-style:italic>&#34;0 </span>$size<span style=font-style:italic> flakey /dev/ram0 0 60 0&#34;</span> | dmsetup create flakey
+</span></span><span style=display:flex><span>[root@node90 11:06:59 ~]$size=<span style=font-weight:700>$(</span>blockdev --getsize /dev/ram0<span style=font-weight:700>)</span>
+</span></span><span style=display:flex><span>[root@node90 11:07:06 ~]$echo <span style=font-style:italic>&#34;0 </span>$size<span style=font-style:italic> flakey /dev/ram0 0 30 30&#34;</span>  | dmsetup reload flakey
+</span></span><span style=display:flex><span>[root@node90 11:07:06 ~]$dmsetup resume flakey
+</span></span><span style=display:flex><span>[root@node90 11:07:06 ~]$dmsetup table flakey
+</span></span><span style=display:flex><span>0 20971520 flakey 1:0 0 30 30 0
+</span></span></code></pre></div><p>若在执行 fio 过程中设置 IO Error，则会看到以下错误：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@node90 10:45:54 ~]fio fio.conf
+</span></span><span style=display:flex><span>Starting 1 process
+</span></span><span style=display:flex><span>fio: io_u error on file /dev/dm-0: Input/output error: read offset=647606272, buflen=4096
+</span></span><span style=display:flex><span>fio: pid=24184, err=5/file:io_u.c:1708, func=io_u error, error=Input/output error
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>random: (groupid=0, jobs=1): err= 5 (file:io_u.c:1708, func=io_u error, error=Input/output error): pid=24184: Sat Aug 31 11:09:45 2019
+</span></span><span style=display:flex><span>  cpu          : usr=0.00%, sys=0.00%, ctx=0, majf=0, minf=69
+</span></span><span style=display:flex><span>...
+</span></span></code></pre></div><h2 id=网络>网络
+<a class=heading-link href=#%e7%bd%91%e7%bb%9c><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在故障场景中，最常见的应该就是网络故障，尤其是现在分布式应用的场景很多，另一点原因是网络相关的工具很多，可以很方便的使用。</p><h3 id=故障>故障
+<a class=heading-link href=#%e6%95%85%e9%9a%9c><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>最简单的网络故障应该就是连接中断，也就是各个节点之间无法联通了，我们可以直接通过 <code>ifdown &lt;nic name></code> 来将网卡置为 down，或者如果不在意其他网卡状态的话，可以直接 <code>systemctl stop network</code> 停止网络服务，来模拟无法联通情况。</p><p>有时候我们不想模拟网卡故障，想要模拟固定节点之间的网络故障，那么可以通过 iptables 来实现：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>iptables -I INPUT -s 172.11.30.14 -j DROP
+</span></span><span style=display:flex><span>iptables -I OUTPUT -d 172.11.30.14 -j DROP
+</span></span></code></pre></div><p>将指定 IP 的所有连接都丢弃。</p><h3 id=延迟-1>延迟
+<a class=heading-link href=#%e5%bb%b6%e8%bf%9f-1><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>网络延迟模拟可以通过 <code>tc</code> 来实现，命令很简单，找到指定的网卡名称，并执行：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@yiran ~]<span style=font-style:italic># tc qdisc add dev eth0 root netem delay 8ms</span>
+</span></span></code></pre></div><p>新开终端，在其他节点 ping 设置了网络延迟的节点：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>root@yiran-30-250:~
+</span></span><span style=display:flex><span> $ ping 192.168.30.246
+</span></span><span style=display:flex><span>PING 192.168.30.246 (192.168.30.246) 56(84) bytes of data.
+</span></span><span style=display:flex><span>64 bytes from 192.168.30.246: icmp_seq=1 ttl=64 time=8.76 ms
+</span></span><span style=display:flex><span>64 bytes from 192.168.30.246: icmp_seq=2 ttl=64 time=8.40 ms
+</span></span><span style=display:flex><span>64 bytes from 192.168.30.246: icmp_seq=3 ttl=64 time=8.38 ms
+</span></span><span style=display:flex><span>64 bytes from 192.168.30.246: icmp_seq=4 ttl=64 time=8.38 ms
+</span></span><span style=display:flex><span>^C
+</span></span><span style=display:flex><span>--- 192.168.30.246 ping statistics ---
+</span></span><span style=display:flex><span>4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+</span></span><span style=display:flex><span>rtt min/avg/max/mdev = 8.381/8.485/8.769/0.198 ms
+</span></span></code></pre></div><p>可以看到延迟稳定在 8ms 左右。</p><p>除了 <code>tc</code> 工具外，前几天看到了一个 Golang 实现的 L4 网络代理<a href=https://github.com/fagongzi/netproxy>项目</a>，可以模拟延迟和丢包，具体关于故障模拟的代码如下：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (t *TCPServer) doWrite(bytes []<span>byte</span>, conn goetty.IOSession, ctl *conf.CtlUnit) {
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> ctl.DelayMs &gt; 0 {
+</span></span><span style=display:flex><span>		log.Infof(<span style=font-style:italic>&#34;Delay &lt;%d&gt;ms write to &lt;%s&gt;&#34;</span>, ctl.DelayMs, t.proxyUnit.Target)
+</span></span><span style=display:flex><span>		time.Sleep(time.Millisecond * time.Duration(ctl.DelayMs))
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	conn.WriteAndFlush(bytes)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>for</span> {
+</span></span><span style=display:flex><span>		_, err = session.Read()
+</span></span><span style=display:flex><span>		<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>			log.Infof(<span style=font-style:italic>&#34;Read from client&lt;%s&gt; failure.err=%+v&#34;</span>, session.RemoteAddr(), err)
+</span></span><span style=display:flex><span>			<span style=font-weight:700>break</span>
+</span></span><span style=display:flex><span>		} <span style=font-weight:700>else</span> {
+</span></span><span style=display:flex><span>			<span style=font-style:italic>// write to target
+</span></span></span><span style=display:flex><span><span style=font-style:italic></span>			ctl := t.proxyUnit.Ctl
+</span></span><span style=display:flex><span>			bytes := in.RawBuf()[in.GetReaderIndex():in.GetWriteIndex()]
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> 0 == ctl.Out.LossRate {
+</span></span><span style=display:flex><span>				log.Debugf(<span style=font-style:italic>&#34;write %d bytes to &lt;%s&gt;&#34;</span>, len(bytes), conn.RemoteAddr())
+</span></span><span style=display:flex><span>				t.doWrite(bytes, conn, ctl.Out)
+</span></span><span style=display:flex><span>			} <span style=font-weight:700>else</span> {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>if</span> t.rnd.Intn(100) &gt; ctl.Out.LossRate {
+</span></span><span style=display:flex><span>					log.Debugf(<span style=font-style:italic>&#34;write %d bytes to &lt;%s&gt;&#34;</span>, len(bytes), conn.RemoteAddr())
+</span></span><span style=display:flex><span>					t.doWrite(bytes, conn, ctl.Out)
+</span></span><span style=display:flex><span>				} <span style=font-weight:700>else</span> {
+</span></span><span style=display:flex><span>					log.Debugf(<span style=font-style:italic>&#34;Loss write %d bytes to &lt;%s&gt;&#34;</span>, len(bytes), conn.RemoteAddr())
+</span></span><span style=display:flex><span>				}
+</span></span><span style=display:flex><span>			}
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>		in.SetReaderIndex(in.GetWriteIndex())
+</span></span><span style=display:flex><span>    }
+</span></span></code></pre></div><h2 id=端口>端口
+<a class=heading-link href=#%e7%ab%af%e5%8f%a3><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><h3 id=占用>占用
+<a class=heading-link href=#%e5%8d%a0%e7%94%a8><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>在使用 Zookeeper 这类有状态应用时，除了通过 service 是否处于 running 来判断服务是否运行外，还需要判断节点的 zk 角色是否符合预期，如 leader 或 follower。</p><p>前几天又一个场景需要造出 Zookeeper 处于运行中，但是角色状态处于异常状态，我通过 <code>nc</code> 来实现的：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>[root@yiran ~]# nc -kl 2181
+</span></span></code></pre></div><p>现将端口占用，然后启动 Zookeeper，就可以了。</p><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>故障模拟的主要使用场景是产品的自动化测试中，平时主要是辅助开发来自测，不需要记住具体参数，但是最好了解到什么场景下有什么工具可以使用，省时省力。</p><h2 id=参考链接>参考链接
+<a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><ul><li><a href=https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/virtualization_administration_guide/sect-managing_guest_virtual_machines_with_virsh-attaching_and_updating_a_device_with_virsh>https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/virtualization_administration_guide/sect-managing_guest_virtual_machines_with_virsh-attaching_and_updating_a_device_with_virsh</a></li><li><a href=https://www.enodev.fr/posts/emulate-a-slow-block-device-with-dm-delay.html>https://www.enodev.fr/posts/emulate-a-slow-block-device-with-dm-delay.html</a></li><li><a href=https://www.kernel.org/doc/Documentation/device-mapper/dm-flakey.txt>https://www.kernel.org/doc/Documentation/device-mapper/dm-flakey.txt</a></li><li><a href=https://github.com/fagongzi/netproxy>https://github.com/fagongzi/netproxy</a></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>

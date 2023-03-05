@@ -1,0 +1,672 @@
+<!doctype html><html lang=en><head><title>Python socket 编程 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 Link to heading 平时工作很少涉及到 Socket 相关，基本上都是 HTTP 之上的业务，最近看到 Real Python 的一篇博客，非常详细的讲解了 Python 下的 socket 编程，其中有两个示例觉得很好，帮助我理解了一些要点，记录一下。
+多连接情况 Link to heading Server Link to heading multiconn-server.py
+#!/usr/bin/env python3 import sys import socket import selectors import types sel = selectors.DefaultSelector() def accept_wrapper(sock): conn, addr = sock.accept() # 前提条件：可读状态 print('accepted connection from', addr) conn.setblocking(False) # 置为非阻塞 data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'') events = selectors.EVENT_READ | selectors.EVENT_WRITE sel.register(conn, events, data=data) # 注册事件到 select def service_connection(key, mask): sock = key."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Python socket 编程"><meta name=twitter:description content="背景 Link to heading 平时工作很少涉及到 Socket 相关，基本上都是 HTTP 之上的业务，最近看到 Real Python 的一篇博客，非常详细的讲解了 Python 下的 socket 编程，其中有两个示例觉得很好，帮助我理解了一些要点，记录一下。
+多连接情况 Link to heading Server Link to heading multiconn-server.py
+#!/usr/bin/env python3 import sys import socket import selectors import types sel = selectors.DefaultSelector() def accept_wrapper(sock): conn, addr = sock.accept() # 前提条件：可读状态 print('accepted connection from', addr) conn.setblocking(False) # 置为非阻塞 data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'') events = selectors.EVENT_READ | selectors.EVENT_WRITE sel.register(conn, events, data=data) # 注册事件到 select def service_connection(key, mask): sock = key."><meta property="og:title" content="Python socket 编程"><meta property="og:description" content="背景 Link to heading 平时工作很少涉及到 Socket 相关，基本上都是 HTTP 之上的业务，最近看到 Real Python 的一篇博客，非常详细的讲解了 Python 下的 socket 编程，其中有两个示例觉得很好，帮助我理解了一些要点，记录一下。
+多连接情况 Link to heading Server Link to heading multiconn-server.py
+#!/usr/bin/env python3 import sys import socket import selectors import types sel = selectors.DefaultSelector() def accept_wrapper(sock): conn, addr = sock.accept() # 前提条件：可读状态 print('accepted connection from', addr) conn.setblocking(False) # 置为非阻塞 data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'') events = selectors.EVENT_READ | selectors.EVENT_WRITE sel.register(conn, events, data=data) # 注册事件到 select def service_connection(key, mask): sock = key."><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2018/09/30/Python-socket-%E7%BC%96%E7%A8%8B/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-09-30T20:33:00+00:00"><meta property="article:modified_time" content="2018-09-30T20:33:00+00:00"><link rel=canonical href=https://zdyxry.github.io/2018/09/30/Python-socket-%E7%BC%96%E7%A8%8B/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/09/30/Python-socket-%E7%BC%96%E7%A8%8B/>Python socket 编程</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2018-09-30T20:33:00Z>September 30, 2018</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+9-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Python/>Python</a></span>
+<span class=separator>•</span>
+<span class=tag><a href=/tags/Socket/>Socket</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#多连接情况>多连接情况</a><ul><li><a href=#server>Server</a></li><li><a href=#client>Client</a></li></ul></li><li><a href=#协议封装处理>协议封装处理</a><ul><li><a href=#server-1>Server</a></li><li><a href=#client-1>Client</a></li></ul></li><li><a href=#总结>总结</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>平时工作很少涉及到 Socket 相关，基本上都是 HTTP 之上的业务，最近看到 <a href=https://realpython.com/python-sockets/>Real Python</a> 的一篇博客，非常详细的讲解了 Python 下的 socket 编程，其中有两个示例觉得很好，帮助我理解了一些要点，记录一下。</p><h2 id=多连接情况>多连接情况
+<a class=heading-link href=#%e5%a4%9a%e8%bf%9e%e6%8e%a5%e6%83%85%e5%86%b5><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><h3 id=server>Server
+<a class=heading-link href=#server><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>multiconn-server.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-style:italic>#!/usr/bin/env python3</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>sys</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>socket</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>selectors</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>types</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>sel = selectors.DefaultSelector()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> accept_wrapper(sock):
+</span></span><span style=display:flex><span>    conn, addr = sock.accept()  <span style=font-style:italic># 前提条件：可读状态</span>
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;accepted connection from&#39;</span>, addr)
+</span></span><span style=display:flex><span>    conn.setblocking(<span style=font-weight:700>False</span>)     <span style=font-style:italic># 置为非阻塞</span>
+</span></span><span style=display:flex><span>    data = types.SimpleNamespace(addr=addr, inb=<span style=font-style:italic>b</span><span style=font-style:italic>&#39;&#39;</span>, outb=<span style=font-style:italic>b</span><span style=font-style:italic>&#39;&#39;</span>)
+</span></span><span style=display:flex><span>    events = selectors.EVENT_READ | selectors.EVENT_WRITE
+</span></span><span style=display:flex><span>    sel.register(conn, events, data=data)  <span style=font-style:italic># 注册事件到 select</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> service_connection(key, mask):
+</span></span><span style=display:flex><span>    sock = key.fileobj
+</span></span><span style=display:flex><span>    data = key.data
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_READ:
+</span></span><span style=display:flex><span>        recv_data = sock.recv(1024)  <span style=font-style:italic>#  前提条件：可读状态</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> recv_data:
+</span></span><span style=display:flex><span>            data.outb += recv_data    <span style=font-style:italic># 保存数据</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;closing connection to&#39;</span>, data.addr) <span style=font-style:italic># 如果没有接受到数据，则需关闭该 socket 连接</span>
+</span></span><span style=display:flex><span>            sel.unregister(sock) <span style=font-style:italic># 将该 socket 事件从 select 删除</span>
+</span></span><span style=display:flex><span>            sock.close()
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_WRITE:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> data.outb:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;echoing&#39;</span>, repr(data.outb), <span style=font-style:italic>&#39;to&#39;</span>, data.addr)
+</span></span><span style=display:flex><span>            sent = sock.send(data.outb)  <span style=font-style:italic>#前提条件：可写状态</span>
+</span></span><span style=display:flex><span>            data.outb = data.outb[sent:] <span style=font-style:italic># 在数据发送完后， 将其删除</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>if</span> len(sys.argv) != 3:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;usage:&#39;</span>, sys.argv[0], <span style=font-style:italic>&#39;&lt;host&gt; &lt;port&gt;&#39;</span>)
+</span></span><span style=display:flex><span>    sys.exit(1)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>host, port = sys.argv[1], int(sys.argv[2])
+</span></span><span style=display:flex><span>lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+</span></span><span style=display:flex><span>lsock.bind((host, port))
+</span></span><span style=display:flex><span>lsock.listen()
+</span></span><span style=display:flex><span>print(<span style=font-style:italic>&#39;listening on&#39;</span>, (host, port))
+</span></span><span style=display:flex><span>lsock.setblocking(<span style=font-weight:700>False</span>)
+</span></span><span style=display:flex><span>sel.register(lsock, selectors.EVENT_READ, data=<span style=font-weight:700>None</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>while</span> <span style=font-weight:700>True</span>:
+</span></span><span style=display:flex><span>        events = sel.select(timeout=<span style=font-weight:700>None</span>)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>for</span> key, mask <span style=font-weight:700>in</span> events:    
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> key.data <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:         <span style=font-style:italic># 如果没有传输数据，则该请求为连接请求</span>
+</span></span><span style=display:flex><span>                accept_wrapper(key.fileobj)
+</span></span><span style=display:flex><span>            <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>                service_connection(key, mask)  <span style=font-style:italic># 处理数据</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>except</span> <span style=font-weight:700>KeyboardInterrupt</span>:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;caught keyboard interrupt, exiting&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>    sel.close()
+</span></span></code></pre></div><h3 id=client>Client
+<a class=heading-link href=#client><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>multiconn-client.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-style:italic>#!/usr/bin/env python3</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>sys</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>socket</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>selectors</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>types</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>sel = selectors.DefaultSelector()
+</span></span><span style=display:flex><span>messages = [<span style=font-style:italic>b</span><span style=font-style:italic>&#39;Message 1 from client.&#39;</span>, <span style=font-style:italic>b</span><span style=font-style:italic>&#39;Message 2 from client.&#39;</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> start_connections(host, port, num_conns):
+</span></span><span style=display:flex><span>    server_addr = (host, port)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>for</span> i <span style=font-weight:700>in</span> range(0, num_conns):
+</span></span><span style=display:flex><span>        connid = i + 1
+</span></span><span style=display:flex><span>        print(<span style=font-style:italic>&#39;starting connection&#39;</span>, connid, <span style=font-style:italic>&#39;to&#39;</span>, server_addr)
+</span></span><span style=display:flex><span>        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+</span></span><span style=display:flex><span>        sock.setblocking(<span style=font-weight:700>False</span>)
+</span></span><span style=display:flex><span>        sock.connect_ex(server_addr)
+</span></span><span style=display:flex><span>        events = selectors.EVENT_READ | selectors.EVENT_WRITE
+</span></span><span style=display:flex><span>        data = types.SimpleNamespace(connid=connid,
+</span></span><span style=display:flex><span>                                     msg_total=sum(len(m) <span style=font-weight:700>for</span> m <span style=font-weight:700>in</span> messages),
+</span></span><span style=display:flex><span>                                     recv_total=0,
+</span></span><span style=display:flex><span>                                     messages=list(messages),
+</span></span><span style=display:flex><span>                                     outb=<span style=font-style:italic>b</span><span style=font-style:italic>&#39;&#39;</span>)
+</span></span><span style=display:flex><span>        sel.register(sock, events, data=data)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> service_connection(key, mask):
+</span></span><span style=display:flex><span>    sock = key.fileobj
+</span></span><span style=display:flex><span>    data = key.data
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_READ:
+</span></span><span style=display:flex><span>        recv_data = sock.recv(1024)  <span style=font-style:italic># 前提条件：可读状态</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> recv_data:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;received&#39;</span>, repr(recv_data), <span style=font-style:italic>&#39;from connection&#39;</span>, data.connid)
+</span></span><span style=display:flex><span>            data.recv_total += len(recv_data)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> recv_data <span style=font-weight:700>or</span> data.recv_total == data.msg_total:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;closing connection&#39;</span>, data.connid)
+</span></span><span style=display:flex><span>            sel.unregister(sock)
+</span></span><span style=display:flex><span>            sock.close()
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_WRITE:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> data.outb <span style=font-weight:700>and</span> data.messages:
+</span></span><span style=display:flex><span>            data.outb = data.messages.pop(0) <span style=font-style:italic># 如果没有可发送数据，则取 messages 中的第一条用户发送请求</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> data.outb:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;sending&#39;</span>, repr(data.outb), <span style=font-style:italic>&#39;to connection&#39;</span>, data.connid)
+</span></span><span style=display:flex><span>            sent = sock.send(data.outb)  <span style=font-style:italic># Should be ready to write</span>
+</span></span><span style=display:flex><span>            data.outb = data.outb[sent:]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>if</span> len(sys.argv) != 4:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;usage:&#39;</span>, sys.argv[0], <span style=font-style:italic>&#39;&lt;host&gt; &lt;port&gt; &lt;num_connections&gt;&#39;</span>)
+</span></span><span style=display:flex><span>    sys.exit(1)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>host, port, num_conns = sys.argv[1:4]
+</span></span><span style=display:flex><span>start_connections(host, int(port), int(num_conns))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>while</span> <span style=font-weight:700>True</span>:
+</span></span><span style=display:flex><span>        events = sel.select(timeout=1)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> events:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>for</span> key, mask <span style=font-weight:700>in</span> events:
+</span></span><span style=display:flex><span>                service_connection(key, mask)
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Check for a socket being monitored to continue.</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> sel.get_map():
+</span></span><span style=display:flex><span>            <span style=font-weight:700>break</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>except</span> <span style=font-weight:700>KeyboardInterrupt</span>:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;caught keyboard interrupt, exiting&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>    sel.close()
+</span></span></code></pre></div><h2 id=协议封装处理>协议封装处理
+<a class=heading-link href=#%e5%8d%8f%e8%ae%ae%e5%b0%81%e8%a3%85%e5%a4%84%e7%90%86><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在多连接基础上，增加特殊协议处理，比如 json header 、 protocol header 等。</p><h3 id=server-1>Server
+<a class=heading-link href=#server-1><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>libserver.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>sys</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>selectors</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>json</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>io</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>struct</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>request_search = {
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;morpheus&#39;</span>: <span style=font-style:italic>&#39;Follow the white rabbit. </span><span style=font-weight:700;font-style:italic>\U0001f430</span><span style=font-style:italic>&#39;</span>,
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;ring&#39;</span>: <span style=font-style:italic>&#39;In the caves beneath the Misty Mountains. </span><span style=font-weight:700;font-style:italic>\U0001f48d</span><span style=font-style:italic>&#39;</span>,
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>\U0001f436</span><span style=font-style:italic>&#39;</span>: <span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>\U0001f43e</span><span style=font-style:italic> Playing ball! </span><span style=font-weight:700;font-style:italic>\U0001f3d0</span><span style=font-style:italic>&#39;</span>,
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>class</span> <span style=font-weight:700>Message</span>:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> __init__(self, selector, sock, addr):
+</span></span><span style=display:flex><span>        self.selector = selector
+</span></span><span style=display:flex><span>        self.sock = sock
+</span></span><span style=display:flex><span>        self.addr = addr
+</span></span><span style=display:flex><span>        self._recv_buffer = <span style=font-style:italic>b</span><span style=font-style:italic>&#39;&#39;</span>
+</span></span><span style=display:flex><span>        self._send_buffer = <span style=font-style:italic>b</span><span style=font-style:italic>&#39;&#39;</span>
+</span></span><span style=display:flex><span>        self._jsonheader_len = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>        self.jsonheader = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>        self.request = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>        self.response_created = <span style=font-weight:700>False</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _set_selector_events_mask(self, mode):
+</span></span><span style=display:flex><span>        <span style=font-style:italic>&#34;&#34;&#34;Set selector to listen for events: mode is &#39;r&#39;, &#39;w&#39;, or &#39;rw&#39;.&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> mode == <span style=font-style:italic>&#39;r&#39;</span>:
+</span></span><span style=display:flex><span>            events = selectors.EVENT_READ
+</span></span><span style=display:flex><span>        <span style=font-weight:700>elif</span> mode == <span style=font-style:italic>&#39;w&#39;</span>:
+</span></span><span style=display:flex><span>            events = selectors.EVENT_WRITE
+</span></span><span style=display:flex><span>        <span style=font-weight:700>elif</span> mode == <span style=font-style:italic>&#39;rw&#39;</span>:
+</span></span><span style=display:flex><span>            events = selectors.EVENT_READ | selectors.EVENT_WRITE
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>raise</span> <span style=font-weight:700>ValueError</span>(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;Invalid events mask mode </span><span style=font-weight:700;font-style:italic>{</span>repr(mode)<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>.&#39;</span>)
+</span></span><span style=display:flex><span>        self.selector.modify(self.sock, events, data=self)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _read(self):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Should be ready to read</span>
+</span></span><span style=display:flex><span>            data = self.sock.recv(4096)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>except</span> <span style=font-weight:700>BlockingIOError</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Resource temporarily unavailable (errno EWOULDBLOCK)</span>
+</span></span><span style=display:flex><span>            <span style=font-weight:700>pass</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> data:
+</span></span><span style=display:flex><span>                self._recv_buffer += data
+</span></span><span style=display:flex><span>            <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>                <span style=font-weight:700>raise</span> <span style=font-weight:700>RuntimeError</span>(<span style=font-style:italic>&#39;Peer closed.&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _write(self):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self._send_buffer:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;sending&#39;</span>, repr(self._send_buffer), <span style=font-style:italic>&#39;to&#39;</span>, self.addr)
+</span></span><span style=display:flex><span>            <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>                <span style=font-style:italic># Should be ready to write</span>
+</span></span><span style=display:flex><span>                sent = self.sock.send(self._send_buffer)
+</span></span><span style=display:flex><span>            <span style=font-weight:700>except</span> <span style=font-weight:700>BlockingIOError</span>:
+</span></span><span style=display:flex><span>                <span style=font-style:italic># Resource temporarily unavailable (errno EWOULDBLOCK)</span>
+</span></span><span style=display:flex><span>                <span style=font-weight:700>pass</span>
+</span></span><span style=display:flex><span>            <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>                self._send_buffer = self._send_buffer[sent:]
+</span></span><span style=display:flex><span>                <span style=font-style:italic># Close when the buffer is drained. The response has been sent.</span>
+</span></span><span style=display:flex><span>                <span style=font-weight:700>if</span> sent <span style=font-weight:700>and</span> <span style=font-weight:700>not</span> self._send_buffer:
+</span></span><span style=display:flex><span>                    self.close()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-style:italic># JSON 编码、解码</span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _json_encode(self, obj, encoding):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> json.dumps(obj, ensure_ascii=<span style=font-weight:700>False</span>).encode(encoding)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _json_decode(self, json_bytes, encoding):
+</span></span><span style=display:flex><span>        tiow = io.TextIOWrapper(io.BytesIO(json_bytes), encoding=encoding,
+</span></span><span style=display:flex><span>                                newline=<span style=font-style:italic>&#39;&#39;</span>)
+</span></span><span style=display:flex><span>        obj = json.load(tiow)
+</span></span><span style=display:flex><span>        tiow.close()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> obj
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _create_message(self, *, content_bytes, content_type,
+</span></span><span style=display:flex><span>                        content_encoding):
+</span></span><span style=display:flex><span>        jsonheader = {
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;byteorder&#39;</span>: sys.byteorder,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content-type&#39;</span>: content_type,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content-encoding&#39;</span>: content_encoding,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content-length&#39;</span>: len(content_bytes)
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        jsonheader_bytes = self._json_encode(jsonheader, <span style=font-style:italic>&#39;utf-8&#39;</span>)
+</span></span><span style=display:flex><span>        message_hdr = struct.pack(<span style=font-style:italic>&#39;&gt;H&#39;</span>, len(jsonheader_bytes))
+</span></span><span style=display:flex><span>        message = message_hdr + jsonheader_bytes + content_bytes <span style=font-style:italic># 生成编码后信息</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> message
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _create_response_json_content(self):
+</span></span><span style=display:flex><span>        action = self.request.get(<span style=font-style:italic>&#39;action&#39;</span>)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> action == <span style=font-style:italic>&#39;search&#39;</span>:  <span style=font-style:italic># 根据客户端发送请求返回相应响应信息</span>
+</span></span><span style=display:flex><span>            query = self.request.get(<span style=font-style:italic>&#39;value&#39;</span>)
+</span></span><span style=display:flex><span>            answer = request_search.get(query) <span style=font-weight:700>or</span> <span style=font-style:italic>f</span><span style=font-style:italic>&#39;No match for &#34;</span><span style=font-weight:700;font-style:italic>{</span>query<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#34;.&#39;</span>
+</span></span><span style=display:flex><span>            content = {<span style=font-style:italic>&#39;result&#39;</span>: answer}
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            content = {<span style=font-style:italic>&#39;result&#39;</span>: <span style=font-style:italic>f</span><span style=font-style:italic>&#39;Error: invalid action &#34;</span><span style=font-weight:700;font-style:italic>{</span>action<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#34;.&#39;</span>}
+</span></span><span style=display:flex><span>        content_encoding = <span style=font-style:italic>&#39;utf-8&#39;</span>
+</span></span><span style=display:flex><span>        response = {
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content_bytes&#39;</span>: self._json_encode(content, content_encoding),
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content_type&#39;</span>: <span style=font-style:italic>&#39;text/json&#39;</span>,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content_encoding&#39;</span>: content_encoding
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> response
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _create_response_binary_content(self): <span style=font-style:italic># 如果为 binary，则直接返回</span>
+</span></span><span style=display:flex><span>        response = {
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content_bytes&#39;</span>: <span style=font-style:italic>b</span><span style=font-style:italic>&#39;First 10 bytes of request: &#39;</span> +
+</span></span><span style=display:flex><span>                             self.request[:10],
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content_type&#39;</span>: <span style=font-style:italic>&#39;binary/custom-server-binary-type&#39;</span>,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content_encoding&#39;</span>: <span style=font-style:italic>&#39;binary&#39;</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> response
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_events(self, mask):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_READ:
+</span></span><span style=display:flex><span>            self.read()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_WRITE:
+</span></span><span style=display:flex><span>            self.write()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> read(self):
+</span></span><span style=display:flex><span>        self._read()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self._jsonheader_len <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>            self.process_protoheader()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self._jsonheader_len <span style=font-weight:700>is</span> <span style=font-weight:700>not</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> self.jsonheader <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>                self.process_jsonheader()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self.jsonheader:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> self.request <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>                self.process_request()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> write(self):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self.request:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> self.response_created:
+</span></span><span style=display:flex><span>                self.create_response()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self._write()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> close(self):
+</span></span><span style=display:flex><span>        print(<span style=font-style:italic>&#39;closing connection to&#39;</span>, self.addr)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            self.selector.unregister(self.sock)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>except</span> <span style=font-weight:700>Exception</span> <span style=font-weight:700>as</span> e:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;error: selector.unregister() exception for&#39;</span>,
+</span></span><span style=display:flex><span>                  <span style=font-style:italic>f</span><span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>{</span>self.addr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>: </span><span style=font-weight:700;font-style:italic>{</span>repr(e)<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            self.sock.close()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>except</span> <span style=font-weight:700>OSError</span> <span style=font-weight:700>as</span> e:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;error: socket.close() exception for&#39;</span>,
+</span></span><span style=display:flex><span>                  <span style=font-style:italic>f</span><span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>{</span>self.addr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>: </span><span style=font-weight:700;font-style:italic>{</span>repr(e)<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Delete reference to socket object for garbage collection</span>
+</span></span><span style=display:flex><span>            self.sock = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_protoheader(self): <span style=font-style:italic># 解析协议头部信息，得到 json header 大小</span>
+</span></span><span style=display:flex><span>        hdrlen = 2
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> len(self._recv_buffer) &gt;= hdrlen:
+</span></span><span style=display:flex><span>            self._jsonheader_len = struct.unpack(<span style=font-style:italic>&#39;&gt;H&#39;</span>,
+</span></span><span style=display:flex><span>                                                 self._recv_buffer[:hdrlen])[0]
+</span></span><span style=display:flex><span>            self._recv_buffer = self._recv_buffer[hdrlen:]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_jsonheader(self): <span style=font-style:italic># 解析 json header 信息，得到真实请求信息</span>
+</span></span><span style=display:flex><span>        hdrlen = self._jsonheader_len
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> len(self._recv_buffer) &gt;= hdrlen:
+</span></span><span style=display:flex><span>            self.jsonheader = self._json_decode(self._recv_buffer[:hdrlen],
+</span></span><span style=display:flex><span>                                                <span style=font-style:italic>&#39;utf-8&#39;</span>)
+</span></span><span style=display:flex><span>            self._recv_buffer = self._recv_buffer[hdrlen:]
+</span></span><span style=display:flex><span>            <span style=font-weight:700>for</span> reqhdr <span style=font-weight:700>in</span> (<span style=font-style:italic>&#39;byteorder&#39;</span>, <span style=font-style:italic>&#39;content-length&#39;</span>, <span style=font-style:italic>&#39;content-type&#39;</span>,
+</span></span><span style=display:flex><span>                           <span style=font-style:italic>&#39;content-encoding&#39;</span>):
+</span></span><span style=display:flex><span>                <span style=font-weight:700>if</span> reqhdr <span style=font-weight:700>not</span> <span style=font-weight:700>in</span> self.jsonheader:
+</span></span><span style=display:flex><span>                    <span style=font-weight:700>raise</span> <span style=font-weight:700>ValueError</span>(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;Missing required header &#34;</span><span style=font-weight:700;font-style:italic>{</span>reqhdr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#34;.&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_request(self):
+</span></span><span style=display:flex><span>        content_len = self.jsonheader[<span style=font-style:italic>&#39;content-length&#39;</span>]
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> len(self._recv_buffer) &gt;= content_len:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>return</span>
+</span></span><span style=display:flex><span>        data = self._recv_buffer[:content_len]
+</span></span><span style=display:flex><span>        self._recv_buffer = self._recv_buffer[content_len:]
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self.jsonheader[<span style=font-style:italic>&#39;content-type&#39;</span>] == <span style=font-style:italic>&#39;text/json&#39;</span>:
+</span></span><span style=display:flex><span>            encoding = self.jsonheader[<span style=font-style:italic>&#39;content-encoding&#39;</span>]
+</span></span><span style=display:flex><span>            self.request = self._json_decode(data, encoding)
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;received request&#39;</span>, repr(self.request), <span style=font-style:italic>&#39;from&#39;</span>, self.addr)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Binary 或者未知请求类型</span>
+</span></span><span style=display:flex><span>            self.request = data
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;received </span><span style=font-weight:700;font-style:italic>{</span>self.jsonheader[<span style=font-style:italic>&#34;content-type&#34;</span>]<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic> request from&#39;</span>,
+</span></span><span style=display:flex><span>                  self.addr)
+</span></span><span style=display:flex><span>        <span style=font-style:italic># 设置 selector 监听写入事件，读事件已经完成</span>
+</span></span><span style=display:flex><span>        self._set_selector_events_mask(<span style=font-style:italic>&#39;w&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> create_response(self):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self.jsonheader[<span style=font-style:italic>&#39;content-type&#39;</span>] == <span style=font-style:italic>&#39;text/json&#39;</span>:
+</span></span><span style=display:flex><span>            response = self._create_response_json_content()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Binary or unknown content-type</span>
+</span></span><span style=display:flex><span>            response = self._create_response_binary_content()
+</span></span><span style=display:flex><span>        message = self._create_message(**response)
+</span></span><span style=display:flex><span>        self.response_created = <span style=font-weight:700>True</span>
+</span></span><span style=display:flex><span>        self._send_buffer += message
+</span></span></code></pre></div><p>app-server.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-style:italic>#!/usr/bin/env python3</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>sys</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>socket</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>selectors</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>traceback</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>libserver</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>sel = selectors.DefaultSelector()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> accept_wrapper(sock):
+</span></span><span style=display:flex><span>    conn, addr = sock.accept()  <span style=font-style:italic># Should be ready to read</span>
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;accepted connection from&#39;</span>, addr)
+</span></span><span style=display:flex><span>    conn.setblocking(<span style=font-weight:700>False</span>)
+</span></span><span style=display:flex><span>    message = libserver.Message(sel, conn, addr)
+</span></span><span style=display:flex><span>    sel.register(conn, selectors.EVENT_READ, data=message)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>if</span> len(sys.argv) != 3:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;usage:&#39;</span>, sys.argv[0], <span style=font-style:italic>&#39;&lt;host&gt; &lt;port&gt;&#39;</span>)
+</span></span><span style=display:flex><span>    sys.exit(1)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>host, port = sys.argv[1], int(sys.argv[2])
+</span></span><span style=display:flex><span>lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+</span></span><span style=display:flex><span><span style=font-style:italic># Avoid bind() exception: OSError: [Errno 48] Address already in use</span>
+</span></span><span style=display:flex><span>lsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+</span></span><span style=display:flex><span>lsock.bind((host, port))
+</span></span><span style=display:flex><span>lsock.listen()
+</span></span><span style=display:flex><span>print(<span style=font-style:italic>&#39;listening on&#39;</span>, (host, port))
+</span></span><span style=display:flex><span>lsock.setblocking(<span style=font-weight:700>False</span>)
+</span></span><span style=display:flex><span>sel.register(lsock, selectors.EVENT_READ, data=<span style=font-weight:700>None</span>) <span style=font-style:italic># 将 socket 监听事件注册到 selector</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>while</span> <span style=font-weight:700>True</span>:
+</span></span><span style=display:flex><span>        events = sel.select(timeout=<span style=font-weight:700>None</span>)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>for</span> key, mask <span style=font-weight:700>in</span> events:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> key.data <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>: <span style=font-style:italic># 如果没有请求数据，则为客户端连接请求</span>
+</span></span><span style=display:flex><span>                accept_wrapper(key.fileobj)
+</span></span><span style=display:flex><span>            <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>                message = key.data
+</span></span><span style=display:flex><span>                <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>                    message.process_events(mask) <span style=font-style:italic># 处理请求信息</span>
+</span></span><span style=display:flex><span>                <span style=font-weight:700>except</span> <span style=font-weight:700>Exception</span>:
+</span></span><span style=display:flex><span>                    print(<span style=font-style:italic>&#39;main: error: exception for&#39;</span>,
+</span></span><span style=display:flex><span>                          <span style=font-style:italic>f</span><span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>{</span>message.addr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>:</span><span style=font-weight:700;font-style:italic>\n</span><span style=font-weight:700;font-style:italic>{</span>traceback.format_exc()<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>                    message.close()
+</span></span><span style=display:flex><span><span style=font-weight:700>except</span> <span style=font-weight:700>KeyboardInterrupt</span>:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;caught keyboard interrupt, exiting&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>    sel.close()
+</span></span></code></pre></div><h3 id=client-1>Client
+<a class=heading-link href=#client-1><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>libclient.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>sys</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>selectors</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>json</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>io</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>struct</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>class</span> <span style=font-weight:700>Message</span>:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> __init__(self, selector, sock, addr, request):
+</span></span><span style=display:flex><span>        self.selector = selector
+</span></span><span style=display:flex><span>        self.sock = sock
+</span></span><span style=display:flex><span>        self.addr = addr
+</span></span><span style=display:flex><span>        self.request = request
+</span></span><span style=display:flex><span>        self._recv_buffer = <span style=font-style:italic>b</span><span style=font-style:italic>&#39;&#39;</span>
+</span></span><span style=display:flex><span>        self._send_buffer = <span style=font-style:italic>b</span><span style=font-style:italic>&#39;&#39;</span>
+</span></span><span style=display:flex><span>        self._request_queued = <span style=font-weight:700>False</span>
+</span></span><span style=display:flex><span>        self._jsonheader_len = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>        self.jsonheader = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>        self.response = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _set_selector_events_mask(self, mode):
+</span></span><span style=display:flex><span>        <span style=font-style:italic>&#34;&#34;&#34;Set selector to listen for events: mode is &#39;r&#39;, &#39;w&#39;, or &#39;rw&#39;.&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> mode == <span style=font-style:italic>&#39;r&#39;</span>:
+</span></span><span style=display:flex><span>            events = selectors.EVENT_READ
+</span></span><span style=display:flex><span>        <span style=font-weight:700>elif</span> mode == <span style=font-style:italic>&#39;w&#39;</span>:
+</span></span><span style=display:flex><span>            events = selectors.EVENT_WRITE
+</span></span><span style=display:flex><span>        <span style=font-weight:700>elif</span> mode == <span style=font-style:italic>&#39;rw&#39;</span>:
+</span></span><span style=display:flex><span>            events = selectors.EVENT_READ | selectors.EVENT_WRITE
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>raise</span> <span style=font-weight:700>ValueError</span>(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;Invalid events mask mode </span><span style=font-weight:700;font-style:italic>{</span>repr(mode)<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>.&#39;</span>)
+</span></span><span style=display:flex><span>        self.selector.modify(self.sock, events, data=self)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _read(self):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Should be ready to read</span>
+</span></span><span style=display:flex><span>            data = self.sock.recv(4096)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>except</span> <span style=font-weight:700>BlockingIOError</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Resource temporarily unavailable (errno EWOULDBLOCK)</span>
+</span></span><span style=display:flex><span>            <span style=font-weight:700>pass</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> data:
+</span></span><span style=display:flex><span>                self._recv_buffer += data
+</span></span><span style=display:flex><span>            <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>                <span style=font-weight:700>raise</span> <span style=font-weight:700>RuntimeError</span>(<span style=font-style:italic>&#39;Peer closed.&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _write(self):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self._send_buffer:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;sending&#39;</span>, repr(self._send_buffer), <span style=font-style:italic>&#39;to&#39;</span>, self.addr)
+</span></span><span style=display:flex><span>            <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>                <span style=font-style:italic># Should be ready to write</span>
+</span></span><span style=display:flex><span>                sent = self.sock.send(self._send_buffer)
+</span></span><span style=display:flex><span>            <span style=font-weight:700>except</span> <span style=font-weight:700>BlockingIOError</span>:
+</span></span><span style=display:flex><span>                <span style=font-style:italic># Resource temporarily unavailable (errno EWOULDBLOCK)</span>
+</span></span><span style=display:flex><span>                <span style=font-weight:700>pass</span>
+</span></span><span style=display:flex><span>            <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>                self._send_buffer = self._send_buffer[sent:]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _json_encode(self, obj, encoding): <span style=font-style:italic># JSON 编码</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> json.dumps(obj, ensure_ascii=<span style=font-weight:700>False</span>).encode(encoding)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _json_decode(self, json_bytes, encoding): <span style=font-style:italic># JSON 解码</span>
+</span></span><span style=display:flex><span>        tiow = io.TextIOWrapper(io.BytesIO(json_bytes), encoding=encoding,
+</span></span><span style=display:flex><span>                                newline=<span style=font-style:italic>&#39;&#39;</span>)
+</span></span><span style=display:flex><span>        obj = json.load(tiow)
+</span></span><span style=display:flex><span>        tiow.close()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> obj
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _create_message(self, *, content_bytes, content_type,
+</span></span><span style=display:flex><span>                        content_encoding): <span style=font-style:italic># 打包处理请求信息</span>
+</span></span><span style=display:flex><span>        jsonheader = {
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;byteorder&#39;</span>: sys.byteorder,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content-type&#39;</span>: content_type,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content-encoding&#39;</span>: content_encoding,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;content-length&#39;</span>: len(content_bytes)
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        jsonheader_bytes = self._json_encode(jsonheader, <span style=font-style:italic>&#39;utf-8&#39;</span>)
+</span></span><span style=display:flex><span>        message_hdr = struct.pack(<span style=font-style:italic>&#39;&gt;H&#39;</span>, len(jsonheader_bytes))
+</span></span><span style=display:flex><span>        message = message_hdr + jsonheader_bytes + content_bytes
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> message
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _process_response_json_content(self):
+</span></span><span style=display:flex><span>        content = self.response
+</span></span><span style=display:flex><span>        result = content.get(<span style=font-style:italic>&#39;result&#39;</span>)
+</span></span><span style=display:flex><span>        print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;got result: </span><span style=font-weight:700;font-style:italic>{</span>result<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> _process_response_binary_content(self):
+</span></span><span style=display:flex><span>        content = self.response
+</span></span><span style=display:flex><span>        print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;got response: </span><span style=font-weight:700;font-style:italic>{</span>repr(content)<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_events(self, mask):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_READ:
+</span></span><span style=display:flex><span>            self.read()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> mask &amp; selectors.EVENT_WRITE:
+</span></span><span style=display:flex><span>            self.write()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> read(self):
+</span></span><span style=display:flex><span>        self._read()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self._jsonheader_len <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>            self.process_protoheader()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self._jsonheader_len <span style=font-weight:700>is</span> <span style=font-weight:700>not</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> self.jsonheader <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>                self.process_jsonheader()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self.jsonheader:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> self.response <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>                self.process_response()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> write(self):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> self._request_queued:
+</span></span><span style=display:flex><span>            self.queue_request()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self._write()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self._request_queued:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> self._send_buffer:
+</span></span><span style=display:flex><span>                <span style=font-style:italic># Set selector to listen for read events, we&#39;re done writing.</span>
+</span></span><span style=display:flex><span>                self._set_selector_events_mask(<span style=font-style:italic>&#39;r&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> close(self):
+</span></span><span style=display:flex><span>        print(<span style=font-style:italic>&#39;closing connection to&#39;</span>, self.addr)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            self.selector.unregister(self.sock)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>except</span> <span style=font-weight:700>Exception</span> <span style=font-weight:700>as</span> e:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;error: selector.unregister() exception for&#39;</span>,
+</span></span><span style=display:flex><span>                  <span style=font-style:italic>f</span><span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>{</span>self.addr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>: </span><span style=font-weight:700;font-style:italic>{</span>repr(e)<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            self.sock.close()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>except</span> <span style=font-weight:700>OSError</span> <span style=font-weight:700>as</span> e:
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;error: socket.close() exception for&#39;</span>,
+</span></span><span style=display:flex><span>                  <span style=font-style:italic>f</span><span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>{</span>self.addr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>: </span><span style=font-weight:700;font-style:italic>{</span>repr(e)<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Delete reference to socket object for garbage collection</span>
+</span></span><span style=display:flex><span>            self.sock = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> queue_request(self):
+</span></span><span style=display:flex><span>        content = self.request[<span style=font-style:italic>&#39;content&#39;</span>]
+</span></span><span style=display:flex><span>        content_type = self.request[<span style=font-style:italic>&#39;type&#39;</span>]
+</span></span><span style=display:flex><span>        content_encoding = self.request[<span style=font-style:italic>&#39;encoding&#39;</span>]
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> content_type == <span style=font-style:italic>&#39;text/json&#39;</span>:
+</span></span><span style=display:flex><span>            req = {
+</span></span><span style=display:flex><span>                <span style=font-style:italic>&#39;content_bytes&#39;</span>: self._json_encode(content, content_encoding),
+</span></span><span style=display:flex><span>                <span style=font-style:italic>&#39;content_type&#39;</span>: content_type,
+</span></span><span style=display:flex><span>                <span style=font-style:italic>&#39;content_encoding&#39;</span>: content_encoding
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            req = {
+</span></span><span style=display:flex><span>                <span style=font-style:italic>&#39;content_bytes&#39;</span>: content,
+</span></span><span style=display:flex><span>                <span style=font-style:italic>&#39;content_type&#39;</span>: content_type,
+</span></span><span style=display:flex><span>                <span style=font-style:italic>&#39;content_encoding&#39;</span>: content_encoding
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        message = self._create_message(**req)
+</span></span><span style=display:flex><span>        self._send_buffer += message
+</span></span><span style=display:flex><span>        self._request_queued = <span style=font-weight:700>True</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_protoheader(self):
+</span></span><span style=display:flex><span>        hdrlen = 2
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> len(self._recv_buffer) &gt;= hdrlen:
+</span></span><span style=display:flex><span>            self._jsonheader_len = struct.unpack(<span style=font-style:italic>&#39;&gt;H&#39;</span>,
+</span></span><span style=display:flex><span>                                                 self._recv_buffer[:hdrlen])[0]
+</span></span><span style=display:flex><span>            self._recv_buffer = self._recv_buffer[hdrlen:]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_jsonheader(self):
+</span></span><span style=display:flex><span>        hdrlen = self._jsonheader_len
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> len(self._recv_buffer) &gt;= hdrlen:
+</span></span><span style=display:flex><span>            self.jsonheader = self._json_decode(self._recv_buffer[:hdrlen],
+</span></span><span style=display:flex><span>                                                <span style=font-style:italic>&#39;utf-8&#39;</span>)
+</span></span><span style=display:flex><span>            self._recv_buffer = self._recv_buffer[hdrlen:]
+</span></span><span style=display:flex><span>            <span style=font-weight:700>for</span> reqhdr <span style=font-weight:700>in</span> (<span style=font-style:italic>&#39;byteorder&#39;</span>, <span style=font-style:italic>&#39;content-length&#39;</span>, <span style=font-style:italic>&#39;content-type&#39;</span>,
+</span></span><span style=display:flex><span>                           <span style=font-style:italic>&#39;content-encoding&#39;</span>):
+</span></span><span style=display:flex><span>                <span style=font-weight:700>if</span> reqhdr <span style=font-weight:700>not</span> <span style=font-weight:700>in</span> self.jsonheader:
+</span></span><span style=display:flex><span>                    <span style=font-weight:700>raise</span> <span style=font-weight:700>ValueError</span>(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;Missing required header &#34;</span><span style=font-weight:700;font-style:italic>{</span>reqhdr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#34;.&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> process_response(self):
+</span></span><span style=display:flex><span>        content_len = self.jsonheader[<span style=font-style:italic>&#39;content-length&#39;</span>]
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> len(self._recv_buffer) &gt;= content_len:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>return</span>
+</span></span><span style=display:flex><span>        data = self._recv_buffer[:content_len]
+</span></span><span style=display:flex><span>        self._recv_buffer = self._recv_buffer[content_len:]
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self.jsonheader[<span style=font-style:italic>&#39;content-type&#39;</span>] == <span style=font-style:italic>&#39;text/json&#39;</span>:
+</span></span><span style=display:flex><span>            encoding = self.jsonheader[<span style=font-style:italic>&#39;content-encoding&#39;</span>]
+</span></span><span style=display:flex><span>            self.response = self._json_decode(data, encoding)
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>&#39;received response&#39;</span>, repr(self.response), <span style=font-style:italic>&#39;from&#39;</span>, self.addr)
+</span></span><span style=display:flex><span>            self._process_response_json_content()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            <span style=font-style:italic># Binary or unknown content-type</span>
+</span></span><span style=display:flex><span>            self.response = data
+</span></span><span style=display:flex><span>            print(<span style=font-style:italic>f</span><span style=font-style:italic>&#39;received </span><span style=font-weight:700;font-style:italic>{</span>self.jsonheader[<span style=font-style:italic>&#34;content-type&#34;</span>]<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic> response from&#39;</span>,
+</span></span><span style=display:flex><span>                  self.addr)
+</span></span><span style=display:flex><span>            self._process_response_binary_content()
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Close when response has been processed</span>
+</span></span><span style=display:flex><span>        self.close()
+</span></span></code></pre></div><p>app-client.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-style:italic>#!/usr/bin/env python3</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>sys</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>socket</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>selectors</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>traceback</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>libclient</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>sel = selectors.DefaultSelector()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> create_request(action, value):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> action == <span style=font-style:italic>&#39;search&#39;</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> dict(
+</span></span><span style=display:flex><span>            type=<span style=font-style:italic>&#39;text/json&#39;</span>,
+</span></span><span style=display:flex><span>            encoding=<span style=font-style:italic>&#39;utf-8&#39;</span>,
+</span></span><span style=display:flex><span>            content=dict(action=action, value=value)
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>    <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> dict(
+</span></span><span style=display:flex><span>            type=<span style=font-style:italic>&#39;binary/custom-client-binary-type&#39;</span>,
+</span></span><span style=display:flex><span>            encoding=<span style=font-style:italic>&#39;binary&#39;</span>,
+</span></span><span style=display:flex><span>            content=bytes(action + value, encoding=<span style=font-style:italic>&#39;utf-8&#39;</span>)
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> start_connection(host, port, request):
+</span></span><span style=display:flex><span>    addr = (host, port)
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;starting connection to&#39;</span>, addr)
+</span></span><span style=display:flex><span>    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+</span></span><span style=display:flex><span>    sock.setblocking(<span style=font-weight:700>False</span>)
+</span></span><span style=display:flex><span>    sock.connect_ex(addr)
+</span></span><span style=display:flex><span>    events = selectors.EVENT_READ | selectors.EVENT_WRITE
+</span></span><span style=display:flex><span>    message = libclient.Message(sel, sock, addr, request)
+</span></span><span style=display:flex><span>    sel.register(sock, events, data=message)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>if</span> len(sys.argv) != 5:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;usage:&#39;</span>, sys.argv[0], <span style=font-style:italic>&#39;&lt;host&gt; &lt;port&gt; &lt;action&gt; &lt;value&gt;&#39;</span>)
+</span></span><span style=display:flex><span>    sys.exit(1)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>host, port = sys.argv[1], int(sys.argv[2])
+</span></span><span style=display:flex><span>action, value = sys.argv[3], sys.argv[4]
+</span></span><span style=display:flex><span>request = create_request(action, value)
+</span></span><span style=display:flex><span>start_connection(host, port, request)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>while</span> <span style=font-weight:700>True</span>:
+</span></span><span style=display:flex><span>        events = sel.select(timeout=1)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>for</span> key, mask <span style=font-weight:700>in</span> events:
+</span></span><span style=display:flex><span>            message = key.data
+</span></span><span style=display:flex><span>            <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>                message.process_events(mask)
+</span></span><span style=display:flex><span>            <span style=font-weight:700>except</span> <span style=font-weight:700>Exception</span> <span style=font-weight:700>as</span> e:
+</span></span><span style=display:flex><span>                print(<span style=font-style:italic>&#39;main: error: exception for&#39;</span>,
+</span></span><span style=display:flex><span>                      <span style=font-style:italic>f</span><span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>{</span>message.addr<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>:</span><span style=font-weight:700;font-style:italic>\n</span><span style=font-weight:700;font-style:italic>{</span>traceback.format_exc()<span style=font-weight:700;font-style:italic>}</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>                message.close()
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Check for a socket being monitored to continue.</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> sel.get_map():
+</span></span><span style=display:flex><span>            <span style=font-weight:700>break</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>except</span> <span style=font-weight:700>KeyboardInterrupt</span>:
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;caught keyboard interrupt, exiting&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>    sel.close()
+</span></span></code></pre></div><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>学习了通过 selector 多路 I/O 复用方式来处理 socket 多连接情况，如果请求量少的情况下，也可以使用多线程方式处理。</p><p>selector 是 Python3.6 标准库，等之后更了解 select、poll、epoll 之后写一篇总结。
+（不知道何年何月啊）</p></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>

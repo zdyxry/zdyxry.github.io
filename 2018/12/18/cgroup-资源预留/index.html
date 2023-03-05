@@ -1,0 +1,118 @@
+<!doctype html><html lang=en><head><title>cgroup 资源预留 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="cgroup 资源预留 Link to heading 背景 Link to heading 在之前的博客中，提到了 cgroup 中如何为自己的服务配置资源限制，比如 CPU，内存等，当时以为在 cgroup.conf 中配置的服务，那么相应绑定的 CPU 就归属于该服务，也就是资源预留，今天发现并不是这样，记录下如何通过 cgroup 做资源预留。
+资源预留 Link to heading 在之前提到的博客中关于资源限制是这么配置的：
+[root@node 20:56:49 ~]$cat /etc/cgconfig.conf # yiran cgroups configuration group . { cpuset { cpuset.memory_pressure_enabled = &#34;1&#34;; } } group yiran { cpuset { cpuset.cpus = &#34;0,1,2,3,4,5&#34;; cpuset.mems = &#34;0-1&#34;; cpuset.cpu_exclusive = &#34;1&#34;; cpuset.mem_hardwall = &#34;1&#34;; } } group yiran/test { cpuset { cpuset.cpus = &#34;0&#34;; cpuset."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="cgroup 资源预留"><meta name=twitter:description content="cgroup 资源预留 Link to heading 背景 Link to heading 在之前的博客中，提到了 cgroup 中如何为自己的服务配置资源限制，比如 CPU，内存等，当时以为在 cgroup.conf 中配置的服务，那么相应绑定的 CPU 就归属于该服务，也就是资源预留，今天发现并不是这样，记录下如何通过 cgroup 做资源预留。
+资源预留 Link to heading 在之前提到的博客中关于资源限制是这么配置的：
+[root@node 20:56:49 ~]$cat /etc/cgconfig.conf # yiran cgroups configuration group . { cpuset { cpuset.memory_pressure_enabled = &#34;1&#34;; } } group yiran { cpuset { cpuset.cpus = &#34;0,1,2,3,4,5&#34;; cpuset.mems = &#34;0-1&#34;; cpuset.cpu_exclusive = &#34;1&#34;; cpuset.mem_hardwall = &#34;1&#34;; } } group yiran/test { cpuset { cpuset.cpus = &#34;0&#34;; cpuset."><meta property="og:title" content="cgroup 资源预留"><meta property="og:description" content="cgroup 资源预留 Link to heading 背景 Link to heading 在之前的博客中，提到了 cgroup 中如何为自己的服务配置资源限制，比如 CPU，内存等，当时以为在 cgroup.conf 中配置的服务，那么相应绑定的 CPU 就归属于该服务，也就是资源预留，今天发现并不是这样，记录下如何通过 cgroup 做资源预留。
+资源预留 Link to heading 在之前提到的博客中关于资源限制是这么配置的：
+[root@node 20:56:49 ~]$cat /etc/cgconfig.conf # yiran cgroups configuration group . { cpuset { cpuset.memory_pressure_enabled = &#34;1&#34;; } } group yiran { cpuset { cpuset.cpus = &#34;0,1,2,3,4,5&#34;; cpuset.mems = &#34;0-1&#34;; cpuset.cpu_exclusive = &#34;1&#34;; cpuset.mem_hardwall = &#34;1&#34;; } } group yiran/test { cpuset { cpuset.cpus = &#34;0&#34;; cpuset."><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2018/12/18/cgroup-%E8%B5%84%E6%BA%90%E9%A2%84%E7%95%99/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-12-18T21:15:33+00:00"><meta property="article:modified_time" content="2018-12-18T21:15:33+00:00"><link rel=canonical href=https://zdyxry.github.io/2018/12/18/cgroup-%E8%B5%84%E6%BA%90%E9%A2%84%E7%95%99/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/12/18/cgroup-%E8%B5%84%E6%BA%90%E9%A2%84%E7%95%99/>cgroup 资源预留</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2018-12-18T21:15:33Z>December 18, 2018</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+6-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Linux/>Linux</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#cgroup-资源预留>cgroup 资源预留</a></li><li><a href=#背景>背景</a></li><li><a href=#资源预留>资源预留</a></li></ul></nav><div class=post-content><h2 id=cgroup-资源预留>cgroup 资源预留
+<a class=heading-link href=#cgroup-%e8%b5%84%e6%ba%90%e9%a2%84%e7%95%99><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在之前的博客中，提到了 cgroup 中如何为自己的服务配置资源限制，比如 CPU，内存等，当时以为在 <code>cgroup.conf</code> 中配置的服务，那么相应绑定的 CPU 就归属于该服务，也就是资源预留，今天发现并不是这样，记录下如何通过 cgroup 做资源预留。</p><h2 id=资源预留>资源预留
+<a class=heading-link href=#%e8%b5%84%e6%ba%90%e9%a2%84%e7%95%99><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在之前提到的博客中关于资源限制是这么配置的：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@node 20:56:49 ~]$cat /etc/cgconfig.conf
+</span></span><span style=display:flex><span><span style=font-style:italic># yiran cgroups configuration</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>group . {
+</span></span><span style=display:flex><span>    cpuset {
+</span></span><span style=display:flex><span>        cpuset.memory_pressure_enabled = <span style=font-style:italic>&#34;1&#34;</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>group yiran {
+</span></span><span style=display:flex><span>    cpuset {
+</span></span><span style=display:flex><span>        cpuset.cpus = <span style=font-style:italic>&#34;0,1,2,3,4,5&#34;</span>;
+</span></span><span style=display:flex><span>        cpuset.mems = <span style=font-style:italic>&#34;0-1&#34;</span>;
+</span></span><span style=display:flex><span>        cpuset.cpu_exclusive = <span style=font-style:italic>&#34;1&#34;</span>;
+</span></span><span style=display:flex><span>        cpuset.mem_hardwall = <span style=font-style:italic>&#34;1&#34;</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>group yiran/test {
+</span></span><span style=display:flex><span>    cpuset {
+</span></span><span style=display:flex><span>        cpuset.cpus = <span style=font-style:italic>&#34;0&#34;</span>;
+</span></span><span style=display:flex><span>        cpuset.mems = <span style=font-style:italic>&#34;0-1&#34;</span>;
+</span></span><span style=display:flex><span>        cpuset.cpu_exclusive = <span style=font-style:italic>&#34;1&#34;</span>;
+</span></span><span style=display:flex><span>        cpuset.mem_hardwall = <span style=font-style:italic>&#34;1&#34;</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>我为 yiran 这个服务做了限制，其中分配给 <code>yiran/test</code> 的 CPU 是 <code>0</code>，并且配置了 <code>cpuset.cpu_exclusive</code> 选项。注意，这里的 exclusive 的意思并不是说分配到 <code>yiran/test</code> 中的服务独自占用该线程，而是说分配到 <code>yiran/test</code> 中的服务只会占用该线程，不会侵入到其他线程中，也就是通常我们说的 Limit。
+可以通过 <code>stress</code> 命令来进行验证：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=font-style:italic># 对一台配置好 cgroup 的物理服务器 CPU 加压</span>
+</span></span><span style=display:flex><span>[root@node 21:05:37 ~]$stress -c 24
+</span></span><span style=display:flex><span>stress: info: [4033] dispatching hogs: 24 cpu, 0 io, 0 vm, 0 hdd
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=font-style:italic># 新开终端，执行 top 命令查看 CPU 情况</span>
+</span></span><span style=display:flex><span>[root@node 21:05:37 ~]$top
+</span></span><span style=display:flex><span>top - 21:06:35 up 5 days,  9:03,  3 users,  load average: 32.58, 19.04, 15.43
+</span></span><span style=display:flex><span>Tasks: 449 total,  36 running, 412 sleeping,   0 stopped,   1 zombie
+</span></span><span style=display:flex><span>%Cpu0  : 89.0 us,  8.6 sy,  0.0 ni,  2.3 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu1  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu2  : 90.4 us,  8.9 sy,  0.0 ni,  0.3 id,  0.3 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu3  : 95.4 us,  4.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu4  : 84.4 us, 13.6 sy,  0.3 ni,  1.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu5  : 46.5 us, 36.0 sy,  1.7 ni, 15.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu6  : 93.4 us,  6.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu7  : 94.4 us,  5.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu8  : 88.0 us, 12.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu9  : 88.7 us, 11.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu10 : 88.4 us, 10.9 sy,  0.0 ni,  0.3 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu11 : 85.4 us, 13.9 sy,  0.7 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu12 : 98.7 us,  1.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu13 : 39.0 us, 12.0 sy,  0.0 ni, 49.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu14 : 92.7 us,  6.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu15 : 98.7 us,  1.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu16 : 97.0 us,  3.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu17 : 97.0 us,  2.3 sy,  0.0 ni,  0.3 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu18 :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu19 : 93.7 us,  6.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu20 : 88.4 us, 11.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu21 : 89.4 us, 10.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu22 : 88.1 us, 11.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu23 : 90.4 us,  9.6 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span></code></pre></div><p>那么我们如何确保自己的服务有足够的资源运行呢？ 比如像 vSphere ESXi 上面可以针对某些虚拟机进行具体的资源预留（CPU，内存，磁盘等）。
+其实只要将其他资源也限制在一个 cgroup 中就可以了。</p><ol><li>在 <code>/etc/cgconfig.conf</code> 中创建一个新的 cgroup，将系统上其余的资源分配给该 group，如创建 <code>yiran/others</code> 并分配 3个 线程；</li><li>修改 <code>/etc/cgrules.conf</code> ，将系统其它所有服务分配到步骤1创建的 group 中，如：</li></ol><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>*       cpuset       yiran/others
+</span></span></code></pre></div><p>修改配置完成后，分别重启 <code>cgred</code> 和 <code>cgconfig</code> 使配置生效：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>systemctl restart cgred
+</span></span><span style=display:flex><span>systemctl restart cgconfig
+</span></span></code></pre></div><p>此时我们再通过 <code>stress</code> 进行验证</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[root@node 21:09:29 ~]$stress -c 24
+</span></span><span style=display:flex><span>stress: info: [12475] dispatching hogs: 24 cpu, 0 io, 0 vm, 0 hdd
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>top - 21:11:58 up 5 days,  9:09,  3 users,  load average: 38.11, 30.37, 21.48
+</span></span><span style=display:flex><span>Tasks: 445 total,  38 running, 406 sleeping,   0 stopped,   1 zombie
+</span></span><span style=display:flex><span>%Cpu0  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu1  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu2  :  0.0 us,  0.0 sy,  0.3 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu3  :  0.0 us,  0.3 sy,  0.0 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu4  : 88.1 us, 11.9 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu5  : 81.9 us, 16.1 sy,  1.6 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu6  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu7  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu8  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu9  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu10 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu11 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu12 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu13 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu14 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu15 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu16 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu17 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu18 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu19 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu20 :  0.0 us,  0.0 sy,  0.3 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu21 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu22 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>%Cpu23 :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+</span></span><span style=display:flex><span>KiB Mem : 13174792+total, 11522948+free,  6439344 used, 10079088 buff/cache
+</span></span><span style=display:flex><span>KiB Swap:        0 total,        0 free,        0 used. 12406676+avail Mem
+</span></span></code></pre></div><p>我在 <code>yiran/others</code> 中配置了 3 个线程，那么此时哪怕我执行 <code>stress</code> worker 为 24，也只会在这3个线程中，不会对其他 cgroup 服务产生干扰，从而达到了资源预留的效果。</p></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>

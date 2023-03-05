@@ -1,0 +1,144 @@
+<!doctype html><html lang=en><head><title>Linux 引导那些事儿 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 Link to heading 在平时工作中我自己可能80% 的时间都在使用 Linux 进行工作，无论是软件开发还是环境维护，那么对于 Linux 发行版自然也是有比较熟悉的，比如 RHEL 系列。平时大家可能多多少少都会听到或接触到一些命令（术语），比如：grub,chroot,isolinux,bios 等等。今天打算就用 CentOS 发行版的 ISO 来谈谈自己对于 Linux 系统引导，安装，启动的理解。
+CentOS ISO 目录树如下：
+├── CentOS_BuildTag ├── EFI ├── EULA ├── GPL ├── images ├── isolinux ├── LiveOS ├── Packages ├── repodata ├── RPM-GPG-KEY-CentOS-7 ├── RPM-GPG-KEY-CentOS-Testing-7 └── TRANS.TBL isolinux Link to heading ISO 9660 Link to heading ISO 9660 是一种文件系统，也是一种规范，它规定了 ISO 文件应该是什么样子，常见的 Linux 发行版 ISO 都符合该规范。
+引导 Link to heading 有了 ISO，有了计算机，那么我们需要使用 ISO 安装想要的操作系统，通常我们会将 ISO 通过光盘/USB/网络等方式挂载到计算机上，通过设置 BIOS/UEFI 选项，将启动项设置为 ISO，然后启动进行安装。接下来一个一个来说。"><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Linux 引导那些事儿"><meta name=twitter:description content="背景 Link to heading 在平时工作中我自己可能80% 的时间都在使用 Linux 进行工作，无论是软件开发还是环境维护，那么对于 Linux 发行版自然也是有比较熟悉的，比如 RHEL 系列。平时大家可能多多少少都会听到或接触到一些命令（术语），比如：grub,chroot,isolinux,bios 等等。今天打算就用 CentOS 发行版的 ISO 来谈谈自己对于 Linux 系统引导，安装，启动的理解。
+CentOS ISO 目录树如下：
+├── CentOS_BuildTag ├── EFI ├── EULA ├── GPL ├── images ├── isolinux ├── LiveOS ├── Packages ├── repodata ├── RPM-GPG-KEY-CentOS-7 ├── RPM-GPG-KEY-CentOS-Testing-7 └── TRANS.TBL isolinux Link to heading ISO 9660 Link to heading ISO 9660 是一种文件系统，也是一种规范，它规定了 ISO 文件应该是什么样子，常见的 Linux 发行版 ISO 都符合该规范。
+引导 Link to heading 有了 ISO，有了计算机，那么我们需要使用 ISO 安装想要的操作系统，通常我们会将 ISO 通过光盘/USB/网络等方式挂载到计算机上，通过设置 BIOS/UEFI 选项，将启动项设置为 ISO，然后启动进行安装。接下来一个一个来说。"><meta property="og:title" content="Linux 引导那些事儿"><meta property="og:description" content="背景 Link to heading 在平时工作中我自己可能80% 的时间都在使用 Linux 进行工作，无论是软件开发还是环境维护，那么对于 Linux 发行版自然也是有比较熟悉的，比如 RHEL 系列。平时大家可能多多少少都会听到或接触到一些命令（术语），比如：grub,chroot,isolinux,bios 等等。今天打算就用 CentOS 发行版的 ISO 来谈谈自己对于 Linux 系统引导，安装，启动的理解。
+CentOS ISO 目录树如下：
+├── CentOS_BuildTag ├── EFI ├── EULA ├── GPL ├── images ├── isolinux ├── LiveOS ├── Packages ├── repodata ├── RPM-GPG-KEY-CentOS-7 ├── RPM-GPG-KEY-CentOS-Testing-7 └── TRANS.TBL isolinux Link to heading ISO 9660 Link to heading ISO 9660 是一种文件系统，也是一种规范，它规定了 ISO 文件应该是什么样子，常见的 Linux 发行版 ISO 都符合该规范。
+引导 Link to heading 有了 ISO，有了计算机，那么我们需要使用 ISO 安装想要的操作系统，通常我们会将 ISO 通过光盘/USB/网络等方式挂载到计算机上，通过设置 BIOS/UEFI 选项，将启动项设置为 ISO，然后启动进行安装。接下来一个一个来说。"><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2019/12/01/Linux-%E5%BC%95%E5%AF%BC%E9%82%A3%E4%BA%9B%E4%BA%8B%E5%84%BF/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-12-01T00:32:26+00:00"><meta property="article:modified_time" content="2019-12-01T00:32:26+00:00"><link rel=canonical href=https://zdyxry.github.io/2019/12/01/Linux-%E5%BC%95%E5%AF%BC%E9%82%A3%E4%BA%9B%E4%BA%8B%E5%84%BF/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2019/12/01/Linux-%E5%BC%95%E5%AF%BC%E9%82%A3%E4%BA%9B%E4%BA%8B%E5%84%BF/>Linux 引导那些事儿</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2019-12-01T00:32:26Z>December 1, 2019</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+4-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Linux/>Linux</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#isolinux>isolinux</a><ul><li><a href=#iso-9660>ISO 9660</a></li><li><a href=#引导>引导</a></li></ul></li><li><a href=#efi>EFI</a></li><li><a href=#images>images</a></li><li><a href=#liveos>LiveOS</a></li><li><a href=#总结>总结</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在平时工作中我自己可能80% 的时间都在使用 Linux 进行工作，无论是软件开发还是环境维护，那么对于 Linux 发行版自然也是有比较熟悉的，比如 RHEL 系列。平时大家可能多多少少都会听到或接触到一些命令（术语），比如：grub,chroot,isolinux,bios 等等。今天打算就用 CentOS 发行版的 ISO 来谈谈自己对于 Linux 系统引导，安装，启动的理解。</p><p>CentOS ISO 目录树如下：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>├── CentOS_BuildTag
+</span></span><span style=display:flex><span>├── EFI
+</span></span><span style=display:flex><span>├── EULA
+</span></span><span style=display:flex><span>├── GPL
+</span></span><span style=display:flex><span>├── images
+</span></span><span style=display:flex><span>├── isolinux
+</span></span><span style=display:flex><span>├── LiveOS
+</span></span><span style=display:flex><span>├── Packages
+</span></span><span style=display:flex><span>├── repodata
+</span></span><span style=display:flex><span>├── RPM-GPG-KEY-CentOS-7
+</span></span><span style=display:flex><span>├── RPM-GPG-KEY-CentOS-Testing-7
+</span></span><span style=display:flex><span>└── TRANS.TBL
+</span></span></code></pre></div><h2 id=isolinux>isolinux
+<a class=heading-link href=#isolinux><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><h3 id=iso-9660>ISO 9660
+<a class=heading-link href=#iso-9660><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>ISO 9660 是一种文件系统，也是一种规范，它规定了 ISO 文件应该是什么样子，常见的 Linux 发行版 ISO 都符合该规范。</p><h3 id=引导>引导
+<a class=heading-link href=#%e5%bc%95%e5%af%bc><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>有了 ISO，有了计算机，那么我们需要使用 ISO 安装想要的操作系统，通常我们会将 ISO 通过光盘/USB/网络等方式挂载到计算机上，通过设置 BIOS/UEFI 选项，将启动项设置为 ISO，然后启动进行安装。接下来一个一个来说。</p><p>BIOS/UEFI 通常存放在闪存中，在计算机开机自检完成后，加载引导程序（bootloader），这个初始化过程称为引导。BIOS/UEFI 通常允许用户设置加载选项，即从系统的众多设备中按照顺序进行加载，常见的比如：硬盘、光盘、网络、USB 等。当第一个设备加载失败后，会尝试第二个设备，以此类推，如果最终所有设备都无法加载，那么系统处于开机但未引导状态。</p><h4 id=磁盘引导>磁盘引导
+<a class=heading-link href=#%e7%a3%81%e7%9b%98%e5%bc%95%e5%af%bc><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>如果从硬盘引导，那么计算机首先会读取 MBR（主引导记录 or 主引导扇区），MBR 在硬盘上的三维地址为（柱面，磁头，扇区）＝（0，0，1）。有时也将其开头的 446 字节内容特指为“主引导记录”（MBR），其后是4个16字节的“磁盘分区表”（DPT），以及2字节的结束标志（55AA）。</p><p>也就是说，如果我们的磁盘是一个包含 MBR 的磁盘，那么它的 446 字节到 446 + 16 * 4 = 510 字节部分是引导记录，而 510 字节地址记录的应该是 <code>55AA</code> 这个结束标志，我们来找个磁盘看下是否是这样：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ dd <span style=font-weight:700>if</span>=/dev/vda of=a bs=512 count=1
+</span></span><span style=display:flex><span>记录了1+0 的读入
+</span></span><span style=display:flex><span>记录了1+0 的写出
+</span></span><span style=display:flex><span>512字节(512 B)已复制，0.000403482 秒，1.3 MB/秒
+</span></span><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ hexdump a
+</span></span><span style=display:flex><span>0000000 63eb 1090 d08e 00bc b8b0 0000 d88e c08e
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span>00001f0 0000 0000 0000 0000 0000 0000 0000 aa55
+</span></span><span style=display:flex><span>0000200
+</span></span></code></pre></div><p>在确认了磁盘可引导之后，BIOS 将 MBR 中的 446 字节内容复制到内存中，并将控制权转给引导设备（即磁盘），之后根据 MBR 中的引导程序（bootloader）进行后续工作。这里 UEFI 与 BIOS 略有不同，UEFI 是通过查找磁盘上 FAT 分区中加载 EFI loader 来进行引导，可以说 UEFI 是基于文件系统的。</p><p>到这里，我们已经进行了引导的第一步，也是最关键的一步，那么现在运行的 bootloader 是什么呢？Linux 常见的有两种：LILO 全称 LInux LOader，是一种 Linux 引导程序，它自身很简单，甚至说简陋，目前使用场景很少。GRUB 全称 GNU GRUB，是一种引导程序，它允许启动不同的操作系统或者不同的内核，目前大多数 Linux 发行版均采用 GRUB 作为引导程序。</p><p>当引导程序为 GRUB 时，因为 MBR 大小有限，因此存放在 MBR 中的内容是 boot.img，作用是加载真正的 GRUB core.img，GRUB 运行后，会根据 grub.cfg 选项来加载真正的内核映像，并进入到 OS 启动阶段。</p><p>GRUB 加载的文件有两个：vmlinuz 和 initrd.img 。</p><p>vmlinuz(vmlinux)，压缩后可引导的 Linux kernel 内核映像，VM 代表 Virtual Memory，通常是 bzImage 格式。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>root@yiran-30-250:/boot
+</span></span><span style=display:flex><span> $ file vmlinuz-3.10.0-693.11.6.el7.x86_64
+</span></span><span style=display:flex><span>vmlinuz-3.10.0-693.11.6.el7.x86_64: Linux kernel x86 boot executable bzImage, version 3.10.0-693.11.6.el7.x86_64 (builder@kbuilder.dev.centos.org) <span style=font-style:italic>#1, RO-rootFS, swap_dev 0x5, Normal VGA</span>
+</span></span></code></pre></div><p>initramfs.img（init ramdisk.img），有了可引导的内核映像还不够，因为我们不能确保我们的硬件设备是 kernel 可以直接识别的，往往需要加载一些启动来保证硬件的识别，这时候就需要 initramfs.img 来提供一个临时文件系统，运行在内存中。</p><p>有时候我们也会看到 initrd.img 文件，initrd 是 initramfs 出现之前的方式，因为它内部有文件系统，运行在内存中造成了一定的空间浪费，而 initramfs 是 tmpfs，在使用上更方便。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>root@yiran-30-250:/boot
+</span></span><span style=display:flex><span> $ file initrd-plymouth.img
+</span></span><span style=display:flex><span>initrd-plymouth.img: gzip compressed data, from Unix, last modified: Wed Mar 28 13:41:54 2018, max compression
+</span></span><span style=display:flex><span>root@yiran-30-250:/boot
+</span></span><span style=display:flex><span> $ file initramfs-3.10.0-693.11.6.el7.x86_64.img
+</span></span><span style=display:flex><span>initramfs-3.10.0-693.11.6.el7.x86_64.img: ASCII cpio archive (SVR4 with no CRC)
+</span></span></code></pre></div><p>到这里已经比较清楚了，接下来就是挂载相应配置的文件系统，执行 systemd（pid 为1）的进程，这里不再详细描述。</p><h4 id=光盘引导>光盘引导
+<a class=heading-link href=#%e5%85%89%e7%9b%98%e5%bc%95%e5%af%bc><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>在介绍了常规的磁盘引导后，我们来看看光盘引导的流程。</p><p>根据 El-Torito 规范，BIOS 会读取 ISO 的准确地址进行判断，ISO 是否可以进行引导启动（在第 71 字节地址保存引导目录）。如果判断可引导，那么就加载对应的引导程序（bootloader）。</p><p>常见的引导程序有：SYSLINUX,ISOLINUX,PXELINUX,EXTLINUX 等，这些可以统称为 Syslinux，目前最常见的应该是 ISOLINUX。PXELINUX 用于从网络引导，EXTLINUX 用于 ext 系列文件系统引导。</p><p>注意：由于目前 UEFI 的普遍性，部分 LiveCD ISO 会同时带有 ISOLINUX 和 GRUB 两种引导程序。</p><p>我们来看看 ISO 中 isolinux 路径下放了什么文件：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span> $ tree 
+</span></span><span style=display:flex><span>├── boot.cat <span style=font-style:italic># 启动目录</span>
+</span></span><span style=display:flex><span>├── boot.msg <span style=font-style:italic># 启动信息</span>
+</span></span><span style=display:flex><span>├── grub.conf <span style=font-style:italic># GRUB 配置文件</span>
+</span></span><span style=display:flex><span>├── initrd.img <span style=font-style:italic># 临时文件系统</span>
+</span></span><span style=display:flex><span>├── isolinux.bin <span style=font-style:italic># ISOLINUX 引导程序</span>
+</span></span><span style=display:flex><span>├── isolinux.cfg <span style=font-style:italic># ISOLINUX 引导配置文件</span>
+</span></span><span style=display:flex><span>├── memtest <span style=font-style:italic># 内存测试可执行文件</span>
+</span></span><span style=display:flex><span>├── splash.png <span style=font-style:italic># ISOLINUX 引导背景图片</span>
+</span></span><span style=display:flex><span>├── TRANS.TBL <span style=font-style:italic># 扩展文件名</span>
+</span></span><span style=display:flex><span>├── vesamenu.c32 <span style=font-style:italic># Menu 配置</span>
+</span></span><span style=display:flex><span>└── vmlinuz <span style=font-style:italic># 内核映像</span>
+</span></span></code></pre></div><p>根据以上文件信息及用途描述，我们来看下光盘引导的大概流程：</p><ol><li>加载 isolinux.bin</li><li>加载 isolinux.cfg,vesamenu.c32,splash.png 生成启动菜单</li><li>根据选项决定是否加载 vmlinuz, initrd.img</li></ol><p>关于 isolinux 目录和 Linux 引导部分大概是这样，主要是要理清楚整个流程。</p><h2 id=efi>EFI
+<a class=heading-link href=#efi><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span> $ tree 
+</span></span><span style=display:flex><span>.
+</span></span><span style=display:flex><span>├── BOOT
+</span></span><span style=display:flex><span>│   ├── BOOTIA32.EFI  <span style=font-style:italic># 32位系统 EFI 启动程序</span>
+</span></span><span style=display:flex><span>│   ├── BOOTX64.EFI <span style=font-style:italic># 64位系统 EFI 启动程序</span>
+</span></span><span style=display:flex><span>│   ├── fonts <span style=font-style:italic># 字体</span>
+</span></span><span style=display:flex><span>│   │   ├── TRANS.TBL
+</span></span><span style=display:flex><span>│   │   └── unicode.pf2
+</span></span><span style=display:flex><span>│   ├── grub.cfg <span style=font-style:italic># GRUB 配置</span>
+</span></span><span style=display:flex><span>│   ├── grubia32.efi <span style=font-style:italic># GRUB 32位引导程序</span>
+</span></span><span style=display:flex><span>│   ├── grubx64.efi <span style=font-style:italic># GRUB 64位引导程序</span>
+</span></span><span style=display:flex><span>│   ├── mmia32.efi <span style=font-style:italic># 内存测试 32 位执行程序</span>
+</span></span><span style=display:flex><span>│   ├── mmx64.efi <span style=font-style:italic># 内存测试 64 位执行程序</span>
+</span></span><span style=display:flex><span>│   └── TRANS.TBL
+</span></span><span style=display:flex><span>└── TRANS.TBL
+</span></span></code></pre></div><p>有了前面 isolinux 关于引导部分的介绍，这里 EFI 完全可以一一对应，如果计算器启动模式为 BIOS，那么是通过 ISOLINUX 引导，如果启动模式是 UEFI，那么是通过 EFI（GRUB）引导。</p><h2 id=images>images
+<a class=heading-link href=#images><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span> $ tree 
+</span></span><span style=display:flex><span>├── efiboot.img
+</span></span><span style=display:flex><span>├── pxeboot
+</span></span><span style=display:flex><span>│   ├── initrd.img
+</span></span><span style=display:flex><span>│   ├── TRANS.TBL
+</span></span><span style=display:flex><span>│   └── vmlinuz
+</span></span><span style=display:flex><span>└── TRANS.TBL
+</span></span></code></pre></div><p>这个路径文件很突兀，没有什么配置文件，看上去系统也没有用到，其实这里是为了文件复用而把 vmlinuz 和 initrd.img 提取出来了，在 EFI 路径下的 BOOT/grub.cfg 中有很多选项都是使用的 pxeboot/vmlinuz 。当然它最大的作用也是跟路径名一样，images，当你要配置一个发行版作为网络安装时，需要对应的 vmlinuz 和 initrd.img，那么可以从这个路径下获取，不会造成我要通过 PXELINUX 引导，却需要去 EFI 路径下获取文件的困扰。</p><h2 id=liveos>LiveOS
+<a class=heading-link href=#liveos><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span> $ tree 
+</span></span><span style=display:flex><span>├── squashfs.img
+</span></span><span style=display:flex><span>└── TRANS.TBL
+</span></span></code></pre></div><p>LiveOS，字面意思就是运行在内存中的 OS，现在大多数发行版为了让用户第一时间不用安装到磁盘上即可体验发行版的某些功能，而支持将 OS 运行在内存中，简单快捷。</p><blockquote><p>squashfs.img，是一套供Linux核心使用的GPL 开源只读压缩档案系统。Squashfs能够为档案系统内的档案、inode及目录结构进行压缩，并支援最大1024 千位元组的区段，以提供更大的压缩比。</p></blockquote><p>根据维基百科描述，squashfs.img 应该是包含了一个完整的 Linux映像的，我们来尝试挂载查看下：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ ls squashfs.img
+</span></span><span style=display:flex><span>squashfs.img
+</span></span><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ file squashfs.img
+</span></span><span style=display:flex><span>squashfs.img: Squashfs filesystem, little endian, version 4.0, 368572502 bytes, 3 inodes, blocksize: 131072 bytes, created: Tue Sep  5 21:35:03 2017
+</span></span><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ mount -t squashfs squashfs.img /tmp/yiran
+</span></span><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ ls /tmp/yiran/LiveOS/rootfs.img
+</span></span><span style=display:flex><span>/tmp/yiran/LiveOS/rootfs.img
+</span></span><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ file /tmp/yiran/LiveOS/rootfs.img
+</span></span><span style=display:flex><span>/tmp/yiran/LiveOS/rootfs.img: Linux rev 1.0 ext4 filesystem data, UUID=e2fddbe2-a003-4b98-b272-3defe7b377c4, volume name <span style=font-style:italic>&#34;Anaconda&#34;</span> (extents) (64bit) (huge files)
+</span></span><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ mount /tmp/yiran/LiveOS/rootfs.img /tmp/yiran-root
+</span></span><span style=display:flex><span>root@yiran-30-250:/tmp
+</span></span><span style=display:flex><span> $ ls /tmp/yiran-root
+</span></span><span style=display:flex><span>bin  dev  etc  firmware  lib  lib64  lost+found  mnt  modules  proc  root  run  sbin  sys  tmp  usr  var
+</span></span></code></pre></div><p>既然是一个完整的 Linux 映像，我们可以直接通过 chroot 命令切换根目录：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@yiran-30-250 00:24:30 yiran-root]$pwd
+</span></span><span style=display:flex><span>/tmp/yiran-root
+</span></span><span style=display:flex><span>[root@yiran-30-250 00:24:31 yiran-root]$ls
+</span></span><span style=display:flex><span>bin  dev  etc  firmware  lib  lib64  lost+found  mnt  modules  proc  root  run  sbin  sys  tmp  usr  var
+</span></span><span style=display:flex><span>[root@yiran-30-250 00:24:32 yiran-root]$chroot .
+</span></span><span style=display:flex><span>bash: /var/log/bash.log: 只读文件系统
+</span></span><span style=display:flex><span>[root@yiran-30-250 16:24:34 /]$cat /etc/hosts
+</span></span><span style=display:flex><span>127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+</span></span><span style=display:flex><span>::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+</span></span><span style=display:flex><span>bash: /var/log/bash.log: 只读文件系统
+</span></span><span style=display:flex><span>[root@yiran-30-250 16:24:36 /]$exit
+</span></span></code></pre></div><p>因为文件系统是只读的，所以我们只是进行了简单的读取操作。</p><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>通过 CentOS 发行版，我们一点点从计算机上电开始，走通整个流程，这只是一个最简单的流程，之前博客也多少提到过通过 KickStart 或者其他自动化方式安装等方式，这里不再描述。</p><p>在做事情之前最好把整个流程想通，再去研究细节部分。</p><h2 id=参考链接>参考链接
+<a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><ul><li><a href=https://wiki.osdev.org/ISO_9660#The_Boot_Record>https://wiki.osdev.org/ISO_9660#The_Boot_Record</a></li><li><a href="https://wiki.syslinux.org/wiki/index.php?title=Doc/isolinux">https://wiki.syslinux.org/wiki/index.php?title=Doc/isolinux</a></li><li><a href=https://wiki.osdev.org/El-Torito>https://wiki.osdev.org/El-Torito</a></li><li><a href="https://wiki.syslinux.org/wiki/index.php?title=ISOLINUX">https://wiki.syslinux.org/wiki/index.php?title=ISOLINUX</a></li><li><a href=https://zh.wikipedia.org/wiki/SquashFS>https://zh.wikipedia.org/wiki/SquashFS</a></li><li></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>

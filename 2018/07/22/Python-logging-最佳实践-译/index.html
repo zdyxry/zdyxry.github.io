@@ -1,0 +1,403 @@
+<!doctype html><html lang=en><head><title>Python logging 最佳实践-译 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="Python Logging 最佳实践
+背景 Link to heading 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
+Good Logging practice in Python Link to heading 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
+Print 不是个好主意 Link to heading 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
+print 'Start reading database' records = model.read_recrods() print '# records', records print 'Updating record ...' model.update_records(records) print 'done' 当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是 这仍不是记录日志的最佳实践。
+使用 Python 标准库 Logging Link to heading 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Python logging 最佳实践-译"><meta name=twitter:description content="Python Logging 最佳实践
+背景 Link to heading 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
+Good Logging practice in Python Link to heading 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
+Print 不是个好主意 Link to heading 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
+print 'Start reading database' records = model.read_recrods() print '# records', records print 'Updating record ...' model.update_records(records) print 'done' 当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是 这仍不是记录日志的最佳实践。
+使用 Python 标准库 Logging Link to heading 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta property="og:title" content="Python logging 最佳实践-译"><meta property="og:description" content="Python Logging 最佳实践
+背景 Link to heading 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
+Good Logging practice in Python Link to heading 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
+Print 不是个好主意 Link to heading 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
+print 'Start reading database' records = model.read_recrods() print '# records', records print 'Updating record ...' model.update_records(records) print 'done' 当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是 这仍不是记录日志的最佳实践。
+使用 Python 标准库 Logging Link to heading 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-07-22T09:50:47+00:00"><meta property="article:modified_time" content="2018-07-22T09:50:47+00:00"><link rel=canonical href=https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/>Python logging 最佳实践-译</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2018-07-22T09:50:47Z>July 22, 2018</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+5-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Python/>Python</a></span>
+<span class=separator>•</span>
+<span class=tag><a href=/tags/logging/>logging</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#good-logging-practice-in-python>Good Logging practice in Python</a></li><li><a href=#print-不是个好主意>Print 不是个好主意</a></li><li><a href=#使用-python-标准库-logging>使用 Python 标准库 Logging</a></li><li><a href=#设置正确的日志级别>设置正确的日志级别</a></li><li><a href=#使用-__name__-作为-logger-名称>使用 <strong>name</strong> 作为 logger 名称</a></li><li><a href=#捕获异常并使用-traceback-记录>捕获异常并使用 traceback 记录</a></li><li><a href=#除非-disable_existing_loggers--false否则不要在模块级别获取-logger>除非 disable_existing_loggers == False，否则不要在模块级别获取 logger</a></li><li><a href=#使用-json-和-yaml-配置-logging>使用 JSON 和 YAML 配置 logging</a></li><li><a href=#配置文件轮询>配置文件轮询</a></li><li><a href=#配置日志中心>配置日志中心</a></li><li><a href=#结论>结论</a></li></ul></nav><div class=post-content><p>Python Logging 最佳实践</p><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有
+了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/），
+很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~</p><h2 id=good-logging-practice-in-python>Good Logging practice in Python
+<a class=heading-link href=#good-logging-practice-in-python><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。
+如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查
+和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现
+错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你
+客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远
+不知道在不同的电脑环境中会发生什么奇怪的问题.</p><h2 id=print-不是个好主意>Print 不是个好主意
+<a class=heading-link href=#print-%e4%b8%8d%e6%98%af%e4%b8%aa%e5%a5%bd%e4%b8%bb%e6%84%8f><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
+一些 print ，在开发结束时删除这些 print。向下面这样：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span>print <span style=font-style:italic>&#39;Start reading database&#39;</span>
+</span></span><span style=display:flex><span>records = model.read_recrods()
+</span></span><span style=display:flex><span>print <span style=font-style:italic>&#39;# records&#39;</span>, records
+</span></span><span style=display:flex><span>print <span style=font-style:italic>&#39;Updating record ...&#39;</span>
+</span></span><span style=display:flex><span>model.update_records(records)
+</span></span><span style=display:flex><span>print <span style=font-style:italic>&#39;done&#39;</span>
+</span></span></code></pre></div><p>当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。
+第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。
+你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。
+所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是
+这仍不是记录日志的最佳实践。</p><h2 id=使用-python-标准库-logging>使用 Python 标准库 Logging
+<a class=heading-link href=#%e4%bd%bf%e7%94%a8-python-%e6%a0%87%e5%87%86%e5%ba%93-logging><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
+在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
+</span></span><span style=display:flex><span>logging.basicConfig(level=logging.INFO)
+</span></span><span style=display:flex><span>logger = logging.getLogger(__name__)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>logger.info(<span style=font-style:italic>&#39;Start reading database&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-style:italic># read database here</span>
+</span></span><span style=display:flex><span>records = {<span style=font-style:italic>&#39;john&#39;</span>: 55, <span style=font-style:italic>&#39;tom&#39;</span>: 66}
+</span></span><span style=display:flex><span>logger.debug(<span style=font-style:italic>&#39;Records: </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#39;</span>, records)
+</span></span><span style=display:flex><span>logger.info(<span style=font-style:italic>&#39;Updating records ...&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-style:italic># update records here</span>
+</span></span><span style=display:flex><span>logger.info(<span style=font-style:italic>&#39;Finish updating records&#39;</span>)
+</span></span></code></pre></div><p>你可以运行得到下面输出：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span>INFO:__main__:Start reading database
+</span></span><span style=display:flex><span>INFO:__main__:Updating records ...
+</span></span><span style=display:flex><span>INFO:__main__:Finish updating records
+</span></span></code></pre></div><p>你可能会问这与 print 有什么区别。这样做当然是有好处的：</p><ul><li>你可以控制信息级别，过滤掉不重要的信息</li><li>你可以决定之后输出的位置和方式</li></ul><p>有不同的日志级别你可以使用：debug，info，warning，error 和 critical。
+通过设置不同的日志级别，你可以只输出错误信息到指定的日志文件中，或者在 debug
+时输出调试的详细信息。尝试改变日志级别为 debug 再观察下输出结果：</p><p><code>logging.basicConfig(level=logging.DEBUG)</code></p><p>输出结果：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span>INFO:__main__:Start reading database
+</span></span><span style=display:flex><span>DEBUG:__main__:Records: {<span style=font-style:italic>&#39;john&#39;</span>: 55, <span style=font-style:italic>&#39;tom&#39;</span>: 66}
+</span></span><span style=display:flex><span>INFO:__main__:Updating records ...
+</span></span><span style=display:flex><span>INFO:__main__:Finish updating records
+</span></span></code></pre></div><p>像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定
+如何处理这些信息.举个例子你可以使用 FileHandler 让日志输出到一个文件中：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>logger = logging.getLogger(__name__)
+</span></span><span style=display:flex><span>logger.setLevel(logging.INFO)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic># create a file handler</span>
+</span></span><span style=display:flex><span>handler = logging.FileHandler(<span style=font-style:italic>&#39;hello.log&#39;</span>)
+</span></span><span style=display:flex><span>handler.setLevel(logging.INFO)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic># create a logging format</span>
+</span></span><span style=display:flex><span>formatter = logging.Formatter(<span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>%(asctime)s</span><span style=font-style:italic> - </span><span style=font-weight:700;font-style:italic>%(name)s</span><span style=font-style:italic> - </span><span style=font-weight:700;font-style:italic>%(levelname)s</span><span style=font-style:italic> - </span><span style=font-weight:700;font-style:italic>%(message)s</span><span style=font-style:italic>&#39;</span>)
+</span></span><span style=display:flex><span>handler.setFormatter(formatter)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic># add the handlers to the logger</span>
+</span></span><span style=display:flex><span>logger.addHandler(handler)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>logger.info(<span style=font-style:italic>&#39;Hello baby&#39;</span>)
+</span></span></code></pre></div><p>有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。
+你也可以自定义日志处理方式，更多信息可以参考： Basic Tutorial, Advanced Tutorial and Logging Cookbook.</p><h2 id=设置正确的日志级别>设置正确的日志级别
+<a class=heading-link href=#%e8%ae%be%e7%bd%ae%e6%ad%a3%e7%a1%ae%e7%9a%84%e6%97%a5%e5%bf%97%e7%ba%a7%e5%88%ab><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>由于 logging 的灵活性，你可以在任何地方配置适当的日志级别去记录日志，可以再之后配置他们。
+你可能会问，什么是正确的日志级别，这里我将分享我的经验。</p><p>在大多数场景下，在日志中不希望去看到大量的详细信息。因此，debug 级别只是在你
+调试过程中开启。我只使用调试级别来获取详细的调试信息，特别是当数据量很大或者频率
+很高的时候，比如在一个 for 循环中记录某些内部的状态变化。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>def</span> complex_algorithm(items):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>for</span> i, item <span style=font-weight:700>in</span> enumerate(items):
+</span></span><span style=display:flex><span>        <span style=font-style:italic># do some complex algorithm computation</span>
+</span></span><span style=display:flex><span>        logger.debug(<span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic> iteration, item=</span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#39;</span>, i, item)
+</span></span></code></pre></div><p>对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>def</span> handle_request(request):
+</span></span><span style=display:flex><span>    logger.info(<span style=font-style:italic>&#39;Handling request </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#39;</span>, request)
+</span></span><span style=display:flex><span>    <span style=font-style:italic># handle request here</span>
+</span></span><span style=display:flex><span>    result = <span style=font-style:italic>&#39;result&#39;</span>
+</span></span><span style=display:flex><span>    logger.info(<span style=font-style:italic>&#39;Return result: </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#39;</span>, result)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> start_service():
+</span></span><span style=display:flex><span>    logger.info(<span style=font-style:italic>&#39;Starting service at port </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic> ...&#39;</span>, port)
+</span></span><span style=display:flex><span>    service.start()
+</span></span><span style=display:flex><span>    logger.info(<span style=font-style:italic>&#39;Service is started&#39;</span>)
+</span></span></code></pre></div><p>当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如
+当一个用户登录时使用了错误的密码或者连接很慢时：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>def</span> authenticate(user_name, password, ip_address):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> user_name != USER_NAME <span style=font-weight:700>and</span> password != PASSWORD:
+</span></span><span style=display:flex><span>        logger.warn(<span style=font-style:italic>&#39;Login attempt to </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic> from IP </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#39;</span>, user_name, ip_address)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> <span style=font-weight:700>False</span>
+</span></span><span style=display:flex><span>    <span style=font-style:italic># do authentication here</span>
+</span></span></code></pre></div><p>当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>def</span> get_user_by_id(user_id):
+</span></span><span style=display:flex><span>    user = db.read_user(user_id)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> user <span style=font-weight:700>is</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>        logger.error(<span style=font-style:italic>&#39;Cannot find user with user_id=</span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#39;</span>, user_id)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> user
+</span></span><span style=display:flex><span>    <span style=font-weight:700>return</span> user
+</span></span></code></pre></div><p>我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,
+磁盘空间不足.</p><h2 id=使用-__name__-作为-logger-名称>使用 <strong>name</strong> 作为 logger 名称
+<a class=heading-link href=#%e4%bd%bf%e7%94%a8-__name__-%e4%bd%9c%e4%b8%ba-logger-%e5%90%8d%e7%a7%b0><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>你不需要讲 logger 名称设置为 <strong>name</strong> ，但是如果这样做，会带来一些好处。
+<strong>name</strong> 变量在 Python 中是当前模块名称。举个例子，你可以调用
+logger.getLogger(<strong>name</strong>) 在模块 &ldquo;foo.bar.my_module"中，这相当于
+logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配置为 &ldquo;foo&rdquo;，
+这样所有在 foo 包中的模块都共享同样的配置。你可以在阅读日志的时候了解模块信息。</p><h2 id=捕获异常并使用-traceback-记录>捕获异常并使用 traceback 记录
+<a class=heading-link href=#%e6%8d%95%e8%8e%b7%e5%bc%82%e5%b8%b8%e5%b9%b6%e4%bd%bf%e7%94%a8-traceback-%e8%ae%b0%e5%bd%95><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
+异常并与 traceback 一起记录他们。像这个例子：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>    open(<span style=font-style:italic>&#39;/path/to/does/not/exist&#39;</span>, <span style=font-style:italic>&#39;rb&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-weight:700>except</span> (<span style=font-weight:700>SystemExit</span>, <span style=font-weight:700>KeyboardInterrupt</span>):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>raise</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>except</span> <span style=font-weight:700>Exception</span>, e:
+</span></span><span style=display:flex><span>    logger.error(<span style=font-style:italic>&#39;Failed to open file&#39;</span>, exc_info=<span style=font-weight:700>True</span>)
+</span></span></code></pre></div><p>通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以
+看到这样的结果：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span>ERROR:__main__:Failed to open file
+</span></span><span style=display:flex><span>Traceback (most recent call last):
+</span></span><span style=display:flex><span>  File <span style=font-style:italic>&#34;example.py&#34;</span>, line 6, <span style=font-weight:700>in</span> &lt;module&gt;
+</span></span><span style=display:flex><span>    open(<span style=font-style:italic>&#39;/path/to/does/not/exist&#39;</span>, <span style=font-style:italic>&#39;rb&#39;</span>)
+</span></span><span style=display:flex><span><span style=font-weight:700>IOError</span>: [Errno 2] No such file <span style=font-weight:700>or</span> directory: <span style=font-style:italic>&#39;/path/to/does/not/exist&#39;</span>
+</span></span></code></pre></div><p>你也可以调用 logger.Exception(msg, *args)，这相当于 logger.error(msg,exc_info=True,*args)。</p><h2 id=除非-disable_existing_loggers--false否则不要在模块级别获取-logger>除非 disable_existing_loggers == False，否则不要在模块级别获取 logger
+<a class=heading-link href=#%e9%99%a4%e9%9d%9e-disable_existing_loggers--false%e5%90%a6%e5%88%99%e4%b8%8d%e8%a6%81%e5%9c%a8%e6%a8%a1%e5%9d%97%e7%ba%a7%e5%88%ab%e8%8e%b7%e5%8f%96-logger><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>你可以看到很多的例子（包括这篇文章）在模块级别获取 logger。这看上去是无害的，
+但是实际上，这是一个陷阱 - 在你从一个文件加载配置前，logging 模块会遵守所有
+已经创建的 logger，如果你在模块级别获取 logger，像这种：</p><hr><p>my_module.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>logger = logging.getLogger(__name__)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> foo():
+</span></span><span style=display:flex><span>    logger.info(<span style=font-style:italic>&#39;Hi, foo&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>class</span> <span style=font-weight:700>Bar</span>(object):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> bar(self):
+</span></span><span style=display:flex><span>        logger.info(<span style=font-style:italic>&#39;Hi, bar&#39;</span>)
+</span></span></code></pre></div><hr><p>main.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic># load my module</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>my_module</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic># load the logging configuration</span>
+</span></span><span style=display:flex><span>logging.config.fileConfig(<span style=font-style:italic>&#39;logging.ini&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>my_module.foo()
+</span></span><span style=display:flex><span>bar = my_module.Bar()
+</span></span><span style=display:flex><span>bar.bar()
+</span></span></code></pre></div><hr><p>logging.ini</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>[loggers]
+</span></span><span style=display:flex><span>keys=root
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>[handlers]
+</span></span><span style=display:flex><span>keys=consoleHandler
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>[formatters]
+</span></span><span style=display:flex><span>keys=simpleFormatter
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>[logger_root]
+</span></span><span style=display:flex><span>level=DEBUG
+</span></span><span style=display:flex><span>handlers=consoleHandler
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>[handler_consoleHandler]
+</span></span><span style=display:flex><span>class=StreamHandler
+</span></span><span style=display:flex><span>level=DEBUG
+</span></span><span style=display:flex><span>formatter=simpleFormatter
+</span></span><span style=display:flex><span>args=(sys.stdout,)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>[formatter_simpleFormatter]
+</span></span><span style=display:flex><span>format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+</span></span><span style=display:flex><span>datefmt=
+</span></span></code></pre></div><hr><p>你期望看到记录显示在日志中，但是日志中是空的。为什么？ 因为你在模块级别创建 logger ，
+所以在从文件加载 logging 配置之前导入该模块。 logging.fileConfig 和 logging.dictConfig
+默认禁用已经存在的 logger。 所以配置文件中的配置不会在你的 logger 中生效。
+这适合在你需要的时候获取 logger。 你可以像下面这样编写：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> foo():
+</span></span><span style=display:flex><span>    logger = logging.getLogger(__name__)
+</span></span><span style=display:flex><span>    logger.info(<span style=font-style:italic>&#39;Hi, foo&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>class</span> <span style=font-weight:700>Bar</span>(object):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> __init__(self, logger=<span style=font-weight:700>None</span>):
+</span></span><span style=display:flex><span>        self.logger = logger <span style=font-weight:700>or</span> logging.getLogger(__name__)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> bar(self):
+</span></span><span style=display:flex><span>        self.logger.info(<span style=font-style:italic>&#39;Hi, bar&#39;</span>)
+</span></span></code></pre></div><p>通过这样做， logger 将会在你加载配置之后创建，配置会正确生效。</p><p>从 Python 2.7 开始，添加一个新的参数名为 &ldquo;disable_existing_loggers&rdquo; 到 fileConfig 和
+dictConfig，通过将其设置为 False，可以解决上面提到的问题。比如：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging.config</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>logger = logging.getLogger(__name__)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic># load config from file</span>
+</span></span><span style=display:flex><span><span style=font-style:italic># logging.config.fileConfig(&#39;logging.ini&#39;, disable_existing_loggers=False)</span>
+</span></span><span style=display:flex><span><span style=font-style:italic># or, for dictConfig</span>
+</span></span><span style=display:flex><span>logging.config.dictConfig({
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;version&#39;</span>: 1,
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;disable_existing_loggers&#39;</span>: <span style=font-weight:700>False</span>,  <span style=font-style:italic># this fixes the problem</span>
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;formatters&#39;</span>: {
+</span></span><span style=display:flex><span>        <span style=font-style:italic>&#39;standard&#39;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;format&#39;</span>: <span style=font-style:italic>&#39;</span><span style=font-weight:700;font-style:italic>%(asctime)s</span><span style=font-style:italic> [</span><span style=font-weight:700;font-style:italic>%(levelname)s</span><span style=font-style:italic>] </span><span style=font-weight:700;font-style:italic>%(name)s</span><span style=font-style:italic>: </span><span style=font-weight:700;font-style:italic>%(message)s</span><span style=font-style:italic>&#39;</span>
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;handlers&#39;</span>: {
+</span></span><span style=display:flex><span>        <span style=font-style:italic>&#39;default&#39;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;level&#39;</span>:<span style=font-style:italic>&#39;INFO&#39;</span>,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;class&#39;</span>:<span style=font-style:italic>&#39;logging.StreamHandler&#39;</span>,
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#39;loggers&#39;</span>: {
+</span></span><span style=display:flex><span>        <span style=font-style:italic>&#39;&#39;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;handlers&#39;</span>: [<span style=font-style:italic>&#39;default&#39;</span>],
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;level&#39;</span>: <span style=font-style:italic>&#39;INFO&#39;</span>,
+</span></span><span style=display:flex><span>            <span style=font-style:italic>&#39;propagate&#39;</span>: <span style=font-weight:700>True</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>})
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>logger.info(<span style=font-style:italic>&#39;It works!&#39;</span>)
+</span></span></code></pre></div><h2 id=使用-json-和-yaml-配置-logging>使用 JSON 和 YAML 配置 logging
+<a class=heading-link href=#%e4%bd%bf%e7%94%a8-json-%e5%92%8c-yaml-%e9%85%8d%e7%bd%ae-logging><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>你可以再 Python 代码中配置 logging 参数，但是这不够灵活。更好的方式
+是使用 logging 配置文件。在 Python2.7 之后，你可以加载 logging 配置
+从一个字典，这意味着你可以从 JSON 或 YAML 文件中加载 logging 配置。
+虽然你可以通过 old.ini 方式加载 logging 配置，但是这对于可读性和可编辑
+来说是困难的。这里我将展示通过 JSON 或者 YAML 的配置文件示例。</p><hr><p>logging.json</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>    <span style=font-weight:700>&#34;version&#34;</span>: 1,
+</span></span><span style=display:flex><span>    <span style=font-weight:700>&#34;disable_existing_loggers&#34;</span>: <span style=font-weight:700>false</span>,
+</span></span><span style=display:flex><span>    <span style=font-weight:700>&#34;formatters&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=font-weight:700>&#34;simple&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;format&#34;</span>: <span style=font-style:italic>&#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#34;</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>&#34;handlers&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=font-weight:700>&#34;console&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;class&#34;</span>: <span style=font-style:italic>&#34;logging.StreamHandler&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;level&#34;</span>: <span style=font-style:italic>&#34;DEBUG&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;formatter&#34;</span>: <span style=font-style:italic>&#34;simple&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;stream&#34;</span>: <span style=font-style:italic>&#34;ext://sys.stdout&#34;</span>
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>&#34;info_file_handler&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;class&#34;</span>: <span style=font-style:italic>&#34;logging.handlers.RotatingFileHandler&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;level&#34;</span>: <span style=font-style:italic>&#34;INFO&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;formatter&#34;</span>: <span style=font-style:italic>&#34;simple&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;filename&#34;</span>: <span style=font-style:italic>&#34;info.log&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;maxBytes&#34;</span>: 10485760,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;backupCount&#34;</span>: 20,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;encoding&#34;</span>: <span style=font-style:italic>&#34;utf8&#34;</span>
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>&#34;error_file_handler&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;class&#34;</span>: <span style=font-style:italic>&#34;logging.handlers.RotatingFileHandler&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;level&#34;</span>: <span style=font-style:italic>&#34;ERROR&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;formatter&#34;</span>: <span style=font-style:italic>&#34;simple&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;filename&#34;</span>: <span style=font-style:italic>&#34;errors.log&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;maxBytes&#34;</span>: 10485760,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;backupCount&#34;</span>: 20,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;encoding&#34;</span>: <span style=font-style:italic>&#34;utf8&#34;</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>&#34;loggers&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=font-weight:700>&#34;my_module&#34;</span>: {
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;level&#34;</span>: <span style=font-style:italic>&#34;ERROR&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;handlers&#34;</span>: [<span style=font-style:italic>&#34;console&#34;</span>],
+</span></span><span style=display:flex><span>            <span style=font-weight:700>&#34;propagate&#34;</span>: <span style=font-style:italic>&#34;no&#34;</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>&#34;root&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=font-weight:700>&#34;level&#34;</span>: <span style=font-style:italic>&#34;INFO&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=font-weight:700>&#34;handlers&#34;</span>: [<span style=font-style:italic>&#34;console&#34;</span>, <span style=font-style:italic>&#34;info_file_handler&#34;</span>, <span style=font-style:italic>&#34;error_file_handler&#34;</span>]
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><hr><p>logging.yaml</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=font-weight:700>---</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>version</span>: 1
+</span></span><span style=display:flex><span><span style=font-weight:700>disable_existing_loggers</span>: <span style=font-weight:700>False</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>formatters</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>simple</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>format</span>: <span style=font-style:italic>&#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>handlers</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>console</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>class</span>: logging.StreamHandler
+</span></span><span style=display:flex><span>        <span style=font-weight:700>level</span>: DEBUG
+</span></span><span style=display:flex><span>        <span style=font-weight:700>formatter</span>: simple
+</span></span><span style=display:flex><span>        <span style=font-weight:700>stream</span>: ext://sys.stdout
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>info_file_handler</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>class</span>: logging.handlers.RotatingFileHandler
+</span></span><span style=display:flex><span>        <span style=font-weight:700>level</span>: INFO
+</span></span><span style=display:flex><span>        <span style=font-weight:700>formatter</span>: simple
+</span></span><span style=display:flex><span>        <span style=font-weight:700>filename</span>: info.log
+</span></span><span style=display:flex><span>        <span style=font-weight:700>maxBytes</span>: 10485760 <span style=font-style:italic># 10MB</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>backupCount</span>: 20
+</span></span><span style=display:flex><span>        <span style=font-weight:700>encoding</span>: utf8
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>error_file_handler</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>class</span>: logging.handlers.RotatingFileHandler
+</span></span><span style=display:flex><span>        <span style=font-weight:700>level</span>: ERROR
+</span></span><span style=display:flex><span>        <span style=font-weight:700>formatter</span>: simple
+</span></span><span style=display:flex><span>        <span style=font-weight:700>filename</span>: errors.log
+</span></span><span style=display:flex><span>        <span style=font-weight:700>maxBytes</span>: 10485760 <span style=font-style:italic># 10MB</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>backupCount</span>: 20
+</span></span><span style=display:flex><span>        <span style=font-weight:700>encoding</span>: utf8
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>loggers</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>my_module</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>level</span>: ERROR
+</span></span><span style=display:flex><span>        <span style=font-weight:700>handlers</span>: [console]
+</span></span><span style=display:flex><span>        <span style=font-weight:700>propagate</span>: <span style=font-weight:700>no</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>root</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>level</span>: INFO
+</span></span><span style=display:flex><span>    <span style=font-weight:700>handlers</span>: [console, info_file_handler, error_file_handler]
+</span></span><span style=display:flex><span><span style=font-weight:700>...</span>
+</span></span></code></pre></div><p>以下配置展示了如何从 json 文件中读取 logging 配置：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>os</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>json</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging.config</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> setup_logging(
+</span></span><span style=display:flex><span>    default_path=<span style=font-style:italic>&#39;logging.json&#39;</span>,
+</span></span><span style=display:flex><span>    default_level=logging.INFO,
+</span></span><span style=display:flex><span>    env_key=<span style=font-style:italic>&#39;LOG_CFG&#39;</span>
+</span></span><span style=display:flex><span>):
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#34;&#34;&#34;Setup logging configuration
+</span></span></span><span style=display:flex><span><span style=font-style:italic>
+</span></span></span><span style=display:flex><span><span style=font-style:italic>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>    path = default_path
+</span></span><span style=display:flex><span>    value = os.getenv(env_key, <span style=font-weight:700>None</span>)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> value:
+</span></span><span style=display:flex><span>        path = value
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> os.path.exists(path):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>with</span> open(path, <span style=font-style:italic>&#39;rt&#39;</span>) <span style=font-weight:700>as</span> f:
+</span></span><span style=display:flex><span>            config = json.load(f)
+</span></span><span style=display:flex><span>        logging.config.dictConfig(config)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>        logging.basicConfig(level=default_level)
+</span></span></code></pre></div><p>使用 JSON 配置的一个优点是 json 是标准库中的模块，你不需要安装。但就个人来说，
+我更喜欢 YAML。这有非常好的可读性和可编辑性。你可以按照以下方式加载 YAML 配置：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span>import os
+</span></span><span style=display:flex><span>import logging.config
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>import yaml
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>def setup_logging(
+</span></span><span style=display:flex><span>    default_path=&#39;logging.yaml&#39;,
+</span></span><span style=display:flex><span>    default_level=logging.INFO,
+</span></span><span style=display:flex><span>    env_key=&#39;LOG_CFG&#39;
+</span></span><span style=display:flex><span><span style=font-weight:700>)</span>:
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#34;&#34;&#34;Setup logging configuration
+</span></span></span><span style=display:flex><span><span style=font-style:italic>
+</span></span></span><span style=display:flex><span><span style=font-style:italic>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>    path = default_path
+</span></span><span style=display:flex><span>    value = os.getenv(env_key, None)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if value</span>:
+</span></span><span style=display:flex><span>        path = value
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if os.path.exists(path)</span>:
+</span></span><span style=display:flex><span>        <span style=font-weight:700>with open(path, &#39;rt&#39;) as f</span>:
+</span></span><span style=display:flex><span>            config = yaml.safe_load(f.read())
+</span></span><span style=display:flex><span>        logging.config.dictConfig(config)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>        logging.basicConfig(level=default_level)
+</span></span></code></pre></div><p>现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者
+logging.yaml。你也可以设置 LOG_CFG 环境变量去从指定的路径下加载配置文件。比如：</p><p><code>LOG_CFG=my_logging.json python my_server.py</code></p><p>或者</p><p><code>LOG_CFG=my_logging.yaml python my_server.py</code></p><h2 id=配置文件轮询>配置文件轮询
+<a class=heading-link href=#%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6%e8%bd%ae%e8%af%a2><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>如果你使用 FileHandler 去写日志，随着时间的增加日志文件大小也会增长，某一天，会撑爆你的磁盘。
+为了避免这种情况，你应该在生产环境中使用 RotatingFileHandler 替换 FileHandler 。</p><h2 id=配置日志中心>配置日志中心
+<a class=heading-link href=#%e9%85%8d%e7%bd%ae%e6%97%a5%e5%bf%97%e4%b8%ad%e5%bf%83><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>当你有多台服务器和不同的日志文件时，你可以配置一个日志中心去手机所有重要的文件。这样你可以
+更方便的监控和通知你的系统发生了哪些报错。</p><h2 id=结论>结论
+<a class=heading-link href=#%e7%bb%93%e8%ae%ba><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>我很开心 Python logging 库设置的很好，最好的是它是标准库中的一员，你无须选择。
+它非常灵活，你可以编辑自己的处理器和过滤器。还有第三方程序比如 pyzmq 提供的 ZeroMQ 日志处理，
+它允许你通过 zmq socket 发送日志信息。
+如果你不知道如何正确的使用 logging，那么本文对你会有所帮助。通过良好的日志记录练习，
+你可以更轻松的找到系统中的问题。</p></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>

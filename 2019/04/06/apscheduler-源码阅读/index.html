@@ -1,0 +1,216 @@
+<!doctype html><html lang=en><head><title>apscheduler 源码阅读 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="简介 Link to heading apscheduler 全称 Advanced Python Scheduler，调度器，主要功能如下：
+动态添加、删除任务 暂停、恢复任务 周期性调度：cron,date,interval &mldr; 那么接下来我们根据官方示例，看看 apscheduler 是如何进行处理任务的。
+示例版本为 2.1，因为在 2.1 版本包含目前 master 分支上的主要功能，简单易懂。
+代码结构如下：
+yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler 2.1 ✔ $ tree apscheduler apscheduler ├── __init__.py ├── events.py ├── job.py ├── jobstores │ ├── __init__.py │ ├── base.py │ ├── mongodb_store.py │ ├── ram_store.py │ ├── redis_store.py │ ├── shelve_store.py │ └── sqlalchemy_store.py ├── scheduler.py ├── threadpool.py ├── triggers │ ├── __init__.py │ ├── cron │ │ ├── __init__."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="apscheduler 源码阅读"><meta name=twitter:description content="简介 Link to heading apscheduler 全称 Advanced Python Scheduler，调度器，主要功能如下：
+动态添加、删除任务 暂停、恢复任务 周期性调度：cron,date,interval &mldr; 那么接下来我们根据官方示例，看看 apscheduler 是如何进行处理任务的。
+示例版本为 2.1，因为在 2.1 版本包含目前 master 分支上的主要功能，简单易懂。
+代码结构如下：
+yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler 2.1 ✔ $ tree apscheduler apscheduler ├── __init__.py ├── events.py ├── job.py ├── jobstores │ ├── __init__.py │ ├── base.py │ ├── mongodb_store.py │ ├── ram_store.py │ ├── redis_store.py │ ├── shelve_store.py │ └── sqlalchemy_store.py ├── scheduler.py ├── threadpool.py ├── triggers │ ├── __init__.py │ ├── cron │ │ ├── __init__."><meta property="og:title" content="apscheduler 源码阅读"><meta property="og:description" content="简介 Link to heading apscheduler 全称 Advanced Python Scheduler，调度器，主要功能如下：
+动态添加、删除任务 暂停、恢复任务 周期性调度：cron,date,interval &mldr; 那么接下来我们根据官方示例，看看 apscheduler 是如何进行处理任务的。
+示例版本为 2.1，因为在 2.1 版本包含目前 master 分支上的主要功能，简单易懂。
+代码结构如下：
+yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler 2.1 ✔ $ tree apscheduler apscheduler ├── __init__.py ├── events.py ├── job.py ├── jobstores │ ├── __init__.py │ ├── base.py │ ├── mongodb_store.py │ ├── ram_store.py │ ├── redis_store.py │ ├── shelve_store.py │ └── sqlalchemy_store.py ├── scheduler.py ├── threadpool.py ├── triggers │ ├── __init__.py │ ├── cron │ │ ├── __init__."><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2019/04/06/apscheduler-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-04-06T10:58:49+00:00"><meta property="article:modified_time" content="2019-04-06T10:58:49+00:00"><link rel=canonical href=https://zdyxry.github.io/2019/04/06/apscheduler-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2019/04/06/apscheduler-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/>apscheduler 源码阅读</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2019-04-06T10:58:49Z>April 6, 2019</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+5-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Python/>Python</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#简介>简介</a></li><li><a href=#scheduler>Scheduler</a></li><li><a href=#jobstore>JobStore</a></li><li><a href=#events>Events</a></li><li><a href=#总结>总结</a></li></ul></nav><div class=post-content><h2 id=简介>简介
+<a class=heading-link href=#%e7%ae%80%e4%bb%8b><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>apscheduler 全称 <code>Advanced Python Scheduler</code>，调度器，主要功能如下：</p><ul><li>动态添加、删除任务</li><li>暂停、恢复任务</li><li>周期性调度：cron,date,interval</li><li>&mldr;</li></ul><p>那么接下来我们根据官方示例，看看 apscheduler 是如何进行处理任务的。</p><p>示例版本为 2.1，因为在 2.1 版本包含目前 master 分支上的主要功能，简单易懂。</p><p>代码结构如下：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler
+</span></span><span style=display:flex><span>2.1 ✔ $ tree apscheduler
+</span></span><span style=display:flex><span>apscheduler
+</span></span><span style=display:flex><span>├── __init__.py
+</span></span><span style=display:flex><span>├── events.py
+</span></span><span style=display:flex><span>├── job.py
+</span></span><span style=display:flex><span>├── jobstores
+</span></span><span style=display:flex><span>│   ├── __init__.py
+</span></span><span style=display:flex><span>│   ├── base.py
+</span></span><span style=display:flex><span>│   ├── mongodb_store.py
+</span></span><span style=display:flex><span>│   ├── ram_store.py
+</span></span><span style=display:flex><span>│   ├── redis_store.py
+</span></span><span style=display:flex><span>│   ├── shelve_store.py
+</span></span><span style=display:flex><span>│   └── sqlalchemy_store.py
+</span></span><span style=display:flex><span>├── scheduler.py
+</span></span><span style=display:flex><span>├── threadpool.py
+</span></span><span style=display:flex><span>├── triggers
+</span></span><span style=display:flex><span>│   ├── __init__.py
+</span></span><span style=display:flex><span>│   ├── cron
+</span></span><span style=display:flex><span>│   │   ├── __init__.py
+</span></span><span style=display:flex><span>│   │   ├── expressions.py
+</span></span><span style=display:flex><span>│   │   └── fields.py
+</span></span><span style=display:flex><span>│   ├── interval.py
+</span></span><span style=display:flex><span>│   └── simple.py
+</span></span><span style=display:flex><span>└── util.py
+</span></span></code></pre></div><p>示例：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-weight:700>from</span> <span style=font-weight:700>datetime</span> <span style=font-weight:700>import</span> datetime, timedelta
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>from</span> <span style=font-weight:700>apscheduler.scheduler</span> <span style=font-weight:700>import</span> Scheduler
+</span></span><span style=display:flex><span><span style=font-weight:700>from</span> <span style=font-weight:700>apscheduler.jobstores.shelve_store</span> <span style=font-weight:700>import</span> ShelveJobStore
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>def</span> alarm(time):
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;Alarm! This alarm was scheduled at </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>.&#39;</span> % time)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-weight:700>if</span> __name__ == <span style=font-style:italic>&#39;__main__&#39;</span>:
+</span></span><span style=display:flex><span>    scheduler = Scheduler(standalone=<span style=font-weight:700>True</span>)
+</span></span><span style=display:flex><span>    scheduler.add_jobstore(ShelveJobStore(<span style=font-style:italic>&#39;example.db&#39;</span>), <span style=font-style:italic>&#39;shelve&#39;</span>)
+</span></span><span style=display:flex><span>    alarm_time = datetime.now() + timedelta(seconds=10)
+</span></span><span style=display:flex><span>    scheduler.add_date_job(alarm, alarm_time, name=<span style=font-style:italic>&#39;alarm&#39;</span>,
+</span></span><span style=display:flex><span>                           jobstore=<span style=font-style:italic>&#39;shelve&#39;</span>, args=[datetime.now()])
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;To clear the alarms, delete the example.db file.&#39;</span>)
+</span></span><span style=display:flex><span>    print(<span style=font-style:italic>&#39;Press Ctrl+C to exit&#39;</span>)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>        scheduler.start()
+</span></span><span style=display:flex><span>    <span style=font-weight:700>except</span> (<span style=font-weight:700>KeyboardInterrupt</span>, <span style=font-weight:700>SystemExit</span>):
+</span></span><span style=display:flex><span>        <span style=font-weight:700>pass</span>
+</span></span></code></pre></div><h2 id=scheduler>Scheduler
+<a class=heading-link href=#scheduler><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>上述示例很容易理解，首先对 <code>Scheduler</code> 实例化，然后添加 jobstore，定义一个名为 <code>alarm</code> 的 job，并指定其运行时间为当前时间 + 10s，将该 job 添加到 scheduler 中，添加 job 类型为 <code>date_job</code>，然后启动 scheduler。</p><p>可以看到我们所有的操作都是通过 scheduler 方法实现的，那么我们来看下 <code>Scheduler</code> 类具体实现了哪些功能：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-weight:700>class</span> <span style=font-weight:700>Scheduler</span>(object):
+</span></span><span style=display:flex><span>    <span style=font-style:italic>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=font-style:italic>    This class is responsible for scheduling jobs and triggering
+</span></span></span><span style=display:flex><span><span style=font-style:italic>    their execution.
+</span></span></span><span style=display:flex><span><span style=font-style:italic>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    _stopped = <span style=font-weight:700>True</span>
+</span></span><span style=display:flex><span>    _thread = <span style=font-weight:700>None</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> __init__(self, gconfig={}, **options):
+</span></span><span style=display:flex><span>        self._wakeup = Event()
+</span></span><span style=display:flex><span>        self._jobstores = {}
+</span></span><span style=display:flex><span>        self._jobstores_lock = Lock()
+</span></span><span style=display:flex><span>        self._listeners = []
+</span></span><span style=display:flex><span>        self._listeners_lock = Lock()
+</span></span><span style=display:flex><span>        self._pending_jobs = []
+</span></span><span style=display:flex><span>        self.configure(gconfig, **options)
+</span></span></code></pre></div><p>在 <code>Scheduler</code> 构造函数中，对一些变量进行初始化，这里要注意 <code>self._wakeup</code> ，后续的一些主要功能都是通过它来实现的。接下来看看 <code>add_jobstore</code> 方法：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=font-weight:700>def</span> add_jobstore(self, jobstore, alias, quiet=<span style=font-weight:700>False</span>):
+</span></span><span style=display:flex><span>        self._jobstores_lock.acquire() <span style=font-style:italic># 请求锁</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> alias <span style=font-weight:700>in</span> self._jobstores:
+</span></span><span style=display:flex><span>                <span style=font-weight:700>raise</span> <span style=font-weight:700>KeyError</span>(<span style=font-style:italic>&#39;Alias &#34;</span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#34; is already in use&#39;</span> % alias)
+</span></span><span style=display:flex><span>            self._jobstores[alias] = jobstore <span style=font-style:italic># 将 jobstore 别名作为 key，添加到 self._jobstores 中</span>
+</span></span><span style=display:flex><span>            jobstore.load_jobs() <span style=font-style:italic># 加载 jobstore 中所有 job</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>            self._jobstores_lock.release() <span style=font-style:italic># 释放锁</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Notify listeners that a new job store has been added</span>
+</span></span><span style=display:flex><span>        self._notify_listeners(JobStoreEvent(EVENT_JOBSTORE_ADDED, alias)) <span style=font-style:italic># 事件通知</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Notify the scheduler so it can scan the new job store for jobs</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> quiet:
+</span></span><span style=display:flex><span>            self._wakeup.set() <span style=font-style:italic># 将 Event 置为 True</span>
+</span></span></code></pre></div><p>在 <code>add_jobstore</code> 中，将 jobstore 添加到 scheduler 中，并加载当前 jobstore 中的所有任务，接下来将具体的 job 添加到 scheduler 中：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=font-weight:700>def</span> add_date_job(self, func, date, args=<span style=font-weight:700>None</span>, kwargs=<span style=font-weight:700>None</span>, **options):
+</span></span><span style=display:flex><span>        trigger = SimpleTrigger(date)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> self.add_job(trigger, func, args, kwargs, **options)
+</span></span></code></pre></div><p>这里的 <code>SimpleTrigger</code> 只是多种 Trigger 中的一种，根据 Trigger 类型的不同，最主要的差别在于 <code>get_next_fire_time</code> 计算方式不同。</p><p>如果添加的任务是 interval_job，那么对应 Trigger 为 <code>IntervalTrigger</code> ；如果添加的任务是 cron_job，那么对应的 Trigger 为 <code>CronTrigger</code>。</p><p>可以看到不同的任务只是 Trigger 计算方式不同，最终还是通过 <code>add_job</code> 方法，继续看：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=font-weight:700>def</span> add_job(self, trigger, func, args, kwargs, jobstore=<span style=font-style:italic>&#39;default&#39;</span>,
+</span></span><span style=display:flex><span>                **options):
+</span></span><span style=display:flex><span>        job = Job(trigger, func, args <span style=font-weight:700>or</span> [], kwargs <span style=font-weight:700>or</span> {},
+</span></span><span style=display:flex><span>                  options.pop(<span style=font-style:italic>&#39;misfire_grace_time&#39;</span>, self.misfire_grace_time),
+</span></span><span style=display:flex><span>                  options.pop(<span style=font-style:italic>&#39;coalesce&#39;</span>, self.coalesce), **options) <span style=font-style:italic># 将 job 实例化</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> self.running: <span style=font-style:italic># 如果 scheduler 未启动，那么将其添加到等待队列中</span>
+</span></span><span style=display:flex><span>            self._pending_jobs.append((job, jobstore))
+</span></span><span style=display:flex><span>            logger.info(<span style=font-style:italic>&#39;Adding job tentatively -- it will be properly &#39;</span>
+</span></span><span style=display:flex><span>                        <span style=font-style:italic>&#39;scheduled when the scheduler starts&#39;</span>)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            self._real_add_job(job, jobstore, <span style=font-weight:700>True</span>) <span style=font-style:italic># 否则添加 job 到 jobstore 中</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>return</span> job
+</span></span></code></pre></div><p>继续看 <code>_real_add_job</code> 中的实现：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=font-weight:700>def</span> _real_add_job(self, job, jobstore, wakeup):
+</span></span><span style=display:flex><span>        job.compute_next_run_time(datetime.now()) <span style=font-style:italic># 计算job 下次运行时间</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> <span style=font-weight:700>not</span> job.next_run_time:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>raise</span> <span style=font-weight:700>ValueError</span>(<span style=font-style:italic>&#39;Not adding job since it would never be run&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self._jobstores_lock.acquire() <span style=font-style:italic># 请求锁</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>            <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>                store = self._jobstores[jobstore]
+</span></span><span style=display:flex><span>            <span style=font-weight:700>except</span> <span style=font-weight:700>KeyError</span>:
+</span></span><span style=display:flex><span>                <span style=font-weight:700>raise</span> <span style=font-weight:700>KeyError</span>(<span style=font-style:italic>&#39;No such job store: </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#39;</span> % jobstore)
+</span></span><span style=display:flex><span>            store.add_job(job) <span style=font-style:italic># 添加 job</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>finally</span>:
+</span></span><span style=display:flex><span>            self._jobstores_lock.release()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Notify listeners that a new job has been added</span>
+</span></span><span style=display:flex><span>        event = JobStoreEvent(EVENT_JOBSTORE_JOB_ADDED, jobstore, job)
+</span></span><span style=display:flex><span>        self._notify_listeners(event) <span style=font-style:italic># 事件通知</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        logger.info(<span style=font-style:italic>&#39;Added job &#34;</span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#34; to job store &#34;</span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic>&#34;&#39;</span>, job, jobstore)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Notify the scheduler about the new job</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> wakeup:
+</span></span><span style=display:flex><span>            self._wakeup.set() <span style=font-style:italic># # 将 Event 置为 True</span>
+</span></span></code></pre></div><p>在 <code>_real_add_job</code> 中我们终于看到 <code>store.add_job(job)</code> ，至于 <code>store.add_job</code> 如何实现我们之后看 <code>JobStore</code> 再说。</p><p>现在我们已经给 scheduler 添加了 jobstore 和 job，那么看下 scheduler 是如何运行的：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=font-weight:700>def</span> start(self):
+</span></span><span style=display:flex><span>        ...
+</span></span><span style=display:flex><span>        <span style=font-style:italic># Schedule all pending jobs</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>for</span> job, jobstore <span style=font-weight:700>in</span> self._pending_jobs: <span style=font-style:italic># 将 scheduler 未运行时添加的 job，即在等待队列中的 job 添加到 jobstore 中</span>
+</span></span><span style=display:flex><span>            self._real_add_job(job, jobstore, <span style=font-weight:700>False</span>)
+</span></span><span style=display:flex><span>        <span style=font-weight:700>del</span> self._pending_jobs[:]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self._stopped = <span style=font-weight:700>False</span>
+</span></span><span style=display:flex><span>        <span style=font-weight:700>if</span> self.standalone:
+</span></span><span style=display:flex><span>            self._main_loop()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>            self._thread = Thread(target=self._main_loop, name=<span style=font-style:italic>&#39;APScheduler&#39;</span>)
+</span></span><span style=display:flex><span>            self._thread.setDaemon(self.daemonic)
+</span></span><span style=display:flex><span>            self._thread.start()
+</span></span></code></pre></div><p>在 scheduler 运行时，会先将所有的 job 加载到 jobstore 中，然后调用 <code>self._main_loop</code> ，如果 Standalone 为 True，则会一直阻塞知道没有 job 需要运行，看看 <code>self._main_loop</code> 做了啥：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=font-weight:700>def</span> _main_loop(self):
+</span></span><span style=display:flex><span>        <span style=font-style:italic>&#34;&#34;&#34;Executes jobs on schedule.&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        logger.info(<span style=font-style:italic>&#39;Scheduler started&#39;</span>)
+</span></span><span style=display:flex><span>        self._notify_listeners(SchedulerEvent(EVENT_SCHEDULER_START)) <span style=font-style:italic># 事件通知 </span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self._wakeup.clear()
+</span></span><span style=display:flex><span>        <span style=font-weight:700>while</span> <span style=font-weight:700>not</span> self._stopped:
+</span></span><span style=display:flex><span>            logger.debug(<span style=font-style:italic>&#39;Looking for jobs to run&#39;</span>)
+</span></span><span style=display:flex><span>            now = datetime.now()
+</span></span><span style=display:flex><span>            next_wakeup_time = self._process_jobs(now) <span style=font-style:italic># 计算下次唤醒时间</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=font-weight:700>if</span> next_wakeup_time <span style=font-weight:700>is</span> <span style=font-weight:700>not</span> <span style=font-weight:700>None</span>:
+</span></span><span style=display:flex><span>                wait_seconds = time_difference(next_wakeup_time, now)
+</span></span><span style=display:flex><span>                logger.debug(<span style=font-style:italic>&#39;Next wakeup is due at </span><span style=font-weight:700;font-style:italic>%s</span><span style=font-style:italic> (in </span><span style=font-weight:700;font-style:italic>%f</span><span style=font-style:italic> seconds)&#39;</span>,
+</span></span><span style=display:flex><span>                             next_wakeup_time, wait_seconds)
+</span></span><span style=display:flex><span>                <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>                    self._wakeup.wait(wait_seconds) <span style=font-style:italic># 等待 Event flag</span>
+</span></span><span style=display:flex><span>                <span style=font-weight:700>except</span> <span style=font-weight:700>IOError</span>:  <span style=font-style:italic># Catch errno 514 on some Linux kernels</span>
+</span></span><span style=display:flex><span>                    <span style=font-weight:700>pass</span>
+</span></span><span style=display:flex><span>                self._wakeup.clear()
+</span></span><span style=display:flex><span>            <span style=font-weight:700>elif</span> self.standalone:
+</span></span><span style=display:flex><span>                logger.debug(<span style=font-style:italic>&#39;No jobs left; shutting down scheduler&#39;</span>)
+</span></span><span style=display:flex><span>                self.shutdown() <span style=font-style:italic># 若 scheduler standalone 为 True 且 jobs 为空，则停止 scheduler</span>
+</span></span><span style=display:flex><span>                <span style=font-weight:700>break</span>
+</span></span><span style=display:flex><span>            <span style=font-weight:700>else</span>:
+</span></span><span style=display:flex><span>                logger.debug(<span style=font-style:italic>&#39;No jobs; waiting until a job is added&#39;</span>)
+</span></span><span style=display:flex><span>                <span style=font-weight:700>try</span>:
+</span></span><span style=display:flex><span>                    self._wakeup.wait() <span style=font-style:italic># 等待 Event flag</span>
+</span></span><span style=display:flex><span>                <span style=font-weight:700>except</span> <span style=font-weight:700>IOError</span>:  <span style=font-style:italic># Catch errno 514 on some Linux kernels</span>
+</span></span><span style=display:flex><span>                    <span style=font-weight:700>pass</span>
+</span></span><span style=display:flex><span>                self._wakeup.clear()
+</span></span></code></pre></div><p>还记得上面提到的 <code>Scheduler</code> 构造函数中的 <code>self._wakeup</code> 么，它实际上是 <code>threading.Event</code> ，它的 wait 方法会一直 block 直到 Event flag 为 True，也就是我们上面看到的 <code>self._wakeup.set()</code> ，那么我们可以知道在 <code>Scheduler</code> 中有几种场景会置为 True：</p><ol><li>Scheduler.shutdown</li><li>Scheduler.add_jobstore</li><li>Scheduler._real_add_job</li></ol><p>如果没有触发上述场景，则 <code>_main_loop</code> 会根据 jobs 的执行时间一直循环等待。</p><h2 id=jobstore>JobStore
+<a class=heading-link href=#jobstore><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在 apscheduler 中，JobStore 只是单纯的实现了 Job 相关的方法：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-weight:700>class</span> <span style=font-weight:700>JobStore</span>(object):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> add_job(self, job):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> update_job(self, job):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> remove_job(self, job):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> load_jobs(self):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> close(self):
+</span></span></code></pre></div><p>其中，对 job 的操作会根据 JobStore 类型的不同，而采用不同的序列化方式，比如在 <code>MongoDBJobStore</code> 中采用的是 <code>bson.binary</code>，而在其他 JobStore 比如 <code>RedisJobStore</code> 中采用的都是 <code>pickle</code>。</p><h2 id=events>Events
+<a class=heading-link href=#events><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>在 <code>Scheduler</code> 中，我们已经看到通过 <code>threading.Event</code> 来实现事件通知的，那么我们通知的 <code>Event</code> 都是在 <code>apscheduler.events</code> 中定义好的，比如：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=font-weight:700>class</span> <span style=font-weight:700>JobEvent</span>(SchedulerEvent):
+</span></span><span style=display:flex><span>    <span style=font-weight:700>def</span> __init__(self, code, job, scheduled_run_time, retval=<span style=font-weight:700>None</span>,
+</span></span><span style=display:flex><span>                 exception=<span style=font-weight:700>None</span>, traceback=<span style=font-weight:700>None</span>):
+</span></span><span style=display:flex><span>        SchedulerEvent.__init__(self, code)
+</span></span><span style=display:flex><span>        self.job = job
+</span></span><span style=display:flex><span>        self.scheduled_run_time = scheduled_run_time
+</span></span><span style=display:flex><span>        self.retval = retval
+</span></span><span style=display:flex><span>        self.exception = exception
+</span></span><span style=display:flex><span>        self.traceback = traceback
+</span></span></code></pre></div><p>在 <code>JobEvent</code> 中，我们能看到 job 的执行时间，返回值，异常捕获等信息。如果看过之前关于 <a href=https://zdyxry.github.io/2019/03/31/huey-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/>huey 博客</a> 的同学应该知道，在 huey 中是可以直接通过 task id 获取 task 执行结果的，但是在 apscheduler 中，我们并没有直接获取该结果的方法，而是通过在 <code>Scheduler</code> 中的 <code>add_listener</code> 添加监听者，监控指定成功的 Job 获取该 Job 的返回值，感觉这里不太友好。</p><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>到这里我们基本上已经将 apscheduler 的流程走了一遍，具体的 Trigger 计算时间的方法之后有机会单独写一下关于 cron，interval，date 的计算方法。</p><p>与 huey 相比，apscheduler 使用上要简单，但是简单也意味着功能的不足，比如获取 job 执行结果、job retry 机制等等。当然也有比较好的地方，apscheduler 在跟 web 框架比如 Flask，Django 集成的时候有一些第三方插件可以直接使用，不用像 Huey 一样要单独启动一个 consumer 进程，比较方便。</p></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>

@@ -1,0 +1,87 @@
+<!doctype html><html lang=en><head><title>Kubernetes 实战-Cluster API 升级流程 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 Link to heading 之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的升级工具，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。
+cluster-api-upgrade-tool Link to heading 项目地址：https://github.com/vmware/cluster-api-upgrade-tool
+因为这只是一个单独的工具，因此代码结构比较简单：
+yiran@t480:~/go/src/github.com/vmware/cluster-api-upgrade-tool master ✔ $ tree . . ├── CODE-OF-CONDUCT.md ├── CONTRIBUTING.md ├── Dockerfile ├── go.mod ├── go.sum ├── hack │ └── tools │ ├── go.mod │ ├── go.sum │ └── main.go ├── LICENSE.txt ├── main.go # 命令行入口 ├── Makefile ├── NOTICE.txt ├── pkg │ ├── internal │ │ └── kubernetes │ │ ├── client."><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Kubernetes 实战-Cluster API 升级流程"><meta name=twitter:description content="背景 Link to heading 之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的升级工具，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。
+cluster-api-upgrade-tool Link to heading 项目地址：https://github.com/vmware/cluster-api-upgrade-tool
+因为这只是一个单独的工具，因此代码结构比较简单：
+yiran@t480:~/go/src/github.com/vmware/cluster-api-upgrade-tool master ✔ $ tree . . ├── CODE-OF-CONDUCT.md ├── CONTRIBUTING.md ├── Dockerfile ├── go.mod ├── go.sum ├── hack │ └── tools │ ├── go.mod │ ├── go.sum │ └── main.go ├── LICENSE.txt ├── main.go # 命令行入口 ├── Makefile ├── NOTICE.txt ├── pkg │ ├── internal │ │ └── kubernetes │ │ ├── client."><meta property="og:title" content="Kubernetes 实战-Cluster API 升级流程"><meta property="og:description" content="背景 Link to heading 之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的升级工具，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。
+cluster-api-upgrade-tool Link to heading 项目地址：https://github.com/vmware/cluster-api-upgrade-tool
+因为这只是一个单独的工具，因此代码结构比较简单：
+yiran@t480:~/go/src/github.com/vmware/cluster-api-upgrade-tool master ✔ $ tree . . ├── CODE-OF-CONDUCT.md ├── CONTRIBUTING.md ├── Dockerfile ├── go.mod ├── go.sum ├── hack │ └── tools │ ├── go.mod │ ├── go.sum │ └── main.go ├── LICENSE.txt ├── main.go # 命令行入口 ├── Makefile ├── NOTICE.txt ├── pkg │ ├── internal │ │ └── kubernetes │ │ ├── client."><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2019/12/22/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-%E5%8D%87%E7%BA%A7%E6%B5%81%E7%A8%8B/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-12-22T16:53:55+00:00"><meta property="article:modified_time" content="2019-12-22T16:53:55+00:00"><link rel=canonical href=https://zdyxry.github.io/2019/12/22/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-%E5%8D%87%E7%BA%A7%E6%B5%81%E7%A8%8B/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-dark"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2019/12/22/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-%E5%8D%87%E7%BA%A7%E6%B5%81%E7%A8%8B/>Kubernetes 实战-Cluster API 升级流程</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2019-12-22T16:53:55Z>December 22, 2019</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+2-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Kubernetes/>Kubernetes</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#cluster-api-upgrade-tool>cluster-api-upgrade-tool</a></li><li><a href=#升级流程>升级流程</a></li><li><a href=#总结>总结</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>之前已经介绍过 ClusterAPI 及相应实现方式，但是针对使用 ClusterAPI 部署的 K8s 集群社区中一直没有升级方案，其中 vmware 实现了一个简单的<a href=https://github.com/vmware/cluster-api-upgrade-tool>升级工具</a>，可以在社区没实现之前提供使用，今天来看下这个工具是如何实现的。</p><h2 id=cluster-api-upgrade-tool>cluster-api-upgrade-tool
+<a class=heading-link href=#cluster-api-upgrade-tool><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>项目地址：https://github.com/vmware/cluster-api-upgrade-tool</p><p>因为这只是一个单独的工具，因此代码结构比较简单：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>yiran@t480:~/go/src/github.com/vmware/cluster-api-upgrade-tool 
+</span></span><span style=display:flex><span>master ✔ $ tree .
+</span></span><span style=display:flex><span>.
+</span></span><span style=display:flex><span>├── CODE-OF-CONDUCT.md
+</span></span><span style=display:flex><span>├── CONTRIBUTING.md
+</span></span><span style=display:flex><span>├── Dockerfile
+</span></span><span style=display:flex><span>├── go.mod
+</span></span><span style=display:flex><span>├── go.sum
+</span></span><span style=display:flex><span>├── hack
+</span></span><span style=display:flex><span>│   └── tools
+</span></span><span style=display:flex><span>│       ├── go.mod
+</span></span><span style=display:flex><span>│       ├── go.sum
+</span></span><span style=display:flex><span>│       └── main.go
+</span></span><span style=display:flex><span>├── LICENSE.txt
+</span></span><span style=display:flex><span>├── main.go <span style=font-style:italic># 命令行入口</span>
+</span></span><span style=display:flex><span>├── Makefile
+</span></span><span style=display:flex><span>├── NOTICE.txt
+</span></span><span style=display:flex><span>├── pkg
+</span></span><span style=display:flex><span>│   ├── internal
+</span></span><span style=display:flex><span>│   │   └── kubernetes
+</span></span><span style=display:flex><span>│   │       ├── client.go <span style=font-style:italic># 获取 client</span>
+</span></span><span style=display:flex><span>│   │       └── pod_exec.go
+</span></span><span style=display:flex><span>│   ├── logging
+</span></span><span style=display:flex><span>│   │   └── logrus_logr.go
+</span></span><span style=display:flex><span>│   └── upgrade
+</span></span><span style=display:flex><span>│       ├── config.go 
+</span></span><span style=display:flex><span>│       ├── control_plane.go <span style=font-style:italic># 主要升级逻辑</span>
+</span></span><span style=display:flex><span>│       └── control_plane_test.go
+</span></span><span style=display:flex><span>├── README.md
+</span></span><span style=display:flex><span>└── test
+</span></span><span style=display:flex><span>    └── integration
+</span></span><span style=display:flex><span>        ├── go.mod
+</span></span><span style=display:flex><span>        ├── go.sum
+</span></span><span style=display:flex><span>        └── main_test.go
+</span></span></code></pre></div><h2 id=升级流程>升级流程
+<a class=heading-link href=#%e5%8d%87%e7%ba%a7%e6%b5%81%e7%a8%8b><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>首先在 main.go 封装了相应的命令行用于升级，获取到相应配置后，开始升级：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>			upgrader, err := upgrade.NewControlPlaneUpgrader(newLogger(), finalConfig)
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>return</span> err
+</span></span><span style=display:flex><span>			}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=font-weight:700>return</span> upgrader.Upgrade()
+</span></span></code></pre></div><p>在 control_plane.go 文件中是升级的主要逻辑，所有的步骤都是顺序执行的，摘要下主要的步骤：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-style:italic>// Upgrade does the upgrading of the control plane.
+</span></span></span><span style=display:flex><span><span style=font-style:italic></span><span style=font-weight:700>func</span> (u *ControlPlaneUpgrader) Upgrade() <span>error</span> {
+</span></span><span style=display:flex><span>	machines, err := u.listMachines()
+</span></span><span style=display:flex><span>	...
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err := u.reconcileKubeadmConfigMapAPIEndpoints(); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>	err = u.updateKubeletConfigMapIfNeeded(u.desiredVersion)
+</span></span><span style=display:flex><span>	err = u.updateKubeletRbacIfNeeded(u.desiredVersion)
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> err := u.etcdClusterHealthCheck(15 * time.Second); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> err := u.UpdateProviderIDsToNodes(); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> updateKubeadmKubernetesVersion(in, <span style=font-style:italic>&#34;v&#34;</span>+u.desiredVersion.String())
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err := u.updateMachines(machines); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err := u.reconcileKubeadmConfigMapAPIEndpoints(); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><ol><li><code>u.listMachines</code>获取 TargetCluster 所有的 ControlPlane 节点<br>a. 通过 label 来进行 machine 过滤<br>b. 如果 Machine 的 DeletionTimestamp 字段为 0，则追加到列表中</li><li><code>u.reconcileKubeadmConfigMapAPIEndpoints</code> 这里主要是确保对应的 APIEndpoints 节点都在 k8s 集群中，通过对比 nodeList 与 APIEndpoints 来进行过滤</li><li><code>u.updateKubeletConfigMapIfNeeded</code> 在 k8s 中，在 ConfigMap 中是有保存 kubelet 配置信息的，在升级过程中，需要重新创建对应版本的 kubelet 配置信息，这个函数中直接将原版本的 kubelet 复制了一份，创建一份目标版本的 kublet 配置 ConfigMap</li><li><code>u.updateKubeletRbacIfNeeded</code> 创建目标版本的 Role 和 RoleBinding 资源</li><li><code>u.etcdClusterHealthCheck</code> 检查 etcd 集群是否健康，这里主要通过 <code>endpoint health --endpoints</code> 来检查 etcd 是否健康</li><li><code>u.UpdateProviderIDsToNodes</code> 通过 Cluster-API 创建出来的节点，需要设置 node.ProviderID 才可以被 Cluster-API 识别为 running 状态，ProviderId 格式为：<code>vmware://xxxxx</code> ，这里根据 ProviderID 来检测出具体的 ID，并将其作为一个 map 返回</li><li><code>u.updateKubeadmKubernetesVersion</code> 将 kubeadm ConfigMap 中的 <code>kubernetesVersion</code> 字段更新为目标版本，便于后续添加节点时指定的是目标版本</li><li><code>u.updateMachines</code> 在所有配置文件已经准备、更新完成后，开始做整个升级中最重要的部分，节点（Machine）升级，首先遍历所有 Machine 资源，针对每个 Machine，进行如下动作：<br>a. <code>u.etcdClusterHealthCheck</code> 检查 etcd 集群是否健康，如果不健康，则退出升级<br>b. <code>generateReplacementMachineName</code> 生成替代 Machine 相应配置信息，如 MachineName<br>c. <code>u.updateInfrastructureReference</code> 创建替代 Machine 的 Infrastructure Object<br>d. <code>u.updateBootstrapConfig</code> 创建替代 Machine 的 Bootstrap Config，因为默认 Cluster-API 使用的 kubeadm Bootstrap，所以这里其实是生成替代 Machine 执行的 kubeadm 配置<br>e. <code>u.updateMachine</code> 真正创建替代 Machine 的步骤，创建对应的目标虚拟机，等待目标虚拟机添加到 K8s 集群中且处于 Ready 后，将原虚拟机对应 etcd 节点从 etcd 集群中移除，随后将原虚拟机对应节点从 K8s 集群中移除</li><li><code>u.reconcileKubeadmConfigMapAPIEndpoints</code> 等待所有 Machine 替换完成后，重新配置 kubeadm ConfigMap 保证 kubeadm ConfigMap 中保存所有的 APIEndpoints 信息。</li></ol><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><p>Cluster-API 作为 K8s cluster-lifecycle SIG 的一个还处于 Alpha 阶段的项目，还处于一个快速更新迭代的状态，因此最终升级流程是怎样还不确定，但是从 vmware 的这个工具来看，后续很有可能采用这种方案，毕竟 Cluster-API 不想通过 SSH 这种比较麻（恶）烦（心）的方式对节点进行管理，从 kubeadm Bootstrap 使用 Cloud-init 就可以看出，尤其是当支持多种 Linux 发行版后，可以预想这是一个灾难。因此使用这种节点逐一替换的方式是很方便的，具体实现看 v1alpha3 发布之后社区的讨论结果吧。</p><p>吐槽：
+Cluster-API 项目在代码中很少使用缩写，带来的好处很明显，易读易懂，上手容易，我自己的项目也一直秉承着这种观点，但是当我看到 <code>reconcileKubeadmConfigMapAPIEndpoints</code> 这种长度的变量名，还是很崩溃的。</p><h2 id=参考链接>参考链接
+<a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h2><ul><li><a href=https://github.com/vmware/cluster-api-upgrade-tool>https://github.com/vmware/cluster-api-upgrade-tool</a></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2023
+Yiran Zhou
+·
+Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>
