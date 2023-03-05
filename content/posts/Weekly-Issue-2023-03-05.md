@@ -1,9 +1,9 @@
 ---
 title: Weekly Issue 2023-03-05
-date: 2023-03-05 14:40:00
+date: 2023-03-05
 tags:
 - Weekly
-description: 
+description: 迁移博客是个体力活。
 ---
 
 
@@ -126,7 +126,7 @@ go内置解析器解析过程默认是并行和串行结合的
 
 ---
 
-[Creating Value | Principal Engineering. Understanding how to create value as a… | by Kris Nóva | Sep, 2022 | Medium | Medium](https://web.archive.org/web/20220912061404/https://medium.com/@kris-nova/creating-value-as-a-principal-aa59c7986344)    
+[Creating Value | Principal Engineering. Understanding how to create value as a… | by Kris Nóva | Sep, 2022 | Medium | Medium](https://web.archive.org/web/20220912061404/https://medium.com/@kris-nova/creating-value-as-a-principal-aa59c7986344)
 
 好难啊，怎么样才算创造价值呢，自己想做的事情没有排期，怎么处理？感觉还是直接开始做起来比较重要。
 
