@@ -1,0 +1,248 @@
+---
+title: RPM 常用构建方式
+date: 2018-07-28 06:47:40
+tags:
+- Linux
+---
+## 背景
+
+作为一个标准化的产品，需要提供简单快捷的软件安装方式，比如 Python pip、 Ubuntu apt-get、SUSE zypper 或者是 CentOS/RHEL yum。都可以让用户快速的安装产品并上手使用，极大的节省了软件安装的时间。因为工作中使用的发行版是 CentOS/RHEL 系列，常用的方式是 RPM。
+本文介绍下常用的集中构建 RPM 软件包方式，便于快速上手构建属于自己的 RPM。
+
+## RPM 介绍
+
+什么是 RPM？ RPM 全称为 RedHat Package Manager，也就是常见的以 `.rpm` 为后缀的软件包。属于 RedHat 系列发行版的通用软件包解决方式。
+在安装 CentOS(RHEL，以下 CentOS 均可适用于 RHEL)操作系统时，我们可以选择要安装的软件包，默认系统安装为 Minimal 模式，只包含系统必要的 RPM。
+
+理论上操作系统上所有的软件都是通过 RPM 的方式安装的，比如常用的 Kernel、GCC、LS 等工具。
+
+## RPM 使用
+
+在进行 RPM 安装时，通常会遇到一个问题：依赖。由于某些特定的软件包在使用时，要求系统必须安装其所依赖的软件才可以正常工作，因此我们需要查看要安装的软件包的依赖。
+
+```Bash
+root@yiran-30-250:~/project/Blog
+master ✔ $ rpm -qR sos-3.2-35.el7.centos.3.noarch
+/usr/bin/python
+bzip2
+config(sos) = 3.2-35.el7.centos.3
+libxml2-python
+python(abi) = 2.7
+python-six
+rpmlib(CompressedFileNames) <= 3.0.4-1
+rpmlib(FileDigests) <= 4.6.0-1
+rpmlib(PartialHardlinkSets) <= 4.0.4-1
+rpmlib(PayloadFilesHavePrefix) <= 4.0-1
+xz
+rpmlib(PayloadIsXz) <= 5.2-1
+```
+
+在安装之前博客提到的 sos 软件时，需要安装 Python、bzip、config 等软件包才可以正常使用 sos。
+
+此时遇到一个问题，如果 bzip 又依赖某些其他的 RPM，我们如何解决呢，当然可以继续使用 `rpm -qR` 来查看 bzip 的依赖，然后手动进行安装，但是 Duke University 团队提供了更好用的工具：Yum(Yellow dog Updater, Modified)。可以自动帮助我们解决 RPM 依赖问题。我们只需要在 `/etc/yum.repos.d/` 路径下配置合理的 yum repo 配置文件，就可以直接使用 `yum install sos` 的方式安装软件包。在 Fedora 22 版本之后，提供了新的工具叫做 DNF，标称为 Yum 下一代工具（但我没觉得有多好用。。。）。
+
+## RPM 构建方式
+
+简单介绍了 RPM 的基础使用，具体常用的操作比如：升级、卸载、强制安装、不检查依赖卸载等操作，需要大家自行 Google。
+
+下面介绍两种方式构建 RPM。
+
+### rpmbuild
+
+常规构建 RPM 方式是使用 rpmbuild 工具，我们需要自己编写好相应的 spec 文件，打包压缩好要构建的软件，完成 RPM 构建，下面讲解具体方式。
+
+#### 安装 rpm-build
+
+使用 yum 命令安装： `yum install rpm-build` 。会自动将 rpm-build 依赖软件安装，依赖包名如下：
+
+```
+elfutils-libelf
+rpm
+rpm-libs
+rpm-python
+```
+
+#### RPM 构建路径
+
+在 rpm-build 安装完成后，会自动在 /root/ 下创建相应 rpmbuild 文件夹，会包含构建 RPM 所必须的路径，你也可以之后构建时手动指定路径，但是不推荐新手这种方式，会增加 debug 成本，默认就好。
+
+#### 准备 tar 软件包
+
+在准备工作完成后，我们需要准备软件包源文件，并放置 `/root/rpmbuild/SOURCES/` 路径下。开源软件包通常可以在晚上下载到，如果是本地 git 管理的仓库，也可以通过以下方式自动生成 Tar 包。
+```
+git archive --format=tar.gz --prefix=$RPM_VERSION HEAD > /root/rpmbuild/SOURCES/
+```
+
+#### 创建 SPEC 文件
+
+接下来是最重要的一步，也是出错最多的一步，准备 SPEC 文件。
+
+SPEC 配置文件指定了在 RPM 构建时进行的操作，和 RPM 安装时执行的操作、拷贝对应源文件到哪个路径、要创建哪些文件夹等。
+
+我们仍以 sos 作为示例，sos 作为 RedHat 开源软件，在 Github 上是包含了对应的 [sos.spec](https://github.com/sosreport/sos/blob/master/sos.spec) 文件的。
+
+截取重要的部分：
+```
+%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+
+Summary: A set of tools to gather troubleshooting information from a system   
+# rpm package summary info
+Name: sos                         											  
+# rpm package name
+Version: 3.6																  
+# rpm package version
+Release: 1%{?dist}															  
+# rpm release number
+Group: Applications/System     												  
+# rpm group name
+Source0: http://people.redhat.com/breeves/sos/releases/sos-%{version}.tar.gz  
+# rpm software tar package name, abs path
+License: GPLv2+																  
+# rpm license
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot                
+# rpm build path
+BuildArch: noarch   													      
+# rpm arch version: x86_64/noarch/i686
+Url: http://fedorahosted.org/sos
+BuildRequires: python-devel													  
+# rpm build dependency package
+BuildRequires: gettext														  
+# ...
+BuildRequires: python-six													  
+# ...
+Requires: libxml2-python													  
+# rpm install dependency package
+Requires: rpm-python														  
+# ...
+Requires: tar
+Requires: bzip2
+Requires: xz
+Requires: python-six
+Requires: python-futures
+
+%description																  
+# rpm package description
+Sos is a set of tools that gathers information about system
+hardware and configuration. The information can then be used for
+diagnostic purposes and debugging. Sos is commonly used to help
+support technicians and developers.
+
+%prep
+%setup -q
+
+%build
+make																		  
+# rpm build method: make/setup.py
+
+%install																	  
+# perform operations when the package is installed
+rm -rf ${RPM_BUILD_ROOT}
+make DESTDIR=${RPM_BUILD_ROOT} install
+%find_lang %{name} || echo 0
+
+%clean 																		  
+# perform operations when rpm package build success
+rm -rf ${RPM_BUILD_ROOT}
+
+%files -f %{name}.lang     													  
+# rpm install software file path
+%defattr(-,root,root,-)
+%{_sbindir}/sosreport
+%{_datadir}/%{name}
+%{python_sitelib}/*
+%{_mandir}/man1/*
+%{_mandir}/man5/*
+%doc AUTHORS README.md LICENSE
+%doc /usr/share/doc/sos/html
+%config(noreplace) %{_sysconfdir}/sos.conf
+
+%changelog																	  
+# software changelog
+* Thu Nov 02 2017 Bryn M. Reeves <bmr@redhat.com> = 3.5
+- New upstream release
+
+```
+
+可以看到，SPEC 文件的编写要指定的东西还是很多的，我们需要配置好每一项所做的操作，才能保证软件正确安装。
+
+`{_datadir}`, `{_mandir}` 等类似的宏定义，可以查看 [Fedora 维基](https://fedoraproject.org/wiki/Packaging:RPMMacros) 了解详情。
+
+#### 构建
+
+上述操作均完成后，我们可以进行真正的构建操作了，执行 `rpmbuild -ba sos.spec` ，如果构建成功后，我们可以再 `/root/rpmbuild/SRPMS/` `/root/rpmbuild/RPMS` 下看到对应的 RPM 源文件包和 RPM 软件包，SRPMS 内的软件包，可以让我们之后的构建更轻松，如果不更改 spec 时，我们可以直接 `rpm -ivh sos*src.rpm` 安装后，即可再次执行 `rpmbuild -ba sos.spec` 进行构建。
+
+#### 验证 RPM 正确性
+
+最简单的验证方式就是在测试环境中安装刚刚构建出的软件包，如果相应的配置、源文件已经在正确的路径下，则安装成功。
+
+
+
+### FPM
+
+#### 概念
+
+什么是 FPM？ FPM 是一个命令行工具用于构建软件包，软件包来源支持的种类很多，如: dir/gem/rpm/python/pear 等等。
+通过 FPM 我们可以很轻松的构建 RPM，不用再编写那一堆 spec 文件中的参数了。所有参数都可以通过命令行 option 的方式添加，方便快捷。
+
+#### 安装
+
+从 [https://rubygems.org/](https://rubygems.org/) 下载并安装 gem。也可以通过 yum install ruby-devel gcc 方式安装。
+安装完成后，默认的 gem 源指定的是国外的，我们可以替换成 taobao ：
+```
+gem source --remove https://rubygems.org/
+gem source --add https://ruby.taobao.org
+```
+
+然后执行 gem install fpm 记了。
+
+#### 使用
+
+如果我们要构建一个 python 软件包，如 pyroute2。我们可以这样操作：
+```
+root@yiran-30-250:~
+ $ fpm -s python -t rpm -a noarch -n python2-pyroute2 pyroute2
+Created package {:path=>"python2-pyroute2-0.5.2-1.noarch.rpm"}
+root@yiran-30-250:~
+ $ ll -trh |grep python2-pyroute2
+-rw-r--r--  1 root root 208K 7月  28 07:50 python2-pyroute2-0.5.2-1.noarch.rpm
+```
+
+只需一条命令就可以自动从 pypi 上下载源软件包并构建出对应的 rpm。
+
+如果我们此时不止要构建 rpm，还要指定 rpm 的依赖关系，我们可以这样做：
+```
+root@yiran-30-250:~
+ $ fpm -s python -t rpm -a x86_64 -n python2-crypto -v 2.6.1 --iteration 1.el7 --depends "python-pycrypto"
+Created package {:path=>"python2-crypto-2.6.1-1.el7.x86_64.rpm"}
+root@yiran-30-250:~
+ $ ll -trh |grep python2-crypto
+-rw-r--r--  1 root root 1.5K 7月  28 07:52 python2-crypto-2.6.1-1.el7.x86_64.rpm
+root@yiran-30-250:~
+ $ rpm -qpR python2-crypto-2.6.1-1.el7.x86_64.rpm
+python-pycrypto
+rpmlib(PayloadFilesHavePrefix) <= 4.0-1
+rpmlib(CompressedFileNames) <= 3.0.4-1
+```
+
+## 总结
+
+日常用到的 RPM，推荐还是 Google，基本上常见版本都会有。如果我们要构建自己需要的指定版本第三方 RPM，推荐使用 FPM 的方式，可以省去很多烦恼。
+但是如果我们需要对自己编写、维护的软件进行 RPM 构建，那还是推荐 rpmbuild 方式，毕竟可以指定 RPM 安装前，安装时，安装后的所有操作，可以根据自己需求定义操作，很强大。
+
+
+## 吐槽
+
+目前主要工作是使用 Python。在 Python 引入第三方依赖时，软件包名字很头疼，如果软件包名不同，但是源文件是相同的，RPM 安装时会提示软件包冲突，此时就需要自己去解决冲突，如果要安装的软件依赖于 A，系统已经安装了 B，目前我常用的方式有：
+1. rpm -ivh A --replacefiles # 强制安装 A
+2. rpm -e B --nodeps ; rpm -ivh A # 因为 A 与 B 源文件相同，在版本相同的情况下，这种方式是最快的解决办法
+3. Build 一个空的软件包，名字为 A，依赖于 B。 这样我们可以直接安装 A，因为 A 是空的，不做任何操作，安装完 A 后，系统同时存在 A & B，此时再安装依赖于 A 的软件就可以正常安装了
+
+
+目前已经见过以下几种 Python RPM 命名方式了：
+1. python-pyroute2
+2. python2-pyroute2
+3. pyroute2
+4. ...
+
+
+真是无力吐槽啊。。。。

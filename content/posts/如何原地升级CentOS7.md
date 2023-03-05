@@ -1,0 +1,224 @@
+---
+title: 如何平(优）滑（雅）的抛弃 CentOS7
+date: 2022-08-28 13:00:00
+tags:
+- Linux
+description: 将 CentOS 7 原地升级转换为 Rocky Linux/AlmaLinux/Anolis OS/openEuler。 
+---
+
+
+## 背景
+
+2023/03/01 更新：目前已正式使用，符合预期。
+
+CentOS 7 自身的生命周期截止到 2024年6月30日。在2020年底，CentOS 社区宣布修改现有的发布模式，将 CentOS 从作为 RHEL 的下游改为 CentOS Stream，即 RHEL 的上游，更导致 CentOS8的生命周期短的可怜，这让社区中原本就对 CentOS 不满的开发者/使用者不满，从而出现了抛弃 CentOS 转投其他发行版的情况。
+
+大家选择使用 CentOS ，虽然都在说稳定，但是我理解更看重的是 RedHat 在身后背书，CentOS 作为 RHEL 的下游，所有的软件版本都是经过 RedHat 测试验证的，且后期维护也是有 RedHat 的身影在，不担心维护的问题。
+
+CentOS 原有的模式也是有问题的，用户很难参与到 RHEL 的研发周期。用户发现了 CentOS 某个版本存在问题，想要给 CentOS 进行贡献，让 CentOS 下一个版本修复该问题。此时只有一条路，就是贡献给开源组件自身，但是这样也只是存在修复的可能，最终是否可能修复还是看 RedHat 开发人员的决定（毕竟 RHEL/CentOS 中存在大量开源组件自身不包含，但是 RHEL/CentOS 通过 rpm spec 中进行 Patch 的方式包含的 Patch）。在引入了 CentOS Stream 之后，用户就可以通过贡献给 CentOS 社区，来保证 CentOS 下一个版本包含该 Patch，至于 RHEL 是否包含，用户并不关心，那是 RedHat 关心的问题。
+
+Fedora 更关注于上游社区最新的代码，包含最丰富的功能，作为先驱者；CentOS Stream 作为 RHEL 的上游，提供稳定可靠的持续交付版本，保证更多的贡献者可以参与进来；RHEL 给企业用户使用，有 RedHat 提供完整的维护服务。
+
+在现有的模式下，CentOS Stream 已经与原有采用 CentOS 的用户初衷背离，已有的 CentOS7 用户需要寻找新的替代品，在国产化的浪潮下，选择的方向也发生了一定的变化。
+
+### 社区替代品
+
+Rocky Linux
+
+> Rocky Linux aims to function as a downstream build as CentOS had done previously, building releases after they have been added to the upstream vendor, not before.
+> 
+
+AlmaLinux
+
+> AlmaLinux OS is replacing CentOS as the downstream rebuild of RedHat Enterprise Linux.
+> 
+
+在 CentOS 宣布策略改变之后，社区中出现了两个替代品，分别是 Rocky Linux 和 AlmaLinux，它俩的目的都是一样的，作为RHEL 的下游来构建发布，且发布模式和发布周期采用 CentOS 原有模式。
+
+通过 AlmaLinux 官方提供的[发行版比较]([https://wiki.almalinux.org/Comparison.html](https://wiki.almalinux.org/Comparison.html))可以看到，AlmaLinux 和 Rocky Linux 两者对于用户来说没什么差别，如果一定要较真，那就是 AlmaLinux 大部分人员是来自 CloudLinux 公司，而 Rocky Linux 是 Greg 公司。
+
+### 国产替代品
+
+Anolis OS（阿里巴巴）
+
+> Anolis OS 8 是 OpenAnolis 社区推出的完全开源、中立、开放的发行版，它支持多计算架构，也面向云端场景优化，兼容 CentOS 软件生态。Anolis OS 8 旨在为广大开发者和运维人员提供稳定、高性能、安全、可靠、开源的操作系统服务。
+> 
+
+openEuler（华为）
+
+> openEuler是一款开源操作系统。当前openEuler内核源于Linux，支持鲲鹏及其它多种处理器，能够充分释放计算芯片的潜能，是由全球开源贡献者构建的高效、稳定、安全的开源操作系统，适用于数据库、大数据、云计算、人工智能等应用场景。同时，openEuler是一个面向全球的操作系统开源社区，通过社区合作，打造创新平台，构建支持多处理器架构、统一和开放的操作系统，推动软硬件应用生态繁荣发展。
+> 
+
+银河麒麟操作系统
+
+> 银河麒麟高级服务器操作系统V10是针对企业级关键业务，适应虚拟化、云计算、大数据、工业互联网时代对主机系统可靠性、安全性、性能、扩展性和实时性等需求，依据CMMI5级标准研制的提供内生本质安全、云原生支持、自主平台深入优化、 高性能、易管理的新一代自主服务器操作系统
+> 
+
+在国产化浪潮下，如果产品需要满足信创标准，那么操作系统的选择需要考虑国产替代品，目前（个人了解）符合信创标准的操作系统只有银河麒麟，openEuler 和 Anolis OS 目前还无法完全通过信创评审。在这一系列的替代品中， Rocky Linux, AlmaLinux, Anolis OS 所采用的发布模式和版本控制方式，都维持 CentOS原有模式，即 8.1, 8.2, 8.3 发布方式。openEuler 和银河麒麟操作系统虽然也采用 RPM 作为包管理器并且大部分组件版本与社区中的 CentOS 8 相同，但是不能完全等价，这里需要注意。
+
+### 比较选择
+
+如果要满足信创要求，那么只能选择银河麒麟作为替代品；如果从使用角度考虑，选择 Rocky Linux/AlmaLinux/Anolis OS 是更好的选择，有良好的社区支持，版本控制也与 CentOS 保持一致，心智负担更低；如果从国产硬件支持考虑，openEuler 是不错的选择。
+
+上述讨论的各个发行版，当前所采用的包管理器均为 RPM，所有软件均已 RPM 为粒度安装，在 RPM 之上，会存在 Yum/DNF 包含 RPM 依赖管理、冲突管理、升降级等功能的基于 RPM 的包管理器。其中 CentOS 7 系列所采用的基于RPM 的包管理器是 Yum，其他发行版当前维护版本所采用的基于 RPM 包管理器是 DNF(Dandified Yum)。
+
+## 升级转换
+
+在现有使用了 CentOS 7 的环境中，需要使用替代品将 CentOS 7 升级转换为目标发行版。
+
+如果应用环境都是单体应用，且可以有下线维护时间，进行数据备份然后完整的重装 OS 是一个稳妥的选择。如果应用环境是集群，且大部分应用都已经容器化了，那么依次进行单节点重装 OS 需要认真测试验证，不同的发行版版本的默认系统参数可能存在差异，哪怕上层基础平台保证了版本一致（如 Kubernetes,containerd,runc 的版本一致），也可能导致异常情况。
+
+如果选择不重装 OS，原地升级转换的话有两种方式：自动和手动。其中 Rocky Linux/AlmaLinux/Anolis OS 提供自动升级转换方式，openEuler 和银河麒麟可以采用手动转换方式。
+
+### 自动流程
+
+自动升级转换依赖于 [Leapp]([https://github.com/oamg/leapp](https://github.com/oamg/leapp))，Leapp 由 Redhat 员工开发的开源工具，Leapp 自身只是一个工作流框架，其中包含 Actor、Model、Message、Workflow 等概念，具体组件关系图如下，其中 workerflow 包含多个 phase，每个 phase 含有3个 stage：Before，Main，After，每个 stage 中包含多个 Actors，其中 Actors 之间没有严格的顺序，而是靠 Message 通信，Message 遵循 Model 的定义，如果 ActorA 依赖了 ActorB 产生的 MessageB，那么 ActorA 会在 ActorB 之后执行，没有 MessageB 依赖的 ActorC 会按照加载顺序执行，没有严格顺序依赖。
+
+目前 Leapp 主要使用场景是用于 RedHat 系发行版升级、不同发行版之间的升级切换等。
+
+在完整的升级流程中，使用统一定义的 Workflow，不同阶段（如预升级、升级、Firstboot）都是调用的同一个 Workflow，只是根据指定的不同的 Tag、参数来决定执行的 Phase 不同。
+
+- 预升级（preupgrade），进行环境信息的收集与检查，将检查结果以报告的形式提供给用户，这里进行的信息收集及检查项数量很大，包含了很多细节，除了包含一些基础组件的检查：CPU 架构、openssh 配置变更、PAM 模块变更、Driver 支持、NTP 变更等之外，还包含一些第三方应用的检查：SAP HANA、Memcached、宝塔等。
+- 升级（upgrade），升级的主要动作，与预检查使用的是相同 Workflow。
+    - configuration_phase
+    - FactsCollection
+    - Checks
+    - TargetTransactionFactsCollection，生成临时 minimal 环境，包含完整的目标版本的运行环境，用于使用目标版本的工具栈，比如 DNF、RPM 高级特性等，该环境还会用来生成下一步骤所需的 initramfs image
+    - TargetTransactionCheck，通过上述生成的 minimal 环境，使用其中的 dnf 工具，dnf rhel-upgrade check 来检查当前节点是否可以进行升级
+    - Reports
+    - Download，升级所需软件包下载步骤， dnf rhel-upgrade download
+    - InterimPreparation，生成下一步骤所需的 initramfs，在前述步骤中的minimal 环境中安装 dracut 相关工具包，[使用 dracut](https://github.com/oamg/leapp-repository/blob/master/repos/system_upgrade/common/actors/initramfs/upgradeinitramfsgenerator/files/generate-initram.sh) 生成 initramfs image，生成完成后调整系统启动项，将其置为第一个启动项
+- 临时环境升级（Interim Upgrade），真正执行 RPM 升级的步骤，与预检查使用的是相同的 Workflow
+    - 在系统reboot 后，系统引导到前置步骤生成的 initramfs 中，系统正常引导，dracut hook 中，增加了两个 hook，分别是 [85sys-upgrade-redhat](https://github.com/oamg/leapp-repository/tree/master/repos/system_upgrade/common/actors/commonleappdracutmodules/files/dracut/85sys-upgrade-redhat) 和 [90sys-upgrade](https://github.com/oamg/leapp-repository/tree/master/repos/system_upgrade/common/actors/commonleappdracutmodules/files/dracut/90sys-upgrade)， 其中 85 是真正执行节点软件包升级的动作(leapp upgrade –resume），90 配置 systemd upgrade unit （与重启相关）
+    - InitRamStart，移除启动项设置
+    - LateTests
+    - Preparation
+    - RPMUpgrade，dnf rhel-upgrade upgrade 升级 RPM
+    - Applications
+    - ThirdPartyApplications
+    - Finalization
+- 升级后动作（Firstboot），系统升级完成会，会自动 reboot 进入到目标版本系统中，此时会执行 Firstboot 阶段，在执行完成后，系统升级完成
+    - FirstBoot，执行清理动作，修改部分配置（NM）等
+
+完整升级流程共执行 4次 Workflow，其中采用临时环境执行升级动作的目的是：升级动作执行工具链是目标环境对应版本的工具链。
+
+### 自动实现方式
+
+项目地址列表：
+
+- [https://github.com/oamg/leapp](https://github.com/oamg/leapp)
+- [https://github.com/oamg/leapp-repository](https://github.com/oamg/leapp-repository)
+- [https://github.com/AlmaLinux/leapp-data](https://github.com/AlmaLinux/leapp-data)
+
+其中 leapp 是框架自身，leapp-repository 是 Leapp 的应用实现，也就是升级中所执行的 Actor 实现，leapp-data 是升级中所用到的基础配置信息。不同发行版会维护自己的 leapp-repository，比如Anolis OS 就维护了自己的 Git 仓库（在 Gitee 上），并针对性的增加了自己的检查项。在 Leapp 的架构中，因为最终的应用会以独立的插架形式安装，所以 Python 的 syspath 可能会发生变化，在查看代码的时候需要对应的修改一下路径地址。以 NTP 检查为例：
+
+NTP 检查的 Actor 实现：
+
+```go
+from leapp.actors import Actor
+from leapp.libraries.actor.checkntp import check_ntp
+from leapp.models import InstalledRedHatSignedRPM, NtpMigrationDecision, Report
+from leapp.tags import ChecksPhaseTag, IPUWorkflowTag
+
+class CheckNtp(Actor):
+    """
+    Check if ntp and/or ntpdate configuration needs to be migrated.
+    """
+
+    name = 'check_ntp'
+    consumes = (InstalledRedHatSignedRPM,)
+    produces = (Report, NtpMigrationDecision)
+    tags = (ChecksPhaseTag, IPUWorkflowTag)
+
+    def process(self):
+        installed_packages = set()
+
+        signed_rpms = self.consume(InstalledRedHatSignedRPM)
+        for rpm_pkgs in signed_rpms:
+            for pkg in rpm_pkgs.items:
+                installed_packages.add(pkg.name)
+
+        self.produce(check_ntp(installed_packages))
+```
+
+ Actor 中调用的 `check_ntp` 函数实现：
+
+```go
+# Check services from the ntp packages for migration
+def check_ntp(installed_packages):
+    service_data = [('ntpd', 'ntp', '/etc/ntp.conf'),
+                    ('ntpdate', 'ntpdate', '/etc/ntp/step-tickers'),
+                    ('ntp-wait', 'ntp-perl', None)]
+
+    migrate_services = []
+    migrate_configs = []
+    for service, package, main_config in service_data:
+        if package in installed_packages and \
+                check_service('{}.service'.format(service)) and \
+                (not main_config or is_file(main_config)):
+            migrate_services.append(service)
+            if main_config:
+                migrate_configs.append(service)
+
+    if migrate_configs:
+        reporting.create_report([
+            reporting.Title('{} configuration will be migrated'.format(' and '.join(migrate_configs))),
+            reporting.Summary('{} service(s) detected to be enabled and active'.format(', '.join(migrate_services))),
+            reporting.Severity(reporting.Severity.LOW),
+            reporting.Groups([reporting.Groups.SERVICES, reporting.Groups.TIME_MANAGEMENT]),
+        ] + related)
+
+        # Save configuration files that will be renamed in the upgrade
+        config_tgz64 = get_tgz64(files)
+    else:
+        api.current_logger().info('ntpd/ntpdate configuration will not be migrated')
+        migrate_services = []
+        config_tgz64 = ''
+
+    return NtpMigrationDecision(migrate_services=migrate_services, config_tgz64=config_tgz64)
+```
+
+### 手动流程
+
+对于 Linux 发行版来说，整体是由无数个 RPM 组成的，最终系统中看到的最小粒度就是 RPM，我们可以通过 RPM 的升级来完成整体的发行版的升级变更。但是对于部分 RPM 来说，RPM 之间的依赖阻碍了我们无法通过依次升级部分 RPM 的方式来完成完整的升级替换，其中一些关键组件，如 glibc、glib2、openssl 等等都是强依赖的，我们必须要找到一个方式来完成整体的升级。在 Yum 中，存在 `distribution-synchronization` 命令用来同步当前 OS 中所有的 RPM到目标 Repository 中的版本，但是用 Yum 可能会存在无法识别 rpmlib 的情况。RPM 作为基础包管理器，自身会存在部分高级特性以 rpmlib 的依赖形式提供，如果当前系统的包管理器无法识别 rpmlib，那么就会在同步过程中出现无法解决的依赖冲突。
+
+举例：目标 RPM 为 dnf-4.2.23-6.oe1.noarch.rpm ，升级提示依赖 rpmlib(RichDependencies) <= 4.12.0-1 冲突。这是因为 dnf-4.2.23 这个 RPM 在构建的阶段，所使用的 rpm 环境（可能是在 openEuler 20.03 或更高版本）比当前 OS 的 RPM 版本（CentOS 7）高，所以当前 rpm 无法满足这个依赖条件。
+
+我们可以使用 DNF 的 `distro-sync` 并配合部分的 RPM 修改，来完成手动升级转换。流程如下：
+
+- 将当前 CentOS7 升级到 CentOS 7.x 系列最新版本；
+- 停止节点上运行的所有应用
+- 配置 CentOS7 Repository ，安装 DNF（DNF依赖于 glib2 的执行版本，但是未在 spec 中声明，需要单独升级 glib2）
+- 移除 Yum 管理器，防止与 DNF 产生冲突
+- 配置目标发行版 Repository
+- 使用 `dnf distro-sync` 进行升级转换
+- 使用 `dnf remove` 移除无用 RPM
+- 重启主机生效
+
+
+2023/01/18 更新：最近基于这种方式实现的工具在内部进行了较为完整的验证，没有遇到什么坑。
+
+
+### 手动实现方式
+
+当前 CentOS7 包管理器是 Yum，在目标版本中包管理器是 DNF，在通过 Yum 安装 DNF ，在保证 Yum(DNF) Repository 配置是目标版本的前提下，使用 `dnf distro-sync` 命令来进行 RPM 的升级和同步，该命令会将当前 OS 已经安装的 RPM 与 Yum Repository 中的 RPM 进行匹配。 RPM 版本匹配存在以下几种情况：
+
+- 当前 RPM 版本低于目标 Repository 中包含的 RPM版本，则会升级；
+- 当前 RPM 版本高于目标 Repository 中包含的 RPM 版本，则会降级；
+- 当前 RPM 被目标 Repository 中包含的 RPM 所替代（指定 Obsolete），则会安装新 RPM，原有 RPM 被卸载（替代）；
+- 当前 RPM 版本与目标 Repository 中包含的 RPM 版本相同，但 dist 等其他 RPM 元数据不同，则会重新安装；
+- 当前 RPM 是被其他 RPM 依赖引入的，但是其他 RPM 已经被替代，则该 RPM 会被卸载；
+- 当前 RPM 在目标 Repository 中不包含，则不会进行处理；
+
+## 总结
+
+通过自动或者手动的方式，我们可以原地将 CentOS 7 升级转换为我们想要的目标发行版。社区的 Rocky Linux/AlmaLinux/Anolis OS 可以采用自动的方式完成 ，国产非等价替代的 openEuler 可以采用控制 Repository 的方式手动完成，减少发行版变更带来的工作量。
+
+### 参考链接
+
+- [https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/upgrading_from_rhel_7_to_rhel_8/index](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/upgrading_from_rhel_7_to_rhel_8/index)
+- [https://www.google.com/url?q=https://www.itzgeek.com/how-tos/linux/centos-how-tos/how-to-upgrade-centos-7-to-rocky-linux-8.html&sa=D&source=docs&ust=1661663555017475&usg=AOvVaw1uCCWoVaNbLfVkE6paJqA5](https://www.google.com/url?q=https://www.itzgeek.com/how-tos/linux/centos-how-tos/how-to-upgrade-centos-7-to-rocky-linux-8.html&sa=D&source=docs&ust=1661663555017475&usg=AOvVaw1uCCWoVaNbLfVkE6paJqA5)
+- [https://docs.fedoraproject.org/en-US/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch05s02.html](https://docs.fedoraproject.org/en-US/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch05s02.html)
+- [https://copyprogramming.com/howto/rpmlib-filedigests-dependency-error-on-suse](https://copyprogramming.com/howto/rpmlib-filedigests-dependency-error-on-suse)
+- [https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/VVVD6QQUARKZJ5RBV46IQBYMSKYPT4YO/](https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/VVVD6QQUARKZJ5RBV46IQBYMSKYPT4YO/)
+- [https://github.com/uyuni-project/uyuni/issues/4000](https://github.com/uyuni-project/uyuni/issues/4000)
