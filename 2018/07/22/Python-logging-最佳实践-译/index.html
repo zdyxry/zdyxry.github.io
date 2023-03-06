@@ -1,40 +1,40 @@
-<!doctype html><html lang=en><head><title>Python logging 最佳实践-译 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="Python Logging 最佳实践
-背景 Link to heading 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
-Good Logging practice in Python Link to heading 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
-Print 不是个好主意 Link to heading 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
+<!doctype html><html lang=zh-cn><head><title>Python logging 最佳实践-译 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="Python Logging 最佳实践
+背景 链接到标题 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
+Good Logging practice in Python 链接到标题 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
+Print 不是个好主意 链接到标题 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
 print 'Start reading database' records = model.read_recrods() print '# records', records print 'Updating record ...' model.update_records(records) print 'done' 当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是 这仍不是记录日志的最佳实践。
-使用 Python 标准库 Logging Link to heading 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Python logging 最佳实践-译"><meta name=twitter:description content="Python Logging 最佳实践
-背景 Link to heading 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
-Good Logging practice in Python Link to heading 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
-Print 不是个好主意 Link to heading 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
+使用 Python 标准库 Logging 链接到标题 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Python logging 最佳实践-译"><meta name=twitter:description content="Python Logging 最佳实践
+背景 链接到标题 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
+Good Logging practice in Python 链接到标题 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
+Print 不是个好主意 链接到标题 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
 print 'Start reading database' records = model.read_recrods() print '# records', records print 'Updating record ...' model.update_records(records) print 'done' 当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是 这仍不是记录日志的最佳实践。
-使用 Python 标准库 Logging Link to heading 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta property="og:title" content="Python logging 最佳实践-译"><meta property="og:description" content="Python Logging 最佳实践
-背景 Link to heading 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
-Good Logging practice in Python Link to heading 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
-Print 不是个好主意 Link to heading 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
+使用 Python 标准库 Logging 链接到标题 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta property="og:title" content="Python logging 最佳实践-译"><meta property="og:description" content="Python Logging 最佳实践
+背景 链接到标题 最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/）， 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~
+Good Logging practice in Python 链接到标题 在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远 不知道在不同的电脑环境中会发生什么奇怪的问题.
+Print 不是个好主意 链接到标题 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入 一些 print ，在开发结束时删除这些 print。向下面这样：
 print 'Start reading database' records = model.read_recrods() print '# records', records print 'Updating record ...' model.update_records(records) print 'done' 当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是 这仍不是记录日志的最佳实践。
-使用 Python 标准库 Logging Link to heading 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-07-22T09:50:47+00:00"><meta property="article:modified_time" content="2018-07-22T09:50:47+00:00"><link rel=canonical href=https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.01bd429dda63a16d76996eaf0b8da061429b76e714515cb1b246aac7fe7f4b2a.css integrity="sha256-Ab1CndpjoW12mW6vC42gYUKbducUUVyxskaqx/5/Syo=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
+使用 Python 标准库 Logging 链接到标题 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样："><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-07-22T09:50:47+00:00"><meta property="article:modified_time" content="2018-07-22T09:50:47+00:00"><link rel=canonical href=https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.a1f1da6f0baa626de1763fc8157fdea088797379b7bbeb845799f2fffd5d0c82.css integrity="sha256-ofHabwuqYm3hdj/IFX/eoIh5c3m3u+uEV5ny//1dDII=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.593028e7f7ac55c003b79c230d1cd411bb4ca53b31556c3abb7f027170e646e9.css integrity="sha256-WTAo5/esVcADt5wjDRzUEbtMpTsxVWw6u38CcXDmRuk=" crossorigin=anonymous media=screen><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5><meta name=generator content="Hugo 0.101.0"></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Yiran's Blog</a>
 <input type=checkbox id=menu-toggle>
 <label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/>Python logging 最佳实践-译</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
 <time datetime=2018-07-22T09:50:47Z>July 22, 2018</time></span>
 <span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
-5-minute read</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
+阅读时间：5 分钟</span></div><div class=tags><i class="fa fa-tag" aria-hidden=true></i>
 <span class=tag><a href=/tags/Python/>Python</a></span>
 <span class=separator>•</span>
 <span class=tag><a href=/tags/logging/>logging</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#good-logging-practice-in-python>Good Logging practice in Python</a></li><li><a href=#print-不是个好主意>Print 不是个好主意</a></li><li><a href=#使用-python-标准库-logging>使用 Python 标准库 Logging</a></li><li><a href=#设置正确的日志级别>设置正确的日志级别</a></li><li><a href=#使用-__name__-作为-logger-名称>使用 <strong>name</strong> 作为 logger 名称</a></li><li><a href=#捕获异常并使用-traceback-记录>捕获异常并使用 traceback 记录</a></li><li><a href=#除非-disable_existing_loggers--false否则不要在模块级别获取-logger>除非 disable_existing_loggers == False，否则不要在模块级别获取 logger</a></li><li><a href=#使用-json-和-yaml-配置-logging>使用 JSON 和 YAML 配置 logging</a></li><li><a href=#配置文件轮询>配置文件轮询</a></li><li><a href=#配置日志中心>配置日志中心</a></li><li><a href=#结论>结论</a></li></ul></nav><div class=post-content><p>Python Logging 最佳实践</p><h2 id=背景>背景
-<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有
 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/），
 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~</p><h2 id=good-logging-practice-in-python>Good Logging practice in Python
-<a class=heading-link href=#good-logging-practice-in-python><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。
+<a class=heading-link href=#good-logging-practice-in-python><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。
 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查
 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现
 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你
 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远
 不知道在不同的电脑环境中会发生什么奇怪的问题.</p><h2 id=print-不是个好主意>Print 不是个好主意
-<a class=heading-link href=#print-%e4%b8%8d%e6%98%af%e4%b8%aa%e5%a5%bd%e4%b8%bb%e6%84%8f><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
+<a class=heading-link href=#print-%e4%b8%8d%e6%98%af%e4%b8%aa%e5%a5%bd%e4%b8%bb%e6%84%8f><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
 一些 print ，在开发结束时删除这些 print。向下面这样：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span>print <span style=font-style:italic>&#39;Start reading database&#39;</span>
 </span></span><span style=display:flex><span>records = model.read_recrods()
 </span></span><span style=display:flex><span>print <span style=font-style:italic>&#39;# records&#39;</span>, records
@@ -46,8 +46,8 @@ print 'Start reading database' records = model.read_recrods() print '# records',
 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。
 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是
 这仍不是记录日志的最佳实践。</p><h2 id=使用-python-标准库-logging>使用 Python 标准库 Logging
-<a class=heading-link href=#%e4%bd%bf%e7%94%a8-python-%e6%a0%87%e5%87%86%e5%ba%93-logging><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
+<a class=heading-link href=#%e4%bd%bf%e7%94%a8-python-%e6%a0%87%e5%87%86%e5%ba%93-logging><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
 </span></span><span style=display:flex><span>logging.basicConfig(level=logging.INFO)
 </span></span><span style=display:flex><span>logger = logging.getLogger(__name__)
@@ -88,8 +88,8 @@ print 'Start reading database' records = model.read_recrods() print '# records',
 </span></span><span style=display:flex><span>logger.info(<span style=font-style:italic>&#39;Hello baby&#39;</span>)
 </span></span></code></pre></div><p>有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。
 你也可以自定义日志处理方式，更多信息可以参考： Basic Tutorial, Advanced Tutorial and Logging Cookbook.</p><h2 id=设置正确的日志级别>设置正确的日志级别
-<a class=heading-link href=#%e8%ae%be%e7%bd%ae%e6%ad%a3%e7%a1%ae%e7%9a%84%e6%97%a5%e5%bf%97%e7%ba%a7%e5%88%ab><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>由于 logging 的灵活性，你可以在任何地方配置适当的日志级别去记录日志，可以再之后配置他们。
+<a class=heading-link href=#%e8%ae%be%e7%bd%ae%e6%ad%a3%e7%a1%ae%e7%9a%84%e6%97%a5%e5%bf%97%e7%ba%a7%e5%88%ab><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>由于 logging 的灵活性，你可以在任何地方配置适当的日志级别去记录日志，可以再之后配置他们。
 你可能会问，什么是正确的日志级别，这里我将分享我的经验。</p><p>在大多数场景下，在日志中不希望去看到大量的详细信息。因此，debug 级别只是在你
 调试过程中开启。我只使用调试级别来获取详细的调试信息，特别是当数据量很大或者频率
 很高的时候，比如在一个 for 循环中记录某些内部的状态变化。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>def</span> complex_algorithm(items):
@@ -120,14 +120,14 @@ print 'Start reading database' records = model.read_recrods() print '# records',
 </span></span><span style=display:flex><span>    <span style=font-weight:700>return</span> user
 </span></span></code></pre></div><p>我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,
 磁盘空间不足.</p><h2 id=使用-__name__-作为-logger-名称>使用 <strong>name</strong> 作为 logger 名称
-<a class=heading-link href=#%e4%bd%bf%e7%94%a8-__name__-%e4%bd%9c%e4%b8%ba-logger-%e5%90%8d%e7%a7%b0><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>你不需要讲 logger 名称设置为 <strong>name</strong> ，但是如果这样做，会带来一些好处。
+<a class=heading-link href=#%e4%bd%bf%e7%94%a8-__name__-%e4%bd%9c%e4%b8%ba-logger-%e5%90%8d%e7%a7%b0><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>你不需要讲 logger 名称设置为 <strong>name</strong> ，但是如果这样做，会带来一些好处。
 <strong>name</strong> 变量在 Python 中是当前模块名称。举个例子，你可以调用
 logger.getLogger(<strong>name</strong>) 在模块 &ldquo;foo.bar.my_module"中，这相当于
 logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配置为 &ldquo;foo&rdquo;，
 这样所有在 foo 包中的模块都共享同样的配置。你可以在阅读日志的时候了解模块信息。</p><h2 id=捕获异常并使用-traceback-记录>捕获异常并使用 traceback 记录
-<a class=heading-link href=#%e6%8d%95%e8%8e%b7%e5%bc%82%e5%b8%b8%e5%b9%b6%e4%bd%bf%e7%94%a8-traceback-%e8%ae%b0%e5%bd%95><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
+<a class=heading-link href=#%e6%8d%95%e8%8e%b7%e5%bc%82%e5%b8%b8%e5%b9%b6%e4%bd%bf%e7%94%a8-traceback-%e8%ae%b0%e5%bd%95><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
 异常并与 traceback 一起记录他们。像这个例子：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>try</span>:
 </span></span><span style=display:flex><span>    open(<span style=font-style:italic>&#39;/path/to/does/not/exist&#39;</span>, <span style=font-style:italic>&#39;rb&#39;</span>)
 </span></span><span style=display:flex><span><span style=font-weight:700>except</span> (<span style=font-weight:700>SystemExit</span>, <span style=font-weight:700>KeyboardInterrupt</span>):
@@ -141,8 +141,8 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 </span></span><span style=display:flex><span>    open(<span style=font-style:italic>&#39;/path/to/does/not/exist&#39;</span>, <span style=font-style:italic>&#39;rb&#39;</span>)
 </span></span><span style=display:flex><span><span style=font-weight:700>IOError</span>: [Errno 2] No such file <span style=font-weight:700>or</span> directory: <span style=font-style:italic>&#39;/path/to/does/not/exist&#39;</span>
 </span></span></code></pre></div><p>你也可以调用 logger.Exception(msg, *args)，这相当于 logger.error(msg,exc_info=True,*args)。</p><h2 id=除非-disable_existing_loggers--false否则不要在模块级别获取-logger>除非 disable_existing_loggers == False，否则不要在模块级别获取 logger
-<a class=heading-link href=#%e9%99%a4%e9%9d%9e-disable_existing_loggers--false%e5%90%a6%e5%88%99%e4%b8%8d%e8%a6%81%e5%9c%a8%e6%a8%a1%e5%9d%97%e7%ba%a7%e5%88%ab%e8%8e%b7%e5%8f%96-logger><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>你可以看到很多的例子（包括这篇文章）在模块级别获取 logger。这看上去是无害的，
+<a class=heading-link href=#%e9%99%a4%e9%9d%9e-disable_existing_loggers--false%e5%90%a6%e5%88%99%e4%b8%8d%e8%a6%81%e5%9c%a8%e6%a8%a1%e5%9d%97%e7%ba%a7%e5%88%ab%e8%8e%b7%e5%8f%96-logger><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>你可以看到很多的例子（包括这篇文章）在模块级别获取 logger。这看上去是无害的，
 但是实际上，这是一个陷阱 - 在你从一个文件加载配置前，logging 模块会遵守所有
 已经创建的 logger，如果你在模块级别获取 logger，像这种：</p><hr><p>my_module.py</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-Python data-lang=Python><span style=display:flex><span><span style=font-weight:700>import</span> <span style=font-weight:700>logging</span>
 </span></span><span style=display:flex><span>
@@ -236,8 +236,8 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>logger.info(<span style=font-style:italic>&#39;It works!&#39;</span>)
 </span></span></code></pre></div><h2 id=使用-json-和-yaml-配置-logging>使用 JSON 和 YAML 配置 logging
-<a class=heading-link href=#%e4%bd%bf%e7%94%a8-json-%e5%92%8c-yaml-%e9%85%8d%e7%bd%ae-logging><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>你可以再 Python 代码中配置 logging 参数，但是这不够灵活。更好的方式
+<a class=heading-link href=#%e4%bd%bf%e7%94%a8-json-%e5%92%8c-yaml-%e9%85%8d%e7%bd%ae-logging><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>你可以再 Python 代码中配置 logging 参数，但是这不够灵活。更好的方式
 是使用 logging 配置文件。在 Python2.7 之后，你可以加载 logging 配置
 从一个字典，这意味着你可以从 JSON 或 YAML 文件中加载 logging 配置。
 虽然你可以通过 old.ini 方式加载 logging 配置，但是这对于可读性和可编辑
@@ -382,14 +382,14 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 </span></span><span style=display:flex><span>        logging.basicConfig(level=default_level)
 </span></span></code></pre></div><p>现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者
 logging.yaml。你也可以设置 LOG_CFG 环境变量去从指定的路径下加载配置文件。比如：</p><p><code>LOG_CFG=my_logging.json python my_server.py</code></p><p>或者</p><p><code>LOG_CFG=my_logging.yaml python my_server.py</code></p><h2 id=配置文件轮询>配置文件轮询
-<a class=heading-link href=#%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6%e8%bd%ae%e8%af%a2><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>如果你使用 FileHandler 去写日志，随着时间的增加日志文件大小也会增长，某一天，会撑爆你的磁盘。
+<a class=heading-link href=#%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6%e8%bd%ae%e8%af%a2><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>如果你使用 FileHandler 去写日志，随着时间的增加日志文件大小也会增长，某一天，会撑爆你的磁盘。
 为了避免这种情况，你应该在生产环境中使用 RotatingFileHandler 替换 FileHandler 。</p><h2 id=配置日志中心>配置日志中心
-<a class=heading-link href=#%e9%85%8d%e7%bd%ae%e6%97%a5%e5%bf%97%e4%b8%ad%e5%bf%83><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>当你有多台服务器和不同的日志文件时，你可以配置一个日志中心去手机所有重要的文件。这样你可以
+<a class=heading-link href=#%e9%85%8d%e7%bd%ae%e6%97%a5%e5%bf%97%e4%b8%ad%e5%bf%83><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>当你有多台服务器和不同的日志文件时，你可以配置一个日志中心去手机所有重要的文件。这样你可以
 更方便的监控和通知你的系统发生了哪些报错。</p><h2 id=结论>结论
-<a class=heading-link href=#%e7%bb%93%e8%ae%ba><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
-<span class=sr-only>Link to heading</span></a></h2><p>我很开心 Python logging 库设置的很好，最好的是它是标准库中的一员，你无须选择。
+<a class=heading-link href=#%e7%bb%93%e8%ae%ba><i class="fa fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>我很开心 Python logging 库设置的很好，最好的是它是标准库中的一员，你无须选择。
 它非常灵活，你可以编辑自己的处理器和过滤器。还有第三方程序比如 pyzmq 提供的 ZeroMQ 日志处理，
 它允许你通过 zmq socket 发送日志信息。
 如果你不知道如何正确的使用 logging，那么本文对你会有所帮助。通过良好的日志记录练习，
@@ -398,6 +398,6 @@ logging.yaml。你也可以设置 LOG_CFG 环境变量去从指定的路径下�
 2023
 Yiran Zhou
 ·
-Powered by <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+技术支持 <a href=https://gohugo.io/>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script>
 <script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V",{anonymize_ip:!1})}</script></body></html>
