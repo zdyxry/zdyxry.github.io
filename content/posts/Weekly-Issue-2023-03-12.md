@@ -52,6 +52,7 @@ description: 疲惫的一周。
 [The SSD Edition: 2022 Drive Stats Review](https://www.backblaze.com/blog/ssd-edition-2022-drive-stats-review/)
 
 > The Dell SSD (model: DELLBOSS VD) has zero failures for 2022 and has over 100,000 drive days for the year. The resulting AFR is excellent, but this is an M.2 SSD mounted on a PCIe card (half-length and half-height form factor) meant for server deployments, and as such it may not be generally available. By the way, BOSS stands for Boot Optimized Storage Solution.
+
 我司一体机的型号之一是 [[Dell]] ，因为一些历史原因，所以[[DELLBOSS VD]] 只是用来做引导分区，平时完全没有读写，按照这个故障率，我们真的太奢侈了。
 
 ---
