@@ -15,7 +15,13 @@ description: 疲惫的一周。
 
 [[MacOS]] [[SIP]] 严重影响性能。
 
-> **简而言之 `SIP` 会在我们跑任软件之前，把你的执行文件做一个校验和，然后通过网络请求发送到让人敬畏的苹果服务器，就是为了检测是否是恶意软件！**[谈谈我对 ChatGPT 应用的 prompt 的看法 |](https://reorx.com/makers-daily/004-prompts-and-parameters-transparancy/) 
+> **简而言之 `SIP` 会在我们跑任软件之前，把你的执行文件做一个校验和，然后通过网络请求发送到让人敬畏的苹果服务器，就是为了检测是否是恶意软件！**
+
+---
+
+[谈谈我对 ChatGPT 应用的 prompt 的看法 |](https://reorx.com/makers-daily/004-prompts-and-parameters-transparancy/) 
+
+提到了一些 [[Prompt]] 小技巧。昨天内部同事在 [[slack]] 接入了 [[ChatGPT]] ，在没有合适的 [[Prompt]] 情况下，几乎是不可用的。
 
 ---
 
