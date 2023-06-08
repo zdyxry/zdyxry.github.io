@@ -11,3 +11,5 @@ draft: false
 [格物致知](https://liqiang.io/)
 
 [玻璃齿轮 - SlassGear](https://blog.winkidney.com/)
+
+[CosPotato's Blog](https://blog.0x233.cn/)
