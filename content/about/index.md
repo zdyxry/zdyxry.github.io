@@ -5,7 +5,35 @@ date: 2018-05-29 20:50:29
 
 ## 关于我
 
-Linux & Tmux & Vim 忠实用户。
+我是依然，日常使用 ID 是 `zdyxry` ，如果在其他地方遇到同名 ID 大概率是我。平时就是看书看剧，或者极少数玩玩游戏。
+喜欢逛书店，如果看到书店，大概率会买书支持一下，书店还能运营下去不容易，比较喜欢传统书店，比如新华书店、上海书城，像是徐家汇书院、钟书阁这种是断然不喜欢的。可能也不只是书店，逛街逛超市逛商场也是喜欢的，平时都是一个人待着，周末需要感受一下人气。
+
+重度 RSS 用户，日常信息流是通过 RSS/Twitter 获取信息，初筛后通过 Notion Web Clipper 自动保存到 Notion 中（防止 404），定期阅读 Notion 中收藏的文章，整理到 Logseq 笔记中，最后发送到 Blog。
+
+
+主要使用的操作系统是：
+- Garuda Linux
+- MacOS
+- Windows
+- CentOS/openEuler
+
+工作主要使用的软件：
+- Neovim
+- tmux
+- Ansible
+- Packer
+- Terraform
+- govc
+- VSCode
+
+日常主要使用的软件：
+- Logseq
+- Miniflux
+- 滴答清单
+- 随手记
+- Notion
+- Onedrive
+
 
 2015 - 2016 某公有云分布式存储运维（背锅）。
 
