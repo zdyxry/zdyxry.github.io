@@ -1,0 +1,123 @@
+---
+title: Weekly Issue 2023-06-25
+date: 2023-06-25
+tags:
+- Weekly
+description: 假期综合征。
+---
+
+
+## 文章
+
+### 技术
+
+[MTU 和 UDP (以及基于 UDP 的协议) | 卡瓦邦噶！](https://www.kawabangga.com/posts/5160)
+
+> 如果你要基于 UDP 实现一个协议，就要自己处理超过 [[MTU]] 的问题。  
+> 最后是 QUIC，这个最具有代表性。它的处理方法是：  
+QUIC 的实现应该（RFC 用的是 SHOULD）使用 PMTUD，并且应该记录每一个 source ip + dest ip 的 MTU  
+但是如果没有 PMTUD 的话，也可以认为 MTU=1280，协议设置 max_udp_payload_size = 1200 bytes，如此，按照上面的算法的话，IPv4 的 header 最多可以有 52 bytes，IPv6 的 header 可以有 32 bytes，正常情况下也够用  
+如果链路上连 1280 的 PDU 都支持不了，QUIC 就会这个 UDP 无法使用（和端口连不上等同），然后会 fallback 到 TCP  
+
+---
+
+
+[The case of the supersized shebang [LWN.net]](https://lwn.net/Articles/779997/)
+
+`shebang` 截断方式的改动导致`NixOS` 无法正常工作。 [[Perl]] 解释器会重新读取 `shebang` 。
+
+虽然 [[kernel]] 没有保证过这个“功能” 是可用的，但是历史原因一直依赖它，并且之前是可以工作的，现在不可以工作，所以这作为一个功能回退，最终被 Linus revert 了。
+
+> It doesn't matter if it "corrupted" things by truncating it. All that matters is "it used to work, now it doesn't"  
+Yes, maybe it never *should* have worked. And yes, it's sad that people apparently had cases that depended on this odd behavior, but there we are.  
+
+---
+
+[The Future of Observability. How is observability changing in recent… | by Laduram Vishnoi | Medium](https://laduram.medium.com/the-future-of-observability-c33cd7ff644a)
+
+Gartner 预测 2025年 95% 的应用采用云原生方式运行。
+
+可能的需求：
+- 统一的入口，在同一是坚定可以看到所有的 Metrics,Logs,Traces。
+- 明确可观测数据域业务的联系。
+- 不存在 vendor-lock。
+- 基于已有数据的预测。
+- 基于已有数据的安全分析。
+- 降低成本。
+- 因果分析。
+
+---
+
+[It’s not always DNS — unless it is | by Tanat Paul Lokejaroenlarb | Adevinta Tech Blog | Jun, 2023 | Medium](https://medium.com/adevinta-tech-blog/its-not-always-dns-unless-it-is-16858df17d3f)
+
+[[kubernetes]] [[DNS]] 问题调查。一开始汇报的问题是 HTTP 5xx，调查的方向是 Ingress Controller，尝试调整 Ingress Controller 实例数量并预留更多的计算资源。然后发现 fluent-bit 会不定时的出现宕机情况，以为 fluent-bit 宕机是因为节点的某些异常（经验得出），没有在意。随着影响范围越来越大，开始将所有可能与问题相关的 metrics 汇总观察，当时 metrics 数量很多，没有直接的头绪。开始反向调查，调查业务应用类型，可能进行的业务操作，发现是 DNS 的问题。故障集群的 DNS SLI 只有 93.8%。
+- 首先发现 DNS 并发请求数超出了限制，于是从默认的 150 调整为 1500。
+- 观察发现还有下降趋势，发现内部 DNS 请求没有被缓存，于是调整 DNS header。
+- 观察发现问题还没有解决，这次是经典的 NDots 问题，于是主动的返回 NXDOMAIN ，并在一些关键服务上使用 FQDN。
+
+---
+
+[k8s 生态周报| kubernetes 公布两个全版本受影响的漏洞 | MoeLove](https://moelove.info/2023/06/20/k8s-%E7%94%9F%E6%80%81%E5%91%A8%E6%8A%A5-kubernetes-%E5%85%AC%E5%B8%83%E4%B8%A4%E4%B8%AA%E5%85%A8%E7%89%88%E6%9C%AC%E5%8F%97%E5%BD%B1%E5%93%8D%E7%9A%84%E6%BC%8F%E6%B4%9E/)
+
+> 在 Linux 4.19 内核中对于 cgroups v2 还添加了一个 cgroup-aware OOM killer 的支持。这个功能允许 OOM killer 杀死整个 cgroup，而不仅仅是杀死内存使用最多的进程。  
+
+[[kernel]] [[cgroup]] v2 文档中关于这个功能的介绍：
+
+> memory.oom.group  
+A read-write single value file which exists on non-root cgroups. The default value is "0".  
+Determines whether the cgroup should be treated as an indivisible workload by the OOM killer. If set, all tasks belonging to the cgroup or to its descendants (if the memory cgroup is not a leaf cgroup) are killed together or not at all. This can be used to avoid partial kills to guarantee workload integrity.  
+Tasks with the OOM protection (oom_score_adj set to -1000) are treated as an exception and are never killed.  
+If the OOM killer is invoked in a cgroup, it's not going to kill any tasks outside of this cgroup, regardless memory.oom.group values of ancestor cgroups.  
+
+--- 
+[Golang 程序 crash 的时候自动 core dump](https://www.kawabangga.com/posts/5175)
+
+配置 `GOTRACEBACK` 来生成 coredump 文件，需要同步配置 `kernel.core_pattern` ，通常可以在 `kernel.core_pattern` 中配合压缩工具进行压缩。
+
+---
+
+[Furthering the evolution of CentOS Stream](https://www.redhat.com/en/blog/furthering-evolution-centos-stream)
+
+[[RedHat]] 不再公开自己的 [[RHEL]] 源码，仅对自己的付费用户提供。这里是否符合 [[GPL]] 存疑（大概率是符合的），但是对于 RockyLinux/AlmaLinux 是一个问题，现在的上下游关系是：Fedora -> CentOS Stream -> RHEL -> RockyLinux/AlmaLinux ，现在 RHEL 不提供源码，那么 RockyLinux/AlmaLinux 无法稳定的得到所有 在 RHEL 中修复（RedHat 自己打 Patch） 但 CentOS Stream 没有的修复，大家是否会彻底的抛弃 RedHat 生态(RPM) 生态？
+
+马后炮的想， openEuler 在最初就完全抛弃了与 RHEL 兼容的想法，是一个不错的选择。
+
+相关讨论：
+
+- 	[Et Tu, Red Hat? | Hackaday](https://hackaday.com/2023/06/23/et-tu-red-hat/)
+-	https://news.ycombinator.com/item?id=36436786
+-	https://news.ycombinator.com/item?id=36420259
+
+---
+
+[NVD damage continued | daniel.haxx.se](https://daniel.haxx.se/blog/2023/06/12/nvd-damage-continued/)
+
+[[curl]] 作者对于[[NVD]] 评分的不满，根本原因是大家对问题的理解不同，可能一个低级别的问题在 NVD ”看来“ 是高级别的，这可能会影响某些软件的声誉。
+
+---
+
+[We have left the cloud](https://world.hey.com/dhh/we-have-left-the-cloud-251760fb)
+
+[[37Signals]] 经过6个月的时间，将自己的所有应用从公有云迁出，预计每年可以节省 150w 美元。
+
+---
+
+[Serverless for all your needs: Cloud Run jobs and second-generation execution environment now GA](https://cloud.google.com/blog/products/serverless/cloud-run-jobs-and-second-generation-execution-environment-ga/)
+
+[[Google]] [[Cloud Run]] 第二代执行环境从 [[gVisor]] 切换到了 [[MicroVM]] 。家乐福 CIO 说启动时间快了 4倍。
+
+### 生活
+
+[真是令人忧伤的梅雨季啊｜hayami's blog](https://mp.weixin.qq.com/s?__biz=MzIyNzA5ODg5NA==&mid=2647830661&idx=1&sn=155ef2fb4b54a14f89ae80310f140203&chksm=f04078e4c737f1f2a162a1b1e02f1c0f983cdeccc63e88d52b5dd1b7ed4bda848229c3305844&mpshare=1&srcid=0620zBHz2NbAOEvkRd49otX1&sharer_sharetime=1687222277599&sharer_shareid=a14abe0e7151e33344c3c2480267b34c&from=singlemessage&scene=1&subscene=10000&sessionid=1687234246&clicktime=1687237519&enterid=1687237519&ascene=1&fasttmpl_type=0&fasttmpl_fullversion=6731130-zh_CN-zip&fasttmpl_flag=0&realreporttime=1687237519650&devicetype=android-33&version=28002553&nettype=3gnet&abtest_cookie=AAACAA%3D%3D&lang=zh_CN&countrycode=CN&exportkey=n_ChQIAhIQ65sPAGWyc%2FxL9BNYnTn65RLlAQIE97dBBAEAAAAAAMmmBNMXhv4AAAAOpnltbLcz9gKNyK89dVj0OjWRkFhEC8Wv3ZV9ckRCIsMH6RKlu0Hjo6IDdrCxPytQ2jufAluvjfXRJhAajSbl6Zd9ujPYK9GWQzJlubYA9NO8XRMBZAm6%2Fyu7ypny5UqZAscV3Xwz7QgT81kkAjRdBmnI2uTKAaGtBK6CoGggLpONuoh%2FYadi7hQYCgG9gwu8HeVx0GNq1azgXuFgi8FpZC7nLGnw%2BMssRQKmFNeKicZoP%2Foj6J6XwtR9h4WzjFx1Zpd7OS9Drfvj%2B249ufA%3D&pass_ticket=BHG5enPuemZit2ud9cUDZpBMA%2FOTN9ymZiH6WkjzQMiNa169mJiaQ4ML3PiAnnPk&wx_header=3)
+
+> “我已经快三十岁了，我没有什么时间再去认识新的朋友，去了解一个人过去经历的人生，然后再去找一个恰当的机会和ta一起经历一小段新的人生。不再有人会因为能从我身上得到什么利益或者社交价值而接近我，更没人会对我心中的书影音top 10感兴趣。不再有人在蹦迪到天亮后买糍饭团给我，我们捧着饭团坐在床上，脚钻进同一条小毯子。不再有什么机会能让我一不小心打开心扉，从分享购物车开始，到骂男人结束，我们交换所有的搞笑约会故事。曾经那么亲密的朋友们，已经几乎完完全全从我的生活中退场了，像MH370一样，随着一场有去无返的远行而消失了。我没有机会找回我失去的一切。不可能回去的，每天看看新闻就知道了，回去将意味着牺牲更多。  
+> **自由是最宝贵的幸福，但它就像太阳一样刺眼而遥远**，无法企及甚至无法谈论它，人们通常以分手、辞职、搬到上海或者微信静音等方式来获取一些近处的可见的自由，然后就算了。我对这样的结果有着巨大的明确的恨，也有着巨大的模糊的伤感。夏天充满了四个季节，于是时间也变得虚无，仿佛不再流逝。过去被隔绝在外，未来也进不来，今年与明年、去年并没有什么不同。当我在街上漫无目的地走，时常会进入一种恍惚的境界：我为什么会身处此地？这种困惑的感觉令人十分烦躁、愤闷。在我的记忆里，如此美妙的夏天夜晚，我的四周应该被阵阵谈笑声、电子烟的欢快的香甜气味和催促人心的隐隐的低音音乐所环绕。可我的记忆正在逐渐淡去，我望着一个橱窗打转儿，我对未来有许多许多疑问，却不知道怎么开口。”  
+
+听上去可能有些功利，但是关系是需要维护的，无论是谁主动去发起聊天，都是需要持久的联系才可以良好的持续下去。
+
+---
+
+
+## 书影
+
+《海妖的呼唤》，韩国综艺，全员女性，不可避免会引起热点，看了一集很好看，感觉这个综艺需要配合弹幕比较好。
