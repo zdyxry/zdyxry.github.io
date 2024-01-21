@@ -1,0 +1,171 @@
+---
+title: Weekly Issue 2024-01-21
+date: 2024-01-21
+tags:
+- Weekly
+description:  
+---
+
+
+## 文章
+
+### 技术
+
+[#!/usr/bin/env docker run · GitHub](https://gist.github.com/adtac/595b5823ef73b329167b815757bbce9f)
+
+作者利用 [[shebang]] 机制，在 Dockerfile 中直接通过 `env` 来查找 Docker 命令，可以达到 `./Dockerfile` 直接构建并运行容器的效率。
+个人觉得这是邪教。
+
+---
+
+[2023 开发者生态系统现状信息图 | JetBrains: Developer Tools for Professionals and Teams](https://www.jetbrains.com/zh-cn/lp/devecosystem-2023/)
+
+[[JavaScript]],[[python]],[[HTML]] 被使用次数最多，[[Rust]] 仍是最受欢迎的，并且有 1/6 的 Go 开发者想要采用 Rust。
+
+性别分布中，男性 91%，女性 5%。77% 的开发者已经采用 ChatGPT，46 的开发者采用了 Github Copilot。
+
+74% 的人经历过倦怠，针对倦怠的改善方式中：看到自己的工作成果发挥作用、涨薪、工作过程中的乐趣、来自同事的感谢，是最有效的。
+
+每 10 位开发者中有不到 3 位 QA 的占比达到了73%。
+
+---
+
+[How fast is your shell? - by Thorsten Ball - Register Spill](https://registerspill.thorstenball.com/p/how-fast-is-your-shell)
+
+[[shell]] 的启动速度是非常重要的，我是一个重度的 tmux 用户，每天会打开无数次的 shell，前阵子还吐槽自己的 zsh 速度很慢，修复了一圈之后现在在 80ms 左右，可以接受的范围。
+
+---
+
+[Grafana](https://all.devstats.cncf.io/d/1/activity-repository-groups?orgId=1&var-period=d7&var-repogroups=All)
+
+[[CNCF]] Dashboard，可以直接看到项目活跃度排名。
+
+---
+
+[Best Practices to Prevent Alert Fatigue | Datadog](https://www.datadoghq.com/blog/best-practices-to-prevent-alert-fatigue/)
+
+>为警报设置评估窗口定义了监控工具评估相关数据并将其与您配置的警报条件进行比较的频率。一种常见的误解是，增加评估窗口可能会导致响应速度变慢或错过警报，但事实并非如此。警报不断评估基础数据，因此延长评估窗口将确保系统在决定是否存在异常之前考虑更多数据点。换句话说，您可以增加评估窗口，这样您只有在行为持续发生（而不是暂时发生）时才会收到警报。
+
+>为警报设置较短的评估窗口似乎是快速捕获异常的主动方法。然而，这可能会增加误报的发生率。例如，考虑一个数据库，由于无害的后台任务，查询时间偶尔会出现短暂的激增。如果评估窗口太短，即使这些峰值也可能触发警报，扰乱团队的工作流程。
+
+---
+
+[PLAYING WITH FIRE – HOW WE EXECUTED A CRITICAL SUPPLY CHAIN ATTACK ON PYTORCH](https://johnstawinski.com/2024/01/11/playing-with-fire-how-we-executed-a-critical-supply-chain-attack-on-pytorch/)
+
+精彩，作者利用 Self-hosted Github Actions Runner 来获取到 GITHUB_TOKEN，进而获取到 AWS Secrets 和 PAT。
+
+如何避免，最简单的方式是将”Require approval for first-time contributors“，改为”Require approval for all outside collaborators“。
+
+---
+
+
+[Python Packaging, One Year Later: A Look Back at 2023 in Python Packaging | Chris Warrick](https://chriswarrick.com/blog/2024/01/15/python-packaging-one-year-later/#)
+
+2024 年了，Python 包管理器有变得更好么？没有。
+>统一已经不重要了，这文章里有个观点是过去的一年所有的有关讨论都没有产生实质性的进展或结果，这也和我的观察一致 -- Frost Ming
+
+---
+
+
+[监控改造之路5](https://capops.xyz/observe5)
+
+感觉调研类任务，需要始终维护一个自己的调研目标，可以不断地更新，但是始终要保持在主线上。如果某个调研产品不符合其中目标，无论它的社区氛围、流行程度多么好，都要立即停止，防止自己跑偏。
+
+---
+
+[Kubernetes is a red flag signalling premature optimisation.](https://www.jeremybrown.tech/8-kubernetes-is-a-red-flag-signalling-premature-optimisation/)
+
+>工程师们很容易跌入这个陷阱。我们很容易被新兴的炫酷技术分散注意力。我们想要学习和成长，而实现这一点的最佳途径就是把最新的技术融入到我们的产品里。然后，我们会想出各种理由来证明我们的决定是合理的。
+
+>如果要问本文给读者的忠告是什么的话，我想应当会是：高度关注实现组织使命所需的内容。不要被你想学习的东西（比如 Kubernetes 或 Golang）分心 —— 把它留给 homelab 吧。
+
+---
+
+
+[Untyped Python: The Python That Was | Armin Ronacher's Thoughts and Writings](https://lucumr.pocoo.org/2023/12/1/the-python-that-was/)
+
+我喜欢类型带来的确定性，而且在编写期间可以快速地进行基本的检查，哪怕是写一些临时性的工具，带有 typing hint 的代码也是收益远远大于成本。
+
+喜欢时不时的在这里解答一些 typing 挑战：[Python Type Challenges - Learn & Master Type Hints](https://python-type-challenges.zeabur.app/)
+
+---
+
+[通过辨析去学习 | Frost's Blog](https://frostming.com/learn-by-analysis/)
+
+自己采用的方式是类似的，应该看到的类似的方法应该就是 WWH 了，“是什么、为什么、怎么做”。
+
+我在看到/学习一个项目/工具的时候，有一个小技巧，会借助 Google 搜索（现在有了 ChatGPT 可能有更好的方式？）来帮助我快速了解这个工具，就是搜索搜索这个工具 + `vs` ，比如我在学习 Bun 是什么，我就会在 Google 搜索框中，输入 `Bun vs` ，然后等待 Google 联想，这样可以快速地了解 Bun 的对标产物是什么，通过对比来了解东西是很快的。
+
+---
+
+
+
+### 生活
+
+[对 React 团队工作经历的思考 · GitHub](https://gist.github.com/mondaychen/3c530604e44b9cd15e4f69735d99fef4)
+
+[关于开发者效率和裁员的闲聊 · GitHub](https://gist.github.com/mondaychen/e35960ad94ad43ac3e94098d6a7e2eff)
+
+>我现在的老板曾经引用 Steve Jurvetson 的话：“Sustainable value comes from the edge; everything else is middleware.” 如果 React 组的工作不再能贡献 edge，作为 middleware 在资源的谈判中是不占优的。
+
+实际在工作中，越贴近用户的功能，越能带来价值，对应的相应的开发人员的话语权就大一些？结合前两天币安那篇博客，在快速增长（或者存在增长预期）的时候，一切都好说，当预期不明确的时候，先干掉的往往是不能赚钱的团队。
+
+---
+
+[What Is Empire Building? How It Works, Strategies, and Examples](https://www.investopedia.com/terms/e/empirebuilding.asp)
+
+[[Empire Building]] （不知道翻译成中文是什么，立山头？），是试图增加个人或组织的权力和影响力的规模和范围的行为，可以被视为对公司的负面影响，因为管理层可能会专注于控制资源和影响力，而不是优化资源分配和利润最大化。
+
+---
+
+
+[20240115: Rabbit R1 Reactions](https://carlosgong.github.io/posts/2024011501.html)
+
+[[Carlos Gong]] 对于 [[Rabbit R1]] 的想法，从产品形态、价格定位、使用场景都聊到了。
+
+>你的设备会不会最终成为智能手机的一个功能，被手机吞噬掉？
+>现在的用户，尤其是会买这两个设备的早期尝鲜用户，很可能是在以 AGI（真·通用人工智能）的预期去要求今天的 AI 产品
+>这意味着 Rabbit 团队的内部核算可能认为每个用户在生命周期中会造成的 AI 大模型相关费用大概为 $100 上下，或者更多些。
+
+和设计朋友聊到了这个产品，朋友的想法：
+>交互方式一定会越来越自然。“自然”意味着人在“没有这些电子、数码、科技产品”时如何交互，那在有了这些产品后，也不用刻意改变信息交互的方式。最底层的就是“人的五感”（在我们还不能像 sense8 里那样靠“通感或意识”交流时），人可以结合视觉、触觉、听觉、嗅觉、说话等来传达和接收信息；如果又是只被局限在“语音（即说和听）”上，那就是更“不自然”了。
+
+>只是现在的“自然语言交互”还是太不自然了，所以一直没有大的推进。但 gpt 的出现，就很可能让“自然语言交互”有质的突破
+
+---
+
+[2023 一蓑烟雨 - GeekPlux](https://geekplux.com/posts/2023-summary)
+
+>年中压力最大的时候，我也曾怀疑过自己的决定，但都挺过来了。当时想找一些朋友诉诉苦，突然发现已经到了无法言说的地步。
+
+我时常也在想，自己是不是到了那个”无法和身边朋友说出自己苦恼“的年纪，是不是到了需要习惯自己和自己倾诉的时候了。
+
+---
+
+[Ubisoft Says It Out Loud: We Want People To Get Used To Not Owning What They’ve Bought](https://www.techdirt.com/2024/01/19/ubisoft-says-it-out-loud-we-want-people-to-get-used-to-not-owning-what-theyve-bought/)
+
+
+资本家想要把产品变为一个有限服务出售，真是臭不要脸。
+
+---
+
+[Losing my son](https://www.fortressofdoors.com/i-lost-my-son/)
+
+> It's not hard, just terrible.
+> The correct adjective for the tragedy I'm experiencing is not "unimaginable" but _unfathomable_.
+
+---
+
+
+
+## 书影
+
+《我们生活在南京》，中篇小说，周末一口气读完了。不知道这算硬科幻还是软科幻，故事的完整性很好，有些人觉得结尾比较生硬，我觉得刚刚好的程度。
+
+
+## 碎碎念
+
+* 所有人都说资源不够，让加资源，但是又说不清楚需要多少资源，什么类型的资源，这不就是耍流氓么？连自己需要什么都说不清楚，这要是放到公有云，估计公司隔天就破产了。
+* 2B 的痛苦：一个组件 2019 年开发，2022 年下线，现在 2024 年，还要调查这个组件的问题。
+* 最近先后使用 Python 和 Golang 实现两个工具，需要调用 GraphQL 的接口，体验非常不好，不知道正确的姿势是什么？和同事吐槽这个，同事说我的姿势确实不对，应该blablabla，但是我好像也不是那么想尝试。。
+* https://twitter.com/wjsjw/status/1748309568525058351 这是否是东亚人的困境，还是中国人独有的困境？作什么事情都要追求一个“意义”
