@@ -47,7 +47,7 @@ description:  2023 年单口专场告一段落。
 
 ---
 
-[WHAT IS 10GBIT LINE RATE?](ggfmad.io/blog/what-is-10g-line-rate)
+[WHAT IS 10GBIT LINE RATE?](https://www.fmad.io/blog/what-is-10g-line-rate)
 
 10Gbps 如果传输1500 Byte ，最大带宽可以达到 9.85Gbps：
 ```
