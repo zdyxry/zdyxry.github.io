@@ -9,6 +9,8 @@ description: 将 CentOS 7 原地升级转换为 Rocky Linux/AlmaLinux/Anolis OS/
 
 ## 背景
 
+2024/06/06 更新：发现 openEuler 社区采用一样的方式实现了一套带 UI 的项目：https://github.com/openeuler-mirror/migration-tools ， 如果有需要的话可以尝试一下，初步看了下实现，如果之前对 OS 侵入性较强的话，可能无法直接使用，需要改改。
+
 2023/03/01 更新：目前已正式使用，符合预期。
 
 CentOS 7 自身的生命周期截止到 2024年6月30日。在2020年底，CentOS 社区宣布修改现有的发布模式，将 CentOS 从作为 RHEL 的下游改为 CentOS Stream，即 RHEL 的上游，更导致 CentOS8的生命周期短的可怜，这让社区中原本就对 CentOS 不满的开发者/使用者不满，从而出现了抛弃 CentOS 转投其他发行版的情况。
