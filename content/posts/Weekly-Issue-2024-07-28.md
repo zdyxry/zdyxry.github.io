@@ -15,7 +15,9 @@ description:
 
 [数据中心网络高可用技术之从服务器到交换机：active-backup | 卡瓦邦噶！](https://www.kawabangga.com/posts/6430)
 
->“MII Monitoring 就是检测链路状态，只能检查物理链路的连通性，不能代表网络是通的。比如，交换机挂了，或交换机的端口挂了的情况下，服务器网卡没问题，就不会触发切换”
+>"MII Monitoring 就是通过 MII 来检查物理物理网卡的状态。如果物理网卡挂了，通过 MII 就可以检测到。但是 MII 检查通过不能代表网络是通的。"  
+>use_carrier 如果打开的话（默认就是 1, 打开的），就使用 netif_carrier_ok 来获取链路状态，底层依赖的是网卡驱动程序。大部分的网卡驱动程序都支持 netif_carrier_on/off 功能，如果不支持的话，那么链路检测永远是 up 的，即使挂了也不会触发 bonding 的切换。所以网卡如果不支持，就得把 use_carrier 改成 0。  
+>MII Monitoring 无法检测的问题是：交换机正常运行但是配置错误，或者通过了 Linux 网卡驱动的检测但是发送数据会有问题等等。
 
 ---
 
