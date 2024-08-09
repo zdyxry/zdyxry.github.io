@@ -3,13 +3,13 @@ title: 证书 CommonName 和 subjectAltName 的关系
 date: 2023-03-25
 tags:
 - HTTPS
-description: 
+description:
 ---
 
 
 ## 背景
 
-因为产品中的 HTTPS 所用证书是自签发证书，不满足一些场景的安全要求，需要导入用户证书。本身这个变更很容易，只需要按照[Nginx 官方文档]([http://nginx.org/en/docs/http/configuring_https_servers.html](http://nginx.org/en/docs/http/configuring_https_servers.html))  配置下指定证书即可，但遇到了一个特殊的场景：集群存在3个节点，每个节点用户配置了相应的 Domain Name，其中集群中存在 VIP(Virtual IP Address) ，用户给对应的 VIP 配置了相应的 Domain Name。用户在签发证书时，使用的 CN(CommonName) 是 VIP 对应的 Domain Name，subjectAltName 是集群中3个节点的 Domain Name。此时如果通过各个节点相应的 Domain Name 访问，证书有效，但是通过 VIP 对应的 Domain Name 访问，证书无效（因环境特殊，未能看到具体错误提示）。
+因为产品中的 HTTPS 所用证书是自签发证书，不满足一些场景的安全要求，需要导入用户证书。本身这个变更很容易，只需要按照[Nginx 官方文档](http://nginx.org/en/docs/http/configuring_https_servers.html)  配置下指定证书即可，但遇到了一个特殊的场景：集群存在3个节点，每个节点用户配置了相应的 Domain Name，其中集群中存在 VIP(Virtual IP Address) ，用户给对应的 VIP 配置了相应的 Domain Name。用户在签发证书时，使用的 CN(CommonName) 是 VIP 对应的 Domain Name，subjectAltName 是集群中3个节点的 Domain Name。此时如果通过各个节点相应的 Domain Name 访问，证书有效，但是通过 VIP 对应的 Domain Name 访问，证书无效（因环境特殊，未能看到具体错误提示）。
 
 印象中 `CommonName` 必须指定对应的 Domain Name，`subjectAltName` 是 `CommonName` 的补充，所以这个现象感觉不合理，然后查阅了相关资料进行调查。
 
@@ -21,8 +21,8 @@ description:
 >在 https 证书中，如果 `CommonName` 一定存在于 `SubjectAltName` 中么？如果同时存在 `CommonName` 和 `SubjectName` ，使用哪个作为唯一标识校验？
 
 答：
->在HTTPS证书中，`CommonName`（CN）和`Subject Alternative Name`（SAN）是用于标识证书所表示的域名的字段。在早期的SSL/TLS证书中，`CommonName`通常用于表示证书关联的单个域名。然而，随着时间的推移，`Subject Alternative Name`扩展被广泛采用，它允许证书关联多个域名和子域名。  
-> 从技术上讲，`CommonName`不一定需要出现在`Subject Alternative Name`列表中。但是，实际上，许多现代浏览器和客户端会首先检查`Subject Alternative Name`字段，如果没有找到匹配的域名，才会检查`CommonName`字段。因此，为了确保证书的兼容性和正确性，建议将`CommonName`包含在`Subject Alternative Name`字段中。   
+>在HTTPS证书中，`CommonName`（CN）和`Subject Alternative Name`（SAN）是用于标识证书所表示的域名的字段。在早期的SSL/TLS证书中，`CommonName`通常用于表示证书关联的单个域名。然而，随着时间的推移，`Subject Alternative Name`扩展被广泛采用，它允许证书关联多个域名和子域名。
+> 从技术上讲，`CommonName`不一定需要出现在`Subject Alternative Name`列表中。但是，实际上，许多现代浏览器和客户端会首先检查`Subject Alternative Name`字段，如果没有找到匹配的域名，才会检查`CommonName`字段。因此，为了确保证书的兼容性和正确性，建议将`CommonName`包含在`Subject Alternative Name`字段中。
 > RFC 6125（表示和确认服务器标识的通用方法）建议在比较服务器标识时使用`Subject Alternative Name`，并认为`CommonName`已经过时。因此，如果`CommonName`和`Subject Alternative Name`同时存在，客户端应首先使用`Subject Alternative Name`进行匹配和校验。
 
 ## RFC 调查
@@ -67,9 +67,9 @@ TLS/SSL 证书中的 `subjectAltName` 扩展除了包含 `dNSName` 类型之外�
 
 ### Chrome
 
-在 58 版本中，删除了对 CommonName 匹配的支持，[https://chromestatus.com/feature/4981025180483584](https://chromestatus.com/feature/4981025180483584)： 
+在 58 版本中，删除了对 CommonName 匹配的支持，[https://chromestatus.com/feature/4981025180483584](https://chromestatus.com/feature/4981025180483584)：
 
-> RFC 2818 describes two methods to match a domain name against a certificate - using the available names within the subjectAlternativeName extension, or, in the absence of a SAN extension, falling back to the commonName.  
+> RFC 2818 describes two methods to match a domain name against a certificate - using the available names within the subjectAlternativeName extension, or, in the absence of a SAN extension, falling back to the commonName.
 The fallback to the commonName was deprecated in RFC 2818 (published in 2000), but support still remains in a number of TLS clients, often incorrectly.
 
 

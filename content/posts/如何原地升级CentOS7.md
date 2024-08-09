@@ -3,7 +3,7 @@ title: 如何平(优）滑（雅）的抛弃 CentOS7
 date: 2022-08-28 13:00:00
 tags:
 - Linux
-description: 将 CentOS 7 原地升级转换为 Rocky Linux/AlmaLinux/Anolis OS/openEuler。 
+description: 将 CentOS 7 原地升级转换为 Rocky Linux/AlmaLinux/Anolis OS/openEuler。
 ---
 
 
@@ -28,33 +28,33 @@ Fedora 更关注于上游社区最新的代码，包含最丰富的功能，作�
 Rocky Linux
 
 > Rocky Linux aims to function as a downstream build as CentOS had done previously, building releases after they have been added to the upstream vendor, not before.
-> 
+>
 
 AlmaLinux
 
 > AlmaLinux OS is replacing CentOS as the downstream rebuild of RedHat Enterprise Linux.
-> 
+>
 
 在 CentOS 宣布策略改变之后，社区中出现了两个替代品，分别是 Rocky Linux 和 AlmaLinux，它俩的目的都是一样的，作为RHEL 的下游来构建发布，且发布模式和发布周期采用 CentOS 原有模式。
 
-通过 AlmaLinux 官方提供的[发行版比较]([https://wiki.almalinux.org/Comparison.html](https://wiki.almalinux.org/Comparison.html))可以看到，AlmaLinux 和 Rocky Linux 两者对于用户来说没什么差别，如果一定要较真，那就是 AlmaLinux 大部分人员是来自 CloudLinux 公司，而 Rocky Linux 是 Greg 公司。
+通过 AlmaLinux 官方提供的[发行版比较](https://wiki.almalinux.org/Comparison.html)可以看到，AlmaLinux 和 Rocky Linux 两者对于用户来说没什么差别，如果一定要较真，那就是 AlmaLinux 大部分人员是来自 CloudLinux 公司，而 Rocky Linux 是 Greg 公司。
 
 ### 国产替代品
 
 Anolis OS（阿里巴巴）
 
 > Anolis OS 8 是 OpenAnolis 社区推出的完全开源、中立、开放的发行版，它支持多计算架构，也面向云端场景优化，兼容 CentOS 软件生态。Anolis OS 8 旨在为广大开发者和运维人员提供稳定、高性能、安全、可靠、开源的操作系统服务。
-> 
+>
 
 openEuler（华为）
 
 > openEuler是一款开源操作系统。当前openEuler内核源于Linux，支持鲲鹏及其它多种处理器，能够充分释放计算芯片的潜能，是由全球开源贡献者构建的高效、稳定、安全的开源操作系统，适用于数据库、大数据、云计算、人工智能等应用场景。同时，openEuler是一个面向全球的操作系统开源社区，通过社区合作，打造创新平台，构建支持多处理器架构、统一和开放的操作系统，推动软硬件应用生态繁荣发展。
-> 
+>
 
 银河麒麟操作系统
 
 > 银河麒麟高级服务器操作系统V10是针对企业级关键业务，适应虚拟化、云计算、大数据、工业互联网时代对主机系统可靠性、安全性、性能、扩展性和实时性等需求，依据CMMI5级标准研制的提供内生本质安全、云原生支持、自主平台深入优化、 高性能、易管理的新一代自主服务器操作系统
-> 
+>
 
 在国产化浪潮下，如果产品需要满足信创标准，那么操作系统的选择需要考虑国产替代品，目前（个人了解）符合信创标准的操作系统只有银河麒麟，openEuler 和 Anolis OS 目前还无法完全通过信创评审。在这一系列的替代品中， Rocky Linux, AlmaLinux, Anolis OS 所采用的发布模式和版本控制方式，都维持 CentOS原有模式，即 8.1, 8.2, 8.3 发布方式。openEuler 和银河麒麟操作系统虽然也采用 RPM 作为包管理器并且大部分组件版本与社区中的 CentOS 8 相同，但是不能完全等价，这里需要注意。
 
@@ -74,7 +74,7 @@ openEuler（华为）
 
 ### 自动流程
 
-自动升级转换依赖于 [Leapp]([https://github.com/oamg/leapp](https://github.com/oamg/leapp))，Leapp 由 Redhat 员工开发的开源工具，Leapp 自身只是一个工作流框架，其中包含 Actor、Model、Message、Workflow 等概念，具体组件关系图如下，其中 workerflow 包含多个 phase，每个 phase 含有3个 stage：Before，Main，After，每个 stage 中包含多个 Actors，其中 Actors 之间没有严格的顺序，而是靠 Message 通信，Message 遵循 Model 的定义，如果 ActorA 依赖了 ActorB 产生的 MessageB，那么 ActorA 会在 ActorB 之后执行，没有 MessageB 依赖的 ActorC 会按照加载顺序执行，没有严格顺序依赖。
+自动升级转换依赖于 [Leapp](https://github.com/oamg/leapp)，Leapp 由 Redhat 员工开发的开源工具，Leapp 自身只是一个工作流框架，其中包含 Actor、Model、Message、Workflow 等概念，具体组件关系图如下，其中 workerflow 包含多个 phase，每个 phase 含有3个 stage：Before，Main，After，每个 stage 中包含多个 Actors，其中 Actors 之间没有严格的顺序，而是靠 Message 通信，Message 遵循 Model 的定义，如果 ActorA 依赖了 ActorB 产生的 MessageB，那么 ActorA 会在 ActorB 之后执行，没有 MessageB 依赖的 ActorC 会按照加载顺序执行，没有严格顺序依赖。
 
 目前 Leapp 主要使用场景是用于 RedHat 系发行版升级、不同发行版之间的升级切换等。
 
