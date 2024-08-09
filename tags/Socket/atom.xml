@@ -1,3 +1,700 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Socket on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Socket/</link><description>Recent content in Socket on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 30 Sep 2018 20:33:00 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Socket/atom.xml" rel="self" type="application/rss+xml"/><item><title>Python socket 编程</title><link>https://zdyxry.github.io/2018/09/30/Python-socket-%E7%BC%96%E7%A8%8B/</link><pubDate>Sun, 30 Sep 2018 20:33:00 +0000</pubDate><guid>https://zdyxry.github.io/2018/09/30/Python-socket-%E7%BC%96%E7%A8%8B/</guid><description>背景 链接到标题 平时工作很少涉及到 Socket 相关，基本上都是 HTTP 之上的业务，最近看到 Real Python 的一篇博客，非常详细的讲解了 Python 下的 socket 编程，其中有两个示例觉得很好，帮助我理解了一些要点，记录一下。
-多连接情况 链接到标题 Server 链接到标题 multiconn-server.py
-#!/usr/bin/env python3 import sys import socket import selectors import types sel = selectors.DefaultSelector() def accept_wrapper(sock): conn, addr = sock.accept() # 前提条件：可读状态 print(&amp;#39;accepted connection from&amp;#39;, addr) conn.setblocking(False) # 置为非阻塞 data = types.SimpleNamespace(addr=addr, inb=b&amp;#39;&amp;#39;, outb=b&amp;#39;&amp;#39;) events = selectors.EVENT_READ | selectors.EVENT_WRITE sel.register(conn, events, data=data) # 注册事件到 select def service_connection(key, mask): sock = key.fileobj data = key.</description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Socket on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Socket/</link><description>Recent content in Socket on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 30 Sep 2018 20:33:00 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Socket/atom.xml" rel="self" type="application/rss+xml"/><item><title>Python socket 编程</title><link>https://zdyxry.github.io/2018/09/30/Python-socket-%E7%BC%96%E7%A8%8B/</link><pubDate>Sun, 30 Sep 2018 20:33:00 +0000</pubDate><guid>https://zdyxry.github.io/2018/09/30/Python-socket-%E7%BC%96%E7%A8%8B/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>平时工作很少涉及到 Socket 相关，基本上都是 HTTP 之上的业务，最近看到 &lt;a href="https://realpython.com/python-sockets/" class="external-link" target="_blank" rel="noopener">Real Python&lt;/a> 的一篇博客，非常详细的讲解了 Python 下的 socket 编程，其中有两个示例觉得很好，帮助我理解了一些要点，记录一下。&lt;/p>
+&lt;h2 id="多连接情况">
+多连接情况
+&lt;a class="heading-link" href="#%e5%a4%9a%e8%bf%9e%e6%8e%a5%e6%83%85%e5%86%b5">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;h3 id="server">
+Server
+&lt;a class="heading-link" href="#server">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>multiconn-server.py&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic">#!/usr/bin/env python3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">sys&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">socket&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">selectors&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">types&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sel = selectors.DefaultSelector()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> accept_wrapper(sock):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> conn, addr = sock.accept() &lt;span style="font-style:italic"># 前提条件：可读状态&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;accepted connection from&amp;#39;&lt;/span>, addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> conn.setblocking(&lt;span style="font-weight:bold">False&lt;/span>) &lt;span style="font-style:italic"># 置为非阻塞&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = types.SimpleNamespace(addr=addr, inb=&lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>, outb=&lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_READ | selectors.EVENT_WRITE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.register(conn, events, data=data) &lt;span style="font-style:italic"># 注册事件到 select&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> service_connection(key, mask):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock = key.fileobj
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = key.data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_READ:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> recv_data = sock.recv(1024) &lt;span style="font-style:italic"># 前提条件：可读状态&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> recv_data:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data.outb += recv_data &lt;span style="font-style:italic"># 保存数据&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;closing connection to&amp;#39;&lt;/span>, data.addr) &lt;span style="font-style:italic"># 如果没有接受到数据，则需关闭该 socket 连接&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.unregister(sock) &lt;span style="font-style:italic"># 将该 socket 事件从 select 删除&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_WRITE:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> data.outb:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;echoing&amp;#39;&lt;/span>, repr(data.outb), &lt;span style="font-style:italic">&amp;#39;to&amp;#39;&lt;/span>, data.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sent = sock.send(data.outb) &lt;span style="font-style:italic">#前提条件：可写状态&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data.outb = data.outb[sent:] &lt;span style="font-style:italic"># 在数据发送完后， 将其删除&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">if&lt;/span> len(sys.argv) != 3:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;usage:&amp;#39;&lt;/span>, sys.argv[0], &lt;span style="font-style:italic">&amp;#39;&amp;lt;host&amp;gt; &amp;lt;port&amp;gt;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sys.exit(1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>host, port = sys.argv[1], int(sys.argv[2])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock.bind((host, port))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock.listen()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(&lt;span style="font-style:italic">&amp;#39;listening on&amp;#39;&lt;/span>, (host, port))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock.setblocking(&lt;span style="font-weight:bold">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sel.register(lsock, selectors.EVENT_READ, data=&lt;span style="font-weight:bold">None&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">while&lt;/span> &lt;span style="font-weight:bold">True&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = sel.select(timeout=&lt;span style="font-weight:bold">None&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> key, mask &lt;span style="font-weight:bold">in&lt;/span> events:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> key.data &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>: &lt;span style="font-style:italic"># 如果没有传输数据，则该请求为连接请求&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> accept_wrapper(key.fileobj)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> service_connection(key, mask) &lt;span style="font-style:italic"># 处理数据&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">KeyboardInterrupt&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;caught keyboard interrupt, exiting&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">finally&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.close()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="client">
+Client
+&lt;a class="heading-link" href="#client">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>multiconn-client.py&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic">#!/usr/bin/env python3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">sys&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">socket&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">selectors&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">types&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sel = selectors.DefaultSelector()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>messages = [&lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;Message 1 from client.&amp;#39;&lt;/span>, &lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;Message 2 from client.&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> start_connections(host, port, num_conns):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> server_addr = (host, port)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> i &lt;span style="font-weight:bold">in&lt;/span> range(0, num_conns):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> connid = i + 1
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;starting connection&amp;#39;&lt;/span>, connid, &lt;span style="font-style:italic">&amp;#39;to&amp;#39;&lt;/span>, server_addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock.setblocking(&lt;span style="font-weight:bold">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock.connect_ex(server_addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_READ | selectors.EVENT_WRITE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = types.SimpleNamespace(connid=connid,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> msg_total=sum(len(m) &lt;span style="font-weight:bold">for&lt;/span> m &lt;span style="font-weight:bold">in&lt;/span> messages),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> recv_total=0,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> messages=list(messages),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> outb=&lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.register(sock, events, data=data)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> service_connection(key, mask):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock = key.fileobj
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = key.data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_READ:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> recv_data = sock.recv(1024) &lt;span style="font-style:italic"># 前提条件：可读状态&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> recv_data:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;received&amp;#39;&lt;/span>, repr(recv_data), &lt;span style="font-style:italic">&amp;#39;from connection&amp;#39;&lt;/span>, data.connid)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data.recv_total += len(recv_data)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> recv_data &lt;span style="font-weight:bold">or&lt;/span> data.recv_total == data.msg_total:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;closing connection&amp;#39;&lt;/span>, data.connid)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.unregister(sock)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_WRITE:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> data.outb &lt;span style="font-weight:bold">and&lt;/span> data.messages:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data.outb = data.messages.pop(0) &lt;span style="font-style:italic"># 如果没有可发送数据，则取 messages 中的第一条用户发送请求&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> data.outb:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;sending&amp;#39;&lt;/span>, repr(data.outb), &lt;span style="font-style:italic">&amp;#39;to connection&amp;#39;&lt;/span>, data.connid)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sent = sock.send(data.outb) &lt;span style="font-style:italic"># Should be ready to write&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data.outb = data.outb[sent:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">if&lt;/span> len(sys.argv) != 4:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;usage:&amp;#39;&lt;/span>, sys.argv[0], &lt;span style="font-style:italic">&amp;#39;&amp;lt;host&amp;gt; &amp;lt;port&amp;gt; &amp;lt;num_connections&amp;gt;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sys.exit(1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>host, port, num_conns = sys.argv[1:4]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>start_connections(host, int(port), int(num_conns))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">while&lt;/span> &lt;span style="font-weight:bold">True&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = sel.select(timeout=1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> events:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> key, mask &lt;span style="font-weight:bold">in&lt;/span> events:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> service_connection(key, mask)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Check for a socket being monitored to continue.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> sel.get_map():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">break&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">KeyboardInterrupt&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;caught keyboard interrupt, exiting&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">finally&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.close()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="协议封装处理">
+协议封装处理
+&lt;a class="heading-link" href="#%e5%8d%8f%e8%ae%ae%e5%b0%81%e8%a3%85%e5%a4%84%e7%90%86">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>在多连接基础上，增加特殊协议处理，比如 json header 、 protocol header 等。&lt;/p>
+&lt;h3 id="server-1">
+Server
+&lt;a class="heading-link" href="#server-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>libserver.py&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">sys&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">selectors&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">json&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">io&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">struct&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>request_search = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;morpheus&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;Follow the white rabbit. &lt;/span>&lt;span style="font-weight:bold;font-style:italic">\U0001f430&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;ring&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;In the caves beneath the Misty Mountains. &lt;/span>&lt;span style="font-weight:bold;font-style:italic">\U0001f48d&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">\U0001f436&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">\U0001f43e&lt;/span>&lt;span style="font-style:italic"> Playing ball! &lt;/span>&lt;span style="font-weight:bold;font-style:italic">\U0001f3d0&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">class&lt;/span> &lt;span style="font-weight:bold">Message&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> __init__(self, selector, sock, addr):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.selector = selector
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.sock = sock
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.addr = addr
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = &lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._send_buffer = &lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._jsonheader_len = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.jsonheader = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.request = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.response_created = &lt;span style="font-weight:bold">False&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _set_selector_events_mask(self, mode):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#34;&amp;#34;&amp;#34;Set selector to listen for events: mode is &amp;#39;r&amp;#39;, &amp;#39;w&amp;#39;, or &amp;#39;rw&amp;#39;.&amp;#34;&amp;#34;&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mode == &lt;span style="font-style:italic">&amp;#39;r&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_READ
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">elif&lt;/span> mode == &lt;span style="font-style:italic">&amp;#39;w&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_WRITE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">elif&lt;/span> mode == &lt;span style="font-style:italic">&amp;#39;rw&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_READ | selectors.EVENT_WRITE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">raise&lt;/span> &lt;span style="font-weight:bold">ValueError&lt;/span>(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;Invalid events mask mode &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>repr(mode)&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">.&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.selector.modify(self.sock, events, data=self)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _read(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Should be ready to read&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = self.sock.recv(4096)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">BlockingIOError&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Resource temporarily unavailable (errno EWOULDBLOCK)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">pass&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> data:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer += data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">raise&lt;/span> &lt;span style="font-weight:bold">RuntimeError&lt;/span>(&lt;span style="font-style:italic">&amp;#39;Peer closed.&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _write(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self._send_buffer:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;sending&amp;#39;&lt;/span>, repr(self._send_buffer), &lt;span style="font-style:italic">&amp;#39;to&amp;#39;&lt;/span>, self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Should be ready to write&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sent = self.sock.send(self._send_buffer)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">BlockingIOError&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Resource temporarily unavailable (errno EWOULDBLOCK)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">pass&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._send_buffer = self._send_buffer[sent:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Close when the buffer is drained. The response has been sent.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> sent &lt;span style="font-weight:bold">and&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> self._send_buffer:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># JSON 编码、解码&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _json_encode(self, obj, encoding):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> json.dumps(obj, ensure_ascii=&lt;span style="font-weight:bold">False&lt;/span>).encode(encoding)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _json_decode(self, json_bytes, encoding):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> tiow = io.TextIOWrapper(io.BytesIO(json_bytes), encoding=encoding,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> newline=&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj = json.load(tiow)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> tiow.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> obj
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _create_message(self, *, content_bytes, content_type,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_encoding):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> jsonheader = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;byteorder&amp;#39;&lt;/span>: sys.byteorder,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-type&amp;#39;&lt;/span>: content_type,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-encoding&amp;#39;&lt;/span>: content_encoding,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-length&amp;#39;&lt;/span>: len(content_bytes)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> jsonheader_bytes = self._json_encode(jsonheader, &lt;span style="font-style:italic">&amp;#39;utf-8&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message_hdr = struct.pack(&lt;span style="font-style:italic">&amp;#39;&amp;gt;H&amp;#39;&lt;/span>, len(jsonheader_bytes))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = message_hdr + jsonheader_bytes + content_bytes &lt;span style="font-style:italic"># 生成编码后信息&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> message
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _create_response_json_content(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> action = self.request.get(&lt;span style="font-style:italic">&amp;#39;action&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> action == &lt;span style="font-style:italic">&amp;#39;search&amp;#39;&lt;/span>: &lt;span style="font-style:italic"># 根据客户端发送请求返回相应响应信息&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> query = self.request.get(&lt;span style="font-style:italic">&amp;#39;value&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> answer = request_search.get(query) &lt;span style="font-weight:bold">or&lt;/span> &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;No match for &amp;#34;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>query&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#34;.&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content = {&lt;span style="font-style:italic">&amp;#39;result&amp;#39;&lt;/span>: answer}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content = {&lt;span style="font-style:italic">&amp;#39;result&amp;#39;&lt;/span>: &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;Error: invalid action &amp;#34;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>action&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#34;.&amp;#39;&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_encoding = &lt;span style="font-style:italic">&amp;#39;utf-8&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_bytes&amp;#39;&lt;/span>: self._json_encode(content, content_encoding),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_type&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;text/json&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_encoding&amp;#39;&lt;/span>: content_encoding
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> response
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _create_response_binary_content(self): &lt;span style="font-style:italic"># 如果为 binary，则直接返回&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_bytes&amp;#39;&lt;/span>: &lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;First 10 bytes of request: &amp;#39;&lt;/span> +
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.request[:10],
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_type&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;binary/custom-server-binary-type&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_encoding&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;binary&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> response
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_events(self, mask):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_READ:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.read()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_WRITE:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.write()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> read(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._read()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self._jsonheader_len &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.process_protoheader()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self._jsonheader_len &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.jsonheader &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.process_jsonheader()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.jsonheader:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.request &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.process_request()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> write(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.request:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> self.response_created:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.create_response()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._write()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> close(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;closing connection to&amp;#39;&lt;/span>, self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.selector.unregister(self.sock)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">Exception&lt;/span> &lt;span style="font-weight:bold">as&lt;/span> e:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;error: selector.unregister() exception for&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>self.addr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>repr(e)&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.sock.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">OSError&lt;/span> &lt;span style="font-weight:bold">as&lt;/span> e:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;error: socket.close() exception for&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>self.addr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>repr(e)&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">finally&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Delete reference to socket object for garbage collection&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.sock = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_protoheader(self): &lt;span style="font-style:italic"># 解析协议头部信息，得到 json header 大小&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hdrlen = 2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> len(self._recv_buffer) &amp;gt;= hdrlen:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._jsonheader_len = struct.unpack(&lt;span style="font-style:italic">&amp;#39;&amp;gt;H&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer[:hdrlen])[0]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = self._recv_buffer[hdrlen:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_jsonheader(self): &lt;span style="font-style:italic"># 解析 json header 信息，得到真实请求信息&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hdrlen = self._jsonheader_len
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> len(self._recv_buffer) &amp;gt;= hdrlen:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.jsonheader = self._json_decode(self._recv_buffer[:hdrlen],
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;utf-8&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = self._recv_buffer[hdrlen:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> reqhdr &lt;span style="font-weight:bold">in&lt;/span> (&lt;span style="font-style:italic">&amp;#39;byteorder&amp;#39;&lt;/span>, &lt;span style="font-style:italic">&amp;#39;content-length&amp;#39;&lt;/span>, &lt;span style="font-style:italic">&amp;#39;content-type&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-encoding&amp;#39;&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> reqhdr &lt;span style="font-weight:bold">not&lt;/span> &lt;span style="font-weight:bold">in&lt;/span> self.jsonheader:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">raise&lt;/span> &lt;span style="font-weight:bold">ValueError&lt;/span>(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;Missing required header &amp;#34;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>reqhdr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#34;.&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_request(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_len = self.jsonheader[&lt;span style="font-style:italic">&amp;#39;content-length&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> len(self._recv_buffer) &amp;gt;= content_len:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = self._recv_buffer[:content_len]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = self._recv_buffer[content_len:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.jsonheader[&lt;span style="font-style:italic">&amp;#39;content-type&amp;#39;&lt;/span>] == &lt;span style="font-style:italic">&amp;#39;text/json&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> encoding = self.jsonheader[&lt;span style="font-style:italic">&amp;#39;content-encoding&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.request = self._json_decode(data, encoding)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;received request&amp;#39;&lt;/span>, repr(self.request), &lt;span style="font-style:italic">&amp;#39;from&amp;#39;&lt;/span>, self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Binary 或者未知请求类型&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.request = data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;received &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>self.jsonheader[&lt;span style="font-style:italic">&amp;#34;content-type&amp;#34;&lt;/span>]&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic"> request from&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># 设置 selector 监听写入事件，读事件已经完成&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._set_selector_events_mask(&lt;span style="font-style:italic">&amp;#39;w&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> create_response(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.jsonheader[&lt;span style="font-style:italic">&amp;#39;content-type&amp;#39;&lt;/span>] == &lt;span style="font-style:italic">&amp;#39;text/json&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response = self._create_response_json_content()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Binary or unknown content-type&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response = self._create_response_binary_content()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = self._create_message(**response)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.response_created = &lt;span style="font-weight:bold">True&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._send_buffer += message
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>app-server.py&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic">#!/usr/bin/env python3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">sys&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">socket&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">selectors&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">traceback&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">libserver&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sel = selectors.DefaultSelector()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> accept_wrapper(sock):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> conn, addr = sock.accept() &lt;span style="font-style:italic"># Should be ready to read&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;accepted connection from&amp;#39;&lt;/span>, addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> conn.setblocking(&lt;span style="font-weight:bold">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = libserver.Message(sel, conn, addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.register(conn, selectors.EVENT_READ, data=message)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">if&lt;/span> len(sys.argv) != 3:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;usage:&amp;#39;&lt;/span>, sys.argv[0], &lt;span style="font-style:italic">&amp;#39;&amp;lt;host&amp;gt; &amp;lt;port&amp;gt;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sys.exit(1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>host, port = sys.argv[1], int(sys.argv[2])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># Avoid bind() exception: OSError: [Errno 48] Address already in use&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock.bind((host, port))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock.listen()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(&lt;span style="font-style:italic">&amp;#39;listening on&amp;#39;&lt;/span>, (host, port))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>lsock.setblocking(&lt;span style="font-weight:bold">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sel.register(lsock, selectors.EVENT_READ, data=&lt;span style="font-weight:bold">None&lt;/span>) &lt;span style="font-style:italic"># 将 socket 监听事件注册到 selector&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">while&lt;/span> &lt;span style="font-weight:bold">True&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = sel.select(timeout=&lt;span style="font-weight:bold">None&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> key, mask &lt;span style="font-weight:bold">in&lt;/span> events:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> key.data &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>: &lt;span style="font-style:italic"># 如果没有请求数据，则为客户端连接请求&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> accept_wrapper(key.fileobj)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = key.data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message.process_events(mask) &lt;span style="font-style:italic"># 处理请求信息&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">Exception&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;main: error: exception for&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>message.addr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">:&lt;/span>&lt;span style="font-weight:bold;font-style:italic">\n&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>traceback.format_exc()&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">KeyboardInterrupt&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;caught keyboard interrupt, exiting&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">finally&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.close()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="client-1">
+Client
+&lt;a class="heading-link" href="#client-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>libclient.py&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">sys&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">selectors&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">json&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">io&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">struct&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">class&lt;/span> &lt;span style="font-weight:bold">Message&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> __init__(self, selector, sock, addr, request):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.selector = selector
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.sock = sock
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.addr = addr
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.request = request
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = &lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._send_buffer = &lt;span style="font-style:italic">b&lt;/span>&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._request_queued = &lt;span style="font-weight:bold">False&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._jsonheader_len = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.jsonheader = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.response = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _set_selector_events_mask(self, mode):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#34;&amp;#34;&amp;#34;Set selector to listen for events: mode is &amp;#39;r&amp;#39;, &amp;#39;w&amp;#39;, or &amp;#39;rw&amp;#39;.&amp;#34;&amp;#34;&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mode == &lt;span style="font-style:italic">&amp;#39;r&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_READ
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">elif&lt;/span> mode == &lt;span style="font-style:italic">&amp;#39;w&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_WRITE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">elif&lt;/span> mode == &lt;span style="font-style:italic">&amp;#39;rw&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_READ | selectors.EVENT_WRITE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">raise&lt;/span> &lt;span style="font-weight:bold">ValueError&lt;/span>(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;Invalid events mask mode &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>repr(mode)&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">.&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.selector.modify(self.sock, events, data=self)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _read(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Should be ready to read&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = self.sock.recv(4096)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">BlockingIOError&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Resource temporarily unavailable (errno EWOULDBLOCK)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">pass&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> data:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer += data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">raise&lt;/span> &lt;span style="font-weight:bold">RuntimeError&lt;/span>(&lt;span style="font-style:italic">&amp;#39;Peer closed.&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _write(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self._send_buffer:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;sending&amp;#39;&lt;/span>, repr(self._send_buffer), &lt;span style="font-style:italic">&amp;#39;to&amp;#39;&lt;/span>, self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Should be ready to write&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sent = self.sock.send(self._send_buffer)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">BlockingIOError&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Resource temporarily unavailable (errno EWOULDBLOCK)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">pass&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._send_buffer = self._send_buffer[sent:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _json_encode(self, obj, encoding): &lt;span style="font-style:italic"># JSON 编码&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> json.dumps(obj, ensure_ascii=&lt;span style="font-weight:bold">False&lt;/span>).encode(encoding)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _json_decode(self, json_bytes, encoding): &lt;span style="font-style:italic"># JSON 解码&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> tiow = io.TextIOWrapper(io.BytesIO(json_bytes), encoding=encoding,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> newline=&lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj = json.load(tiow)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> tiow.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> obj
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _create_message(self, *, content_bytes, content_type,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_encoding): &lt;span style="font-style:italic"># 打包处理请求信息&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> jsonheader = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;byteorder&amp;#39;&lt;/span>: sys.byteorder,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-type&amp;#39;&lt;/span>: content_type,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-encoding&amp;#39;&lt;/span>: content_encoding,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-length&amp;#39;&lt;/span>: len(content_bytes)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> jsonheader_bytes = self._json_encode(jsonheader, &lt;span style="font-style:italic">&amp;#39;utf-8&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message_hdr = struct.pack(&lt;span style="font-style:italic">&amp;#39;&amp;gt;H&amp;#39;&lt;/span>, len(jsonheader_bytes))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = message_hdr + jsonheader_bytes + content_bytes
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> message
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _process_response_json_content(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content = self.response
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> result = content.get(&lt;span style="font-style:italic">&amp;#39;result&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;got result: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>result&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> _process_response_binary_content(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content = self.response
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;got response: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>repr(content)&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_events(self, mask):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_READ:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.read()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> mask &amp;amp; selectors.EVENT_WRITE:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.write()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> read(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._read()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self._jsonheader_len &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.process_protoheader()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self._jsonheader_len &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.jsonheader &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.process_jsonheader()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.jsonheader:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.response &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.process_response()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> write(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> self._request_queued:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.queue_request()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._write()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self._request_queued:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> self._send_buffer:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Set selector to listen for read events, we&amp;#39;re done writing.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._set_selector_events_mask(&lt;span style="font-style:italic">&amp;#39;r&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> close(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;closing connection to&amp;#39;&lt;/span>, self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.selector.unregister(self.sock)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">Exception&lt;/span> &lt;span style="font-weight:bold">as&lt;/span> e:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;error: selector.unregister() exception for&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>self.addr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>repr(e)&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.sock.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">OSError&lt;/span> &lt;span style="font-weight:bold">as&lt;/span> e:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;error: socket.close() exception for&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>self.addr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>repr(e)&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">finally&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Delete reference to socket object for garbage collection&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.sock = &lt;span style="font-weight:bold">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> queue_request(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content = self.request[&lt;span style="font-style:italic">&amp;#39;content&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_type = self.request[&lt;span style="font-style:italic">&amp;#39;type&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_encoding = self.request[&lt;span style="font-style:italic">&amp;#39;encoding&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> content_type == &lt;span style="font-style:italic">&amp;#39;text/json&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> req = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_bytes&amp;#39;&lt;/span>: self._json_encode(content, content_encoding),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_type&amp;#39;&lt;/span>: content_type,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_encoding&amp;#39;&lt;/span>: content_encoding
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> req = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_bytes&amp;#39;&lt;/span>: content,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_type&amp;#39;&lt;/span>: content_type,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content_encoding&amp;#39;&lt;/span>: content_encoding
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = self._create_message(**req)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._send_buffer += message
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._request_queued = &lt;span style="font-weight:bold">True&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_protoheader(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hdrlen = 2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> len(self._recv_buffer) &amp;gt;= hdrlen:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._jsonheader_len = struct.unpack(&lt;span style="font-style:italic">&amp;#39;&amp;gt;H&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer[:hdrlen])[0]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = self._recv_buffer[hdrlen:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_jsonheader(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hdrlen = self._jsonheader_len
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> len(self._recv_buffer) &amp;gt;= hdrlen:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.jsonheader = self._json_decode(self._recv_buffer[:hdrlen],
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;utf-8&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = self._recv_buffer[hdrlen:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> reqhdr &lt;span style="font-weight:bold">in&lt;/span> (&lt;span style="font-style:italic">&amp;#39;byteorder&amp;#39;&lt;/span>, &lt;span style="font-style:italic">&amp;#39;content-length&amp;#39;&lt;/span>, &lt;span style="font-style:italic">&amp;#39;content-type&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;content-encoding&amp;#39;&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> reqhdr &lt;span style="font-weight:bold">not&lt;/span> &lt;span style="font-weight:bold">in&lt;/span> self.jsonheader:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">raise&lt;/span> &lt;span style="font-weight:bold">ValueError&lt;/span>(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;Missing required header &amp;#34;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>reqhdr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#34;.&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> process_response(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_len = self.jsonheader[&lt;span style="font-style:italic">&amp;#39;content-length&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> len(self._recv_buffer) &amp;gt;= content_len:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> data = self._recv_buffer[:content_len]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._recv_buffer = self._recv_buffer[content_len:]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> self.jsonheader[&lt;span style="font-style:italic">&amp;#39;content-type&amp;#39;&lt;/span>] == &lt;span style="font-style:italic">&amp;#39;text/json&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> encoding = self.jsonheader[&lt;span style="font-style:italic">&amp;#39;content-encoding&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.response = self._json_decode(data, encoding)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;received response&amp;#39;&lt;/span>, repr(self.response), &lt;span style="font-style:italic">&amp;#39;from&amp;#39;&lt;/span>, self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._process_response_json_content()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Binary or unknown content-type&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.response = data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;received &lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>self.jsonheader[&lt;span style="font-style:italic">&amp;#34;content-type&amp;#34;&lt;/span>]&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic"> response from&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._process_response_binary_content()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Close when response has been processed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.close()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>app-client.py&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic">#!/usr/bin/env python3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">sys&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">socket&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">selectors&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">traceback&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">libclient&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sel = selectors.DefaultSelector()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> create_request(action, value):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> action == &lt;span style="font-style:italic">&amp;#39;search&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> dict(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> type=&lt;span style="font-style:italic">&amp;#39;text/json&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> encoding=&lt;span style="font-style:italic">&amp;#39;utf-8&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content=dict(action=action, value=value)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> dict(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> type=&lt;span style="font-style:italic">&amp;#39;binary/custom-client-binary-type&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> encoding=&lt;span style="font-style:italic">&amp;#39;binary&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content=bytes(action + value, encoding=&lt;span style="font-style:italic">&amp;#39;utf-8&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> start_connection(host, port, request):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> addr = (host, port)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;starting connection to&amp;#39;&lt;/span>, addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock.setblocking(&lt;span style="font-weight:bold">False&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sock.connect_ex(addr)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = selectors.EVENT_READ | selectors.EVENT_WRITE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = libclient.Message(sel, sock, addr, request)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.register(sock, events, data=message)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">if&lt;/span> len(sys.argv) != 5:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;usage:&amp;#39;&lt;/span>, sys.argv[0], &lt;span style="font-style:italic">&amp;#39;&amp;lt;host&amp;gt; &amp;lt;port&amp;gt; &amp;lt;action&amp;gt; &amp;lt;value&amp;gt;&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sys.exit(1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>host, port = sys.argv[1], int(sys.argv[2])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>action, value = sys.argv[3], sys.argv[4]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>request = create_request(action, value)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>start_connection(host, port, request)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">while&lt;/span> &lt;span style="font-weight:bold">True&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> events = sel.select(timeout=1)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> key, mask &lt;span style="font-weight:bold">in&lt;/span> events:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message = key.data
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message.process_events(mask)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">Exception&lt;/span> &lt;span style="font-weight:bold">as&lt;/span> e:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;main: error: exception for&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">f&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>message.addr&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">:&lt;/span>&lt;span style="font-weight:bold;font-style:italic">\n&lt;/span>&lt;span style="font-weight:bold;font-style:italic">{&lt;/span>traceback.format_exc()&lt;span style="font-weight:bold;font-style:italic">}&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message.close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># Check for a socket being monitored to continue.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> &lt;span style="font-weight:bold">not&lt;/span> sel.get_map():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">break&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">KeyboardInterrupt&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="font-style:italic">&amp;#39;caught keyboard interrupt, exiting&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">finally&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sel.close()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="总结">
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>学习了通过 selector 多路 I/O 复用方式来处理 socket 多连接情况，如果请求量少的情况下，也可以使用多线程方式处理。&lt;/p>
+&lt;p>selector 是 Python3.6 标准库，等之后更了解 select、poll、epoll 之后写一篇总结。
+（不知道何年何月啊）&lt;/p></description></item></channel></rss>

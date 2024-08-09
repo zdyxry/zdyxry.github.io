@@ -1,3 +1,168 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Json on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Json/</link><description>Recent content in Json on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 17 Jun 2018 21:00:49 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Json/atom.xml" rel="self" type="application/rss+xml"/><item><title>将 Json 转换为 Python Object(二)</title><link>https://zdyxry.github.io/2018/06/17/%E5%B0%86-Json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-Python-Object%E4%BA%8C/</link><pubDate>Sun, 17 Jun 2018 21:00:49 +0000</pubDate><guid>https://zdyxry.github.io/2018/06/17/%E5%B0%86-Json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-Python-Object%E4%BA%8C/</guid><description>最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。 今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。
-源码代码很少，补充一些关键变量用于了解整体实现流程。
-import copy from pprint import pprint class Dict(dict): def __init__(__self, *args, **kwargs): print &amp;#39;init kwargs is &amp;#39;, kwargs object.__setattr__(__self, &amp;#39;__parent&amp;#39;, kwargs.pop(&amp;#39;__parent&amp;#39;, None)) object.__setattr__(__self, &amp;#39;__key&amp;#39;, kwargs.pop(&amp;#39;__key&amp;#39;, None)) for arg in args: if not arg: continue elif isinstance(arg, dict): for key, val in arg.items(): __self[key] = __self._hook(val) elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)): __self[arg[0]] = __self._hook(arg[1]) else: for key, val in iter(arg): __self[key] = __self.</description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Json on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Json/</link><description>Recent content in Json on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 17 Jun 2018 21:00:49 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Json/atom.xml" rel="self" type="application/rss+xml"/><item><title>将 Json 转换为 Python Object(二)</title><link>https://zdyxry.github.io/2018/06/17/%E5%B0%86-Json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-Python-Object%E4%BA%8C/</link><pubDate>Sun, 17 Jun 2018 21:00:49 +0000</pubDate><guid>https://zdyxry.github.io/2018/06/17/%E5%B0%86-Json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-Python-Object%E4%BA%8C/</guid><description>&lt;p>最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。
+今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。&lt;/p>
+&lt;p>源码代码很少，补充一些关键变量用于了解整体实现流程。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>import copy
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>from pprint import pprint
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>class Dict(dict):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __init__(__self, *args, **kwargs):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print &amp;#39;init kwargs is &amp;#39;, kwargs
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> object.__setattr__(__self, &amp;#39;__parent&amp;#39;, kwargs.pop(&amp;#39;__parent&amp;#39;, None))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> object.__setattr__(__self, &amp;#39;__key&amp;#39;, kwargs.pop(&amp;#39;__key&amp;#39;, None))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> for arg in args:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if not arg:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> continue
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> elif isinstance(arg, dict):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> for key, val in arg.items():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __self[key] = __self._hook(val)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __self[arg[0]] = __self._hook(arg[1])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> else:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> for key, val in iter(arg):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __self[key] = __self._hook(val)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> for key, val in kwargs.items():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __self[key] = __self._hook(val)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __setattr__(self, name, value):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if hasattr(Dict, name):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> raise AttributeError(&amp;#34;&amp;#39;Dict&amp;#39; object attribute &amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;&amp;#39;{0}&amp;#39; is read-only&amp;#34;.format(name))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> else:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self[name] = value
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __setitem__(self, name, value):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print &amp;#39;setitem name is %s, value is %s &amp;#39; % (name, value)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> super(Dict, self).__setitem__(name, value)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> try:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> p = object.__getattribute__(self, &amp;#39;__parent&amp;#39;)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> key = object.__getattribute__(self, &amp;#39;__key&amp;#39;)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> except AttributeError:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> p = None
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> key = None
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if p is not None:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print &amp;#39;parent is %s&amp;#39; % p
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print &amp;#39;key is %s&amp;#39; % key
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> p[key] = self
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> object.__delattr__(self, &amp;#39;__parent&amp;#39;)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> object.__delattr__(self, &amp;#39;__key&amp;#39;)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __add__(self, other):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if not self.keys():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return other
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> else:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self_type = type(self).__name__
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> other_type = type(other).__name__
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> msg = &amp;#34;unsupported operand type(s) for +: &amp;#39;{}&amp;#39; and &amp;#39;{}&amp;#39;&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> raise TypeError(msg.format(self_type, other_type))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> @classmethod
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def _hook(cls, item):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if isinstance(item, dict):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return cls(item)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> elif isinstance(item, (list, tuple)):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return type(item)(cls._hook(elem) for elem in item)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return item
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __getattr__(self, item):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return self.__getitem__(item)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __getitem__(self, name):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print &amp;#39;getitem name is &amp;#39;, name
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if name not in self:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print &amp;#34;%s not in self&amp;#34; % name
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return Dict(__parent=self, __key=name)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return super(Dict, self).__getitem__(name)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __delattr__(self, name):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> del self[name]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def to_dict(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> base = {}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> for key, value in self.items():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if isinstance(value, type(self)):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> base[key] = value.to_dict()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> elif isinstance(value, (list, tuple)):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> base[key] = type(value)(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> item.to_dict() if isinstance(item, type(self)) else
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> item for item in value)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> else:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> base[key] = value
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return base
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def copy(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return copy.copy(self)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def deepcopy(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return copy.deepcopy(self)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __deepcopy__(self, memo):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> other = self.__class__()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> memo[id(self)] = other
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> for key, value in self.items():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return other
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def update(self, *args, **kwargs):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> other = {}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if args:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if len(args) &amp;gt; 1:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> raise TypeError()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> other.update(args[0])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> other.update(kwargs)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> for k, v in other.items():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if ((k not in self) or
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> (not isinstance(self[k], dict)) or
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> (not isinstance(v, dict))):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self[k] = v
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> else:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self[k].update(v)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __getnewargs__(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return tuple(self.items())
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __getstate__(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return self
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def __setstate__(self, state):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.update(state)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def setdefault(self, key, default=None):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> if key in self:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return self[key]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> else:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self[key] = default
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> return default
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>json_data = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;a&amp;#34;: &amp;#34;a&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>test1 = Dict(json_data)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>test1.b.c = &amp;#34;c&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>test1.b.d.e = &amp;#34;e&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pprint(test1.to_dict())
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span> $ python a.py
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>init kwargs is {}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>setitem name is a, value is a
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>getitem name is b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>b not in self
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>init kwargs is {&amp;#39;__key&amp;#39;: &amp;#39;b&amp;#39;, &amp;#39;__parent&amp;#39;: {&amp;#39;a&amp;#39;: &amp;#39;a&amp;#39;}}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>setitem name is c, value is c
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>parent is {&amp;#39;a&amp;#39;: &amp;#39;a&amp;#39;}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>key is b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>setitem name is b, value is {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>getitem name is b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>getitem name is d
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>d not in self
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>init kwargs is {&amp;#39;__key&amp;#39;: &amp;#39;d&amp;#39;, &amp;#39;__parent&amp;#39;: {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;}}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>setitem name is e, value is e
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>parent is {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>key is d
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>setitem name is d, value is {&amp;#39;e&amp;#39;: &amp;#39;e&amp;#39;}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>{&amp;#39;a&amp;#39;: &amp;#39;a&amp;#39;, &amp;#39;b&amp;#39;: {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;, &amp;#39;d&amp;#39;: {&amp;#39;e&amp;#39;: &amp;#39;e&amp;#39;}}}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item></channel></rss>
