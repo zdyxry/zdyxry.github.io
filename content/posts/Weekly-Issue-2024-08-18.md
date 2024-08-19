@@ -38,6 +38,14 @@ https://www.cockroachlabs.com/blog/enterprise-license-announcement/
 
 越来越多的开源软件逐渐的从 "OpenSource" 变为了 "Source Available"。
 
+[[VictoriaMetrics]] CTO 的评论：[VictoriaMetrics CTO here. I don't understand why pure open-source license such a... | Hacker News](https://news.ycombinator.com/item?id=41266819)
+
+>不明白为什么开源软件要更换 License，如果现在大公司使用你的产品和你竞争，不给你付费，期望更改 License 之后就能收到付费，是不可能的。大公司只会 Fork 项目，用户会分散，更多的人会寻找新的替代品，产品会失去更多的用户和市场份额。
+
+> PS 恕我直言，CocroachDB、Redis、Elasticsearch、MongoDB、TimescaleDB、Grafana 等产品更改许可证的主要原因是收入增长率疲软。股东错误地认为牌照变更可能有助于提高收入增长率，但我不明白为什么......
+
+
+
 ---
 
 https://coroot.com/blog/community/understanding-observability-what-we-can-observe/
