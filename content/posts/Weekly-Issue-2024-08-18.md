@@ -44,7 +44,9 @@ https://www.cockroachlabs.com/blog/enterprise-license-announcement/
 
 > PS 恕我直言，CocroachDB、Redis、Elasticsearch、MongoDB、TimescaleDB、Grafana 等产品更改许可证的主要原因是收入增长率疲软。股东错误地认为牌照变更可能有助于提高收入增长率，但我不明白为什么......
 
+[508 - Whither CockroachDB? / RFD / Oxide](https://rfd.shared.oxide.computer/rfd/0508)
 
+[[Oxide]] 决定自己 fork 并维护 [[CockroachDB]] ，以满足自身产品需求，不接受外部贡献。
 
 ---
 
