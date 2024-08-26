@@ -69,7 +69,7 @@ GNU tar 会查看文件扩展名来尝试确定用户的意图。如果执行 `t
 
 [[AWS]] [[S3]] 支持条件写入，可以在创建对象之前检查对象是否存在。对象存储各家的基本操作一样，但是一些高级功能差异感觉还是挺大的。
 
-P.S. 同事说这个功能其他家很早就有了。
+[[Azure]] 很早就有了类似功能： [Specifying conditional headers for Blob service operations](https://learn.microsoft.com/en-us/rest/api/storageservices/specifying-conditional-headers-for-blob-service-operations)
 
 ---
 
@@ -163,7 +163,7 @@ Xe 在 Kubernetes 集群上配合 Kubevirt 和 Longhorn 使用 IRC Client，这�
 
 > I'd much rather live in a country that embraces everyone's right to BE FULL OF SHIT than one that pretends it can declare a priori what's true and what's false or one that makes false equivalences between violence and speech.
 
-什么是[[自由]]，哪里是真正的[[自由]]，这个话题和朋友聊过很多次，自由有其相对的成本，只要你能负担成本，那么就可以去享受自由。同时自由也是相对的，你需要明确的知道你用什么换到了什么。
+什么是[[自由]]，哪里是真正的[[自由]]，自由有其相对的成本，只要你能负担成本，那么就可以去享受自由。同时自由也是相对的，你需要明确的知道你用什么换到了什么。
 
 ---
 
