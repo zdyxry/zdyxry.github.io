@@ -13,3 +13,5 @@ draft: false
 [玻璃齿轮 - SlassGear](https://blog.winkidney.com/)
 
 [CosPotato's Blog](https://blog.0x233.cn/)
+
+[Joker](https://quartz.19960312.xyz/)
