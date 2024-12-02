@@ -154,9 +154,9 @@ Deno 的推文中的语句是： `Oracle has until January 4th to respond, or th
 [一年住 7 晚酒店的你，真的需要酒店高级会员吗？ - 少数派](https://sspai.com/post/94079)
 
 > 省流版本：
-> 预算 1~1000 元和入住天数 1~7 晚：携程、飞猪、房卷等，怎么便宜怎么来；
-> 预算 600~1000 元和入住天数 8~15 晚：可参与会员计划，显著提升住宿体验；
-> 预算 1000 以上或 17 晚及以上：随意。
+> 预算 1-1000 元和入住天数 1-7 晚：携程、飞猪、房卷等，怎么便宜怎么来；   
+> 预算 600-1000 元和入住天数 8-15 晚：可参与会员计划，显著提升住宿体验；    
+> 预算 1000 以上或 17 晚及以上：随意。   
 
 ---
 
@@ -195,5 +195,3 @@ Deno 的推文中的语句是： `Oracle has until January 4th to respond, or th
 ![](https://oss.zdyxry.com/20241130-nanjing-4.jpg)
 
 ![](https://oss.zdyxry.com/20241130-nanjing-5.jpg)
-
-![](https://oss.zdyxry.com/20241130-nanjing-6.jpg)
