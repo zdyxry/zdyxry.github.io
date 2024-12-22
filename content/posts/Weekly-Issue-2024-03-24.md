@@ -132,6 +132,8 @@ Stripe 核心 API 服务每天会发生 400 次的变更，提交代码后，就
 
 在 Facebook，我创造了一个术语“菲律宾产品市场契合度”： 每年，产品经理都会观察到他们的新产品在菲律宾得到广泛采用，并宣称他们的想法正在发挥作用。主管们会迅速为团队配备人员，并向副总裁通报这一新发现，结果却发现这种模式在其他国家无法重现。菲律宾是世界上上网时间最长的国家之一，他们会在几天内尝试任何事情。
 
+2024 年 12 月 22 日更新：这个信息是作者虚构的，为了证明自己发信息是否会被当作“News”发布。
+
 ---
 
 [Musk’s Neuralink Shows First Patient Playing Chess With Mind](https://www.bloomberg.com/news/articles/2024-03-20/musk-s-neuralink-gives-update-on-first-brain-implant-patient)
