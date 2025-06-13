@@ -15,3 +15,5 @@ draft: false
 [CosPotato's Blog](https://blog.0x233.cn/)
 
 [Joker](https://quartz.19960312.xyz/)
+
+[fanyang](https://fuis.me/)
