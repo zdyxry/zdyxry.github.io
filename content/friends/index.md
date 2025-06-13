@@ -16,4 +16,4 @@ draft: false
 
 [Joker](https://quartz.19960312.xyz/)
 
-[fanyang](https://fuis.me/)
+[fanyang's blog](https://fuis.me/)
