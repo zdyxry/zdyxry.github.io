@@ -93,7 +93,7 @@ description:
 
 一直有一个场景无法很好的处理，当 clone 下来一个仓库之后，如何找到当前仓库中代码量最大的目录？虽然 `tokei` 有 `-f` 的选项可以直接输出所有文件的统计信息，但是没有目录统计。laixintao 之前实现了 [tokei-pie](https://github.com/laixintao/tokei-pie)，是将 `tokei` 的输出转为旭日图，可以在浏览器中查看，可以满足我的需求，但我不想每次都打开浏览器，所以一直在找一个可以在终端中查看的方式/工具。
 
-在 Todo 列表里面一直有一项任务是“基于 Textual 实现 Treemap”，Treemap 的交互形式一直没想好，优先级不高，一直就放在那里。上周突然看到了[noxdir](https://github.com/crumbyte/noxdir) 项目，一个用于查看磁盘空间使用率的 TUI，发现交互形式很好，看了看代码，主要的实现逻辑都在 bubbletea 和文件目录树的组织，只需要把磁盘空间使用率改为代码统计信息就可以。noxdir LICENSE 是 MIT，只要在代码中保留原作者的版权信息就可以使用k
+在 Todo 列表里面一直有一项任务是“基于 Textual 实现 Treemap”，Treemap 的交互形式一直没想好，优先级不高，一直就放在那里。上周突然看到了[noxdir](https://github.com/crumbyte/noxdir) 项目，一个用于查看磁盘空间使用率的 TUI，发现交互形式很好，看了看代码，主要的实现逻辑都在 bubbletea 和文件目录树的组织，只需要把磁盘空间使用率改为代码统计信息就可以。noxdir LICENSE 是 MIT，在代码中保留原作者的版权信息可以使用。
 
 周末借助 Gemini Pro 2.5 和 Copilot，Vibe Coding 了一把，有了一个可用的版本： [tokui](https://github.com/zdyxry/tokui)。全部让 AI 生成，包含 README、CI 配置调整、代码注释等等。大概的流程是：把全量代码发给 Gemini Pro 2.5，同步发给它我的需求描述，让其返回目标代码结构和文件全量代码，得到全量代码后，让 Copilot 进行基本的编译调试。一点自己的使用经验：
 * 如果代码体量不大，可以直接把所有代码发给 Gemini，效率很高；
