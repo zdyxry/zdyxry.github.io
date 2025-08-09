@@ -1,0 +1,360 @@
+<!doctype html><html lang=zh-cn><head><title>Linux 安全清理 /boot 分区 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="
+  背景
+  
+    
+    链接到标题
+  
+
+众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。
+在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 /boot 分区被占满的情况，特此查找资料记录。
+
+  升级方式
+  
+    
+    链接到标题
+  
+
+在之前的博客中提到过多次，CentOS 发行版升级一般采用 yum update ，Kernel 因为没有相关依赖，也可以直接 rpm -Uvh  的方式升级。
+
+  yum update
+  
+    
+    链接到标题
+  
+
+举个例子，比如这台 Linux，目前情况如下：
+[root@node111 14:25:10 ~]$uname -a
+Linux node111 3.10.0-693.11.6.el7.smartx.1.x86_64 #1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux
+[root@node111 14:25:12 ~]$ll /boot/
+total 124929
+-rw-r--r--. 1 root root   140924 Jan 16  2018 config-3.10.0-693.11.6.el7.smartx.1.x86_64
+drwxr-xr-x. 3 root root     1024 Jul  2 07:23 efi
+drwxr-xr-x. 2 root root     1024 Jul  2 07:24 grub
+drwx------. 5 root root     1024 Jul  2 07:31 grub2
+-rw-------. 1 root root 57031976 Jul  2 07:29 initramfs-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892.img
+-rw-------. 1 root root 17270634 Jul  2 07:30 initramfs-3.10.0-229.el7.x86_64.img
+-rw-------. 1 root root 20958312 Jul  2 07:31 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img
+-rw-------  1 root root 16575028 Jul  2 07:32 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img
+-rw-r--r--. 1 root root   610559 Jul  2 07:28 initrd-plymouth.img
+drwx------. 2 root root    12288 Jul  2 07:23 lost+found
+-rw-r--r--. 1 root root   293110 Jan 16  2018 symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz
+-rw-------. 1 root root  3232490 Jan 16  2018 System.map-3.10.0-693.11.6.el7.smartx.1.x86_64
+-rwxr-xr-x. 1 root root  5889744 Jul  2 07:29 vmlinuz-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892
+-rwxr-xr-x. 1 root root  5889744 Jan 16  2018 vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64
+我们要对它进行升级 Kernel 操作："><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Linux 安全清理 /boot 分区"><meta name=twitter:description content="背景 链接到标题 众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。 在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 /boot 分区被占满的情况，特此查找资料记录。
+升级方式 链接到标题 在之前的博客中提到过多次，CentOS 发行版升级一般采用 yum update ，Kernel 因为没有相关依赖，也可以直接 rpm -Uvh 的方式升级。
+yum update 链接到标题 举个例子，比如这台 Linux，目前情况如下：
+[root@node111 14:25:10 ~]$uname -a Linux node111 3.10.0-693.11.6.el7.smartx.1.x86_64 #1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux [root@node111 14:25:12 ~]$ll /boot/ total 124929 -rw-r--r--. 1 root root 140924 Jan 16 2018 config-3.10.0-693.11.6.el7.smartx.1.x86_64 drwxr-xr-x. 3 root root 1024 Jul 2 07:23 efi drwxr-xr-x. 2 root root 1024 Jul 2 07:24 grub drwx------. 5 root root 1024 Jul 2 07:31 grub2 -rw-------. 1 root root 57031976 Jul 2 07:29 initramfs-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892.img -rw-------. 1 root root 17270634 Jul 2 07:30 initramfs-3.10.0-229.el7.x86_64.img -rw-------. 1 root root 20958312 Jul 2 07:31 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img -rw------- 1 root root 16575028 Jul 2 07:32 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img -rw-r--r--. 1 root root 610559 Jul 2 07:28 initrd-plymouth.img drwx------. 2 root root 12288 Jul 2 07:23 lost+found -rw-r--r--. 1 root root 293110 Jan 16 2018 symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz -rw-------. 1 root root 3232490 Jan 16 2018 System.map-3.10.0-693.11.6.el7.smartx.1.x86_64 -rwxr-xr-x. 1 root root 5889744 Jul 2 07:29 vmlinuz-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892 -rwxr-xr-x. 1 root root 5889744 Jan 16 2018 vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64 我们要对它进行升级 Kernel 操作："><meta property="og:url" content="https://zdyxry.github.io/2018/08/09/Linux-%E5%AE%89%E5%85%A8%E6%B8%85%E7%90%86-/boot-%E5%88%86%E5%8C%BA/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="Linux 安全清理 /boot 分区"><meta property="og:description" content="背景 链接到标题 众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。 在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 /boot 分区被占满的情况，特此查找资料记录。
+升级方式 链接到标题 在之前的博客中提到过多次，CentOS 发行版升级一般采用 yum update ，Kernel 因为没有相关依赖，也可以直接 rpm -Uvh 的方式升级。
+yum update 链接到标题 举个例子，比如这台 Linux，目前情况如下：
+[root@node111 14:25:10 ~]$uname -a Linux node111 3.10.0-693.11.6.el7.smartx.1.x86_64 #1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux [root@node111 14:25:12 ~]$ll /boot/ total 124929 -rw-r--r--. 1 root root 140924 Jan 16 2018 config-3.10.0-693.11.6.el7.smartx.1.x86_64 drwxr-xr-x. 3 root root 1024 Jul 2 07:23 efi drwxr-xr-x. 2 root root 1024 Jul 2 07:24 grub drwx------. 5 root root 1024 Jul 2 07:31 grub2 -rw-------. 1 root root 57031976 Jul 2 07:29 initramfs-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892.img -rw-------. 1 root root 17270634 Jul 2 07:30 initramfs-3.10.0-229.el7.x86_64.img -rw-------. 1 root root 20958312 Jul 2 07:31 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img -rw------- 1 root root 16575028 Jul 2 07:32 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img -rw-r--r--. 1 root root 610559 Jul 2 07:28 initrd-plymouth.img drwx------. 2 root root 12288 Jul 2 07:23 lost+found -rw-r--r--. 1 root root 293110 Jan 16 2018 symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz -rw-------. 1 root root 3232490 Jan 16 2018 System.map-3.10.0-693.11.6.el7.smartx.1.x86_64 -rwxr-xr-x. 1 root root 5889744 Jul 2 07:29 vmlinuz-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892 -rwxr-xr-x. 1 root root 5889744 Jan 16 2018 vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64 我们要对它进行升级 Kernel 操作："><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-08-09T15:00:25+00:00"><meta property="article:modified_time" content="2018-08-09T15:00:25+00:00"><meta property="article:tag" content="Linux"><link rel=canonical href=https://zdyxry.github.io/2018/08/09/Linux-%E5%AE%89%E5%85%A8%E6%B8%85%E7%90%86-/boot-%E5%88%86%E5%8C%BA/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.234dd936a3895f104a22c73bac5d02c5bac76466a036abd8a3baf6fa2ecbc413.css integrity="sha256-I03ZNqOJXxBKIsc7rF0CxbrHZGagNqvYo7r2+i7LxBM=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+</a><input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/08/09/Linux-%E5%AE%89%E5%85%A8%E6%B8%85%E7%90%86-/boot-%E5%88%86%E5%8C%BA/>Linux 安全清理 /boot 分区</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
+<time datetime=2018-08-09T15:00:25Z>August 9, 2018
+</time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
+阅读时间：8 分钟</span></div><div class=tags><i class="fa-solid fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Linux/>Linux</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#升级方式>升级方式</a><ul><li><a href=#yum-update>yum update</a></li><li><a href=#yum-upgrade>yum upgrade</a></li></ul></li><li><a href=#正确清理方式>正确清理方式</a></li><li><a href=#总结>总结</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>众多 Linux 发行版中，很多为了稳定性要求，Kernel 的版本还处于比较低的版本，比如：3.10.0-xxx（说的就是 CentOS）。
+在工作中难免因为某些需求要升级 Kernel，最近遇到多次升级 Kernel 后导致 <code>/boot</code> 分区被占满的情况，特此查找资料记录。</p><h2 id=升级方式>升级方式
+<a class=heading-link href=#%e5%8d%87%e7%ba%a7%e6%96%b9%e5%bc%8f><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>在之前的博客中提到过多次，CentOS 发行版升级一般采用 <code>yum update</code> ，<code>Kernel</code> 因为没有相关依赖，也可以直接 <code>rpm -Uvh </code>的方式升级。</p><h3 id=yum-update>yum update
+<a class=heading-link href=#yum-update><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>举个例子，比如这台 Linux，目前情况如下：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node111 14:25:10 ~<span style=color:#f92672>]</span>$uname -a
+</span></span><span style=display:flex><span>Linux node111 3.10.0-693.11.6.el7.smartx.1.x86_64 <span style=color:#75715e>#1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@node111 14:25:12 ~<span style=color:#f92672>]</span>$ll /boot/
+</span></span><span style=display:flex><span>total <span style=color:#ae81ff>124929</span>
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>140924</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> config-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>3</span> root root     <span style=color:#ae81ff>1024</span> Jul  <span style=color:#ae81ff>2</span> 07:23 efi
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>2</span> root root     <span style=color:#ae81ff>1024</span> Jul  <span style=color:#ae81ff>2</span> 07:24 grub
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>5</span> root root     <span style=color:#ae81ff>1024</span> Jul  <span style=color:#ae81ff>2</span> 07:31 grub2
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>57031976</span> Jul  <span style=color:#ae81ff>2</span> 07:29 initramfs-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>17270634</span> Jul  <span style=color:#ae81ff>2</span> 07:30 initramfs-3.10.0-229.el7.x86_64.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>20958312</span> Jul  <span style=color:#ae81ff>2</span> 07:31 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>16575028</span> Jul  <span style=color:#ae81ff>2</span> 07:32 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>610559</span> Jul  <span style=color:#ae81ff>2</span> 07:28 initrd-plymouth.img
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>2</span> root root    <span style=color:#ae81ff>12288</span> Jul  <span style=color:#ae81ff>2</span> 07:23 lost+found
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>293110</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>3232490</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> System.map-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> Jul  <span style=color:#ae81ff>2</span> 07:29 vmlinuz-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span></code></pre></div><p>我们要对它进行升级 Kernel 操作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node111 14:36:19 ~<span style=color:#f92672>]</span>$uname -a
+</span></span><span style=display:flex><span>Linux node111 3.10.0-693.11.6.el7.smartx.1.x86_64 <span style=color:#75715e>#1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@node111 14:36:22 ~<span style=color:#f92672>]</span>$yum update kernel
+</span></span><span style=display:flex><span>Loaded plugins: fastestmirror, langpacks
+</span></span><span style=display:flex><span>Loading mirror speeds from cached hostfile
+</span></span><span style=display:flex><span>Resolving Dependencies
+</span></span><span style=display:flex><span>--&gt; Running transaction check
+</span></span><span style=display:flex><span>---&gt; Package kernel.x86_64 0:4.4.26-201.el7.centos will be installed
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: kernel-core-uname-r <span style=color:#f92672>=</span> 4.4.26-201.el7.centos.x86_64 <span style=color:#66d9ef>for</span> package: kernel-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: kernel-modules-uname-r <span style=color:#f92672>=</span> 4.4.26-201.el7.centos.x86_64 <span style=color:#66d9ef>for</span> package: kernel-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: xorg-x11-drv-vmmouse &gt;<span style=color:#f92672>=</span> 14.0.0 <span style=color:#66d9ef>for</span> package: kernel-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>--&gt; Running transaction check
+</span></span><span style=display:flex><span>---&gt; Package kernel-core.x86_64 0:4.4.26-201.el7.centos will be installed
+</span></span><span style=display:flex><span>---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be obsoleted
+</span></span><span style=display:flex><span>---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be updated
+</span></span><span style=display:flex><span>---&gt; Package kernel-headers.x86_64 0:4.4.26-201.el7.centos will be obsoleting
+</span></span><span style=display:flex><span>---&gt; Package kernel-modules.x86_64 0:4.4.26-201.el7.centos will be installed
+</span></span><span style=display:flex><span>--&gt; Finished Dependency Resolution
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dependencies Resolved
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span> Package                                                          Arch                                                     Version                                                                    Repository                                                Size
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span>Installing:
+</span></span><span style=display:flex><span> kernel                                                           x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    <span style=color:#ae81ff>79</span> k
+</span></span><span style=display:flex><span> kernel-headers                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                   1.0 M
+</span></span><span style=display:flex><span>     replacing  kernel-headers.x86_64 3.10.0-862.3.3.el7
+</span></span><span style=display:flex><span>Installing <span style=color:#66d9ef>for</span> dependencies:
+</span></span><span style=display:flex><span> kernel-core                                                      x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    <span style=color:#ae81ff>20</span> M
+</span></span><span style=display:flex><span> kernel-modules                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    <span style=color:#ae81ff>18</span> M
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Transaction Summary
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span>Install  <span style=color:#ae81ff>2</span> Packages <span style=color:#f92672>(</span>+2 Dependent packages<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Total download size: <span style=color:#ae81ff>40</span> M
+</span></span><span style=display:flex><span>Is this ok <span style=color:#f92672>[</span>y/d/N<span style=color:#f92672>]</span>: y
+</span></span><span style=display:flex><span>Downloading packages:
+</span></span><span style=display:flex><span>Delta RPMs disabled because /usr/bin/applydeltarpm not installed.
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>1/4<span style=color:#f92672>)</span>: kernel-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                                |  <span style=color:#ae81ff>79</span> kB  00:00:00     
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>2/4<span style=color:#f92672>)</span>: kernel-headers-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        | 1.0 MB  00:00:00     
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>3/4<span style=color:#f92672>)</span>: kernel-core-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                           |  <span style=color:#ae81ff>20</span> MB  00:00:00     
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>4/4<span style=color:#f92672>)</span>: kernel-modules-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        |  <span style=color:#ae81ff>18</span> MB  00:00:00     
+</span></span><span style=display:flex><span>---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+</span></span><span style=display:flex><span>Total                                                                                                                                                                                                                                 <span style=color:#ae81ff>50</span> MB/s |  <span style=color:#ae81ff>40</span> MB  00:00:00     
+</span></span><span style=display:flex><span>Running transaction check
+</span></span><span style=display:flex><span>Running transaction test
+</span></span><span style=display:flex><span>Transaction test succeeded
+</span></span><span style=display:flex><span>Running transaction
+</span></span><span style=display:flex><span>Warning: RPMDB altered outside of yum.
+</span></span><span style=display:flex><span>  Installing : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 
+</span></span><span style=display:flex><span>  Installing : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 
+</span></span><span style=display:flex><span>  Installing : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       3/5 
+</span></span><span style=display:flex><span>  Installing : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               4/5 
+</span></span><span style=display:flex><span>  Cleanup    : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               3/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       4/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          6/5 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Installed:
+</span></span><span style=display:flex><span>  kernel.x86_64 0:4.4.26-201.el7.centos                                                                                         kernel-headers.x86_64 0:4.4.26-201.el7.centos                                                                                        
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dependency Installed:
+</span></span><span style=display:flex><span>  kernel-core.x86_64 0:4.4.26-201.el7.centos                                                                                      kernel-modules.x86_64 0:4.4.26-201.el7.centos                                                                                     
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Replaced:
+</span></span><span style=display:flex><span>  kernel-headers.x86_64 0:3.10.0-862.3.3.el7                                                                                                                                                                                                                         
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Complete!
+</span></span></code></pre></div><p>可以看到，在升级之后 <code>/boot/</code> 分区下的老版本 Kernel 内核文件 <code>vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64</code> 还在：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node111 14:37:47 ~<span style=color:#f92672>]</span>$ll /boot/
+</span></span><span style=display:flex><span>total <span style=color:#ae81ff>151927</span>
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>140924</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> config-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rw-r--r--  <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>169326</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> config-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>3</span> root root     <span style=color:#ae81ff>1024</span> Jul  <span style=color:#ae81ff>2</span> 07:23 efi
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>2</span> root root     <span style=color:#ae81ff>1024</span> Jul  <span style=color:#ae81ff>2</span> 07:24 grub
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>5</span> root root     <span style=color:#ae81ff>1024</span> Aug  <span style=color:#ae81ff>9</span> 14:37 grub2
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>57031976</span> Jul  <span style=color:#ae81ff>2</span> 07:29 initramfs-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>17270634</span> Jul  <span style=color:#ae81ff>2</span> 07:30 initramfs-3.10.0-229.el7.x86_64.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>20958312</span> Jul  <span style=color:#ae81ff>2</span> 07:31 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>16575028</span> Jul  <span style=color:#ae81ff>2</span> 07:32 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>18060511</span> Aug  <span style=color:#ae81ff>9</span> 14:37 initramfs-4.4.26-201.el7.centos.x86_64.img
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>610559</span> Jul  <span style=color:#ae81ff>2</span> 07:28 initrd-plymouth.img
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>2</span> root root    <span style=color:#ae81ff>12288</span> Jul  <span style=color:#ae81ff>2</span> 07:23 lost+found
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>293110</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>3232490</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> System.map-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>3265893</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> System.map-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> Jul  <span style=color:#ae81ff>2</span> 07:29 vmlinuz-0-rescue-9b8f4b7a44fc4a1db2b125ee46f00892
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rwxr-xr-x  <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>6148096</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> vmlinuz-4.4.26-201.el7.centos.x86_64
+</span></span></code></pre></div><h3 id=yum-upgrade>yum upgrade
+<a class=heading-link href=#yum-upgrade><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>刚刚我们用了 <code>yum update</code> 方式升级，发现没有自动清理掉旧的 Kernel ，在 Stack Overflow 上看到有人说可以使用 <code>upgrade</code> 方式，会自动清理，
+现在我们换 <code>yum upgrade</code> 升级看看有何不同。</p><p>首先查看我们的环境状态：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:41:11 ~<span style=color:#f92672>]</span>$ll /boot/
+</span></span><span style=display:flex><span>total <span style=color:#ae81ff>124884</span>
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>140924</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> config-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>3</span> root root     <span style=color:#ae81ff>1024</span> May <span style=color:#ae81ff>31</span> 10:55 efi
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>2</span> root root     <span style=color:#ae81ff>1024</span> May <span style=color:#ae81ff>31</span> 10:56 grub
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>5</span> root root     <span style=color:#ae81ff>1024</span> May <span style=color:#ae81ff>31</span> 11:02 grub2
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>57008277</span> May <span style=color:#ae81ff>31</span> 11:01 initramfs-0-rescue-00bf5adc700644d685733d8e76c21d42.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>17249662</span> May <span style=color:#ae81ff>31</span> 11:01 initramfs-3.10.0-229.el7.x86_64.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>20945698</span> May <span style=color:#ae81ff>31</span> 11:02 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>16586061</span> Jul  <span style=color:#ae81ff>4</span> 11:49 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>610343</span> May <span style=color:#ae81ff>31</span> 11:00 initrd-plymouth.img
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>2</span> root root    <span style=color:#ae81ff>12288</span> May <span style=color:#ae81ff>31</span> 10:55 lost+found
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>293110</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>3232490</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> System.map-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> May <span style=color:#ae81ff>31</span> 11:01 vmlinuz-0-rescue-00bf5adc700644d685733d8e76c21d42
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:41:13 ~<span style=color:#f92672>]</span>$uname -a
+</span></span><span style=display:flex><span>Linux node112 3.10.0-693.11.6.el7.smartx.1.x86_64 <span style=color:#75715e>#1 SMP Tue Jan 16 22:09:10 CST 2018 x86_64 x86_64 x86_64 GNU/Linux</span>
+</span></span></code></pre></div><p>进行升级：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:42:34 ~<span style=color:#f92672>]</span>$yum upgrade kernel
+</span></span><span style=display:flex><span>Loaded plugins: fastestmirror, langpacks
+</span></span><span style=display:flex><span>Loading mirror speeds from cached hostfile
+</span></span><span style=display:flex><span>Resolving Dependencies
+</span></span><span style=display:flex><span>--&gt; Running transaction check
+</span></span><span style=display:flex><span>---&gt; Package kernel.x86_64 0:4.4.26-201.el7.centos will be installed
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: kernel-core-uname-r <span style=color:#f92672>=</span> 4.4.26-201.el7.centos.x86_64 <span style=color:#66d9ef>for</span> package: kernel-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: kernel-modules-uname-r <span style=color:#f92672>=</span> 4.4.26-201.el7.centos.x86_64 <span style=color:#66d9ef>for</span> package: kernel-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: xorg-x11-drv-vmmouse &gt;<span style=color:#f92672>=</span> 14.0.0 <span style=color:#66d9ef>for</span> package: kernel-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>--&gt; Running transaction check
+</span></span><span style=display:flex><span>---&gt; Package kernel-core.x86_64 0:4.4.26-201.el7.centos will be installed
+</span></span><span style=display:flex><span>---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be updated
+</span></span><span style=display:flex><span>---&gt; Package kernel-headers.x86_64 0:3.10.0-862.3.3.el7 will be obsoleted
+</span></span><span style=display:flex><span>---&gt; Package kernel-headers.x86_64 0:4.4.26-201.el7.centos will be obsoleting
+</span></span><span style=display:flex><span>---&gt; Package kernel-modules.x86_64 0:4.4.26-201.el7.centos will be installed
+</span></span><span style=display:flex><span>--&gt; Finished Dependency Resolution
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dependencies Resolved
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span> Package                                                          Arch                                                     Version                                                                    Repository                                                Size
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span>Installing:
+</span></span><span style=display:flex><span> kernel                                                           x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    <span style=color:#ae81ff>79</span> k
+</span></span><span style=display:flex><span> kernel-headers                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                   1.0 M
+</span></span><span style=display:flex><span>     replacing  kernel-headers.x86_64 3.10.0-862.3.3.el7
+</span></span><span style=display:flex><span>Installing <span style=color:#66d9ef>for</span> dependencies:
+</span></span><span style=display:flex><span> kernel-core                                                      x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    <span style=color:#ae81ff>20</span> M
+</span></span><span style=display:flex><span> kernel-modules                                                   x86_64                                                   4.4.26-201.el7.centos                                                      kernel                                                    <span style=color:#ae81ff>18</span> M
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Transaction Summary
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span>Install  <span style=color:#ae81ff>2</span> Packages <span style=color:#f92672>(</span>+2 Dependent packages<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Total download size: <span style=color:#ae81ff>40</span> M
+</span></span><span style=display:flex><span>Is this ok <span style=color:#f92672>[</span>y/d/N<span style=color:#f92672>]</span>: y
+</span></span><span style=display:flex><span>Downloading packages:
+</span></span><span style=display:flex><span>Delta RPMs disabled because /usr/bin/applydeltarpm not installed.
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>1/4<span style=color:#f92672>)</span>: kernel-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                                |  <span style=color:#ae81ff>79</span> kB  00:00:00     
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>2/4<span style=color:#f92672>)</span>: kernel-headers-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        | 1.0 MB  00:00:00     
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>3/4<span style=color:#f92672>)</span>: kernel-modules-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                        |  <span style=color:#ae81ff>18</span> MB  00:00:00     
+</span></span><span style=display:flex><span><span style=color:#f92672>(</span>4/4<span style=color:#f92672>)</span>: kernel-core-4.4.26-201.el7.centos.x86_64.rpm                                                                                                                                                                                           |  <span style=color:#ae81ff>20</span> MB  00:00:00     
+</span></span><span style=display:flex><span>---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+</span></span><span style=display:flex><span>Total                                                                                                                                                                                                                                 <span style=color:#ae81ff>58</span> MB/s |  <span style=color:#ae81ff>40</span> MB  00:00:00     
+</span></span><span style=display:flex><span>Running transaction check
+</span></span><span style=display:flex><span>Running transaction test
+</span></span><span style=display:flex><span>Transaction test succeeded
+</span></span><span style=display:flex><span>Running transaction
+</span></span><span style=display:flex><span>Warning: RPMDB altered outside of yum.
+</span></span><span style=display:flex><span>  Installing : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 
+</span></span><span style=display:flex><span>  Installing : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 
+</span></span><span style=display:flex><span>  Installing : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       3/5 
+</span></span><span style=display:flex><span>  Installing : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               4/5 
+</span></span><span style=display:flex><span>  Cleanup    : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-core-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                          1/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-headers-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       2/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                               3/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-modules-4.4.26-201.el7.centos.x86_64                                                                                                                                                                                                       4/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          5/5 
+</span></span><span style=display:flex><span>  Verifying  : kernel-headers-3.10.0-862.3.3.el7.x86_64                                                                                                                                                                                                          6/5 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Installed:
+</span></span><span style=display:flex><span>  kernel.x86_64 0:4.4.26-201.el7.centos                                                                                         kernel-headers.x86_64 0:4.4.26-201.el7.centos                                                                                        
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dependency Installed:
+</span></span><span style=display:flex><span>  kernel-core.x86_64 0:4.4.26-201.el7.centos                                                                                      kernel-modules.x86_64 0:4.4.26-201.el7.centos                                                                                     
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Replaced:
+</span></span><span style=display:flex><span>  kernel-headers.x86_64 0:3.10.0-862.3.3.el7                                                                                                                                                                                                                         
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Complete!
+</span></span></code></pre></div><hr><p>可以看到，仍然没有自动清理掉旧的 Kernel， <code>/boot</code> 分区的空间还是被占用了。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:43:49 ~<span style=color:#f92672>]</span>$ll /boot/
+</span></span><span style=display:flex><span>total <span style=color:#ae81ff>151870</span>
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>140924</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> config-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rw-r--r--  <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>169326</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> config-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>3</span> root root     <span style=color:#ae81ff>1024</span> May <span style=color:#ae81ff>31</span> 10:55 efi
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>2</span> root root     <span style=color:#ae81ff>1024</span> May <span style=color:#ae81ff>31</span> 10:56 grub
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>5</span> root root     <span style=color:#ae81ff>1024</span> Aug  <span style=color:#ae81ff>9</span> 14:43 grub2
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>57008277</span> May <span style=color:#ae81ff>31</span> 11:01 initramfs-0-rescue-00bf5adc700644d685733d8e76c21d42.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>17249662</span> May <span style=color:#ae81ff>31</span> 11:01 initramfs-3.10.0-229.el7.x86_64.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>20945698</span> May <span style=color:#ae81ff>31</span> 11:02 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64.img
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>16586061</span> Jul  <span style=color:#ae81ff>4</span> 11:49 initramfs-3.10.0-693.11.6.el7.smartx.1.x86_64kdump.img
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>18048069</span> Aug  <span style=color:#ae81ff>9</span> 14:43 initramfs-4.4.26-201.el7.centos.x86_64.img
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>610343</span> May <span style=color:#ae81ff>31</span> 11:00 initrd-plymouth.img
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>2</span> root root    <span style=color:#ae81ff>12288</span> May <span style=color:#ae81ff>31</span> 10:55 lost+found
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>293110</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> symvers-3.10.0-693.11.6.el7.smartx.1.x86_64.gz
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>3232490</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> System.map-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>3265893</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> System.map-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> May <span style=color:#ae81ff>31</span> 11:01 vmlinuz-0-rescue-00bf5adc700644d685733d8e76c21d42
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> Jan <span style=color:#ae81ff>16</span>  <span style=color:#ae81ff>2018</span> vmlinuz-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>-rwxr-xr-x  <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>6148096</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> vmlinuz-4.4.26-201.el7.centos.x86_64
+</span></span></code></pre></div><h2 id=正确清理方式>正确清理方式
+<a class=heading-link href=#%e6%ad%a3%e7%a1%ae%e6%b8%85%e7%90%86%e6%96%b9%e5%bc%8f><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:44:11 ~<span style=color:#f92672>]</span>$rpm -q kernel
+</span></span><span style=display:flex><span>kernel-3.10.0-693.11.6.el7.smartx.1.x86_64
+</span></span><span style=display:flex><span>kernel-4.4.26-201.el7.centos.x86_64
+</span></span></code></pre></div><p>使用 <code>yum-utils</code> 中提供的 <code>package-cleanup</code> 工具：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:48:02 ~<span style=color:#f92672>]</span>$rpm -qf <span style=color:#e6db74>`</span>which package-cleanup<span style=color:#e6db74>`</span>
+</span></span><span style=display:flex><span>yum-utils-1.1.31-42.el7.noarch
+</span></span></code></pre></div><p>在我们重启过 OS，并确保已经使用升级后的 Kernel 后，进行如下操作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:53:44 ~<span style=color:#f92672>]</span>$uname -a
+</span></span><span style=display:flex><span>Linux node112 4.4.26-201.el7.centos.x86_64 <span style=color:#75715e>#1 SMP Thu Oct 20 17:49:17 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:53:46 ~<span style=color:#f92672>]</span>$package-cleanup --oldkernels --count<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>Loaded plugins: fastestmirror, langpacks
+</span></span><span style=display:flex><span>--&gt; Running transaction check
+</span></span><span style=display:flex><span>---&gt; Package kernel.x86_64 0:3.10.0-693.11.6.el7.smartx.1 will be erased
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: kernel<span style=color:#f92672>(</span>__alloc_workqueue_key<span style=color:#f92672>)</span> <span style=color:#f92672>=</span> 0x43a53735 <span style=color:#66d9ef>for</span> package: kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: kernel<span style=color:#f92672>(</span>__bitmap_or<span style=color:#f92672>)</span> <span style=color:#f92672>=</span> 0x9f2bdaac <span style=color:#66d9ef>for</span> package: kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64
+</span></span><span style=display:flex><span>--&gt; Processing Dependency: kernel<span style=color:#f92672>(</span>__bitmap_weight<span style=color:#f92672>)</span> <span style=color:#f92672>=</span> 0x4cbbd171 <span style=color:#66d9ef>for</span> package: kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64
+</span></span><span style=display:flex><span>--&gt; Running transaction check
+</span></span><span style=display:flex><span>---&gt; Package kmod-mpt3sas.x86_64 0:24.125.01.00_el7.4-1 will be erased
+</span></span><span style=display:flex><span>--&gt; Finished Dependency Resolution
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dependencies Resolved
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span> Package                                                      Arch                                                   Version                                                                         Repository                                                 Size
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span>Removing:
+</span></span><span style=display:flex><span> kernel                                                       x86_64                                                 3.10.0-693.11.6.el7.smartx.1                                                    @anaconda                                                  <span style=color:#ae81ff>60</span> M
+</span></span><span style=display:flex><span>Removing <span style=color:#66d9ef>for</span> dependencies:
+</span></span><span style=display:flex><span> kmod-mpt3sas                                                 x86_64                                                 24.125.01.00_el7.4-1                                                            @anaconda                                                 5.3 M
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Transaction Summary
+</span></span><span style=display:flex><span><span style=color:#f92672>=====================================================================================================================================================================================================================================================================</span>
+</span></span><span style=display:flex><span>Remove  <span style=color:#ae81ff>1</span> Package <span style=color:#f92672>(</span>+1 Dependent package<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Installed size: <span style=color:#ae81ff>65</span> M
+</span></span><span style=display:flex><span>Is this ok <span style=color:#f92672>[</span>y/N<span style=color:#f92672>]</span>: y
+</span></span><span style=display:flex><span>Downloading packages:
+</span></span><span style=display:flex><span>Running transaction check
+</span></span><span style=display:flex><span>Running transaction test
+</span></span><span style=display:flex><span>Transaction test succeeded
+</span></span><span style=display:flex><span>Running transaction
+</span></span><span style=display:flex><span>  Erasing    : kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64                                                                                                                                                                                                          1/2 
+</span></span><span style=display:flex><span>  Erasing    : kernel-3.10.0-693.11.6.el7.smartx.1.x86_64                                                                                                                                                                                                        2/2 
+</span></span><span style=display:flex><span>  Verifying  : kernel-3.10.0-693.11.6.el7.smartx.1.x86_64                                                                                                                                                                                                        1/2 
+</span></span><span style=display:flex><span>  Verifying  : kmod-mpt3sas-24.125.01.00_el7.4-1.x86_64                                                                                                                                                                                                          2/2 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Removed:
+</span></span><span style=display:flex><span>  kernel.x86_64 0:3.10.0-693.11.6.el7.smartx.1                                                                                                                                                                                                                       
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Dependency Removed:
+</span></span><span style=display:flex><span>  kmod-mpt3sas.x86_64 0:24.125.01.00_el7.4-1                                                                                                                                                                                                                         
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Complete!
+</span></span></code></pre></div><p>现在我们来看下 <code>/boot</code> 分区情况：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#f92672>[</span>root@node112 14:54:41 ~<span style=color:#f92672>]</span>$ll /boot/
+</span></span><span style=display:flex><span>total <span style=color:#ae81ff>105878</span>
+</span></span><span style=display:flex><span>-rw-r--r--  <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>169326</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> config-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>3</span> root root     <span style=color:#ae81ff>1024</span> May <span style=color:#ae81ff>31</span> 10:55 efi
+</span></span><span style=display:flex><span>drwxr-xr-x. <span style=color:#ae81ff>2</span> root root     <span style=color:#ae81ff>1024</span> May <span style=color:#ae81ff>31</span> 10:56 grub
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>5</span> root root     <span style=color:#ae81ff>1024</span> Aug  <span style=color:#ae81ff>9</span> 14:54 grub2
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>57008277</span> May <span style=color:#ae81ff>31</span> 11:01 initramfs-0-rescue-00bf5adc700644d685733d8e76c21d42.img
+</span></span><span style=display:flex><span>-rw-------. <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>17249662</span> May <span style=color:#ae81ff>31</span> 11:01 initramfs-3.10.0-229.el7.x86_64.img
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>18048069</span> Aug  <span style=color:#ae81ff>9</span> 14:43 initramfs-4.4.26-201.el7.centos.x86_64.img
+</span></span><span style=display:flex><span>-rw-r--r--. <span style=color:#ae81ff>1</span> root root   <span style=color:#ae81ff>610343</span> May <span style=color:#ae81ff>31</span> 11:00 initrd-plymouth.img
+</span></span><span style=display:flex><span>drwx------. <span style=color:#ae81ff>2</span> root root    <span style=color:#ae81ff>12288</span> May <span style=color:#ae81ff>31</span> 10:55 lost+found
+</span></span><span style=display:flex><span>-rw-------  <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>3265893</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> System.map-4.4.26-201.el7.centos.x86_64
+</span></span><span style=display:flex><span>-rwxr-xr-x. <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>5889744</span> May <span style=color:#ae81ff>31</span> 11:01 vmlinuz-0-rescue-00bf5adc700644d685733d8e76c21d42
+</span></span><span style=display:flex><span>-rwxr-xr-x  <span style=color:#ae81ff>1</span> root root  <span style=color:#ae81ff>6148096</span> Oct <span style=color:#ae81ff>21</span>  <span style=color:#ae81ff>2016</span> vmlinuz-4.4.26-201.el7.centos.x86_64
+</span></span></code></pre></div><p>可以旧的 Kernel 内核文件已经被清除了。</p><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>在进行软件包卸载的时候，尤其是像 Kernel 这种会影响到服务器运行的软件包，我们操作一定要谨慎，不要轻易的执行 <code>rpm -e --nodeps</code> 或者 <code>yum -y remove </code>等操作。尽量保证服务器安全性。</p></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2025
+Yiran Zhou
+·
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

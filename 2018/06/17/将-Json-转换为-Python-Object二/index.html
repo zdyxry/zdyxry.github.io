@@ -1,0 +1,347 @@
+<!doctype html><html lang=zh-cn><head><title>将 Json 转换为 Python Object(二) · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。
+今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。
+源码代码很少，补充一些关键变量用于了解整体实现流程。
+import copy
+from pprint import pprint
+
+
+class Dict(dict):
+
+    def __init__(__self, *args, **kwargs):
+        print 'init kwargs is ', kwargs
+        object.__setattr__(__self, '__parent', kwargs.pop('__parent', None))
+        object.__setattr__(__self, '__key', kwargs.pop('__key', None))
+        for arg in args:
+            if not arg:
+                continue
+            elif isinstance(arg, dict):
+                for key, val in arg.items():
+                    __self[key] = __self._hook(val)
+            elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)):
+                __self[arg[0]] = __self._hook(arg[1])
+            else:
+                for key, val in iter(arg):
+                    __self[key] = __self._hook(val)
+
+        for key, val in kwargs.items():
+            __self[key] = __self._hook(val)
+
+    def __setattr__(self, name, value):
+        if hasattr(Dict, name):
+            raise AttributeError(&#34;'Dict' object attribute &#34;
+                                 &#34;'{0}' is read-only&#34;.format(name))
+        else:
+            self[name] = value
+
+    def __setitem__(self, name, value):
+        print 'setitem name is %s, value is %s ' % (name, value)
+        super(Dict, self).__setitem__(name, value)
+        try:
+            p = object.__getattribute__(self, '__parent')
+            key = object.__getattribute__(self, '__key')
+        except AttributeError:
+            p = None
+            key = None
+        if p is not None:
+            print 'parent is %s' % p
+            print 'key is %s' % key
+            p[key] = self
+            object.__delattr__(self, '__parent')
+            object.__delattr__(self, '__key')
+
+    def __add__(self, other):
+        if not self.keys():
+            return other
+        else:
+            self_type = type(self).__name__
+            other_type = type(other).__name__
+            msg = &#34;unsupported operand type(s) for +: '{}' and '{}'&#34;
+            raise TypeError(msg.format(self_type, other_type))
+
+    @classmethod
+    def _hook(cls, item):
+        if isinstance(item, dict):
+            return cls(item)
+        elif isinstance(item, (list, tuple)):
+            return type(item)(cls._hook(elem) for elem in item)
+        return item
+
+    def __getattr__(self, item):
+        return self.__getitem__(item)
+
+    def __getitem__(self, name):
+        print 'getitem name is ', name
+        if name not in self:
+            print &#34;%s not in self&#34; % name
+            return Dict(__parent=self, __key=name)
+        return super(Dict, self).__getitem__(name)
+
+    def __delattr__(self, name):
+        del self[name]
+
+    def to_dict(self):
+        base = {}
+        for key, value in self.items():
+            if isinstance(value, type(self)):
+                base[key] = value.to_dict()
+            elif isinstance(value, (list, tuple)):
+                base[key] = type(value)(
+                    item.to_dict() if isinstance(item, type(self)) else
+                    item for item in value)
+            else:
+                base[key] = value
+        return base
+
+    def copy(self):
+        return copy.copy(self)
+
+    def deepcopy(self):
+        return copy.deepcopy(self)
+
+    def __deepcopy__(self, memo):
+        other = self.__class__()
+        memo[id(self)] = other
+        for key, value in self.items():
+            other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)
+        return other
+
+    def update(self, *args, **kwargs):
+        other = {}
+        if args:
+            if len(args) > 1:
+                raise TypeError()
+            other.update(args[0])
+        other.update(kwargs)
+        for k, v in other.items():
+            if ((k not in self) or
+                (not isinstance(self[k], dict)) or
+                    (not isinstance(v, dict))):
+                self[k] = v
+            else:
+                self[k].update(v)
+
+    def __getnewargs__(self):
+        return tuple(self.items())
+
+    def __getstate__(self):
+        return self
+
+    def __setstate__(self, state):
+        self.update(state)
+
+    def setdefault(self, key, default=None):
+        if key in self:
+            return self[key]
+        else:
+            self[key] = default
+            return default
+
+
+json_data = {
+    &#34;a&#34;: &#34;a&#34;
+}
+
+test1 = Dict(json_data)
+test1.b.c = &#34;c&#34;
+test1.b.d.e = &#34;e&#34;
+pprint(test1.to_dict())
+
+ $ python a.py
+init kwargs is  {}
+setitem name is a, value is a 
+getitem name is  b
+b not in self
+init kwargs is  {'__key': 'b', '__parent': {'a': 'a'}}
+setitem name is c, value is c 
+parent is {'a': 'a'}
+key is b
+setitem name is b, value is {'c': 'c'} 
+getitem name is  b
+getitem name is  d
+d not in self
+init kwargs is  {'__key': 'd', '__parent': {'c': 'c'}}
+setitem name is e, value is e 
+parent is {'c': 'c'}
+key is d
+setitem name is d, value is {'e': 'e'} 
+{'a': 'a', 'b': {'c': 'c', 'd': {'e': 'e'}}}
+"><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="将 Json 转换为 Python Object(二)"><meta name=twitter:description content="最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。 今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。
+源码代码很少，补充一些关键变量用于了解整体实现流程。
+import copy from pprint import pprint class Dict(dict): def __init__(__self, *args, **kwargs): print 'init kwargs is ', kwargs object.__setattr__(__self, '__parent', kwargs.pop('__parent', None)) object.__setattr__(__self, '__key', kwargs.pop('__key', None)) for arg in args: if not arg: continue elif isinstance(arg, dict): for key, val in arg.items(): __self[key] = __self._hook(val) elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)): __self[arg[0]] = __self._hook(arg[1]) else: for key, val in iter(arg): __self[key] = __self._hook(val) for key, val in kwargs.items(): __self[key] = __self._hook(val) def __setattr__(self, name, value): if hasattr(Dict, name): raise AttributeError(&#34;'Dict' object attribute &#34; &#34;'{0}' is read-only&#34;.format(name)) else: self[name] = value def __setitem__(self, name, value): print 'setitem name is %s, value is %s ' % (name, value) super(Dict, self).__setitem__(name, value) try: p = object.__getattribute__(self, '__parent') key = object.__getattribute__(self, '__key') except AttributeError: p = None key = None if p is not None: print 'parent is %s' % p print 'key is %s' % key p[key] = self object.__delattr__(self, '__parent') object.__delattr__(self, '__key') def __add__(self, other): if not self.keys(): return other else: self_type = type(self).__name__ other_type = type(other).__name__ msg = &#34;unsupported operand type(s) for +: '{}' and '{}'&#34; raise TypeError(msg.format(self_type, other_type)) @classmethod def _hook(cls, item): if isinstance(item, dict): return cls(item) elif isinstance(item, (list, tuple)): return type(item)(cls._hook(elem) for elem in item) return item def __getattr__(self, item): return self.__getitem__(item) def __getitem__(self, name): print 'getitem name is ', name if name not in self: print &#34;%s not in self&#34; % name return Dict(__parent=self, __key=name) return super(Dict, self).__getitem__(name) def __delattr__(self, name): del self[name] def to_dict(self): base = {} for key, value in self.items(): if isinstance(value, type(self)): base[key] = value.to_dict() elif isinstance(value, (list, tuple)): base[key] = type(value)( item.to_dict() if isinstance(item, type(self)) else item for item in value) else: base[key] = value return base def copy(self): return copy.copy(self) def deepcopy(self): return copy.deepcopy(self) def __deepcopy__(self, memo): other = self.__class__() memo[id(self)] = other for key, value in self.items(): other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo) return other def update(self, *args, **kwargs): other = {} if args: if len(args) > 1: raise TypeError() other.update(args[0]) other.update(kwargs) for k, v in other.items(): if ((k not in self) or (not isinstance(self[k], dict)) or (not isinstance(v, dict))): self[k] = v else: self[k].update(v) def __getnewargs__(self): return tuple(self.items()) def __getstate__(self): return self def __setstate__(self, state): self.update(state) def setdefault(self, key, default=None): if key in self: return self[key] else: self[key] = default return default json_data = { &#34;a&#34;: &#34;a&#34; } test1 = Dict(json_data) test1.b.c = &#34;c&#34; test1.b.d.e = &#34;e&#34; pprint(test1.to_dict()) $ python a.py init kwargs is {} setitem name is a, value is a getitem name is b b not in self init kwargs is {'__key': 'b', '__parent': {'a': 'a'}} setitem name is c, value is c parent is {'a': 'a'} key is b setitem name is b, value is {'c': 'c'} getitem name is b getitem name is d d not in self init kwargs is {'__key': 'd', '__parent': {'c': 'c'}} setitem name is e, value is e parent is {'c': 'c'} key is d setitem name is d, value is {'e': 'e'} {'a': 'a', 'b': {'c': 'c', 'd': {'e': 'e'}}}"><meta property="og:url" content="https://zdyxry.github.io/2018/06/17/%E5%B0%86-Json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-Python-Object%E4%BA%8C/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="将 Json 转换为 Python Object(二)"><meta property="og:description" content="最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。 今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。
+源码代码很少，补充一些关键变量用于了解整体实现流程。
+import copy from pprint import pprint class Dict(dict): def __init__(__self, *args, **kwargs): print 'init kwargs is ', kwargs object.__setattr__(__self, '__parent', kwargs.pop('__parent', None)) object.__setattr__(__self, '__key', kwargs.pop('__key', None)) for arg in args: if not arg: continue elif isinstance(arg, dict): for key, val in arg.items(): __self[key] = __self._hook(val) elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)): __self[arg[0]] = __self._hook(arg[1]) else: for key, val in iter(arg): __self[key] = __self._hook(val) for key, val in kwargs.items(): __self[key] = __self._hook(val) def __setattr__(self, name, value): if hasattr(Dict, name): raise AttributeError(&#34;'Dict' object attribute &#34; &#34;'{0}' is read-only&#34;.format(name)) else: self[name] = value def __setitem__(self, name, value): print 'setitem name is %s, value is %s ' % (name, value) super(Dict, self).__setitem__(name, value) try: p = object.__getattribute__(self, '__parent') key = object.__getattribute__(self, '__key') except AttributeError: p = None key = None if p is not None: print 'parent is %s' % p print 'key is %s' % key p[key] = self object.__delattr__(self, '__parent') object.__delattr__(self, '__key') def __add__(self, other): if not self.keys(): return other else: self_type = type(self).__name__ other_type = type(other).__name__ msg = &#34;unsupported operand type(s) for +: '{}' and '{}'&#34; raise TypeError(msg.format(self_type, other_type)) @classmethod def _hook(cls, item): if isinstance(item, dict): return cls(item) elif isinstance(item, (list, tuple)): return type(item)(cls._hook(elem) for elem in item) return item def __getattr__(self, item): return self.__getitem__(item) def __getitem__(self, name): print 'getitem name is ', name if name not in self: print &#34;%s not in self&#34; % name return Dict(__parent=self, __key=name) return super(Dict, self).__getitem__(name) def __delattr__(self, name): del self[name] def to_dict(self): base = {} for key, value in self.items(): if isinstance(value, type(self)): base[key] = value.to_dict() elif isinstance(value, (list, tuple)): base[key] = type(value)( item.to_dict() if isinstance(item, type(self)) else item for item in value) else: base[key] = value return base def copy(self): return copy.copy(self) def deepcopy(self): return copy.deepcopy(self) def __deepcopy__(self, memo): other = self.__class__() memo[id(self)] = other for key, value in self.items(): other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo) return other def update(self, *args, **kwargs): other = {} if args: if len(args) > 1: raise TypeError() other.update(args[0]) other.update(kwargs) for k, v in other.items(): if ((k not in self) or (not isinstance(self[k], dict)) or (not isinstance(v, dict))): self[k] = v else: self[k].update(v) def __getnewargs__(self): return tuple(self.items()) def __getstate__(self): return self def __setstate__(self, state): self.update(state) def setdefault(self, key, default=None): if key in self: return self[key] else: self[key] = default return default json_data = { &#34;a&#34;: &#34;a&#34; } test1 = Dict(json_data) test1.b.c = &#34;c&#34; test1.b.d.e = &#34;e&#34; pprint(test1.to_dict()) $ python a.py init kwargs is {} setitem name is a, value is a getitem name is b b not in self init kwargs is {'__key': 'b', '__parent': {'a': 'a'}} setitem name is c, value is c parent is {'a': 'a'} key is b setitem name is b, value is {'c': 'c'} getitem name is b getitem name is d d not in self init kwargs is {'__key': 'd', '__parent': {'c': 'c'}} setitem name is e, value is e parent is {'c': 'c'} key is d setitem name is d, value is {'e': 'e'} {'a': 'a', 'b': {'c': 'c', 'd': {'e': 'e'}}}"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-06-17T21:00:49+00:00"><meta property="article:modified_time" content="2018-06-17T21:00:49+00:00"><meta property="article:tag" content="Json"><link rel=canonical href=https://zdyxry.github.io/2018/06/17/%E5%B0%86-Json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-Python-Object%E4%BA%8C/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.234dd936a3895f104a22c73bac5d02c5bac76466a036abd8a3baf6fa2ecbc413.css integrity="sha256-I03ZNqOJXxBKIsc7rF0CxbrHZGagNqvYo7r2+i7LxBM=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+</a><input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/06/17/%E5%B0%86-Json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-Python-Object%E4%BA%8C/>将 Json 转换为 Python Object(二)</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
+<time datetime=2018-06-17T21:00:49Z>June 17, 2018
+</time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
+阅读时间：3 分钟</span></div><div class=tags><i class="fa-solid fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Json/>Json</a></span></div></div></header><nav id=TableOfContents></nav><div class=post-content><p>最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。
+今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。</p><p>源码代码很少，补充一些关键变量用于了解整体实现流程。</p><pre tabindex=0><code>import copy
+from pprint import pprint
+
+
+class Dict(dict):
+
+    def __init__(__self, *args, **kwargs):
+        print &#39;init kwargs is &#39;, kwargs
+        object.__setattr__(__self, &#39;__parent&#39;, kwargs.pop(&#39;__parent&#39;, None))
+        object.__setattr__(__self, &#39;__key&#39;, kwargs.pop(&#39;__key&#39;, None))
+        for arg in args:
+            if not arg:
+                continue
+            elif isinstance(arg, dict):
+                for key, val in arg.items():
+                    __self[key] = __self._hook(val)
+            elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)):
+                __self[arg[0]] = __self._hook(arg[1])
+            else:
+                for key, val in iter(arg):
+                    __self[key] = __self._hook(val)
+
+        for key, val in kwargs.items():
+            __self[key] = __self._hook(val)
+
+    def __setattr__(self, name, value):
+        if hasattr(Dict, name):
+            raise AttributeError(&#34;&#39;Dict&#39; object attribute &#34;
+                                 &#34;&#39;{0}&#39; is read-only&#34;.format(name))
+        else:
+            self[name] = value
+
+    def __setitem__(self, name, value):
+        print &#39;setitem name is %s, value is %s &#39; % (name, value)
+        super(Dict, self).__setitem__(name, value)
+        try:
+            p = object.__getattribute__(self, &#39;__parent&#39;)
+            key = object.__getattribute__(self, &#39;__key&#39;)
+        except AttributeError:
+            p = None
+            key = None
+        if p is not None:
+            print &#39;parent is %s&#39; % p
+            print &#39;key is %s&#39; % key
+            p[key] = self
+            object.__delattr__(self, &#39;__parent&#39;)
+            object.__delattr__(self, &#39;__key&#39;)
+
+    def __add__(self, other):
+        if not self.keys():
+            return other
+        else:
+            self_type = type(self).__name__
+            other_type = type(other).__name__
+            msg = &#34;unsupported operand type(s) for +: &#39;{}&#39; and &#39;{}&#39;&#34;
+            raise TypeError(msg.format(self_type, other_type))
+
+    @classmethod
+    def _hook(cls, item):
+        if isinstance(item, dict):
+            return cls(item)
+        elif isinstance(item, (list, tuple)):
+            return type(item)(cls._hook(elem) for elem in item)
+        return item
+
+    def __getattr__(self, item):
+        return self.__getitem__(item)
+
+    def __getitem__(self, name):
+        print &#39;getitem name is &#39;, name
+        if name not in self:
+            print &#34;%s not in self&#34; % name
+            return Dict(__parent=self, __key=name)
+        return super(Dict, self).__getitem__(name)
+
+    def __delattr__(self, name):
+        del self[name]
+
+    def to_dict(self):
+        base = {}
+        for key, value in self.items():
+            if isinstance(value, type(self)):
+                base[key] = value.to_dict()
+            elif isinstance(value, (list, tuple)):
+                base[key] = type(value)(
+                    item.to_dict() if isinstance(item, type(self)) else
+                    item for item in value)
+            else:
+                base[key] = value
+        return base
+
+    def copy(self):
+        return copy.copy(self)
+
+    def deepcopy(self):
+        return copy.deepcopy(self)
+
+    def __deepcopy__(self, memo):
+        other = self.__class__()
+        memo[id(self)] = other
+        for key, value in self.items():
+            other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)
+        return other
+
+    def update(self, *args, **kwargs):
+        other = {}
+        if args:
+            if len(args) &gt; 1:
+                raise TypeError()
+            other.update(args[0])
+        other.update(kwargs)
+        for k, v in other.items():
+            if ((k not in self) or
+                (not isinstance(self[k], dict)) or
+                    (not isinstance(v, dict))):
+                self[k] = v
+            else:
+                self[k].update(v)
+
+    def __getnewargs__(self):
+        return tuple(self.items())
+
+    def __getstate__(self):
+        return self
+
+    def __setstate__(self, state):
+        self.update(state)
+
+    def setdefault(self, key, default=None):
+        if key in self:
+            return self[key]
+        else:
+            self[key] = default
+            return default
+
+
+json_data = {
+    &#34;a&#34;: &#34;a&#34;
+}
+
+test1 = Dict(json_data)
+test1.b.c = &#34;c&#34;
+test1.b.d.e = &#34;e&#34;
+pprint(test1.to_dict())
+</code></pre><hr><pre tabindex=0><code> $ python a.py
+init kwargs is  {}
+setitem name is a, value is a 
+getitem name is  b
+b not in self
+init kwargs is  {&#39;__key&#39;: &#39;b&#39;, &#39;__parent&#39;: {&#39;a&#39;: &#39;a&#39;}}
+setitem name is c, value is c 
+parent is {&#39;a&#39;: &#39;a&#39;}
+key is b
+setitem name is b, value is {&#39;c&#39;: &#39;c&#39;} 
+getitem name is  b
+getitem name is  d
+d not in self
+init kwargs is  {&#39;__key&#39;: &#39;d&#39;, &#39;__parent&#39;: {&#39;c&#39;: &#39;c&#39;}}
+setitem name is e, value is e 
+parent is {&#39;c&#39;: &#39;c&#39;}
+key is d
+setitem name is d, value is {&#39;e&#39;: &#39;e&#39;} 
+{&#39;a&#39;: &#39;a&#39;, &#39;b&#39;: {&#39;c&#39;: &#39;c&#39;, &#39;d&#39;: {&#39;e&#39;: &#39;e&#39;}}}
+</code></pre></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2025
+Yiran Zhou
+·
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

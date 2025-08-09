@@ -1,0 +1,253 @@
+<!doctype html><html lang=zh-cn><head><title>Traceroute 简易实现 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="
+  背景
+  
+    
+    链接到标题
+  
+
+在平时遇到网络问题时，我们通常会使用 ping,route,ip 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 traceroute 来判断网络走向。
+最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 traceroute，一直使用它却不知道是怎么工作的，研究了一下，作为总结。
+
+  Traceroute
+  
+    
+    链接到标题
+  
+
+先上维基百科的解释：
+
+traceroute，现代Linux系统称为tracepath，Windows系统称为tracert，是一种计算机网络工具。它可显示数据包在IP网络经过的路由器的IP地址。
+我们通常使用无需特殊配置，直接用 traceroute 加上我们的目标地址即可，如：
+root@yiran-workstation:~ 
+ $ traceroute 192.168.16.1
+traceroute to 192.168.16.1 (192.168.16.1), 30 hops max, 60 byte packets
+ 1  gateway (192.168.8.1)  19.469 ms  19.089 ms  18.911 ms
+ 2  192.168.1.201 (192.168.1.201)  11.539 ms  11.423 ms  11.307 ms
+ 3  192.168.16.1 (192.168.16.1)  18.289 ms  18.184 ms  18.064 ms
+当我们想设置 TTL 数值时，我们可以使用 -m 参数:
+root@yiran-workstation:~ 
+ $ traceroute 192.168.16.1 -m 2
+traceroute to 192.168.16.1 (192.168.16.1), 2 hops max, 60 byte packets
+ 1  gateway (192.168.8.1)  20.914 ms  20.700 ms  20.616 ms
+ 2  192.168.1.201 (192.168.1.201)  20.497 ms  20.465 ms  20.383 ms
+实现原理："><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Traceroute 简易实现"><meta name=twitter:description content="背景 链接到标题 在平时遇到网络问题时，我们通常会使用 ping,route,ip 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 traceroute 来判断网络走向。
+最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 traceroute，一直使用它却不知道是怎么工作的，研究了一下，作为总结。
+Traceroute 链接到标题 先上维基百科的解释：
+traceroute，现代Linux系统称为tracepath，Windows系统称为tracert，是一种计算机网络工具。它可显示数据包在IP网络经过的路由器的IP地址。
+我们通常使用无需特殊配置，直接用 traceroute 加上我们的目标地址即可，如：
+root@yiran-workstation:~ $ traceroute 192.168.16.1 traceroute to 192.168.16.1 (192.168.16.1), 30 hops max, 60 byte packets 1 gateway (192.168.8.1) 19.469 ms 19.089 ms 18.911 ms 2 192.168.1.201 (192.168.1.201) 11.539 ms 11.423 ms 11.307 ms 3 192.168.16.1 (192.168.16.1) 18.289 ms 18.184 ms 18.064 ms 当我们想设置 TTL 数值时，我们可以使用 -m 参数:
+root@yiran-workstation:~ $ traceroute 192.168.16.1 -m 2 traceroute to 192.168.16.1 (192.168.16.1), 2 hops max, 60 byte packets 1 gateway (192.168.8.1) 20.914 ms 20.700 ms 20.616 ms 2 192.168.1.201 (192.168.1.201) 20.497 ms 20.465 ms 20.383 ms 实现原理："><meta property="og:url" content="https://zdyxry.github.io/2018/11/18/Traceroute-%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="Traceroute 简易实现"><meta property="og:description" content="背景 链接到标题 在平时遇到网络问题时，我们通常会使用 ping,route,ip 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 traceroute 来判断网络走向。
+最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 traceroute，一直使用它却不知道是怎么工作的，研究了一下，作为总结。
+Traceroute 链接到标题 先上维基百科的解释：
+traceroute，现代Linux系统称为tracepath，Windows系统称为tracert，是一种计算机网络工具。它可显示数据包在IP网络经过的路由器的IP地址。
+我们通常使用无需特殊配置，直接用 traceroute 加上我们的目标地址即可，如：
+root@yiran-workstation:~ $ traceroute 192.168.16.1 traceroute to 192.168.16.1 (192.168.16.1), 30 hops max, 60 byte packets 1 gateway (192.168.8.1) 19.469 ms 19.089 ms 18.911 ms 2 192.168.1.201 (192.168.1.201) 11.539 ms 11.423 ms 11.307 ms 3 192.168.16.1 (192.168.16.1) 18.289 ms 18.184 ms 18.064 ms 当我们想设置 TTL 数值时，我们可以使用 -m 参数:
+root@yiran-workstation:~ $ traceroute 192.168.16.1 -m 2 traceroute to 192.168.16.1 (192.168.16.1), 2 hops max, 60 byte packets 1 gateway (192.168.8.1) 20.914 ms 20.700 ms 20.616 ms 2 192.168.1.201 (192.168.1.201) 20.497 ms 20.465 ms 20.383 ms 实现原理："><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-11-18T12:33:35+00:00"><meta property="article:modified_time" content="2018-11-18T12:33:35+00:00"><meta property="article:tag" content="Linux"><meta property="article:tag" content="Network"><link rel=canonical href=https://zdyxry.github.io/2018/11/18/Traceroute-%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.234dd936a3895f104a22c73bac5d02c5bac76466a036abd8a3baf6fa2ecbc413.css integrity="sha256-I03ZNqOJXxBKIsc7rF0CxbrHZGagNqvYo7r2+i7LxBM=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+</a><input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/11/18/Traceroute-%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/>Traceroute 简易实现</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
+<time datetime=2018-11-18T12:33:35Z>November 18, 2018
+</time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
+阅读时间：4 分钟</span></div><div class=tags><i class="fa-solid fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Linux/>Linux</a>
+</span><span class=separator>•</span>
+<span class=tag><a href=/tags/Network/>Network</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#traceroute>Traceroute</a></li><li><a href=#简易实现>简易实现</a></li><li><a href=#总结>总结</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>在平时遇到网络问题时，我们通常会使用 <code>ping</code>,<code>route</code>,<code>ip</code> 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 <code>traceroute</code> 来判断网络走向。</p><p>最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 <code>traceroute</code>，一直使用它却不知道是怎么工作的，研究了一下，作为总结。</p><h2 id=traceroute>Traceroute
+<a class=heading-link href=#traceroute><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>先上维基百科的解释：</p><blockquote><p>traceroute，现代Linux系统称为tracepath，Windows系统称为tracert，是一种计算机网络工具。它可显示数据包在IP网络经过的路由器的IP地址。</p></blockquote><p>我们通常使用无需特殊配置，直接用 traceroute 加上我们的目标地址即可，如：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>root@yiran-workstation:~ 
+</span></span><span style=display:flex><span> $ traceroute 192.168.16.1
+</span></span><span style=display:flex><span>traceroute to 192.168.16.1 <span style=color:#f92672>(</span>192.168.16.1<span style=color:#f92672>)</span>, <span style=color:#ae81ff>30</span> hops max, <span style=color:#ae81ff>60</span> byte packets
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>1</span>  gateway <span style=color:#f92672>(</span>192.168.8.1<span style=color:#f92672>)</span>  19.469 ms  19.089 ms  18.911 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>2</span>  192.168.1.201 <span style=color:#f92672>(</span>192.168.1.201<span style=color:#f92672>)</span>  11.539 ms  11.423 ms  11.307 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>3</span>  192.168.16.1 <span style=color:#f92672>(</span>192.168.16.1<span style=color:#f92672>)</span>  18.289 ms  18.184 ms  18.064 ms
+</span></span></code></pre></div><p>当我们想设置 TTL 数值时，我们可以使用 <code>-m</code> 参数:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>root@yiran-workstation:~ 
+</span></span><span style=display:flex><span> $ traceroute 192.168.16.1 -m <span style=color:#ae81ff>2</span>
+</span></span><span style=display:flex><span>traceroute to 192.168.16.1 <span style=color:#f92672>(</span>192.168.16.1<span style=color:#f92672>)</span>, <span style=color:#ae81ff>2</span> hops max, <span style=color:#ae81ff>60</span> byte packets
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>1</span>  gateway <span style=color:#f92672>(</span>192.168.8.1<span style=color:#f92672>)</span>  20.914 ms  20.700 ms  20.616 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>2</span>  192.168.1.201 <span style=color:#f92672>(</span>192.168.1.201<span style=color:#f92672>)</span>  20.497 ms  20.465 ms  20.383 ms
+</span></span></code></pre></div><p>实现原理：</p><blockquote><p>主叫方首先发出 TTL=1 的数据包，第一个路由器将 TTL 减1得0后就不再继续转发此数据包，而是返回一个 ICMP 逾时报文，主叫方从逾时报文中即可提取出数据包所经过的第一个网关地址。然后又发出一个 TTL=2 的 ICMP 数据包，可获得第二个网关地址，依次递增 TTL 便获取了沿途所有网关地址。</p></blockquote><blockquote><p>需要注意的是，并不是所有网关都会如实返回 ICMP 超时报文。出于安全性考虑，大多数防火墙以及启用了防火墙功能的路由器缺省配置为不返回各种 ICMP 报文，其余路由器或交换机也可被管理员主动修改配置变为不返回 ICMP 报文。因此 Traceroute 程序不一定能拿全所有的沿途网关地址。所以，当某个 TTL 值的数据包得不到响应时，并不能停止这一追踪过程，程序仍然会把 TTL 递增而发出下一个数据包。一直达到默认或用参数指定的追踪限制（maximum_hops）才结束追踪。</p></blockquote><p>这里要说明一下，加入我们去 traceroute 最常用的 baidu.com，就会看到这个现象，traceroute 命令的结果中包含 <code>* * *</code> ，我也没有找到一个较为明确的解释，猜测这个节点禁止了 ping 或其他配置，无法返回 ICMP 超时报文，导致 traceroute 无法正常解析。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>master ✗ $ traceroute  baidu.com -m <span style=color:#ae81ff>20</span> 
+</span></span><span style=display:flex><span>traceroute to baidu.com <span style=color:#f92672>(</span>220.181.57.216<span style=color:#f92672>)</span>, <span style=color:#ae81ff>20</span> hops max, <span style=color:#ae81ff>60</span> byte packets
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>1</span>  gateway <span style=color:#f92672>(</span>192.168.8.1<span style=color:#f92672>)</span>  18.535 ms  18.456 ms  29.185 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>2</span>  10.1.1.1 <span style=color:#f92672>(</span>10.1.1.1<span style=color:#f92672>)</span>  6.599 ms  6.533 ms  6.378 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>3</span>  106.38.14.1 <span style=color:#f92672>(</span>106.38.14.1<span style=color:#f92672>)</span>  28.707 ms  28.606 ms  28.514 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>4</span>  5.0.142.219.broad.bj.bj.dynamic.163data.com.cn <span style=color:#f92672>(</span>219.142.0.5<span style=color:#f92672>)</span>  28.384 ms  28.305 ms  28.205 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>5</span>  * * *
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>6</span>  36.110.244.46 <span style=color:#f92672>(</span>36.110.244.46<span style=color:#f92672>)</span>  37.131 ms  31.660 ms  31.489 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>7</span>  * * *
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>8</span>  220.181.17.94 <span style=color:#f92672>(</span>220.181.17.94<span style=color:#f92672>)</span>  10.700 ms 220.181.17.146 <span style=color:#f92672>(</span>220.181.17.146<span style=color:#f92672>)</span>  10.511 ms 220.181.17.150 <span style=color:#f92672>(</span>220.181.17.150<span style=color:#f92672>)</span>  10.336 ms
+</span></span><span style=display:flex><span> <span style=color:#ae81ff>9</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>10</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>11</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>12</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>13</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>14</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>15</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>16</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>17</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>18</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>19</span>  * * *
+</span></span><span style=display:flex><span><span style=color:#ae81ff>20</span>  * * *
+</span></span></code></pre></div><blockquote><p>依据上述原理，利用了 UDP 数据包的 Traceroute 程序在数据包到达真正的目的主机时，就可能因为该主机没有提供 UDP 服务而简单将数据包抛弃，并不返回任何信息。为了解决这个问题，Traceroute 故意使用了一个大于 30000 的端口号，因 UDP 协议规定端口号必须小于 30000 ，所以目标主机收到数据包后唯一能做的事就是返回一个“端口不可达”的 ICMP 报文，于是主叫方就将端口不可达报文当作跟踪结束的标志。</p></blockquote><h2 id=简易实现>简易实现
+<a class=heading-link href=#%e7%ae%80%e6%98%93%e5%ae%9e%e7%8e%b0><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>源地址： <a href=https://github.com/dnaeon/pytraceroute class=external-link target=_blank rel=noopener>https://github.com/dnaeon/pytraceroute</a>
+对整个实现中最重要的部分做下注释：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># Copyright (c) 2015 Marin Atanasov Nikolov &lt;dnaeon@gmail.com&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># All rights reserved.</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>#</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Redistribution and use in source and binary forms, with or without</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># modification, are permitted provided that the following conditions</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># are met:</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 1. Redistributions of source code must retain the above copyright</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>#    notice, this list of conditions and the following disclaimer</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>#    in this position and unchanged.</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 2. Redistributions in binary form must reproduce the above copyright</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>#    notice, this list of conditions and the following disclaimer in the</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>#    documentation and/or other materials provided with the distribution.</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>#</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS&#39;&#39; AND ANY EXPRESS OR</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>Core module
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> socket
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> random
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> struct
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> time
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>__all__ <span style=color:#f92672>=</span> [<span style=color:#e6db74>&#39;Tracer&#39;</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Tracer</span>(object):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>__init__</span>(self, dst, hops<span style=color:#f92672>=</span><span style=color:#ae81ff>30</span>):
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Initializes a new tracer object
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Args:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>            dst  (str): Destination host to probe
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>            hops (int): Max number of hops to probe
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>dst <span style=color:#f92672>=</span> dst <span style=color:#75715e># 目标地址：域名或 IPv4 地址</span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>hops <span style=color:#f92672>=</span> hops 
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>ttl <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># Pick up a random port in the range 33434-33534</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># 对应上述解释，随机选择一个 &gt; 30000 的端口用于连接</span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>port <span style=color:#f92672>=</span> random<span style=color:#f92672>.</span>choice(range(<span style=color:#ae81ff>33434</span>, <span style=color:#ae81ff>33535</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>run</span>(self):
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Run the tracer
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Raises:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>            IOError
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>            dst_ip <span style=color:#f92672>=</span> socket<span style=color:#f92672>.</span>gethostbyname(self<span style=color:#f92672>.</span>dst) <span style=color:#75715e># 解析域名</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>except</span> socket<span style=color:#f92672>.</span>error <span style=color:#66d9ef>as</span> e:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>IOError</span>(<span style=color:#e6db74>&#39;Unable to resolve </span><span style=color:#e6db74>{}</span><span style=color:#e6db74>: </span><span style=color:#e6db74>{}</span><span style=color:#e6db74>&#39;</span>, self<span style=color:#f92672>.</span>dst, e)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        text <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;traceroute to </span><span style=color:#e6db74>{}</span><span style=color:#e6db74> (</span><span style=color:#e6db74>{}</span><span style=color:#e6db74>), </span><span style=color:#e6db74>{}</span><span style=color:#e6db74> hops max&#39;</span><span style=color:#f92672>.</span>format(
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>dst,
+</span></span><span style=display:flex><span>            dst_ip,
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>hops
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        print(text)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>while</span> <span style=color:#66d9ef>True</span>:
+</span></span><span style=display:flex><span>            startTimer <span style=color:#f92672>=</span> time<span style=color:#f92672>.</span>time()
+</span></span><span style=display:flex><span>            receiver <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>create_receiver() <span style=color:#75715e># 创建接收 socket 实例</span>
+</span></span><span style=display:flex><span>            sender <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>create_sender() <span style=color:#75715e># 创建发送 socket 实例</span>
+</span></span><span style=display:flex><span>            sender<span style=color:#f92672>.</span>sendto(<span style=color:#e6db74>b</span><span style=color:#e6db74>&#39;&#39;</span>, (self<span style=color:#f92672>.</span>dst, self<span style=color:#f92672>.</span>port)) <span style=color:#75715e># 向目标地址指定端口发送报文</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            addr <span style=color:#f92672>=</span> <span style=color:#66d9ef>None</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>                data, addr <span style=color:#f92672>=</span> receiver<span style=color:#f92672>.</span>recvfrom(<span style=color:#ae81ff>1024</span>) <span style=color:#75715e># 获取发送 ICMP 超时报文，并解析地址</span>
+</span></span><span style=display:flex><span>                entTimer <span style=color:#f92672>=</span> time<span style=color:#f92672>.</span>time()
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>except</span> socket<span style=color:#f92672>.</span>error:
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>pass</span>
+</span></span><span style=display:flex><span>                <span style=color:#75715e># raise IOError(&#39;Socket error: {}&#39;.format(e))</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>finally</span>:
+</span></span><span style=display:flex><span>                receiver<span style=color:#f92672>.</span>close()
+</span></span><span style=display:flex><span>                sender<span style=color:#f92672>.</span>close()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> addr: <span style=color:#75715e># 如果获取到地址，则打印相应信息及用时</span>
+</span></span><span style=display:flex><span>                timeCost <span style=color:#f92672>=</span> round((entTimer <span style=color:#f92672>-</span> startTimer) <span style=color:#f92672>*</span> <span style=color:#ae81ff>1000</span>, <span style=color:#ae81ff>2</span>)
+</span></span><span style=display:flex><span>                print(<span style=color:#e6db74>&#39;</span><span style=color:#e6db74>{:&lt;4}</span><span style=color:#e6db74> </span><span style=color:#e6db74>{}</span><span style=color:#e6db74> </span><span style=color:#e6db74>{}</span><span style=color:#e6db74> ms&#39;</span><span style=color:#f92672>.</span>format(self<span style=color:#f92672>.</span>ttl, addr[<span style=color:#ae81ff>0</span>]), timeCost)
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> addr[<span style=color:#ae81ff>0</span>] <span style=color:#f92672>==</span> dst_ip:
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>                print(<span style=color:#e6db74>&#39;</span><span style=color:#e6db74>{:&lt;4}</span><span style=color:#e6db74> *&#39;</span><span style=color:#f92672>.</span>format(self<span style=color:#f92672>.</span>ttl))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>ttl <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span> <span style=color:#75715e># 增加 TTL，获取下一跳地址</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> self<span style=color:#f92672>.</span>ttl <span style=color:#f92672>&gt;</span> self<span style=color:#f92672>.</span>hops:
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>create_receiver</span>(self):
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Creates a receiver socket
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Returns:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>            A socket instance
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Raises:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>            IOError
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        s <span style=color:#f92672>=</span> socket<span style=color:#f92672>.</span>socket(
+</span></span><span style=display:flex><span>            family<span style=color:#f92672>=</span>socket<span style=color:#f92672>.</span>AF_INET, <span style=color:#75715e># 指定 proto family 为 IPv4</span>
+</span></span><span style=display:flex><span>            type<span style=color:#f92672>=</span>socket<span style=color:#f92672>.</span>SOCK_RAW, <span style=color:#75715e># 指定接收 socket 类型为 raw，这里是因为普通的 socket 类型无法处理 ICMP 报文</span>
+</span></span><span style=display:flex><span>            proto<span style=color:#f92672>=</span>socket<span style=color:#f92672>.</span>IPPROTO_ICMP <span style=color:#75715e># 指定 socket 协议为 ICMP 协议，type 与 proto 需要特定的组合，不允许任意配置</span>
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        timeout <span style=color:#f92672>=</span> struct<span style=color:#f92672>.</span>pack(<span style=color:#e6db74>&#34;ll&#34;</span>, <span style=color:#ae81ff>5</span>, <span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>        s<span style=color:#f92672>.</span>setsockopt(socket<span style=color:#f92672>.</span>SOL_SOCKET, socket<span style=color:#f92672>.</span>SO_RCVTIMEO, timeout)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>            s<span style=color:#f92672>.</span>bind((<span style=color:#e6db74>&#39;&#39;</span>, self<span style=color:#f92672>.</span>port))
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>except</span> socket<span style=color:#f92672>.</span>error <span style=color:#66d9ef>as</span> e:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>IOError</span>(<span style=color:#e6db74>&#39;Unable to bind receiver socket: </span><span style=color:#e6db74>{}</span><span style=color:#e6db74>&#39;</span><span style=color:#f92672>.</span>format(e))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> s
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>create_sender</span>(self):
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Creates a sender socket
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Returns:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>            A socket instance
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        s <span style=color:#f92672>=</span> socket<span style=color:#f92672>.</span>socket(
+</span></span><span style=display:flex><span>            family<span style=color:#f92672>=</span>socket<span style=color:#f92672>.</span>AF_INET, <span style=color:#75715e># 指定 proto family 为 IPv4</span>
+</span></span><span style=display:flex><span>            type<span style=color:#f92672>=</span>socket<span style=color:#f92672>.</span>SOCK_DGRAM, <span style=color:#75715e># 指定发送的类型为 UDP，即发送广播消息</span>
+</span></span><span style=display:flex><span>            proto<span style=color:#f92672>=</span>socket<span style=color:#f92672>.</span>IPPROTO_UDP <span style=color:#75715e># 指定协议为 IP UDP </span>
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        s<span style=color:#f92672>.</span>setsockopt(socket<span style=color:#f92672>.</span>SOL_IP, socket<span style=color:#f92672>.</span>IP_TTL, self<span style=color:#f92672>.</span>ttl)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> s
+</span></span></code></pre></div><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>了解了实现原理之后，希望之后排查网络问题应该也会得心应手一些吧。
+也希望自己能更多的关注于 Why，而不是 How。</p><h2 id=参考链接>参考链接
+<a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><ul><li><a href=http://dnaeon.github.io/traceroute-in-python/ class=external-link target=_blank rel=noopener>http://dnaeon.github.io/traceroute-in-python/</a></li><li><a href=https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/ class=external-link target=_blank rel=noopener>https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/</a></li><li><a href=https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required class=external-link target=_blank rel=noopener>https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required</a></li><li><a href=https://blog.csdn.net/newnewman80/article/details/8000404 class=external-link target=_blank rel=noopener>https://blog.csdn.net/newnewman80/article/details/8000404</a></li><li><a href=http://www.zmonster.me/notes/tcp-ip-socket-in-c.html class=external-link target=_blank rel=noopener>http://www.zmonster.me/notes/tcp-ip-socket-in-c.html</a></li><li><a href=http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf class=external-link target=_blank rel=noopener>http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf</a></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2025
+Yiran Zhou
+·
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

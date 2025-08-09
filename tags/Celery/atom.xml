@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Celery on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Celery/</link><description>Recent content in Celery on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Mon, 09 May 2022 14:44:42 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Celery/atom.xml" rel="self" type="application/rss+xml"/><item><title>Celery/Kombu MongoDB 连接异常调查记录</title><link>https://zdyxry.github.io/2022/05/09/Celery/Kombu-MongoDB-%E8%BF%9E%E6%8E%A5%E5%BC%82%E5%B8%B8%E8%B0%83%E6%9F%A5%E8%AE%B0%E5%BD%95/</link><pubDate>Mon, 09 May 2022 14:44:42 +0000</pubDate><guid>https://zdyxry.github.io/2022/05/09/Celery/Kombu-MongoDB-%E8%BF%9E%E6%8E%A5%E5%BC%82%E5%B8%B8%E8%B0%83%E6%9F%A5%E8%AE%B0%E5%BD%95/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>产品组件 JobCenter 使用 Celery 实现异步任务中心，同时会运行 job-center-worker （celery worker） 和 job-center-scheduler(celery beat) 两个进程，使用 MongoDB 作为 Backend 存储 message 等信息（Celery 官方已说明不再维护对 MongoDB 的支持）。其中 MongoDB 配置了 ReplicaSet 保证高可用。&lt;/p>
+&lt;p>近期 Celery/Kombu 中遇到了 &lt;a href="https://github.com/celery/kombu/issues/1504#event-6304977800" class="external-link" target="_blank" rel="noopener">&lt;code>No free channel ids&lt;/code> 问题&lt;/a>，经过排查在这个 &lt;a href="https://github.com/celery/kombu/commit/1c2b9723851db3caa913b8da19d6ccad447f3568" class="external-link" target="_blank" rel="noopener">PR&lt;/a> 中解决了该问题，在考虑 cherry-pick 的工作量和可维护性考虑，最终将产品中的 celery 和 kombu 组件从 3.x 统一升级到了 4.x 版本。&lt;/p>
+&lt;p>测试同学反馈近期在进行可靠性测试时，发现将 MongoDB 节点的存储网络 &lt;code>ifdown&lt;/code> 会导致 JobCenter hang. 针对该问题进行调查。&lt;/p>
+&lt;h2 id="调查">
+调查
+&lt;a class="heading-link" href="#%e8%b0%83%e6%9f%a5">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;h3 id="celery">
+Celery
+&lt;a class="heading-link" href="#celery">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>先尝试复现该问题，首先尝试 ifdown Primary 节点存储网络，现象复现；尝试 ifdown Secondary 节点存储网络，无法复现；
+尝试 stop MongoDB service 替代 ifdown，Primary 或 Secondary 均无法复现。推测与 MongoDB 连接处理有关。&lt;/p>
+&lt;p>观察现象复现的日志，在存储网络异常时，日志无任何输出，在存储网络恢复正常后，可以看到 Celery 记录在尝试连接 Broker （MongoDB）时发生了异常，尝试重连。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>2022-05-07 10:13:01,362: WARNING/MainProcess&lt;span style="color:#f92672">]&lt;/span> consumer: Connection to broker lost. Trying to re-establish the connection...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Traceback &lt;span style="color:#f92672">(&lt;/span>most recent call last&lt;span style="color:#f92672">)&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/celery/worker/consumer/consumer.py&amp;#34;&lt;/span>, line 318, in start
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> blueprint.start&lt;span style="color:#f92672">(&lt;/span>self&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/celery/bootsteps.py&amp;#34;&lt;/span>, line 119, in start
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> step.start&lt;span style="color:#f92672">(&lt;/span>parent&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/celery/worker/consumer/consumer.py&amp;#34;&lt;/span>, line 596, in start
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> c.loop&lt;span style="color:#f92672">(&lt;/span>*c.loop_args&lt;span style="color:#f92672">())&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/celery/worker/loops.py&amp;#34;&lt;/span>, line 121, in synloop
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> connection.drain_events&lt;span style="color:#f92672">(&lt;/span>timeout&lt;span style="color:#f92672">=&lt;/span>2.0&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/connection.py&amp;#34;&lt;/span>, line 315, in drain_events
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> self.transport.drain_events&lt;span style="color:#f92672">(&lt;/span>self.connection, **kwargs&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py&amp;#34;&lt;/span>, line 963, in drain_events
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> get&lt;span style="color:#f92672">(&lt;/span>self._deliver, timeout&lt;span style="color:#f92672">=&lt;/span>timeout&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/utils/scheduling.py&amp;#34;&lt;/span>, line 56, in get
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> self.fun&lt;span style="color:#f92672">(&lt;/span>resource, callback, **kwargs&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py&amp;#34;&lt;/span>, line 1001, in _drain_channel
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> channel.drain_events&lt;span style="color:#f92672">(&lt;/span>callback&lt;span style="color:#f92672">=&lt;/span>callback, timeout&lt;span style="color:#f92672">=&lt;/span>timeout&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py&amp;#34;&lt;/span>, line 745, in drain_events
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> self._poll&lt;span style="color:#f92672">(&lt;/span>self.cycle, callback, timeout&lt;span style="color:#f92672">=&lt;/span>timeout&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py&amp;#34;&lt;/span>, line 402, in _poll
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> cycle.get&lt;span style="color:#f92672">(&lt;/span>callback&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/utils/scheduling.py&amp;#34;&lt;/span>, line 56, in get
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> self.fun&lt;span style="color:#f92672">(&lt;/span>resource, callback, **kwargs&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/transport/virtual/base.py&amp;#34;&lt;/span>, line 405, in _get_and_deliver
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> message &lt;span style="color:#f92672">=&lt;/span> self._get&lt;span style="color:#f92672">(&lt;/span>queue&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib/python2.7/site-packages/kombu/transport/mongodb.py&amp;#34;&lt;/span>, line 141, in _get
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> remove&lt;span style="color:#f92672">=&lt;/span>True,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib64/python2.7/site-packages/pymongo/collection.py&amp;#34;&lt;/span>, line 2315, in find_and_modify
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> allowable_errors&lt;span style="color:#f92672">=[&lt;/span>_NO_OBJ_ERROR&lt;span style="color:#f92672">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib64/python2.7/site-packages/pymongo/collection.py&amp;#34;&lt;/span>, line 205, in _command
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> read_concern&lt;span style="color:#f92672">=&lt;/span>read_concern&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib64/python2.7/site-packages/pymongo/pool.py&amp;#34;&lt;/span>, line 218, in command
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self._raise_connection_failure&lt;span style="color:#f92672">(&lt;/span>error&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;/usr/lib64/python2.7/site-packages/pymongo/pool.py&amp;#34;&lt;/span>, line 346, in _raise_connection_failure
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> raise error
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>AutoReconnect: connection closed
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>2022-05-07 10:13:01,363: WARNING/MainProcess&lt;span style="color:#f92672">]&lt;/span> Restoring &lt;span style="color:#ae81ff">1&lt;/span> unacknowledged message&lt;span style="color:#f92672">(&lt;/span>s&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>对应 Celery 代码在 worker/consumer/consumer.py，Blueprint 是 Celery 启动入口，可以看到在 &lt;code>blueprint.start(self)&lt;/code> 阶段进行了异常处理，针对 &lt;code>self.connection_errors&lt;/code> 来触发重连接。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span> CONNECTION_RETRY &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&amp;#34;&lt;/span>&lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span>&lt;span style="color:#e6db74"> consumer: Connection to broker lost. &lt;/span>&lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span>&lt;span style="color:#e6db74"> Trying to re-establish the connection...&lt;/span>&lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span>&lt;span style="color:#e6db74"> &amp;#34;&amp;#34;&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">...&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">start&lt;/span>(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> blueprint &lt;span style="color:#f92672">=&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>blueprint
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">while&lt;/span> blueprint&lt;span style="color:#f92672">.&lt;/span>state &lt;span style="color:#f92672">!=&lt;/span> CLOSE:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> maybe_shutdown()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>restart_count:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>_restart_state&lt;span style="color:#f92672">.&lt;/span>step()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">except&lt;/span> RestartFreqExceeded &lt;span style="color:#66d9ef">as&lt;/span> exc:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> crit(&lt;span style="color:#e6db74">&amp;#39;Frequent restarts detected: &lt;/span>&lt;span style="color:#e6db74">%r&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>, exc, exc_info&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sleep(&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>restart_count &lt;span style="color:#f92672">+=&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> blueprint&lt;span style="color:#f92672">.&lt;/span>start(self)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">except&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>connection_errors &lt;span style="color:#66d9ef">as&lt;/span> exc:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># If we&amp;#39;re not retrying connections, no need to catch&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># connection errors&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>app&lt;span style="color:#f92672">.&lt;/span>conf&lt;span style="color:#f92672">.&lt;/span>broker_connection_retry:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">raise&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> isinstance(exc, &lt;span style="color:#a6e22e">OSError&lt;/span>) &lt;span style="color:#f92672">and&lt;/span> exc&lt;span style="color:#f92672">.&lt;/span>errno &lt;span style="color:#f92672">==&lt;/span> errno&lt;span style="color:#f92672">.&lt;/span>EMFILE:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">raise&lt;/span> &lt;span style="color:#75715e"># Too many open files&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> maybe_shutdown()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> blueprint&lt;span style="color:#f92672">.&lt;/span>state &lt;span style="color:#f92672">!=&lt;/span> CLOSE:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>connection:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>on_connection_error_after_connected(exc)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>on_connection_error_before_connected(exc)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>on_close()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> blueprint&lt;span style="color:#f92672">.&lt;/span>restart(self)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">on_connection_error_before_connected&lt;/span>(self, exc):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> error(CONNECTION_ERROR, self&lt;span style="color:#f92672">.&lt;/span>conninfo&lt;span style="color:#f92672">.&lt;/span>as_uri(), exc,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;Trying to reconnect...&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">on_connection_error_after_connected&lt;/span>(self, exc):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> warn(CONNECTION_RETRY, exc_info&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>connection&lt;span style="color:#f92672">.&lt;/span>collect()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">except&lt;/span> &lt;span style="color:#a6e22e">Exception&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">pass&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;code>self.connection_errors&lt;/code> 对应的其实是 Kombu 中 Transport 定义的 ，可以在 &lt;code>kombu/kombu/transport/mongodb.py&lt;/code> 中查看，在当前版本中，定义为 &lt;code>pymongo.errors.ConnectionFailure&lt;/code> ，pymongo 中常见的网络连接异常 &lt;code>AutoReconnect&lt;/code> 或 &lt;code>NetworkTimeout&lt;/code> 均继承自 &lt;code>ConnectionFailure&lt;/code> 。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">Transport&lt;/span>(virtual&lt;span style="color:#f92672">.&lt;/span>Transport):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Channel &lt;span style="color:#f92672">=&lt;/span> Channel
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> can_parse_url &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">True&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> polling_interval &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> default_port &lt;span style="color:#f92672">=&lt;/span> DEFAULT_PORT
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> connection_errors &lt;span style="color:#f92672">=&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> virtual&lt;span style="color:#f92672">.&lt;/span>Transport&lt;span style="color:#f92672">.&lt;/span>connection_errors &lt;span style="color:#f92672">+&lt;/span> (errors&lt;span style="color:#f92672">.&lt;/span>ConnectionFailure, )
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>从目前来看，Celery 可以正确处理 kombu 上报的异常，但是在存储网络异常时，Kombu 没有抛出异常，于是问题调查从 Celery 转到 Kombu。&lt;/p>
+&lt;h3 id="kombu">
+Kombu
+&lt;a class="heading-link" href="#kombu">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>主要看 MongoDB Transport 关于建立连接部分的处理，代码执行路径依次是： &lt;code>client&lt;/code> -&amp;gt; &lt;code>_create_client&lt;/code> -&amp;gt; &lt;code>_open&lt;/code> -&amp;gt; &lt;code>_parse_uri&lt;/code> ，其中 &lt;code>_open&lt;/code> 是真正建立连接的处理，连接所采用的参数是在 &lt;code>_parse_uri&lt;/code> 返回的，&lt;code>_parse_uri&lt;/code> 最终调用的是 &lt;code>pymongo.uri_parser.parse_uri&lt;/code>。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">_open&lt;/span>(self, scheme&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#39;mongodb://&amp;#39;&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname, dbname, options &lt;span style="color:#f92672">=&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>_parse_uri(scheme&lt;span style="color:#f92672">=&lt;/span>scheme)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> conf &lt;span style="color:#f92672">=&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>_prepare_client_options(options)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> conf[&lt;span style="color:#e6db74">&amp;#39;host&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> hostname
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> env &lt;span style="color:#f92672">=&lt;/span> _detect_environment()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> env &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#39;gevent&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">from&lt;/span> gevent &lt;span style="color:#f92672">import&lt;/span> monkey
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> monkey&lt;span style="color:#f92672">.&lt;/span>patch_all()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">elif&lt;/span> env &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#39;eventlet&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">from&lt;/span> eventlet &lt;span style="color:#f92672">import&lt;/span> monkey_patch
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> monkey_patch()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> mongoconn &lt;span style="color:#f92672">=&lt;/span> MongoClient(&lt;span style="color:#f92672">**&lt;/span>conf)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> database &lt;span style="color:#f92672">=&lt;/span> mongoconn[dbname]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> version_str &lt;span style="color:#f92672">=&lt;/span> mongoconn&lt;span style="color:#f92672">.&lt;/span>server_info()[&lt;span style="color:#e6db74">&amp;#39;version&amp;#39;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> version &lt;span style="color:#f92672">=&lt;/span> tuple(map(int, version_str&lt;span style="color:#f92672">.&lt;/span>split(&lt;span style="color:#e6db74">&amp;#39;.&amp;#39;&lt;/span>)))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> version &lt;span style="color:#f92672">&amp;lt;&lt;/span> (&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">raise&lt;/span> VersionMismatch(E_SERVER_VERSION&lt;span style="color:#f92672">.&lt;/span>format(version_str))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">elif&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>ttl &lt;span style="color:#f92672">and&lt;/span> version &lt;span style="color:#f92672">&amp;lt;&lt;/span> (&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">raise&lt;/span> VersionMismatch(E_NO_TTL_INDEXES&lt;span style="color:#f92672">.&lt;/span>format(version_str))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> database
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">_parse_uri&lt;/span>(self, scheme&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#39;mongodb://&amp;#39;&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># See mongodb uri documentation:&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># http://docs.mongodb.org/manual/reference/connection-string/&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> client &lt;span style="color:#f92672">=&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>connection&lt;span style="color:#f92672">.&lt;/span>client
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">=&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>hostname
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> hostname&lt;span style="color:#f92672">.&lt;/span>startswith(scheme):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">=&lt;/span> scheme &lt;span style="color:#f92672">+&lt;/span> hostname
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> hostname[len(scheme):]:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">+=&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>default_hostname
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>userid &lt;span style="color:#f92672">and&lt;/span> &lt;span style="color:#e6db74">&amp;#39;@&amp;#39;&lt;/span> &lt;span style="color:#f92672">not&lt;/span> &lt;span style="color:#f92672">in&lt;/span> hostname:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> head, tail &lt;span style="color:#f92672">=&lt;/span> hostname&lt;span style="color:#f92672">.&lt;/span>split(&lt;span style="color:#e6db74">&amp;#39;://&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> credentials &lt;span style="color:#f92672">=&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>userid
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>password:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> credentials &lt;span style="color:#f92672">+=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;:&amp;#39;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>password
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">=&lt;/span> head &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#39;://&amp;#39;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> credentials &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#39;@&amp;#39;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> tail
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> port &lt;span style="color:#f92672">=&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>port &lt;span style="color:#66d9ef">if&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>port &lt;span style="color:#66d9ef">else&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>default_port
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> parsed &lt;span style="color:#f92672">=&lt;/span> uri_parser&lt;span style="color:#f92672">.&lt;/span>parse_uri(hostname, port)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> dbname &lt;span style="color:#f92672">=&lt;/span> parsed[&lt;span style="color:#e6db74">&amp;#39;database&amp;#39;&lt;/span>] &lt;span style="color:#f92672">or&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>virtual_host
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> dbname &lt;span style="color:#f92672">in&lt;/span> (&lt;span style="color:#e6db74">&amp;#39;/&amp;#39;&lt;/span>, &lt;span style="color:#66d9ef">None&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> dbname &lt;span style="color:#f92672">=&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>default_database
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> options &lt;span style="color:#f92672">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;auto_start_request&amp;#39;&lt;/span>: &lt;span style="color:#66d9ef">True&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;ssl&amp;#39;&lt;/span>: self&lt;span style="color:#f92672">.&lt;/span>ssl,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;connectTimeoutMS&amp;#39;&lt;/span>: (int(self&lt;span style="color:#f92672">.&lt;/span>connect_timeout &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#ae81ff">1000&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>connect_timeout &lt;span style="color:#66d9ef">else&lt;/span> &lt;span style="color:#66d9ef">None&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> options&lt;span style="color:#f92672">.&lt;/span>update(parsed[&lt;span style="color:#e6db74">&amp;#39;options&amp;#39;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> hostname, dbname, options
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>假设我们连接参数是 &lt;code>mongodb://192.168.1.1:27017,192.168.1.2:27017/yiran&lt;/code> ，那么 &lt;code>pymongo.uri_parser.parse_uri&lt;/code> 解析的结果会是： &lt;code>{'username': None, 'nodelist': [('192.168.1.1', 27017), ('192.168.1.2', 27017)], 'database': 'yiran', 'collection': None, 'password': None, 'options': {}}&lt;/code> 。&lt;/p>
+&lt;p>socketTimeoutMS在我们的环境中，MongoDB 的 URI 中并没有指定 options，所以 &lt;code>pymongo.uri_parser.parse_uri&lt;/code> 结果的 &lt;code>options&lt;/code> 为空。最终连接所使用的 &lt;code>options&lt;/code> 就是在 &lt;code>_parse_uri&lt;/code> 中定义的 options ，其中类变量 &lt;code>connect_timeout&lt;/code> 在 Channel 定义为 None，所以最终 Kombu 建立 MongoDB 连接并没有设置 &lt;code>socketTimeoutMS&lt;/code>，如果不设置 &lt;code>socketTimeoutMS&lt;/code> ，默认是 None，永久等待。当网络出现异常时，直观看到的现象会是 hang 住。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">Channel&lt;/span>(virtual&lt;span style="color:#f92672">.&lt;/span>Channel):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&amp;#34;MongoDB Channel.&amp;#34;&amp;#34;&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> supports_fanout &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">True&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># Mutable container. Shared by all class instances&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> _fanout_queues &lt;span style="color:#f92672">=&lt;/span> {}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># Options&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ssl &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">False&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ttl &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">False&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> connect_timeout &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">None&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> capped_queue_size &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">100000&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> calc_queue_size &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">True&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="celery-与-kombu-参数传递">
+Celery 与 Kombu 参数传递
+&lt;a class="heading-link" href="#celery-%e4%b8%8e-kombu-%e5%8f%82%e6%95%b0%e4%bc%a0%e9%80%92">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>现在观察到连接参数不符合预期，为什么之前的 3.x 版本没有问题？切换到 3.x 分支查看对应的代码，可以看到大体逻辑都是类似的，关于 options 的处理，3.x 存在一行 ： &lt;code>options.update(client.transport_options)&lt;/code> ，这里的 client 在函数最开始赋值，对应的是 &lt;code>self.connection.client&lt;/code> ，&lt;code>self.connection&lt;/code> 是 Transport 构造传入的参数。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">_parse_uri&lt;/span>(self, scheme&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#39;mongodb://&amp;#39;&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># See mongodb uri documentation:&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># http://docs.mongodb.org/manual/reference/connection-string/&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> client &lt;span style="color:#f92672">=&lt;/span> self&lt;span style="color:#f92672">.&lt;/span>connection&lt;span style="color:#f92672">.&lt;/span>client
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">=&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>hostname
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> hostname&lt;span style="color:#f92672">.&lt;/span>startswith(scheme):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">=&lt;/span> scheme &lt;span style="color:#f92672">+&lt;/span> hostname
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> hostname[len(scheme):]:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">+=&lt;/span> DEFAULT_HOST
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>userid &lt;span style="color:#f92672">and&lt;/span> &lt;span style="color:#e6db74">&amp;#39;@&amp;#39;&lt;/span> &lt;span style="color:#f92672">not&lt;/span> &lt;span style="color:#f92672">in&lt;/span> hostname:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> head, tail &lt;span style="color:#f92672">=&lt;/span> hostname&lt;span style="color:#f92672">.&lt;/span>split(&lt;span style="color:#e6db74">&amp;#39;://&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> credentials &lt;span style="color:#f92672">=&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>userid
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>password:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> credentials &lt;span style="color:#f92672">+=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;:&amp;#39;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>password
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> hostname &lt;span style="color:#f92672">=&lt;/span> head &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#39;://&amp;#39;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> credentials &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#39;@&amp;#39;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> tail
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> port &lt;span style="color:#f92672">=&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>port &lt;span style="color:#66d9ef">if&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>port &lt;span style="color:#f92672">is&lt;/span> &lt;span style="color:#f92672">not&lt;/span> &lt;span style="color:#66d9ef">None&lt;/span> &lt;span style="color:#66d9ef">else&lt;/span> DEFAULT_PORT
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> parsed &lt;span style="color:#f92672">=&lt;/span> uri_parser&lt;span style="color:#f92672">.&lt;/span>parse_uri(hostname, port)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> dbname &lt;span style="color:#f92672">=&lt;/span> parsed[&lt;span style="color:#e6db74">&amp;#39;database&amp;#39;&lt;/span>] &lt;span style="color:#f92672">or&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>virtual_host
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> dbname &lt;span style="color:#f92672">in&lt;/span> (&lt;span style="color:#e6db74">&amp;#39;/&amp;#39;&lt;/span>, &lt;span style="color:#66d9ef">None&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> dbname &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;kombu_default&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> options &lt;span style="color:#f92672">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;auto_start_request&amp;#39;&lt;/span>: &lt;span style="color:#66d9ef">True&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;ssl&amp;#39;&lt;/span>: client&lt;span style="color:#f92672">.&lt;/span>ssl,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;connectTimeoutMS&amp;#39;&lt;/span>: (int(client&lt;span style="color:#f92672">.&lt;/span>connect_timeout &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#ae81ff">1000&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> client&lt;span style="color:#f92672">.&lt;/span>connect_timeout &lt;span style="color:#66d9ef">else&lt;/span> &lt;span style="color:#66d9ef">None&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> options&lt;span style="color:#f92672">.&lt;/span>update(client&lt;span style="color:#f92672">.&lt;/span>transport_options)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> options&lt;span style="color:#f92672">.&lt;/span>update(parsed[&lt;span style="color:#e6db74">&amp;#39;options&amp;#39;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> hostname, dbname, options
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;code>connection&lt;/code> 对应的就是 Kombu 中的 &lt;code>Connection&lt;/code> ，Kombu 对外隐藏了 Transport ，Celery 在初始化阶段，会建立连接，调用路径是 &lt;code>celery/app/base.py:Celery._connection&lt;/code> -&amp;gt; &lt;code>celery/app/amqp.py:AMQP.Connection&lt;/code> -&amp;gt; &lt;code>kombu/connection.py:Connection&lt;/code> 。传递参数 &lt;code>transport_options&lt;/code> 就是在 Celery app 声明时配置的参数，具体可配置参数可以参考文档： &lt;a href="https://docs.celeryq.dev/en/stable/userguide/configuration.html" class="external-link" target="_blank" rel="noopener">https://docs.celeryq.dev/en/stable/userguide/configuration.html&lt;/a>。&lt;/p>
+&lt;p>在我们的场景中，声明了以下参数：&lt;/p>
+&lt;pre tabindex="0">&lt;code>BROKER_TRANSPORT_OPTIONS = {
+&amp;#34;connect&amp;#34;: False,
+&amp;#34;maxPoolSize&amp;#34;: 5 if &amp;#34;worker&amp;#34; in process_cmdline else 2,
+&amp;#34;socketTimeoutMS&amp;#34;: 5000,
+&amp;#34;connectTimeoutMS&amp;#34;: 5000,
+&amp;#34;serverSelectionTimeoutMS&amp;#34;: 5000,
+&amp;#34;w&amp;#34;: 0,
+}
+&lt;/code>&lt;/pre>&lt;p>在 Kombu 使用 MongoDB Transport 时，最终会带有这些参数创建 MongoDB 连接，所以不会出现此问题说描述的现象。&lt;/p>
+&lt;h2 id="celery-改动背景">
+Celery 改动背景
+&lt;a class="heading-link" href="#celery-%e6%94%b9%e5%8a%a8%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>@rmihael 上报了一个问题： &lt;a href="https://github.com/celery/celery/issues/1047" class="external-link" target="_blank" rel="noopener">Celery events are not removed from MongoDB broker #1047&lt;/a> ，表示在使用 Celery Flower（Celery 监控组件）后，&lt;code>messages&lt;/code> 中的事件不会清除，导致占用了大量的 MongoDB 存储空间。该 Issue 中讨论最终决定使用 MongoDB TTL 来解决此问题。&lt;/p>
+&lt;p>在 Kombu 4.x 开发周期中，@daevaorn 提交了 &lt;a href="https://github.com/celery/kombu/pull/537" class="external-link" target="_blank" rel="noopener">MongoDB TTL support and refactorings #537&lt;/a> 用来支持 MongoDB TTL，在该 PR 中包含了大量与 TTL 无关的 commit，并且包含了一定的重构，commit 如下：&lt;/p>
+&lt;ul>
+&lt;li>Complete unit tests suit for MongoDB transport&lt;/li>
+&lt;li>Optional TTL support for MongoDB transport. AMQP TTL headers: x-messa…&lt;/li>
+&lt;li>Rearrange methods at MongoDB channel class&lt;/li>
+&lt;li>Another MongoDB transport clean up and refactor. Use of transport opt…&lt;/li>
+&lt;li>Opt-out for queue size calculation&lt;/li>
+&lt;li>Use natural sort for more FIFO semantic&lt;/li>
+&lt;li>Fix docstrings&lt;/li>
+&lt;/ul>
+&lt;p>其中 &lt;code>Optional TTL support for MongoDB transport. &lt;/code> 是最关键的改动，忽略 TTL 的改动，主要看建立 MongoDB 连接的改动。在 &lt;code>Channel&lt;/code> Class 中新增了一些类变量用于标识当前配置，在 &lt;code>_parse_uri&lt;/code> 中，将 SSL,connectTImeoutMS 从 &lt;code>client&lt;/code> 替换为了 &lt;code>self&lt;/code> ，并删除了 &lt;code>options.update(client.transport_options)&lt;/code> 。其中删除了 &lt;code>options.update(client.transport_options)&lt;/code> 是导致这个问题的关键。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-diff" data-lang="diff">&lt;span style="display:flex;">&lt;span> class Channel(virtual.Channel):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> _client = None
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> supports_fanout = True
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ # Mutable containers. Shared by all class instances
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">&lt;/span> _fanout_queues = {}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ # Options
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ connect_timeout = None
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ ssl = False
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ capped_queue_size = 100000
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ ttl = False
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ from_transport_options = (
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ virtual.Channel.from_transport_options
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ + (&amp;#39;connect_timeout&amp;#39;, &amp;#39;ssl&amp;#39;, &amp;#39;ttl&amp;#39;, &amp;#39;capped_queue_size&amp;#39;))
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">&lt;/span> def __init__(self, *vargs, **kwargs):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> super(Channel, self).__init__(*vargs, **kwargs)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> def _parse_uri(self, scheme=&amp;#39;mongodb://&amp;#39;):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> options = {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#39;auto_start_request&amp;#39;: True,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">- &amp;#39;ssl&amp;#39;: client.ssl,
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">- &amp;#39;connectTimeoutMS&amp;#39;: (int(client.connect_timeout * 1000)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">- if client.connect_timeout else None),
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">&lt;/span>&lt;span style="color:#a6e22e">+ &amp;#39;ssl&amp;#39;: self.ssl,
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ &amp;#39;connectTimeoutMS&amp;#39;: (int(self.connect_timeout * 1000)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">+ if self.connect_timeout else None),
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">&lt;/span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">- options.update(client.transport_options)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">&lt;/span> options.update(parsed[&amp;#39;options&amp;#39;])
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="总结">
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>Celery Kombu 代码管理感觉有些不清晰，在多个分支上想要对比非常困难。必要组件升级大版本进行全集测试是必要的。&lt;/p></description></item></channel></rss>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Flask on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Flask/</link><description>Recent content in Flask on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 08 Jul 2018 09:44:24 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Flask/atom.xml" rel="self" type="application/rss+xml"/><item><title>Flask 流式响应</title><link>https://zdyxry.github.io/2018/07/08/Flask-%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/</link><pubDate>Sun, 08 Jul 2018 09:44:24 +0000</pubDate><guid>https://zdyxry.github.io/2018/07/08/Flask-%E6%B5%81%E5%BC%8F%E5%93%8D%E5%BA%94/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>在 web 场景下，经常会碰到下载文件的需求，通常小文件我们会采用 Flask &lt;code>send_file&lt;/code> 或者 &lt;code>send_from_directory&lt;/code>的方式，下载，但是当下载的文件是一个大压缩文件（&amp;gt;1GiB）时，这种方式就显得不友好了，我们需要采用流式下载的方式返回给客户端。&lt;/p>
+&lt;h2 id="流式下载">
+流式下载
+&lt;a class="heading-link" href="#%e6%b5%81%e5%bc%8f%e4%b8%8b%e8%bd%bd">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>简单实现：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> flask &lt;span style="color:#f92672">import&lt;/span> Response
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@app.route&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/download/&amp;lt;file_path&amp;gt;&amp;#34;&lt;/span>, methods&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;GET&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">download&lt;/span>(file_path):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">generate&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>exists(file_path):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">raise&lt;/span> &lt;span style="color:#e6db74">&amp;#34;File not found.&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">with&lt;/span> open(file_path, &lt;span style="color:#e6db74">&amp;#34;rb&amp;#34;&lt;/span>) &lt;span style="color:#66d9ef">as&lt;/span> f:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">while&lt;/span> &lt;span style="color:#66d9ef">True&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> chunk &lt;span style="color:#f92672">=&lt;/span> f&lt;span style="color:#f92672">.&lt;/span>read(chunk_size&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">10&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#ae81ff">1024&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#ae81ff">1024&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">not&lt;/span> chunk:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">yield&lt;/span> chunk
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> Response(generate(), content_type&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;application/octet-stream&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>运行 Flask app，可以正确下载文件，但是下载只有实时速度，没有文件总大小，导致无法知道下载进度，也没有文件类型，这些我们都可以通过增加 header 字段实现：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>response &lt;span style="color:#f92672">=&lt;/span> Response(generate(), mimetype&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#39;application/gzip&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>response&lt;span style="color:#f92672">.&lt;/span>headers[&lt;span style="color:#e6db74">&amp;#39;Content-Disposition&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;attachment; filename=&lt;/span>&lt;span style="color:#e6db74">{}&lt;/span>&lt;span style="color:#e6db74">.tar.gz&amp;#39;&lt;/span>&lt;span style="color:#f92672">.&lt;/span>format(&lt;span style="color:#e6db74">&amp;#34;download_file&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>response&lt;span style="color:#f92672">.&lt;/span>headers[&lt;span style="color:#e6db74">&amp;#39;content-length&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>stat(str(file_path))&lt;span style="color:#f92672">.&lt;/span>st_size
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> response
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这样，我们下载文件就可以看到文件类型、文件总大小及已下载大小了，其中 &lt;code>mimetype&lt;/code> 根据实际压缩文件类型修改匹配即可。&lt;/p>
+&lt;hr>
+&lt;h2 id="转发流式下载">
+转发流式下载
+&lt;a class="heading-link" href="#%e8%bd%ac%e5%8f%91%e6%b5%81%e5%bc%8f%e4%b8%8b%e8%bd%bd">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>当我们下载本地节点文件，可以通过上述方法实现，但是如果我们的产品是集群形式的，要求在集群中的任一节点均可下载集群中所有节点的指定文件，我们就需要支持将流式下载转发并实时下载，避免访问节点占用太多内存。&lt;/p>
+&lt;p>如果是单节点转发流式请求，我们可以通过 flask 的 &lt;code>stream_with_context&lt;/code> 实现：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">from&lt;/span> flask &lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Flask,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Response,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> stream_with_context
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> requests
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>app &lt;span style="color:#f92672">=&lt;/span> Flask(__name__)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@app.route&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/download/&amp;lt;file_path&amp;gt;&amp;#34;&lt;/span>, method&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;GET&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">download&lt;/span>(file_path):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> url_prefix &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;http://1.1.1.1/&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> remote_url &lt;span style="color:#f92672">=&lt;/span> url_prefix &lt;span style="color:#f92672">+&lt;/span> file_path
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> req &lt;span style="color:#f92672">=&lt;/span> requests&lt;span style="color:#f92672">.&lt;/span>get(remote_url, stream &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> Response(stream_with_context(req&lt;span style="color:#f92672">.&lt;/span>iter_content()),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> content_type &lt;span style="color:#f92672">=&lt;/span> req&lt;span style="color:#f92672">.&lt;/span>headers[&lt;span style="color:#e6db74">&amp;#39;content-type&amp;#39;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">if&lt;/span> __name__ &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#34;__main__&amp;#34;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> app&lt;span style="color:#f92672">.&lt;/span>run(host&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;0.0.0.0&amp;#34;&lt;/span>, debug&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在我们访问 &lt;code>http://localhost:5000/download/file_name&lt;/code> 时，通过 requests 访问远端节点 1.1.1.1 的地址，并将请求通过流式的方式转发至客户端，实现下载。&lt;/p>
+&lt;p>如果是转发多节点流式请求，我们该如何保证多个请求最终 merge 后是一个正确的文件呢？
+通过查询资料，排除了标准库中的 tarfile 和 zipfile 打包压缩方式，最终采用 zipstream（https://github.com/allanlei/python-zipstream） 第三方库实现。&lt;/p>
+&lt;hr>
+&lt;p>zipstream 支持通过迭代器的方式写入文件，并可实时压缩读取，官方示例如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">iterable&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> _ &lt;span style="color:#f92672">in&lt;/span> xrange(&lt;span style="color:#ae81ff">10&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">yield&lt;/span> &lt;span style="color:#e6db74">b&lt;/span>&lt;span style="color:#e6db74">&amp;#39;this is a byte string&lt;/span>&lt;span style="color:#ae81ff">\x01\n&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>z &lt;span style="color:#f92672">=&lt;/span> zipstream&lt;span style="color:#f92672">.&lt;/span>ZipFile()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>z&lt;span style="color:#f92672">.&lt;/span>write_iter(&lt;span style="color:#e6db74">&amp;#39;my_archive_iter&amp;#39;&lt;/span>, iterable())
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">with&lt;/span> open(&lt;span style="color:#e6db74">&amp;#39;zipfile.zip&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;wb&amp;#39;&lt;/span>) &lt;span style="color:#66d9ef">as&lt;/span> f:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> data &lt;span style="color:#f92672">in&lt;/span> z:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> f&lt;span style="color:#f92672">.&lt;/span>write(data)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
+&lt;p>根据上述特性，我们结合转发单节点请求，实现同时请求多节点并实时压缩下载：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">@app.route&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/cluster_download/&amp;lt;file_path&amp;gt;&amp;#34;&lt;/span>, method&lt;span style="color:#f92672">=&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;GET&amp;#34;&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">cluster_download&lt;/span>(reqs):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">generate&lt;/span>(req):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> z &lt;span style="color:#f92672">=&lt;/span> zipstream&lt;span style="color:#f92672">.&lt;/span>ZipFile(mode&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;w&amp;#34;&lt;/span>, compression&lt;span style="color:#f92672">=&lt;/span>zipstream&lt;span style="color:#f92672">.&lt;/span>ZIP_DEFLATED)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> req &lt;span style="color:#f92672">in&lt;/span> reqs:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> host &lt;span style="color:#f92672">=&lt;/span> req&lt;span style="color:#f92672">.&lt;/span>raw&lt;span style="color:#f92672">.&lt;/span>_fp&lt;span style="color:#f92672">.&lt;/span>fp&lt;span style="color:#f92672">.&lt;/span>_sock&lt;span style="color:#f92672">.&lt;/span>getpeername()[&lt;span style="color:#ae81ff">0&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> z&lt;span style="color:#f92672">.&lt;/span>write_iter(&lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">.tar.gz&amp;#34;&lt;/span> &lt;span style="color:#f92672">%&lt;/span> host, req&lt;span style="color:#f92672">.&lt;/span>iter_content(chunk_size&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">10&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#ae81ff">1024&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#ae81ff">1024&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> chunk &lt;span style="color:#f92672">in&lt;/span> z:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">yield&lt;/span> chunk
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">get_file_size&lt;/span>(reqs):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> size &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> req &lt;span style="color:#f92672">in&lt;/span> reqs:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> size &lt;span style="color:#f92672">+=&lt;/span> int(req&lt;span style="color:#f92672">.&lt;/span>headers&lt;span style="color:#f92672">.&lt;/span>get(&lt;span style="color:#e6db74">&amp;#34;content-length&amp;#34;&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> size
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> remote_hosts &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#e6db74">&amp;#34;1.1.1.1&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;2.2.2.2&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> reqs &lt;span style="color:#f92672">=&lt;/span> []
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> host &lt;span style="color:#f92672">in&lt;/span> remote_hosts:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> req &lt;span style="color:#f92672">=&lt;/span> requests&lt;span style="color:#f92672">.&lt;/span>get(&lt;span style="color:#e6db74">&amp;#34;http://&lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">/&lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span> &lt;span style="color:#f92672">%&lt;/span> (host, file_path), timeout&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">5&lt;/span>, stream&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> req&lt;span style="color:#f92672">.&lt;/span>status_code &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">200&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> reqs&lt;span style="color:#f92672">.&lt;/span>append(req)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response &lt;span style="color:#f92672">=&lt;/span> Response(generate(reqs))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response&lt;span style="color:#f92672">.&lt;/span>headers[&lt;span style="color:#e6db74">&amp;#39;mimetype&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;application/zip&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response&lt;span style="color:#f92672">.&lt;/span>headers[&lt;span style="color:#e6db74">&amp;#39;Content-Disposition&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;attachment; filename=cluster_logs.zip)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> response&lt;span style="color:#f92672">.&lt;/span>hreads[&lt;span style="color:#e6db74">&amp;#39;content-length&amp;#39;&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> get_file_size(reqs)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>当我们访问 &lt;code>http://localhost/cluster_download/file_name&lt;/code> 时，会先去 remote_hosts 中各个节点下载该文件，并通过 &lt;code>write_iter&lt;/code> 的方式写入到 zip 文件中，Flask Response 返回的是 zip 文件中的数据块。&lt;/p>
+&lt;hr>
+&lt;p>如果我们要在 zip 文件中增加某些运行过程中产生的数据，我们可以通过再定义一个生成器的方式：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">generate_file&lt;/span>(content):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">yield&lt;/span> content
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>z&lt;span style="color:#f92672">.&lt;/span>write_iter(&lt;span style="color:#e6db74">&amp;#34;running_status&amp;#34;&lt;/span>, generate_file)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这样我们就可以在最终的 zip 文件中，包含一个名为 &lt;code>running_status&lt;/code> 的文件，文件内容为 content 的内容。&lt;/p>
+&lt;h2 id="总结">
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>这个需求在日常使用中是很常见的，跟下载类似，上传文件的话我们也可以采用类似的方式实现。&lt;/p></description></item></channel></rss>
