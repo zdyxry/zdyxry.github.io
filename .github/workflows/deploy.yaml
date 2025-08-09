@@ -5,6 +5,9 @@ on:
     branches:
       - hugo  # Set a branch to deploy
   pull_request:
+  schedule:
+    # 每天 00:10 UTC（北京时间 08:10）自动运行
+    - cron: '10 0 * * *'
 
 jobs:
   deploy:
@@ -16,6 +19,17 @@ jobs:
         with:
           submodules: true  # Fetch Hugo themes (true OR recursive)
           fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Fetch Garmin running data (uv)
+        env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+        run: |
+          uv run scripts/get_garmin_data.py --days 7
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
