@@ -1,0 +1,80 @@
+{{ define "title" }}跑步 Running · {{ .Site.Title }}{{ end }}
+{{ define "content" }}
+<section class="container page">
+  <article>
+    <header>
+      <h1 class="title"><a class="title-link" href="{{ .Permalink }}">跑步 Running</a></h1>
+    </header>
+    {{/* 读取 data/running.json */}}
+    {{ $data := site.Data.running }}
+    {{ if not $data }}
+      <p>暂无数据。</p>
+    {{ else }}
+      <h2>统计</h2>
+      <ul>
+        <li>总跑量：{{ printf "%.1f" $data.stats.total_distance }} km</li>
+        <li>总次数：{{ $data.stats.total_runs }} 次</li>
+        <li>总时长：{{ $data.stats.total_duration }}</li>
+        <li>平均配速：{{ $data.stats.avg_pace }} /km</li>
+        <li>最长单次：{{ printf "%.1f" $data.stats.longest_run }} km</li>
+      </ul>
+
+      <h2>最近跑步</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>里程 (km)</th>
+            <th>时长</th>
+            <th>配速</th>
+            <th>心率</th>
+          </tr>
+        </thead>
+        <tbody>
+        {{ range first 30 $data.runs }}
+          <tr>
+            <td>{{ .date }}</td>
+            <td>{{ printf "%.1f" .distance }}</td>
+            <td>{{ .duration }}</td>
+            <td>{{ .pace }}</td>
+            <td>{{ if .heart_rate }}{{ printf "%.0f" .heart_rate }}{{ end }}</td>
+          </tr>
+        {{ end }}
+        </tbody>
+      </table>
+
+      <details>
+        <summary>展开查看全部记录 ({{ len $data.runs }} 次)</summary>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>日期</th>
+              <th>里程 (km)</th>
+              <th>时长</th>
+              <th>配速</th>
+              <th>心率</th>
+              <th>路线</th>
+              <th>天气</th>
+            </tr>
+          </thead>
+          <tbody>
+          {{ range $i, $r := $data.runs }}
+            <tr>
+              <td>{{ add $i 1 }}</td>
+              <td>{{ $r.date }}</td>
+              <td>{{ printf "%.1f" $r.distance }}</td>
+              <td>{{ $r.duration }}</td>
+              <td>{{ $r.pace }}</td>
+              <td>{{ if $r.heart_rate }}{{ printf "%.0f" $r.heart_rate }}{{ end }}</td>
+              <td>{{ $r.route }}</td>
+              <td>{{ $r.weather }}</td>
+            </tr>
+          {{ end }}
+          </tbody>
+        </table>
+      </details>
+    {{ end }}
+  </article>
+</section>
+{{ end }}
