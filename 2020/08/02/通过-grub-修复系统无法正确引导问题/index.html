@@ -1,10 +1,42 @@
-<!doctype html><html lang=zh-cn><head><title>通过 grub 修复系统无法正确引导问题 · Yiran's Blog
-</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 链接到标题 最近在将一个节点的 kernel 从 4.18 版本降级到 4.14 后，发现系统无法启动，直接进入到了 GRUB 提示符界面，记录下修复过程。
-现象 链接到标题 因为 kernel 4.18 版本和 4.14 的 打包方式发生了比较大的变化，4.18 版本多出了 kernel-core 和 kernel-modules 两个 rpm：
+<!doctype html><html lang=zh-cn><head><title>通过 grub 修复系统无法正确引导问题 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="
+  背景
+  
+    
+    链接到标题
+  
+
+最近在将一个节点的 kernel 从 4.18 版本降级到 4.14 后，发现系统无法启动，直接进入到了 GRUB 提示符界面，记录下修复过程。
+
+  现象
+  
+    
+    链接到标题
+  
+
+因为 kernel 4.18 版本和 4.14 的 打包方式发生了比较大的变化，4.18 版本多出了 kernel-core 和 kernel-modules 两个 rpm：
+
 4.14
-[root@sh-workstation Packages]# ls |grep ^kernel kernel-4.14.0-115.el7a.0.1.aarch64.rpm kernel-headers-4.14.0-115.el7a.0.1.aarch64.rpm kernel-tools-4.14.0-115.el7a.0.1.aarch64.rpm kernel-tools-libs-4.14.0-115.el7a.0.1.aarch64.rpm 4.18
-kernel-4.18.0-147.8.1.el7.aarch64.rpm kernel-core-4.18.0-147.8.1.el7.aarch64.rpm kernel-modules-4.18.0-147.8.1.el7.aarch64.rpm kernel-tools-4.18.0-147.8.1.el7.aarch64.rpm kernel-tools-libs-4.18.0-147.8.1.el7.aarch64.rpm 在没有官方 yum repo 的情况下，降级就比较麻烦，我直接尝试 rpm -Uvh kernel-4.14*.rpm ，然后将 4.18 的 kernel-core 和 kernel-modules 卸载掉，然后重启后，发现系统直接进入到了 GRUB 提示符界面，无法正常启动，只能寻求修复办法。
-修复方式 链接到标题 当时系统启动后，显示的是 grub> 提示符，说明此时已经加载了 grub 程序，但是没有找到 grub.cfg 配置文件中的指定kernel 和 initramfs。"><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="通过 grub 修复系统无法正确引导问题"><meta name=twitter:description content="背景 链接到标题 最近在将一个节点的 kernel 从 4.18 版本降级到 4.14 后，发现系统无法启动，直接进入到了 GRUB 提示符界面，记录下修复过程。
+[root@sh-workstation Packages]# ls |grep ^kernel
+kernel-4.14.0-115.el7a.0.1.aarch64.rpm
+kernel-headers-4.14.0-115.el7a.0.1.aarch64.rpm
+kernel-tools-4.14.0-115.el7a.0.1.aarch64.rpm
+kernel-tools-libs-4.14.0-115.el7a.0.1.aarch64.rpm
+
+4.18
+kernel-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-core-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-modules-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-tools-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-tools-libs-4.18.0-147.8.1.el7.aarch64.rpm
+在没有官方 yum repo 的情况下，降级就比较麻烦，我直接尝试 rpm -Uvh kernel-4.14*.rpm ，然后将 4.18 的 kernel-core 和 kernel-modules 卸载掉，然后重启后，发现系统直接进入到了 GRUB 提示符界面，无法正常启动，只能寻求修复办法。
+
+  修复方式
+  
+    
+    链接到标题
+  
+
+当时系统启动后，显示的是 grub> 提示符，说明此时已经加载了 grub 程序，但是没有找到 grub.cfg 配置文件中的指定kernel 和 initramfs。"><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="通过 grub 修复系统无法正确引导问题"><meta name=twitter:description content="背景 链接到标题 最近在将一个节点的 kernel 从 4.18 版本降级到 4.14 后，发现系统无法启动，直接进入到了 GRUB 提示符界面，记录下修复过程。
 现象 链接到标题 因为 kernel 4.18 版本和 4.14 的 打包方式发生了比较大的变化，4.18 版本多出了 kernel-core 和 kernel-modules 两个 rpm：
 4.14
 [root@sh-workstation Packages]# ls |grep ^kernel kernel-4.14.0-115.el7a.0.1.aarch64.rpm kernel-headers-4.14.0-115.el7a.0.1.aarch64.rpm kernel-tools-4.14.0-115.el7a.0.1.aarch64.rpm kernel-tools-libs-4.14.0-115.el7a.0.1.aarch64.rpm 4.18
@@ -14,35 +46,35 @@ kernel-4.18.0-147.8.1.el7.aarch64.rpm kernel-core-4.18.0-147.8.1.el7.aarch64.rpm
 4.14
 [root@sh-workstation Packages]# ls |grep ^kernel kernel-4.14.0-115.el7a.0.1.aarch64.rpm kernel-headers-4.14.0-115.el7a.0.1.aarch64.rpm kernel-tools-4.14.0-115.el7a.0.1.aarch64.rpm kernel-tools-libs-4.14.0-115.el7a.0.1.aarch64.rpm 4.18
 kernel-4.18.0-147.8.1.el7.aarch64.rpm kernel-core-4.18.0-147.8.1.el7.aarch64.rpm kernel-modules-4.18.0-147.8.1.el7.aarch64.rpm kernel-tools-4.18.0-147.8.1.el7.aarch64.rpm kernel-tools-libs-4.18.0-147.8.1.el7.aarch64.rpm 在没有官方 yum repo 的情况下，降级就比较麻烦，我直接尝试 rpm -Uvh kernel-4.14*.rpm ，然后将 4.18 的 kernel-core 和 kernel-modules 卸载掉，然后重启后，发现系统直接进入到了 GRUB 提示符界面，无法正常启动，只能寻求修复办法。
-修复方式 链接到标题 当时系统启动后，显示的是 grub> 提示符，说明此时已经加载了 grub 程序，但是没有找到 grub.cfg 配置文件中的指定kernel 和 initramfs。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-08-02T09:10:39+00:00"><meta property="article:modified_time" content="2020-08-02T09:10:39+00:00"><meta property="article:tag" content="Linux"><link rel=canonical href=https://zdyxry.github.io/2020/08/02/%E9%80%9A%E8%BF%87-grub-%E4%BF%AE%E5%A4%8D%E7%B3%BB%E7%BB%9F%E6%97%A0%E6%B3%95%E6%AD%A3%E7%A1%AE%E5%BC%95%E5%AF%BC%E9%97%AE%E9%A2%98/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.ba24a38c67cbc6656a702dab12fad48fdc65363b782920a94ddc656a23c65720.css integrity="sha256-uiSjjGfLxmVqcC2rEvrUj9xlNjt4KSCpTdxlaiPGVyA=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+修复方式 链接到标题 当时系统启动后，显示的是 grub> 提示符，说明此时已经加载了 grub 程序，但是没有找到 grub.cfg 配置文件中的指定kernel 和 initramfs。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-08-02T09:10:39+00:00"><meta property="article:modified_time" content="2020-08-02T09:10:39+00:00"><meta property="article:tag" content="Linux"><link rel=canonical href=https://zdyxry.github.io/2020/08/02/%E9%80%9A%E8%BF%87-grub-%E4%BF%AE%E5%A4%8D%E7%B3%BB%E7%BB%9F%E6%97%A0%E6%B3%95%E6%AD%A3%E7%A1%AE%E5%BC%95%E5%AF%BC%E9%97%AE%E9%A2%98/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.234dd936a3895f104a22c73bac5d02c5bac76466a036abd8a3baf6fa2ecbc413.css integrity="sha256-I03ZNqOJXxBKIsc7rF0CxbrHZGagNqvYo7r2+i7LxBM=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
 </a><input type=checkbox id=menu-toggle>
-<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2020/08/02/%E9%80%9A%E8%BF%87-grub-%E4%BF%AE%E5%A4%8D%E7%B3%BB%E7%BB%9F%E6%97%A0%E6%B3%95%E6%AD%A3%E7%A1%AE%E5%BC%95%E5%AF%BC%E9%97%AE%E9%A2%98/>通过 grub 修复系统无法正确引导问题</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
+<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2020/08/02/%E9%80%9A%E8%BF%87-grub-%E4%BF%AE%E5%A4%8D%E7%B3%BB%E7%BB%9F%E6%97%A0%E6%B3%95%E6%AD%A3%E7%A1%AE%E5%BC%95%E5%AF%BC%E9%97%AE%E9%A2%98/>通过 grub 修复系统无法正确引导问题</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
 <time datetime=2020-08-02T09:10:39Z>August 2, 2020
 </time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
 阅读时间：1 分钟</span></div><div class=tags><i class="fa-solid fa-tag" aria-hidden=true></i>
-<span class=tag><a href=/tags/Linux/>Linux</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#现象>现象</a></li><li><a href=#修复方式>修复方式</a></li><li><a href=#后续>后续</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<span class=tag><a href=/tags/linux/>Linux</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#现象>现象</a></li><li><a href=#修复方式>修复方式</a></li><li><a href=#后续>后续</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
 <a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
 <span class=sr-only>链接到标题</span></a></h2><p>最近在将一个节点的 kernel 从 4.18 版本降级到 4.14 后，发现系统无法启动，直接进入到了 GRUB 提示符界面，记录下修复过程。</p><h2 id=现象>现象
 <a class=heading-link href=#%e7%8e%b0%e8%b1%a1><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>因为 kernel 4.18 版本和 4.14 的 打包方式发生了比较大的变化，4.18 版本多出了 kernel-core 和 kernel-modules 两个 rpm：</p><blockquote><p>4.14</p></blockquote><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-gdscript3 data-lang=gdscript3><span style=display:flex><span>[root<span>@</span>sh-workstation Packages]<span style=font-style:italic># ls |grep ^kernel</span>
-</span></span><span style=display:flex><span>kernel-4.14.0-115.el7a.0.1.aarch64.rpm
-</span></span><span style=display:flex><span>kernel-headers-4.14.0-115.el7a.0.1.aarch64.rpm
-</span></span><span style=display:flex><span>kernel-tools-4.14.0-115.el7a.0.1.aarch64.rpm
-</span></span><span style=display:flex><span>kernel-tools-libs-4.14.0-115.el7a.0.1.aarch64.rpm
-</span></span></code></pre></div><blockquote><p>4.18</p></blockquote><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-gdscript3 data-lang=gdscript3><span style=display:flex><span>kernel-4.18.0-147.8.1.el7.aarch64.rpm
-</span></span><span style=display:flex><span>kernel-core-4.18.0-147.8.1.el7.aarch64.rpm
-</span></span><span style=display:flex><span>kernel-modules-4.18.0-147.8.1.el7.aarch64.rpm
-</span></span><span style=display:flex><span>kernel-tools-4.18.0-147.8.1.el7.aarch64.rpm
-</span></span><span style=display:flex><span>kernel-tools-libs-4.18.0-147.8.1.el7.aarch64.rpm
-</span></span></code></pre></div><p>在没有官方 yum repo 的情况下，降级就比较麻烦，我直接尝试 <code>rpm -Uvh kernel-4.14*.rpm</code> ，然后将 4.18 的 kernel-core 和 kernel-modules 卸载掉，然后重启后，发现系统直接进入到了 GRUB 提示符界面，无法正常启动，只能寻求修复办法。</p><h2 id=修复方式>修复方式
+<span class=sr-only>链接到标题</span></a></h2><p>因为 kernel 4.18 版本和 4.14 的 打包方式发生了比较大的变化，4.18 版本多出了 kernel-core 和 kernel-modules 两个 rpm：</p><blockquote><p>4.14</p></blockquote><pre tabindex=0><code>[root@sh-workstation Packages]# ls |grep ^kernel
+kernel-4.14.0-115.el7a.0.1.aarch64.rpm
+kernel-headers-4.14.0-115.el7a.0.1.aarch64.rpm
+kernel-tools-4.14.0-115.el7a.0.1.aarch64.rpm
+kernel-tools-libs-4.14.0-115.el7a.0.1.aarch64.rpm
+</code></pre><blockquote><p>4.18</p></blockquote><pre tabindex=0><code>kernel-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-core-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-modules-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-tools-4.18.0-147.8.1.el7.aarch64.rpm
+kernel-tools-libs-4.18.0-147.8.1.el7.aarch64.rpm
+</code></pre><p>在没有官方 yum repo 的情况下，降级就比较麻烦，我直接尝试 <code>rpm -Uvh kernel-4.14*.rpm</code> ，然后将 4.18 的 kernel-core 和 kernel-modules 卸载掉，然后重启后，发现系统直接进入到了 GRUB 提示符界面，无法正常启动，只能寻求修复办法。</p><h2 id=修复方式>修复方式
 <a class=heading-link href=#%e4%bf%ae%e5%a4%8d%e6%96%b9%e5%bc%8f><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
 <span class=sr-only>链接到标题</span></a></h2><p>当时系统启动后，显示的是 <code>grub></code> 提示符，说明此时已经加载了 grub 程序，但是没有找到 grub.cfg 配置文件中的指定kernel 和 initramfs。</p><p>此时有两种修复思路：一种是在现有环境基础上，手动指定 grub 参数，先启动进入系统，然后再修复 grub 配置；一种是关机，在服务器上挂载一个 LiveCD OS，进入到 LiveCD 中，chroot 进行修复。</p><p>因为当时没有 LiveCD，所以选择第一种方式修复。</p><p>此时排查思路如下：</p><ol><li>需要找到 <code>/boot/</code> 分区所在磁盘，可以通过 <code>ls</code> 命令显示此时所有的磁盘分区情况，可以通过 <code>ls (hd0,msdos1)/</code> 方式查看磁盘分区下的文件，如果是 <code>/boot/</code> 分区，会看到 vmlinuz 和 initramfs 文件</li><li>根据 <code>/boot</code> 分区文件系统类型，执行 <code>insmod</code> 命令加载对应的 module，比如 <code>insmod xfs</code></li><li>找到 <code>/boot/</code> 分区所在磁盘后，设置 <code>root</code> 变量，<code>root</code> 变量是指定的我们当前交互的根分区，指定我们找到的磁盘分区，<code>set root=(hd0,msdos1)</code></li><li>加载 linux kernel，并指定系统根分区 <code>root</code>，这个 <code>root</code> 变量并不是我们在上一步所指定的，而是作为加载 kernel 的参数传递的，如果使用 lvm 配置，那么默认是 <code>/dev/mapper/centos-root</code> ，最终命令如 <code>linux /vmlinuz-4.14.0-115.el7a.0.1.aarch64 root=/dev/mapper/centos-root</code></li><li>加载 initramfs，如 <code>initrd initramfs-4.14.0-115.el7a.0.1.aarch64.img</code></li><li>此时所有引导的必要参数已经设置完成，输入 <code>boot</code> 命令即可正确引导</li><li>系统引导后，检查 grub.cfg 配置，执行 <code>grub2-mkconfig -o </code>重新生成 grub 配置。</li></ol><h2 id=后续>后续
 <a class=heading-link href=#%e5%90%8e%e7%bb%ad><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
 <span class=sr-only>链接到标题</span></a></h2><p>在 kernel 升级的动作中，grub 会被自动更新，但是如果通过非常规方式进行 kernel 降级，就需要注意 grub 配置了，修复 grub 不是什么好的体验，慎重。</p><h2 id=参考链接>参考链接
 <a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><ul><li><a href=https://www.gnu.org/software/grub/manual/grub/grub.html class=external-link target=_blank rel=noopener>https://www.gnu.org/software/grub/manual/grub/grub.html</a></li><li><a href=https://help.ubuntu.com/community/Grub2/Troubleshooting class=external-link target=_blank rel=noopener>https://help.ubuntu.com/community/Grub2/Troubleshooting</a></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+<span class=sr-only>链接到标题</span></a></h2><ul><li><a href=https://www.gnu.org/software/grub/manual/grub/grub.html class=external-link target=_blank rel=noopener>https://www.gnu.org/software/grub/manual/grub/grub.html</a></li><li><a href=https://help.ubuntu.com/community/Grub2/Troubleshooting class=external-link target=_blank rel=noopener>https://help.ubuntu.com/community/Grub2/Troubleshooting</a></li></ul></div><footer></footer></article></section></div><footer class=footer><section class=container>©
 2016 -
 2025
 Yiran Zhou
 ·
-技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

@@ -1,0 +1,302 @@
+<!doctype html><html lang=zh-cn><head><title>Linux 主机异常信息收集 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="
+  背景
+  
+    
+    链接到标题
+  
+
+通常情况下，一个公司内部都会有监控报警平台去支撑业务主机的稳定运行，比如 Nagios，Zabbix 或者 Prometheus 等其他工具。
+这些工具，无论是 push 模式还是 pull 模式，都基于一个前提：主机是可访问的，或者说 agent/exporter 是可正常工作的。
+如果运维人员在面对一台处于异常状态的主机，应该如何收集该主机的当前状态及相应日志呢？
+企业级产品通常会内置工具用来采集异常状态信息，比如：
+
+DELL 服务器如果出现了未知错误，拨打 400 询问问题，
+一线客服会告诉你，打开 iDRAC 界面，点击“收集日志” 选项，会自动收集并下载节点信息
+如果你是 RedHat RHEL 用户，主机出现异常状态，红帽技术支持工程师进行初始分析时，通常会使用 sosreport 工具
+
+
+  简介
+  
+    
+    链接到标题
+  
+
+sosreport 命令是一个工具，用来收集 RHEL 系统上的配置信息、系统信息和诊断信息。比如：正在运行的内核版本、已加载的模块，以及系统和服务的配置文件。同时，sosreport 支持用户自己编写 Plugin ，用于收集自己想要收集的服务日志及命令结果。
+
+  使用
+  
+    
+    链接到标题
+  
+
+sosreport 提供了 sosreport 命令行，用户可以直接执行该命令收集信息，默认收集所有 Plugin 信息。
+
+  执行流程
+  
+    
+    链接到标题
+  
+
+通过 which 命令查看提供 sosreport 命令行的文件，可以看到指向 sos.sosreport.main。
+root@yiran-30-250:~/project/sos 
+master ✔ $ which sosreport
+/usr/sbin/sosreport
+root@yiran-30-250:~/project/sos 
+master ✔ $ cat /usr/sbin/sosreport
+#!/usr/bin/python
+import sys
+try:
+    from sos.sosreport import main
+except KeyboardInterrupt:
+    raise SystemExit()
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
+查看 main 函数，实例化 SoSReport，并执行 SoSReport中的 execute 方法，查看 execute 具体做了什么："><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Linux 主机异常信息收集"><meta name=twitter:description content="背景 链接到标题 通常情况下，一个公司内部都会有监控报警平台去支撑业务主机的稳定运行，比如 Nagios，Zabbix 或者 Prometheus 等其他工具。 这些工具，无论是 push 模式还是 pull 模式，都基于一个前提：主机是可访问的，或者说 agent/exporter 是可正常工作的。
+如果运维人员在面对一台处于异常状态的主机，应该如何收集该主机的当前状态及相应日志呢？
+企业级产品通常会内置工具用来采集异常状态信息，比如：
+DELL 服务器如果出现了未知错误，拨打 400 询问问题， 一线客服会告诉你，打开 iDRAC 界面，点击“收集日志” 选项，会自动收集并下载节点信息 如果你是 RedHat RHEL 用户，主机出现异常状态，红帽技术支持工程师进行初始分析时，通常会使用 sosreport 工具 简介 链接到标题 sosreport 命令是一个工具，用来收集 RHEL 系统上的配置信息、系统信息和诊断信息。比如：正在运行的内核版本、已加载的模块，以及系统和服务的配置文件。同时，sosreport 支持用户自己编写 Plugin ，用于收集自己想要收集的服务日志及命令结果。
+使用 链接到标题 sosreport 提供了 sosreport 命令行，用户可以直接执行该命令收集信息，默认收集所有 Plugin 信息。
+执行流程 链接到标题 通过 which 命令查看提供 sosreport 命令行的文件，可以看到指向 sos.sosreport.main。
+root@yiran-30-250:~/project/sos master ✔ $ which sosreport /usr/sbin/sosreport root@yiran-30-250:~/project/sos master ✔ $ cat /usr/sbin/sosreport #!/usr/bin/python import sys try: from sos.sosreport import main except KeyboardInterrupt: raise SystemExit() if __name__ == '__main__': main(sys.argv[1:]) 查看 main 函数，实例化 SoSReport，并执行 SoSReport中的 execute 方法，查看 execute 具体做了什么："><meta property="og:url" content="https://zdyxry.github.io/2018/07/06/linux-%E4%B8%BB%E6%9C%BA%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E6%94%B6%E9%9B%86/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="Linux 主机异常信息收集"><meta property="og:description" content="背景 链接到标题 通常情况下，一个公司内部都会有监控报警平台去支撑业务主机的稳定运行，比如 Nagios，Zabbix 或者 Prometheus 等其他工具。 这些工具，无论是 push 模式还是 pull 模式，都基于一个前提：主机是可访问的，或者说 agent/exporter 是可正常工作的。
+如果运维人员在面对一台处于异常状态的主机，应该如何收集该主机的当前状态及相应日志呢？
+企业级产品通常会内置工具用来采集异常状态信息，比如：
+DELL 服务器如果出现了未知错误，拨打 400 询问问题， 一线客服会告诉你，打开 iDRAC 界面，点击“收集日志” 选项，会自动收集并下载节点信息 如果你是 RedHat RHEL 用户，主机出现异常状态，红帽技术支持工程师进行初始分析时，通常会使用 sosreport 工具 简介 链接到标题 sosreport 命令是一个工具，用来收集 RHEL 系统上的配置信息、系统信息和诊断信息。比如：正在运行的内核版本、已加载的模块，以及系统和服务的配置文件。同时，sosreport 支持用户自己编写 Plugin ，用于收集自己想要收集的服务日志及命令结果。
+使用 链接到标题 sosreport 提供了 sosreport 命令行，用户可以直接执行该命令收集信息，默认收集所有 Plugin 信息。
+执行流程 链接到标题 通过 which 命令查看提供 sosreport 命令行的文件，可以看到指向 sos.sosreport.main。
+root@yiran-30-250:~/project/sos master ✔ $ which sosreport /usr/sbin/sosreport root@yiran-30-250:~/project/sos master ✔ $ cat /usr/sbin/sosreport #!/usr/bin/python import sys try: from sos.sosreport import main except KeyboardInterrupt: raise SystemExit() if __name__ == '__main__': main(sys.argv[1:]) 查看 main 函数，实例化 SoSReport，并执行 SoSReport中的 execute 方法，查看 execute 具体做了什么："><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-07-06T15:28:09+00:00"><meta property="article:modified_time" content="2018-07-06T15:28:09+00:00"><meta property="article:tag" content="Linux"><meta property="article:tag" content="Ops"><link rel=canonical href=https://zdyxry.github.io/2018/07/06/linux-%E4%B8%BB%E6%9C%BA%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E6%94%B6%E9%9B%86/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.234dd936a3895f104a22c73bac5d02c5bac76466a036abd8a3baf6fa2ecbc413.css integrity="sha256-I03ZNqOJXxBKIsc7rF0CxbrHZGagNqvYo7r2+i7LxBM=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+</a><input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2018/07/06/linux-%E4%B8%BB%E6%9C%BA%E5%BC%82%E5%B8%B8%E4%BF%A1%E6%81%AF%E6%94%B6%E9%9B%86/>Linux 主机异常信息收集</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
+<time datetime=2018-07-06T15:28:09Z>July 6, 2018
+</time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
+阅读时间：4 分钟</span></div><div class=tags><i class="fa-solid fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/linux/>Linux</a>
+</span><span class=separator>•</span>
+<span class=tag><a href=/tags/ops/>Ops</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#简介>简介</a></li><li><a href=#使用>使用</a></li><li><a href=#执行流程>执行流程</a><ul><li><a href=#加载插件并校验>加载插件并校验</a></li><li><a href=#执行各个插件>执行各个插件</a></li></ul></li><li><a href=#总结>总结</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>通常情况下，一个公司内部都会有监控报警平台去支撑业务主机的稳定运行，比如 Nagios，Zabbix 或者 Prometheus 等其他工具。
+这些工具，无论是 push 模式还是 pull 模式，都基于一个前提：主机是可访问的，或者说 agent/exporter 是可正常工作的。</p><p>如果运维人员在面对一台处于异常状态的主机，应该如何收集该主机的当前状态及相应日志呢？</p><p>企业级产品通常会内置工具用来采集异常状态信息，比如：</p><ul><li>DELL 服务器如果出现了未知错误，拨打 400 询问问题，
+一线客服会告诉你，打开 iDRAC 界面，点击“收集日志” 选项，会自动收集并下载节点信息</li><li>如果你是 RedHat RHEL 用户，主机出现异常状态，红帽技术支持工程师进行初始分析时，通常会使用 sosreport 工具</li></ul><h2 id=简介>简介
+<a class=heading-link href=#%e7%ae%80%e4%bb%8b><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>sosreport 命令是一个工具，用来收集 RHEL 系统上的配置信息、系统信息和诊断信息。比如：正在运行的内核版本、已加载的模块，以及系统和服务的配置文件。同时，sosreport 支持用户自己编写 Plugin ，用于收集自己想要收集的服务日志及命令结果。</p><h2 id=使用>使用
+<a class=heading-link href=#%e4%bd%bf%e7%94%a8><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>sosreport 提供了 <code>sosreport</code> 命令行，用户可以直接执行该命令收集信息，默认收集所有 Plugin 信息。</p><h2 id=执行流程>执行流程
+<a class=heading-link href=#%e6%89%a7%e8%a1%8c%e6%b5%81%e7%a8%8b><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>通过 which 命令查看提供 sosreport 命令行的文件，可以看到指向 <code>sos.sosreport.main</code>。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>root@yiran-30-250:~/project/sos 
+</span></span><span style=display:flex><span>master ✔ $ which sosreport
+</span></span><span style=display:flex><span>/usr/sbin/sosreport
+</span></span><span style=display:flex><span>root@yiran-30-250:~/project/sos 
+</span></span><span style=display:flex><span>master ✔ $ cat /usr/sbin/sosreport
+</span></span><span style=display:flex><span><span style=color:#75715e>#!/usr/bin/python</span>
+</span></span><span style=display:flex><span>import sys
+</span></span><span style=display:flex><span>try:
+</span></span><span style=display:flex><span>    from sos.sosreport import main
+</span></span><span style=display:flex><span>except KeyboardInterrupt:
+</span></span><span style=display:flex><span>    raise SystemExit<span style=color:#f92672>()</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> __name__ <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;__main__&#39;</span>:
+</span></span><span style=display:flex><span>    main<span style=color:#f92672>(</span>sys.argv<span style=color:#f92672>[</span>1:<span style=color:#f92672>])</span>
+</span></span></code></pre></div><p>查看 main 函数，实例化 SoSReport，并执行 SoSReport中的 execute 方法，查看 execute 具体做了什么：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>execute</span>(self):
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>            <span style=color:#75715e># 获取集群配置并配置，包含日志路径，报告路径,配置文件等参数</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>policy<span style=color:#f92672>.</span>set_commons(self<span style=color:#f92672>.</span>get_commons())
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>print_header()
+</span></span><span style=display:flex><span>            <span style=color:#75715e># 加载所有插件,并根据发行版本进行校验</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>load_plugins()
+</span></span><span style=display:flex><span>            <span style=color:#75715e># 设置默认配置参数</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>_set_all_options()
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>_set_tunables()
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>_check_for_unknown_plugins()
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>_set_plugin_options()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>list_plugins:
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>list_plugins()
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>True</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>list_profiles:
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>list_profiles()
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>True</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>list_presets:
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>list_presets()
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>True</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>add_preset:
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>add_preset(self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>add_preset)
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>del_preset:
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>del_preset(self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>del_preset)
+</span></span><span style=display:flex><span>            <span style=color:#75715e># verify that at least one plug-in is enabled</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> self<span style=color:#f92672>.</span>verify_plugins():
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>batch()
+</span></span><span style=display:flex><span>            <span style=color:#75715e># 收集前准备工作，包括打包方式等配置</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>prework()
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>setup()
+</span></span><span style=display:flex><span>            <span style=color:#75715e># 真正开始收集执行</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>collect()
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>noreport:
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>report()
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>html_report()
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>plain_report()
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>postproc()
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>version()
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>final_work()
+</span></span></code></pre></div><p>其中，主要步骤有两步：</p><ol><li>加载插件并校验</li><li>执行各个插件内容</li></ol><h3 id=加载插件并校验>加载插件并校验
+<a class=heading-link href=#%e5%8a%a0%e8%bd%bd%e6%8f%92%e4%bb%b6%e5%b9%b6%e6%a0%a1%e9%aa%8c><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>通过遍历软件包所在路径，先获取所有的插件名称:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>_plugin_name</span>(self, path):
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;Returns the plugin module name given the path&#34;</span>
+</span></span><span style=display:flex><span>        base <span style=color:#f92672>=</span> os<span style=color:#f92672>.</span>path<span style=color:#f92672>.</span>basename(path)
+</span></span><span style=display:flex><span>        name, ext <span style=color:#f92672>=</span> os<span style=color:#f92672>.</span>path<span style=color:#f92672>.</span>splitext(base)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> name
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>_get_plugins_from_list</span>(self, list_):
+</span></span><span style=display:flex><span>        plugins <span style=color:#f92672>=</span> [self<span style=color:#f92672>.</span>_plugin_name(plugin)
+</span></span><span style=display:flex><span>                   <span style=color:#66d9ef>for</span> plugin <span style=color:#f92672>in</span> list_
+</span></span><span style=display:flex><span>                   <span style=color:#66d9ef>if</span> <span style=color:#e6db74>&#34;__init__&#34;</span> <span style=color:#f92672>not</span> <span style=color:#f92672>in</span> plugin <span style=color:#f92672>and</span> plugin<span style=color:#f92672>.</span>endswith(<span style=color:#e6db74>&#34;.py&#34;</span>)]
+</span></span><span style=display:flex><span>        plugins<span style=color:#f92672>.</span>sort()
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> plugins
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>_find_plugins_in_dir</span>(self, path):
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> os<span style=color:#f92672>.</span>path<span style=color:#f92672>.</span>exists(path):
+</span></span><span style=display:flex><span>            py_files <span style=color:#f92672>=</span> list(find(<span style=color:#e6db74>&#34;*.py&#34;</span>, path))
+</span></span><span style=display:flex><span>            pnames <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>_get_plugins_from_list(py_files)
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> pnames:
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> pnames
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_modules</span>(self):
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;&#34;&#34;Returns the list of importable modules in the configured python
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        package. &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        plugins <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> path <span style=color:#f92672>in</span> self<span style=color:#f92672>.</span>package<span style=color:#f92672>.</span>__path__:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> os<span style=color:#f92672>.</span>path<span style=color:#f92672>.</span>isdir(path) <span style=color:#f92672>or</span> path <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;&#39;</span>:
+</span></span><span style=display:flex><span>                plugins<span style=color:#f92672>.</span>extend(self<span style=color:#f92672>.</span>_find_plugins_in_dir(path))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> plugins
+</span></span></code></pre></div><p>获取到插件名称后，获取 Linux 主机发行版本信息，并将发行版本指定为 import 参数，
+用于判断插件是否支持该发行版本(通过 inspect 校验 是否为子类方式):</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>import_module</span>(module_fqname, superclasses<span style=color:#f92672>=</span><span style=color:#66d9ef>None</span>):
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;&#34;&#34;Imports the module module_fqname and returns a list of defined classes
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    from that module. If superclasses is defined then the classes returned will
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    be subclasses of the specified superclass or superclasses. If superclasses
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    is plural it must be a tuple of classes.&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>    module_name <span style=color:#f92672>=</span> module_fqname<span style=color:#f92672>.</span>rpartition(<span style=color:#e6db74>&#34;.&#34;</span>)[<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>    module <span style=color:#f92672>=</span> __import__(module_fqname, globals(), locals(), [module_name])
+</span></span><span style=display:flex><span>    modules <span style=color:#f92672>=</span> [class_ <span style=color:#66d9ef>for</span> cname, class_ <span style=color:#f92672>in</span>
+</span></span><span style=display:flex><span>               inspect<span style=color:#f92672>.</span>getmembers(module, inspect<span style=color:#f92672>.</span>isclass)
+</span></span><span style=display:flex><span>               <span style=color:#66d9ef>if</span> class_<span style=color:#f92672>.</span>__module__ <span style=color:#f92672>==</span> module_fqname]
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> superclasses:
+</span></span><span style=display:flex><span>        modules <span style=color:#f92672>=</span> [m <span style=color:#66d9ef>for</span> m <span style=color:#f92672>in</span> modules <span style=color:#66d9ef>if</span> issubclass(m, superclasses)]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> modules
+</span></span></code></pre></div><p>接下来还有根据命令行参数进行相应配置参数传递，此处不进行展开。</p><h3 id=执行各个插件>执行各个插件
+<a class=heading-link href=#%e6%89%a7%e8%a1%8c%e5%90%84%e4%b8%aa%e6%8f%92%e4%bb%b6><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>查看 self.collect() 函数，可以发现，最终执行是通过线程池进行的，默认 Pool Size 为 4。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>collect</span>(self):
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>ui_log<span style=color:#f92672>.</span>info(_(<span style=color:#e6db74>&#34; Running plugins. Please wait ...&#34;</span>))
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>ui_log<span style=color:#f92672>.</span>info(<span style=color:#e6db74>&#34;&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        plugruncount <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>pluglist <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>running_plugs <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> self<span style=color:#f92672>.</span>loaded_plugins:
+</span></span><span style=display:flex><span>            plugruncount <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>pluglist<span style=color:#f92672>.</span>append((plugruncount, i[<span style=color:#ae81ff>0</span>]))
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>plugpool <span style=color:#f92672>=</span> ThreadPoolExecutor(self<span style=color:#f92672>.</span>opts<span style=color:#f92672>.</span>threads)
+</span></span><span style=display:flex><span>            <span style=color:#75715e># Pass the plugpool its own private copy of self.pluglist</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>plugpool<span style=color:#f92672>.</span>map(self<span style=color:#f92672>.</span>_collect_plugin, list(self<span style=color:#f92672>.</span>pluglist),
+</span></span><span style=display:flex><span>                              chunksize<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>plugpool<span style=color:#f92672>.</span>shutdown(wait<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>ui_log<span style=color:#f92672>.</span>info(<span style=color:#e6db74>&#34;&#34;</span>)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>except</span> <span style=color:#a6e22e>KeyboardInterrupt</span>:
+</span></span><span style=display:flex><span>            <span style=color:#75715e># We may not be at a newline when the user issues Ctrl-C</span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>ui_log<span style=color:#f92672>.</span>error(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>Exiting on user cancel</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>            os<span style=color:#f92672>.</span>_exit(<span style=color:#ae81ff>1</span>)
+</span></span></code></pre></div><p>在查看 self._collect_plugin，发现最终执行的函数为 <code>plug.collect()</code> ,这指向了插件本身，
+随便找一个插件看看是否有 collect 方法，以 block 插件为例：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> os
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> sos.plugins <span style=color:#f92672>import</span> Plugin, RedHatPlugin, DebianPlugin, UbuntuPlugin
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Block</span>(Plugin, RedHatPlugin, DebianPlugin, UbuntuPlugin):
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;&#34;&#34;Block device information
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    plugin_name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;block&#39;</span>
+</span></span><span style=display:flex><span>    profiles <span style=color:#f92672>=</span> (<span style=color:#e6db74>&#39;storage&#39;</span>, <span style=color:#e6db74>&#39;hardware&#39;</span>)
+</span></span><span style=display:flex><span>    verify_packages <span style=color:#f92672>=</span> (<span style=color:#e6db74>&#39;util-linux&#39;</span>,)
+</span></span><span style=display:flex><span>    files <span style=color:#f92672>=</span> (<span style=color:#e6db74>&#39;/sys/block&#39;</span>,)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>setup</span>(self):
+</span></span><span style=display:flex><span>		<span style=color:#75715e># 执行命令收集信息</span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>add_cmd_output([
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;lsblk&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;lsblk -t&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;lsblk -D&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;blkid -c /dev/null&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;blockdev --report&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;ls -lanR /dev&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;ls -lanR /sys/block&#34;</span>
+</span></span><span style=display:flex><span>        ])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># legacy location for non-/run distributions</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># 拷贝文件路径收集信息</span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>add_copy_spec([
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;/etc/blkid.tab&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;/run/blkid/blkid.tab&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;/proc/partitions&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;/proc/diskstats&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;/sys/block/*/queue/scheduler&#34;</span>
+</span></span><span style=display:flex><span>        ])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> os<span style=color:#f92672>.</span>path<span style=color:#f92672>.</span>isdir(<span style=color:#e6db74>&#34;/sys/block&#34;</span>):
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> disk <span style=color:#f92672>in</span> os<span style=color:#f92672>.</span>listdir(<span style=color:#e6db74>&#34;/sys/block&#34;</span>):
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> disk<span style=color:#f92672>.</span>startswith(<span style=color:#e6db74>&#34;ram&#34;</span>):
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>continue</span>
+</span></span><span style=display:flex><span>                disk_path <span style=color:#f92672>=</span> os<span style=color:#f92672>.</span>path<span style=color:#f92672>.</span>join(<span style=color:#e6db74>&#39;/dev/&#39;</span>, disk)
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>add_udev_info(disk_path)
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>add_udev_info(disk_path, attrs<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>add_cmd_output([
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;parted -s </span><span style=color:#e6db74>%s</span><span style=color:#e6db74> unit s print&#34;</span> <span style=color:#f92672>%</span> (disk_path),
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;fdisk -l </span><span style=color:#e6db74>%s</span><span style=color:#e6db74>&#34;</span> <span style=color:#f92672>%</span> disk_path
+</span></span><span style=display:flex><span>                ])
+</span></span></code></pre></div><p>可以看到，插件中除了实现了 setup，指定了一些命令及相应收集文件路径，并没有 collect()，
+那么我们查看 block 插件 Block 的父类，Plugin：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>collect</span>(self):
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;&#34;&#34;Collect the data for a plugin.&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>        start <span style=color:#f92672>=</span> time()
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>_collect_copy_specs()
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>_collect_cmd_output()
+</span></span><span style=display:flex><span>        fields <span style=color:#f92672>=</span> (self<span style=color:#f92672>.</span>name(), time() <span style=color:#f92672>-</span> start)
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>_log_debug(<span style=color:#e6db74>&#34;collected plugin &#39;</span><span style=color:#e6db74>%s</span><span style=color:#e6db74>&#39; in </span><span style=color:#e6db74>%s</span><span style=color:#e6db74>&#34;</span> <span style=color:#f92672>%</span> fields)
+</span></span></code></pre></div><p>这里我们看到，执行 plug.collect() 的内容为：_collect_copy_specs()，_collect_cmd_output()
+和 _collect_strings(), 那么我们接下来就能看到这三个函数具体执行的内容了：</p><h4 id=收集文件>收集文件
+<a class=heading-link href=#%e6%94%b6%e9%9b%86%e6%96%87%e4%bb%b6><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h4><p>通过层层跳转，最终看到各个打包方式的不同，收集文件的方式也不同，这里用 FileCache 举例，
+可以看到最终调用的是标准库中的 <code>shutil</code> 实现文件拷贝。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>add_file</span>(self, src, dest<span style=color:#f92672>=</span><span style=color:#66d9ef>None</span>):
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> dest:
+</span></span><span style=display:flex><span>            dest <span style=color:#f92672>=</span> src
+</span></span><span style=display:flex><span>        dest <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>dest_path(dest)
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>_check_path(dest)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># Handle adding a file from either a string respresenting</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># a path, or a File object open for reading.</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> getattr(src, <span style=color:#e6db74>&#34;read&#34;</span>, <span style=color:#66d9ef>None</span>):
+</span></span><span style=display:flex><span>            <span style=color:#75715e># path case</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>                shutil<span style=color:#f92672>.</span>copy(src, dest)
+</span></span></code></pre></div><h4 id=命令执行>命令执行
+<a class=heading-link href=#%e5%91%bd%e4%bb%a4%e6%89%a7%e8%a1%8c><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h4><p>同理，命令执行对应的最终是 subprocess.Popen 函数：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>    <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>        p <span style=color:#f92672>=</span> Popen(expanded_args, shell<span style=color:#f92672>=</span><span style=color:#66d9ef>False</span>, stdout<span style=color:#f92672>=</span>PIPE,
+</span></span><span style=display:flex><span>                  stderr<span style=color:#f92672>=</span>STDOUT <span style=color:#66d9ef>if</span> stderr <span style=color:#66d9ef>else</span> PIPE,
+</span></span><span style=display:flex><span>                  bufsize<span style=color:#f92672>=-</span><span style=color:#ae81ff>1</span>, env<span style=color:#f92672>=</span>cmd_env, close_fds<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>,
+</span></span><span style=display:flex><span>                  preexec_fn<span style=color:#f92672>=</span>_child_prep_fn)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        reader <span style=color:#f92672>=</span> AsyncReader(p<span style=color:#f92672>.</span>stdout, sizelimit, binary)
+</span></span><span style=display:flex><span>        stdout <span style=color:#f92672>=</span> reader<span style=color:#f92672>.</span>get_contents()
+</span></span><span style=display:flex><span>        p<span style=color:#f92672>.</span>poll()
+</span></span></code></pre></div><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>通过阅读代码，我们可以了解到，sosreport 插件编写还是很容易的，只需要将要执行的命令及要拷贝的文件填写好就基本上完成了。
+同时，强烈推荐一下 sosreport 中内置插件，能够帮助我们更好的了解某些功能，毕竟只有在出现故障的时候才是暴露最多的时候，比如 networking.py 中关于网络配置命令、网卡配置文件、DNS/DHCP 配置等信息，可以极大的扩充对 Linux 系统的了解程度，应该很有帮助。</p></div><footer></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2025
+Yiran Zhou
+·
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

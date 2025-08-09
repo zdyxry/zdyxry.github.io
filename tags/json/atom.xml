@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Json on Yiran's Blog</title><link>https://zdyxry.github.io/tags/json/</link><description>Recent content in Json on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 17 Jun 2018 21:00:49 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/json/atom.xml" rel="self" type="application/rss+xml"/><item><title>将 Json 转换为 Python Object(二)</title><link>https://zdyxry.github.io/2018/06/17/%E5%B0%86-json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-python-object%E4%BA%8C/</link><pubDate>Sun, 17 Jun 2018 21:00:49 +0000</pubDate><guid>https://zdyxry.github.io/2018/06/17/%E5%B0%86-json-%E8%BD%AC%E6%8D%A2%E4%B8%BA-python-object%E4%BA%8C/</guid><description>&lt;p>最近趁着端午假期，终于把 《流畅的 Python》看完了，收获很大，书中某一章节介绍了 addict 库，可以将 Json 转换为 Python Object 。
+今天看了看具体的实现方式，比 Stack Overflow 的回答完整，补发一篇博客学习下。&lt;/p>
+&lt;p>源码代码很少，补充一些关键变量用于了解整体实现流程。&lt;/p>
+&lt;pre tabindex="0">&lt;code>import copy
+from pprint import pprint
+class Dict(dict):
+def __init__(__self, *args, **kwargs):
+print &amp;#39;init kwargs is &amp;#39;, kwargs
+object.__setattr__(__self, &amp;#39;__parent&amp;#39;, kwargs.pop(&amp;#39;__parent&amp;#39;, None))
+object.__setattr__(__self, &amp;#39;__key&amp;#39;, kwargs.pop(&amp;#39;__key&amp;#39;, None))
+for arg in args:
+if not arg:
+continue
+elif isinstance(arg, dict):
+for key, val in arg.items():
+__self[key] = __self._hook(val)
+elif isinstance(arg, tuple) and (not isinstance(arg[0], tuple)):
+__self[arg[0]] = __self._hook(arg[1])
+else:
+for key, val in iter(arg):
+__self[key] = __self._hook(val)
+for key, val in kwargs.items():
+__self[key] = __self._hook(val)
+def __setattr__(self, name, value):
+if hasattr(Dict, name):
+raise AttributeError(&amp;#34;&amp;#39;Dict&amp;#39; object attribute &amp;#34;
+&amp;#34;&amp;#39;{0}&amp;#39; is read-only&amp;#34;.format(name))
+else:
+self[name] = value
+def __setitem__(self, name, value):
+print &amp;#39;setitem name is %s, value is %s &amp;#39; % (name, value)
+super(Dict, self).__setitem__(name, value)
+try:
+p = object.__getattribute__(self, &amp;#39;__parent&amp;#39;)
+key = object.__getattribute__(self, &amp;#39;__key&amp;#39;)
+except AttributeError:
+p = None
+key = None
+if p is not None:
+print &amp;#39;parent is %s&amp;#39; % p
+print &amp;#39;key is %s&amp;#39; % key
+p[key] = self
+object.__delattr__(self, &amp;#39;__parent&amp;#39;)
+object.__delattr__(self, &amp;#39;__key&amp;#39;)
+def __add__(self, other):
+if not self.keys():
+return other
+else:
+self_type = type(self).__name__
+other_type = type(other).__name__
+msg = &amp;#34;unsupported operand type(s) for +: &amp;#39;{}&amp;#39; and &amp;#39;{}&amp;#39;&amp;#34;
+raise TypeError(msg.format(self_type, other_type))
+@classmethod
+def _hook(cls, item):
+if isinstance(item, dict):
+return cls(item)
+elif isinstance(item, (list, tuple)):
+return type(item)(cls._hook(elem) for elem in item)
+return item
+def __getattr__(self, item):
+return self.__getitem__(item)
+def __getitem__(self, name):
+print &amp;#39;getitem name is &amp;#39;, name
+if name not in self:
+print &amp;#34;%s not in self&amp;#34; % name
+return Dict(__parent=self, __key=name)
+return super(Dict, self).__getitem__(name)
+def __delattr__(self, name):
+del self[name]
+def to_dict(self):
+base = {}
+for key, value in self.items():
+if isinstance(value, type(self)):
+base[key] = value.to_dict()
+elif isinstance(value, (list, tuple)):
+base[key] = type(value)(
+item.to_dict() if isinstance(item, type(self)) else
+item for item in value)
+else:
+base[key] = value
+return base
+def copy(self):
+return copy.copy(self)
+def deepcopy(self):
+return copy.deepcopy(self)
+def __deepcopy__(self, memo):
+other = self.__class__()
+memo[id(self)] = other
+for key, value in self.items():
+other[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)
+return other
+def update(self, *args, **kwargs):
+other = {}
+if args:
+if len(args) &amp;gt; 1:
+raise TypeError()
+other.update(args[0])
+other.update(kwargs)
+for k, v in other.items():
+if ((k not in self) or
+(not isinstance(self[k], dict)) or
+(not isinstance(v, dict))):
+self[k] = v
+else:
+self[k].update(v)
+def __getnewargs__(self):
+return tuple(self.items())
+def __getstate__(self):
+return self
+def __setstate__(self, state):
+self.update(state)
+def setdefault(self, key, default=None):
+if key in self:
+return self[key]
+else:
+self[key] = default
+return default
+json_data = {
+&amp;#34;a&amp;#34;: &amp;#34;a&amp;#34;
+}
+test1 = Dict(json_data)
+test1.b.c = &amp;#34;c&amp;#34;
+test1.b.d.e = &amp;#34;e&amp;#34;
+pprint(test1.to_dict())
+&lt;/code>&lt;/pre>&lt;hr>
+&lt;pre tabindex="0">&lt;code> $ python a.py
+init kwargs is {}
+setitem name is a, value is a
+getitem name is b
+b not in self
+init kwargs is {&amp;#39;__key&amp;#39;: &amp;#39;b&amp;#39;, &amp;#39;__parent&amp;#39;: {&amp;#39;a&amp;#39;: &amp;#39;a&amp;#39;}}
+setitem name is c, value is c
+parent is {&amp;#39;a&amp;#39;: &amp;#39;a&amp;#39;}
+key is b
+setitem name is b, value is {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;}
+getitem name is b
+getitem name is d
+d not in self
+init kwargs is {&amp;#39;__key&amp;#39;: &amp;#39;d&amp;#39;, &amp;#39;__parent&amp;#39;: {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;}}
+setitem name is e, value is e
+parent is {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;}
+key is d
+setitem name is d, value is {&amp;#39;e&amp;#39;: &amp;#39;e&amp;#39;}
+{&amp;#39;a&amp;#39;: &amp;#39;a&amp;#39;, &amp;#39;b&amp;#39;: {&amp;#39;c&amp;#39;: &amp;#39;c&amp;#39;, &amp;#39;d&amp;#39;: {&amp;#39;e&amp;#39;: &amp;#39;e&amp;#39;}}}
+&lt;/code>&lt;/pre></description></item></channel></rss>

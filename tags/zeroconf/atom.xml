@@ -26,8 +26,7 @@ network services, such as Dynamic Host Configuration Protocol (DHCP) and
 Domain Name System (DNS), or configure each computer&amp;rsquo;s network settings manually.
 Zeroconf is built on three core technologies: automatic assignment of numeric
 network addresses for networked devices, automatic distribution and resolution
-of computer hostnames, and automatic location of network services, such as printing devices.&lt;/p>
-&lt;/blockquote>
+of computer hostnames, and automatic location of network services, such as printing devices.&lt;/p>&lt;/blockquote>
 &lt;p>简单来说我们可以通过 ZeroConf 进行服务自发现，日常使用最多的就是 Apple 家的产品及一些
 打印设备。&lt;/p>
 &lt;h2 id="avahi">
@@ -46,8 +45,8 @@ Avahi
 &lt;/a>
 &lt;/h3>
 &lt;p>我们使用 yum 进行相应工具的安装：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-gdscript3" data-lang="gdscript3">&lt;span style="display:flex;">&lt;span>yum install avahi-libs avahi-tools avahi-autoipd avahi nss-mdns
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="扫描节点配置">
+&lt;pre tabindex="0">&lt;code>yum install avahi-libs avahi-tools avahi-autoipd avahi nss-mdns
+&lt;/code>&lt;/pre>&lt;h3 id="扫描节点配置">
 扫描节点配置
 &lt;a class="heading-link" href="#%e6%89%ab%e6%8f%8f%e8%8a%82%e7%82%b9%e9%85%8d%e7%bd%ae">
 &lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
@@ -55,12 +54,12 @@ Avahi
 &lt;/a>
 &lt;/h3>
 &lt;p>安装完成后，我们修改配置文件，开启 IPv6 配置：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># cat /etc/nsswitch.conf |grep -v ^# |grep -v ^$&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># cat /etc/nsswitch.conf |grep -v ^# |grep -v ^$&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>passwd: files sss
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>shadow: files sss
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>group: files sss
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>hosts: files mdns4_minimal [NOTFOUND=&lt;span style="font-weight:bold">return&lt;/span>] dns
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>bootparams: nisplus [NOTFOUND=&lt;span style="font-weight:bold">return&lt;/span>] files
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>hosts: files mdns4_minimal &lt;span style="color:#f92672">[&lt;/span>NOTFOUND&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">return&lt;/span>&lt;span style="color:#f92672">]&lt;/span> dns
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>bootparams: nisplus &lt;span style="color:#f92672">[&lt;/span>NOTFOUND&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">return&lt;/span>&lt;span style="color:#f92672">]&lt;/span> files
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ethers: files
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>netmasks: files
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>networks: files
@@ -71,25 +70,25 @@ Avahi
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>publickey: nisplus
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>automount: files
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>aliases: files nisplus
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># cat /etc/avahi/avahi-daemon.conf |grep -v ^# |grep -v ^$&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[server]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv4=no
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv6=yes &lt;span style="font-style:italic">## 开启 IPv6 &lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-interval-usec=1000000
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-burst=1000
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[wide-area]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>enable-wide-area=yes
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[publish]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[reflector]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[rlimits]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-core=0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-data=4194304
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-fsize=0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nofile=768
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-stack=4194304
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nproc=3
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># cat /etc/avahi/avahi-daemon.conf |grep -v ^# |grep -v ^$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>server&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv4&lt;span style="color:#f92672">=&lt;/span>no
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv6&lt;span style="color:#f92672">=&lt;/span>yes &lt;span style="color:#75715e">## 开启 IPv6 &lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-interval-usec&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1000000&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-burst&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1000&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>wide-area&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>enable-wide-area&lt;span style="color:#f92672">=&lt;/span>yes
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>publish&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>reflector&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>rlimits&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-core&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-data&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">4194304&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-fsize&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nofile&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">768&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-stack&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">4194304&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nproc&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">3&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>配置完成后我们启动服务：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>systemctl start avahi-daemon
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>systemctl start avahi-daemon
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="被扫描节点配置">
 被扫描节点配置
 &lt;a class="heading-link" href="#%e8%a2%ab%e6%89%ab%e6%8f%8f%e8%8a%82%e7%82%b9%e9%85%8d%e7%bd%ae">
@@ -98,30 +97,30 @@ Avahi
 &lt;/a>
 &lt;/h3>
 &lt;p>扫描节点可以通过制定的域名进行扫描，我们可以通过给被扫描节点配置特殊的主机名称，来实现自动识别被扫描节点具体是什么类型的服务器，比如我们可以通过 ipmitool 获取 IPMI IP，并配置主机名为 &lt;code>node-192-168-67-173&lt;/code> 来实现识别，具体操作：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>[root@node-192-168-67-173 ~]&lt;span style="font-style:italic"># cat /etc/hostname &lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node-192-168-67-173 ~&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># cat /etc/hostname &lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>node-192-168-67-173
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[root@node-192-168-67-173 ~]&lt;span style="font-style:italic"># hostname -F /etc/hostname&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node-192-168-67-173 ~&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># hostname -F /etc/hostname&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>同样编辑 avahi 配置文件，开启 IPv6 配置：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>[root@node-192-168-67-173 avahi]&lt;span style="font-style:italic"># cat avahi-daemon.conf |grep -v ^# |grep -v ^$&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[server]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv4=yes
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv6=yes
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-interval-usec=1000000
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-burst=1000
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[wide-area]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>enable-wide-area=yes
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[publish]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>publish-a-on-ipv6=yes
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[reflector]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[rlimits]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-core=0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-data=4194304
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-fsize=0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nofile=768
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-stack=4194304
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nproc=3
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node-192-168-67-173 avahi&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># cat avahi-daemon.conf |grep -v ^# |grep -v ^$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>server&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv4&lt;span style="color:#f92672">=&lt;/span>yes
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>use-ipv6&lt;span style="color:#f92672">=&lt;/span>yes
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-interval-usec&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1000000&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ratelimit-burst&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1000&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>wide-area&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>enable-wide-area&lt;span style="color:#f92672">=&lt;/span>yes
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>publish&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>publish-a-on-ipv6&lt;span style="color:#f92672">=&lt;/span>yes
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>reflector&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>rlimits&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-core&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-data&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">4194304&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-fsize&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nofile&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">768&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-stack&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">4194304&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rlimit-nproc&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">3&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>启动 avahi 服务：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>systemctl start avahi-daemon
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>systemctl start avahi-daemon
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="扫描节点发现节点">
 扫描节点发现节点
 &lt;a class="heading-link" href="#%e6%89%ab%e6%8f%8f%e8%8a%82%e7%82%b9%e5%8f%91%e7%8e%b0%e8%8a%82%e7%82%b9">
@@ -130,13 +129,13 @@ Avahi
 &lt;/a>
 &lt;/h3>
 &lt;p>我们可以通过 &lt;code>avahi-tools&lt;/code> 提供的 avahi-brower 工具进行持续扫描：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># avahi-browse -a&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ eno33559296 IPv6 node-192-168-67-173 [24:6e:96:7c:50:70] Workstation local
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ eno16780032 IPv6 node-192-168-67-173 [24:6e:96:7c:50:50] Workstation local
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># avahi-browse -a&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ eno33559296 IPv6 node-192-168-67-173 &lt;span style="color:#f92672">[&lt;/span>24:6e:96:7c:50:70&lt;span style="color:#f92672">]&lt;/span> Workstation local
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>+ eno16780032 IPv6 node-192-168-67-173 &lt;span style="color:#f92672">[&lt;/span>24:6e:96:7c:50:50&lt;span style="color:#f92672">]&lt;/span> Workstation local
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>可以看到我们在扫描节点已经发现了被扫描节点的信息，那么我们接下来获取具体的 IP 地址：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># avahi-resolve --help &lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>avahi-resolve [options] -n &amp;lt;host name ...&amp;gt;
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>avahi-resolve [options] -a &amp;lt;address ... &amp;gt;
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># avahi-resolve --help &lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>avahi-resolve &lt;span style="color:#f92672">[&lt;/span>options&lt;span style="color:#f92672">]&lt;/span> -n &amp;lt;host name ...&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>avahi-resolve &lt;span style="color:#f92672">[&lt;/span>options&lt;span style="color:#f92672">]&lt;/span> -a &amp;lt;address ... &amp;gt;
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -h --help Show this help
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -V --version Show version
@@ -145,9 +144,9 @@ Avahi
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -v --verbose Enable verbose mode
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -6 Lookup IPv6 address
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> -4 Lookup IPv4 address
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># avahi-resolve -n node-192-168-67-173.local -4&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># avahi-resolve -n node-192-168-67-173.local -4&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>node-192-168-67-173.local 127.0.0.1
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># avahi-resolve -n node-192-168-67-173.local -6&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># avahi-resolve -n node-192-168-67-173.local -6&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>node-192-168-67-173.local fe80::266e:96ff:fe7c:5070
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>如果被扫描节点没有 IPv4 地址，则会显示 127.0.0.1，若有 IPv4 地址，则会正常显示。&lt;/p>
 &lt;h3 id="远程通信">
@@ -158,20 +157,20 @@ Avahi
 &lt;/a>
 &lt;/h3>
 &lt;p>在得到具体的 IP 地址之后我们就可以按照上一篇博客提到的 IPv6 地址远程连接的方式进行通信了。&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># ping6 fe80::266e:96ff:fe7c:5070%eno33559296&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>PING fe80::266e:96ff:fe7c:5070%eno33559296(fe80::266e:96ff:fe7c:5070) 56 data bytes
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>64 bytes from fe80::266e:96ff:fe7c:5070: icmp_seq=1 ttl=64 time=0.448 ms
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>64 bytes from fe80::266e:96ff:fe7c:5070: icmp_seq=2 ttl=64 time=0.338 ms
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># ping6 fe80::266e:96ff:fe7c:5070%eno33559296&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>PING fe80::266e:96ff:fe7c:5070%eno33559296&lt;span style="color:#f92672">(&lt;/span>fe80::266e:96ff:fe7c:5070&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#ae81ff">56&lt;/span> data bytes
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">64&lt;/span> bytes from fe80::266e:96ff:fe7c:5070: icmp_seq&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span> ttl&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">64&lt;/span> time&lt;span style="color:#f92672">=&lt;/span>0.448 ms
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">64&lt;/span> bytes from fe80::266e:96ff:fe7c:5070: icmp_seq&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">2&lt;/span> ttl&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">64&lt;/span> time&lt;span style="color:#f92672">=&lt;/span>0.338 ms
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>^C
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>--- fe80::266e:96ff:fe7c:5070%eno33559296 ping statistics ---
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>2 packets transmitted, 2 received, 0% packet loss, time 999ms
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rtt min/avg/max/mdev = 0.338/0.393/0.448/0.055 ms
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[root@yiran-pxe data]&lt;span style="font-style:italic"># ssh fe80::266e:96ff:fe7c:5070%eno33559296&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>root@fe80::266e:96ff:fe7c:5070%eno33559296&lt;span style="">&amp;#39;&lt;/span>s password:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Last login: Wed Aug 22 15:44:17 2018 from fe80::250:56ff:fe9f:ef9c%eno3
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[root@node-192-168-67-173 ~]&lt;span style="font-style:italic"># hostname&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">2&lt;/span> packets transmitted, &lt;span style="color:#ae81ff">2&lt;/span> received, 0% packet loss, time 999ms
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>rtt min/avg/max/mdev &lt;span style="color:#f92672">=&lt;/span> 0.338/0.393/0.448/0.055 ms
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@yiran-pxe data&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># ssh fe80::266e:96ff:fe7c:5070%eno33559296&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>root@fe80::266e:96ff:fe7c:5070%eno33559296&lt;span style="color:#960050;background-color:#1e0010">&amp;#39;&lt;/span>s password:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Last login: Wed Aug &lt;span style="color:#ae81ff">22&lt;/span> 15:44:17 &lt;span style="color:#ae81ff">2018&lt;/span> from fe80::250:56ff:fe9f:ef9c%eno3
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node-192-168-67-173 ~&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># hostname&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>node-192-168-67-173
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[root@node-192-168-67-173 ~]&lt;span style="font-style:italic"># logout&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node-192-168-67-173 ~&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#75715e"># logout&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Connection to fe80::266e:96ff:fe7c:5070%eno33559296 closed.
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="总结">
 总结

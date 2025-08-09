@@ -1,25 +1,63 @@
-<!doctype html><html lang=zh-cn><head><title>编写一个友好的命令行工具 · Yiran's Blog
-</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="背景 链接到标题 关于实现命令行的一点总结。
+<!doctype html><html lang=zh-cn><head><title>编写一个友好的命令行工具 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="
+  背景
+  
+    
+    链接到标题
+  
+
+关于实现命令行的一点总结。
+
+  有用的帮助信息
+  
+    
+    链接到标题
+  
+
+提供的命令行中所有的命令、子命令、选项都有明确的帮助信息，便于用户在使用过程中查看。帮助信息查看方式最好统一，比如统一使用 -h 格式、 COMMAND help 或者 COMMAND --help 。
+
+  尽量使用 Flags 而不是 Args
+  
+    
+    链接到标题
+  
+
+命令行可以接受 2 种类型的参数输入：Flags 和 Args。Flags 需要更多的输入，但会使命令行更清晰。我在实现一个命令行时，通常会将必选项设置为 Args ，将可选项设置为 Flags，但是有时候会导致用户在使用过程中觉得传递参数方式不统一，而且当 Args 有多个时（是的，我之前设计的一个命令行输入的 Args 多达 5 个）用户敲着敲着就不知道自己该输入什么了。如果在后续对命令行进行重构时，为了保证接口的兼容性，Args 通常是需要保证不变的，而 Flags 没有这个困扰。在使用 Flags 时，如果 Flags 是必要参数，要将其标记为 Required。
+
+  环境变量
+  
+    
+    链接到标题
+  
+
+如果可以的话，建议将命令行参数设置为可以接受环境变量的形式，容器化运行、用户要重复执行时，都会很方便。在设置环境变量时，尽量避开 $USER/$USERNAME 通用变量，建议增加对应命令前缀，如 VM_USERNAME 。
+
+  输入校验
+  
+    
+    链接到标题
+  
+
+无论是通过 Args、Flags 还是环境变量来获取输入参数，都建议对参数进行完整的校验，并给出友好提示。
+
+  交互式命令
+  
+    
+    链接到标题
+  
+
+有时在编写业务代码时，为了避免用户执行出错，所以会有二次确认的提示，比如 [Yes/No] 或者二次输入某些信息，在日常使用中可能会避免一些问题，但是如果后续要代码封装的话，就会让调用者较为痛苦。建议在存在交互式的命令中，添加参数可以跳过交互，或者提前指定，比如 --force。"><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="编写一个友好的命令行工具"><meta name=twitter:description content="背景 链接到标题 关于实现命令行的一点总结。
 有用的帮助信息 链接到标题 提供的命令行中所有的命令、子命令、选项都有明确的帮助信息，便于用户在使用过程中查看。帮助信息查看方式最好统一，比如统一使用 -h 格式、 COMMAND help 或者 COMMAND --help 。
 尽量使用 Flags 而不是 Args 链接到标题 命令行可以接受 2 种类型的参数输入：Flags 和 Args。Flags 需要更多的输入，但会使命令行更清晰。我在实现一个命令行时，通常会将必选项设置为 Args ，将可选项设置为 Flags，但是有时候会导致用户在使用过程中觉得传递参数方式不统一，而且当 Args 有多个时（是的，我之前设计的一个命令行输入的 Args 多达 5 个）用户敲着敲着就不知道自己该输入什么了。如果在后续对命令行进行重构时，为了保证接口的兼容性，Args 通常是需要保证不变的，而 Flags 没有这个困扰。在使用 Flags 时，如果 Flags 是必要参数，要将其标记为 Required。
 环境变量 链接到标题 如果可以的话，建议将命令行参数设置为可以接受环境变量的形式，容器化运行、用户要重复执行时，都会很方便。在设置环境变量时，尽量避开 $USER/$USERNAME 通用变量，建议增加对应命令前缀，如 VM_USERNAME 。
 输入校验 链接到标题 无论是通过 Args、Flags 还是环境变量来获取输入参数，都建议对参数进行完整的校验，并给出友好提示。
-交互式命令 链接到标题 有时在编写业务代码时，为了避免用户执行出错，所以会有二次确认的提示，比如 [Yes/No] 或者二次输入某些信息，在日常使用中可能会避免一些问题，但是如果后续要代码封装的话，就会让调用者较为痛苦。建议在存在交互式的命令中，添加参数可以跳过交互，或者提前指定，比如 --force。
-明确显示当前版本 链接到标题 在使用过程中，如果遇到了问题，那么通常需要上报命令行版本反馈，需要明确给出当前命令行所指定的版本。通常会有 -v, -V, --version, version 等子命令，其中 -v 和 -V 有可能会跟 verbose 混淆，建议将版本作为一个独立的子命令 version 来实现。"><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="编写一个友好的命令行工具"><meta name=twitter:description content="背景 链接到标题 关于实现命令行的一点总结。
+交互式命令 链接到标题 有时在编写业务代码时，为了避免用户执行出错，所以会有二次确认的提示，比如 [Yes/No] 或者二次输入某些信息，在日常使用中可能会避免一些问题，但是如果后续要代码封装的话，就会让调用者较为痛苦。建议在存在交互式的命令中，添加参数可以跳过交互，或者提前指定，比如 --force。"><meta property="og:url" content="https://zdyxry.github.io/2022/02/26/%E7%BC%96%E5%86%99%E4%B8%80%E4%B8%AA%E5%8F%8B%E5%A5%BD%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="编写一个友好的命令行工具"><meta property="og:description" content="背景 链接到标题 关于实现命令行的一点总结。
 有用的帮助信息 链接到标题 提供的命令行中所有的命令、子命令、选项都有明确的帮助信息，便于用户在使用过程中查看。帮助信息查看方式最好统一，比如统一使用 -h 格式、 COMMAND help 或者 COMMAND --help 。
 尽量使用 Flags 而不是 Args 链接到标题 命令行可以接受 2 种类型的参数输入：Flags 和 Args。Flags 需要更多的输入，但会使命令行更清晰。我在实现一个命令行时，通常会将必选项设置为 Args ，将可选项设置为 Flags，但是有时候会导致用户在使用过程中觉得传递参数方式不统一，而且当 Args 有多个时（是的，我之前设计的一个命令行输入的 Args 多达 5 个）用户敲着敲着就不知道自己该输入什么了。如果在后续对命令行进行重构时，为了保证接口的兼容性，Args 通常是需要保证不变的，而 Flags 没有这个困扰。在使用 Flags 时，如果 Flags 是必要参数，要将其标记为 Required。
 环境变量 链接到标题 如果可以的话，建议将命令行参数设置为可以接受环境变量的形式，容器化运行、用户要重复执行时，都会很方便。在设置环境变量时，尽量避开 $USER/$USERNAME 通用变量，建议增加对应命令前缀，如 VM_USERNAME 。
 输入校验 链接到标题 无论是通过 Args、Flags 还是环境变量来获取输入参数，都建议对参数进行完整的校验，并给出友好提示。
-交互式命令 链接到标题 有时在编写业务代码时，为了避免用户执行出错，所以会有二次确认的提示，比如 [Yes/No] 或者二次输入某些信息，在日常使用中可能会避免一些问题，但是如果后续要代码封装的话，就会让调用者较为痛苦。建议在存在交互式的命令中，添加参数可以跳过交互，或者提前指定，比如 --force。
-明确显示当前版本 链接到标题 在使用过程中，如果遇到了问题，那么通常需要上报命令行版本反馈，需要明确给出当前命令行所指定的版本。通常会有 -v, -V, --version, version 等子命令，其中 -v 和 -V 有可能会跟 verbose 混淆，建议将版本作为一个独立的子命令 version 来实现。"><meta property="og:url" content="https://zdyxry.github.io/2022/02/26/%E7%BC%96%E5%86%99%E4%B8%80%E4%B8%AA%E5%8F%8B%E5%A5%BD%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="编写一个友好的命令行工具"><meta property="og:description" content="背景 链接到标题 关于实现命令行的一点总结。
-有用的帮助信息 链接到标题 提供的命令行中所有的命令、子命令、选项都有明确的帮助信息，便于用户在使用过程中查看。帮助信息查看方式最好统一，比如统一使用 -h 格式、 COMMAND help 或者 COMMAND --help 。
-尽量使用 Flags 而不是 Args 链接到标题 命令行可以接受 2 种类型的参数输入：Flags 和 Args。Flags 需要更多的输入，但会使命令行更清晰。我在实现一个命令行时，通常会将必选项设置为 Args ，将可选项设置为 Flags，但是有时候会导致用户在使用过程中觉得传递参数方式不统一，而且当 Args 有多个时（是的，我之前设计的一个命令行输入的 Args 多达 5 个）用户敲着敲着就不知道自己该输入什么了。如果在后续对命令行进行重构时，为了保证接口的兼容性，Args 通常是需要保证不变的，而 Flags 没有这个困扰。在使用 Flags 时，如果 Flags 是必要参数，要将其标记为 Required。
-环境变量 链接到标题 如果可以的话，建议将命令行参数设置为可以接受环境变量的形式，容器化运行、用户要重复执行时，都会很方便。在设置环境变量时，尽量避开 $USER/$USERNAME 通用变量，建议增加对应命令前缀，如 VM_USERNAME 。
-输入校验 链接到标题 无论是通过 Args、Flags 还是环境变量来获取输入参数，都建议对参数进行完整的校验，并给出友好提示。
-交互式命令 链接到标题 有时在编写业务代码时，为了避免用户执行出错，所以会有二次确认的提示，比如 [Yes/No] 或者二次输入某些信息，在日常使用中可能会避免一些问题，但是如果后续要代码封装的话，就会让调用者较为痛苦。建议在存在交互式的命令中，添加参数可以跳过交互，或者提前指定，比如 --force。
-明确显示当前版本 链接到标题 在使用过程中，如果遇到了问题，那么通常需要上报命令行版本反馈，需要明确给出当前命令行所指定的版本。通常会有 -v, -V, --version, version 等子命令，其中 -v 和 -V 有可能会跟 verbose 混淆，建议将版本作为一个独立的子命令 version 来实现。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2022-02-26T19:50:44+00:00"><meta property="article:modified_time" content="2022-02-26T19:50:44+00:00"><link rel=canonical href=https://zdyxry.github.io/2022/02/26/%E7%BC%96%E5%86%99%E4%B8%80%E4%B8%AA%E5%8F%8B%E5%A5%BD%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.ba24a38c67cbc6656a702dab12fad48fdc65363b782920a94ddc656a23c65720.css integrity="sha256-uiSjjGfLxmVqcC2rEvrUj9xlNjt4KSCpTdxlaiPGVyA=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+交互式命令 链接到标题 有时在编写业务代码时，为了避免用户执行出错，所以会有二次确认的提示，比如 [Yes/No] 或者二次输入某些信息，在日常使用中可能会避免一些问题，但是如果后续要代码封装的话，就会让调用者较为痛苦。建议在存在交互式的命令中，添加参数可以跳过交互，或者提前指定，比如 --force。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2022-02-26T19:50:44+00:00"><meta property="article:modified_time" content="2022-02-26T19:50:44+00:00"><link rel=canonical href=https://zdyxry.github.io/2022/02/26/%E7%BC%96%E5%86%99%E4%B8%80%E4%B8%AA%E5%8F%8B%E5%A5%BD%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.234dd936a3895f104a22c73bac5d02c5bac76466a036abd8a3baf6fa2ecbc413.css integrity="sha256-I03ZNqOJXxBKIsc7rF0CxbrHZGagNqvYo7r2+i7LxBM=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
 </a><input type=checkbox id=menu-toggle>
-<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2022/02/26/%E7%BC%96%E5%86%99%E4%B8%80%E4%B8%AA%E5%8F%8B%E5%A5%BD%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7/>编写一个友好的命令行工具</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
+<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2022/02/26/%E7%BC%96%E5%86%99%E4%B8%80%E4%B8%AA%E5%8F%8B%E5%A5%BD%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7/>编写一个友好的命令行工具</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
 <time datetime=2022-02-26T19:50:44Z>February 26, 2022
 </time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
 阅读时间：1 分钟</span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a><ul><li><a href=#有用的帮助信息>有用的帮助信息</a></li><li><a href=#尽量使用-flags-而不是-args>尽量使用 Flags 而不是 Args</a></li><li><a href=#环境变量>环境变量</a></li><li><a href=#输入校验>输入校验</a></li><li><a href=#交互式命令>交互式命令</a></li><li><a href=#明确显示当前版本>明确显示当前版本</a></li><li><a href=#针对-stdint-stdout-stderr-正确使用>针对 stdint, stdout, stderr 正确使用</a></li><li><a href=#明确的错误信息>明确的错误信息</a></li><li><a href=#不要过分花里胡哨>不要过分花里胡哨</a></li><li><a href=#如果可能的话不要输出表格>（如果可能的话）不要输出表格</a></li><li><a href=#保证执行速度>保证执行速度</a></li><li><a href=#处理好信号>处理好信号</a></li><li><a href=#幂等>幂等</a></li></ul></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
@@ -52,9 +90,9 @@
 <a class=heading-link href=#%e5%b9%82%e7%ad%89><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
 <span class=sr-only>链接到标题</span></a></h3><p>尽量保证命令行幂等，当命令执行失败之后，可以让用户再次执行该命令以完成最终目的，否则会相当痛苦。</p><h2 id=参考链接>参考链接
 <a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><ul><li><a href="https://clig.dev/?utm_source=pocket_mylist" class=external-link target=_blank rel=noopener>https://clig.dev/?utm_source=pocket_mylist</a></li><li><a href=https://medium.com/@jdxcode/12-factor-cli-apps-dd3c227a0e46 class=external-link target=_blank rel=noopener>https://medium.com/@jdxcode/12-factor-cli-apps-dd3c227a0e46</a></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+<span class=sr-only>链接到标题</span></a></h2><ul><li><a href="https://clig.dev/?utm_source=pocket_mylist" class=external-link target=_blank rel=noopener>https://clig.dev/?utm_source=pocket_mylist</a></li><li><a href=https://medium.com/@jdxcode/12-factor-cli-apps-dd3c227a0e46 class=external-link target=_blank rel=noopener>https://medium.com/@jdxcode/12-factor-cli-apps-dd3c227a0e46</a></li></ul></div><footer></footer></article></section></div><footer class=footer><section class=container>©
 2016 -
 2025
 Yiran Zhou
 ·
-技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

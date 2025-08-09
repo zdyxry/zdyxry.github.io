@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Qemu on Yiran's Blog</title><link>https://zdyxry.github.io/tags/qemu/</link><description>Recent content in Qemu on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Thu, 16 Nov 2017 22:34:48 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/qemu/atom.xml" rel="self" type="application/rss+xml"/><item><title>I/O bursts with QEMU 2.6</title><link>https://zdyxry.github.io/2017/11/16/I/O-bursts-with-QEMU-2.6/</link><pubDate>Thu, 16 Nov 2017 22:34:48 +0000</pubDate><guid>https://zdyxry.github.io/2017/11/16/I/O-bursts-with-QEMU-2.6/</guid><description>&lt;p>I/O bursts with QEMU 2.6&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Qemu on Yiran's Blog</title><link>https://zdyxry.github.io/tags/qemu/</link><description>Recent content in Qemu on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Thu, 16 Nov 2017 22:34:48 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/qemu/atom.xml" rel="self" type="application/rss+xml"/><item><title>I/O bursts with QEMU 2.6</title><link>https://zdyxry.github.io/2017/11/16/i/o-bursts-with-qemu-2.6/</link><pubDate>Thu, 16 Nov 2017 22:34:48 +0000</pubDate><guid>https://zdyxry.github.io/2017/11/16/i/o-bursts-with-qemu-2.6/</guid><description>&lt;p>I/O bursts with QEMU 2.6&lt;/p>
 &lt;p>近期在工作中要进行存储系统的 QOS 验证.公司 QOS 的实现方式参考了 QEMU 中的实现方式, 找来相关资料学习一下.&lt;/p>
 &lt;h3 id="基本配置">
 基本配置
@@ -10,31 +10,31 @@
 &lt;p>首先,我将总结 QEMU 早期版本中已有的基本配置.
 磁盘 I/O 有两处可以被限制的方式: 每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写进行单独限制. 下面列举了总共 6 个不同的参数.
 I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 blocks_set_io_throttle 命令. 下面是两种情况下的参数列举:&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-DRIVE BLOCK_SET_IO_THROTTLE
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.iops-total iops
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.iops-read iops_rd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.iops-write iops_wr
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.bps-total bps
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.bps-read bps_rd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.bps-write bps_wr
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>可以同时配置 IOPS 和 bps ,针对不同的场景我们可以选择是否配置读写限制,但是如果设置了 iops-total 参数, 那么不能配置 iops-read 和 iops-write. 这个规则同样适用于 bps-total 和 bps-read/write. &lt;br>
+&lt;pre tabindex="0">&lt;code>{
+-DRIVE BLOCK_SET_IO_THROTTLE
+throttling.iops-total iops
+throttling.iops-read iops_rd
+throttling.iops-write iops_wr
+throttling.bps-total bps
+throttling.bps-read bps_rd
+throttling.bps-write bps_wr
+}
+&lt;/code>&lt;/pre>&lt;p>可以同时配置 IOPS 和 bps ,针对不同的场景我们可以选择是否配置读写限制,但是如果设置了 iops-total 参数, 那么不能配置 iops-read 和 iops-write. 这个规则同样适用于 bps-total 和 bps-read/write. &lt;br>
 这些参数的默认值都是 0 , 表示没有任何限制. &lt;code>-drive file=hd0.qcow2,throttling.iops-total=100&lt;/code>
 最基本的用法,用户可以为 QEMU 添加一个驱动用于限制 100 IOPS : &lt;code>-drive filehd0.qcow2,throttling.iops-total=100&lt;/code>&lt;/p>
 &lt;p>我们可以使用 QMP 达到相同的配置. 在这种情况下,所有的参数都是必须配置的, 所有我们必须给无关参数配置为 0 ,参考配置:&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>{ &amp;#34;execute&amp;#34;: &amp;#34;block_set_io_throttle&amp;#34;,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;arguments&amp;#34;: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;device&amp;#34;: &amp;#34;virtio0&amp;#34;,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops&amp;#34;: 100,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops_rd&amp;#34;: 0,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops_wr&amp;#34;: 0,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;bps&amp;#34;: 0,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;bps_rd&amp;#34;: 0,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;bps_wr&amp;#34;: 0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="突发io">
+&lt;pre tabindex="0">&lt;code>{ &amp;#34;execute&amp;#34;: &amp;#34;block_set_io_throttle&amp;#34;,
+&amp;#34;arguments&amp;#34;: {
+&amp;#34;device&amp;#34;: &amp;#34;virtio0&amp;#34;,
+&amp;#34;iops&amp;#34;: 100,
+&amp;#34;iops_rd&amp;#34;: 0,
+&amp;#34;iops_wr&amp;#34;: 0,
+&amp;#34;bps&amp;#34;: 0,
+&amp;#34;bps_rd&amp;#34;: 0,
+&amp;#34;bps_wr&amp;#34;: 0
+}
+}
+&lt;/code>&lt;/pre>&lt;h3 id="突发io">
 突发I/O
 &lt;a class="heading-link" href="#%e7%aa%81%e5%8f%91io">
 &lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
@@ -44,26 +44,26 @@ I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 b
 &lt;p>在刚刚的基本配置中, 我们已经能够预防虚拟机抢占过多 I/O 资源, 偶尔允许用户超出参数限制范围可能会更有用. 通过这种方式, 我们能够拥有一个响应更快的虚拟机,用于应对更多的波峰情况,同时保持其他时间的平均限制.
 从 QEMU 2.6 开始, 可以允许用户在可配置的时间区间内进行突发 I/O. 突发 I/O 可以超过基本配置, 有两个参数可以限制他们: 突发 I/O 长度和最大允许 I/O 数量. 这两个参数可以作用于上述基本配置中的每一个参数, 这里使用 iops-total 进行举例. &lt;br>
 突发 I/O 限制使用 iops-total-max 进行配置, 最大长度(单位: s) 通过 iops-total-max-length 进行配置. 如果我们想要配置一个驱动器基本配置 IOPS 为 100, 同时允许在 60s 时间区间内发生突发 I/O IOPS 为2000. 可以使用如下配置:&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-drive file=hd0.qcow2,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.iops-total=100,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.iops-total-max=2000,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>throttling.iops-total-max-length=60
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>或者通过 QMP 进行配置:&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>{&amp;#34;execute&amp;#34;:&amp;#34;block_set_io_throttle&amp;#34;,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;arguments&amp;#34;:{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;device&amp;#34;:&amp;#34;virtio0&amp;#34;,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops&amp;#34;:100,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops_rd&amp;#34;:0,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops_wr&amp;#34;:0,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;bps&amp;#34;:0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;bps_rd&amp;#34;:0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;bps_wr&amp;#34;:0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops_max&amp;#34;:2000,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;#34;iops_max_length&amp;#34;:60,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }}
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>通过这种方式, 用户可以控制 hd0.qcow2 以 2000 IOPS 持续 1分钟运行, 然后被限制在基本配置的 100 IOPS 状态.
+&lt;pre tabindex="0">&lt;code>{
+-drive file=hd0.qcow2,
+throttling.iops-total=100,
+throttling.iops-total-max=2000,
+throttling.iops-total-max-length=60
+}
+&lt;/code>&lt;/pre>&lt;p>或者通过 QMP 进行配置:&lt;/p>
+&lt;pre tabindex="0">&lt;code>{&amp;#34;execute&amp;#34;:&amp;#34;block_set_io_throttle&amp;#34;,
+&amp;#34;arguments&amp;#34;:{
+&amp;#34;device&amp;#34;:&amp;#34;virtio0&amp;#34;,
+&amp;#34;iops&amp;#34;:100,
+&amp;#34;iops_rd&amp;#34;:0,
+&amp;#34;iops_wr&amp;#34;:0,
+&amp;#34;bps&amp;#34;:0
+&amp;#34;bps_rd&amp;#34;:0
+&amp;#34;bps_wr&amp;#34;:0
+&amp;#34;iops_max&amp;#34;:2000,
+&amp;#34;iops_max_length&amp;#34;:60,
+}}
+&lt;/code>&lt;/pre>&lt;p>通过这种方式, 用户可以控制 hd0.qcow2 以 2000 IOPS 持续 1分钟运行, 然后被限制在基本配置的 100 IOPS 状态.
 如果有有足够的时间没有使用 I/O, 用户可以再次进行突发 I/O.&lt;br>
 iops-total-max 默认值为 0 ,表示不允许突发 I/O. iops-total-max-length 只能在配置 iops-total-max的前提下进行配置, 默认值为 1秒.&lt;/p>
 &lt;h3 id="控制-io-块大小">

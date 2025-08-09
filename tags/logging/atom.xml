@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Logging on Yiran's Blog</title><link>https://zdyxry.github.io/tags/logging/</link><description>Recent content in Logging on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 22 Jul 2018 09:50:47 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/logging/atom.xml" rel="self" type="application/rss+xml"/><item><title>Python logging 最佳实践-译</title><link>https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</link><pubDate>Sun, 22 Jul 2018 09:50:47 +0000</pubDate><guid>https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</guid><description>&lt;p>Python Logging 最佳实践&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Logging on Yiran's Blog</title><link>https://zdyxry.github.io/tags/logging/</link><description>Recent content in Logging on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 22 Jul 2018 09:50:47 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/logging/atom.xml" rel="self" type="application/rss+xml"/><item><title>Python logging 最佳实践-译</title><link>https://zdyxry.github.io/2018/07/22/python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</link><pubDate>Sun, 22 Jul 2018 09:50:47 +0000</pubDate><guid>https://zdyxry.github.io/2018/07/22/python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</guid><description>&lt;p>Python Logging 最佳实践&lt;/p>
 &lt;h2 id="背景">
 背景
 &lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
@@ -31,12 +31,12 @@ Print 不是个好主意
 &lt;/h2>
 &lt;p>尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
 一些 print ，在开发结束时删除这些 print。向下面这样：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>print &lt;span style="font-style:italic">&amp;#39;Start reading database&amp;#39;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>records = model.read_recrods()
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print &lt;span style="font-style:italic">&amp;#39;# records&amp;#39;&lt;/span>, records
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print &lt;span style="font-style:italic">&amp;#39;Updating record ...&amp;#39;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>model.update_records(records)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print &lt;span style="font-style:italic">&amp;#39;done&amp;#39;&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>print &lt;span style="color:#e6db74">&amp;#39;Start reading database&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>records &lt;span style="color:#f92672">=&lt;/span> model&lt;span style="color:#f92672">.&lt;/span>read_recrods()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print &lt;span style="color:#e6db74">&amp;#39;# records&amp;#39;&lt;/span>, records
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print &lt;span style="color:#e6db74">&amp;#39;Updating record ...&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>model&lt;span style="color:#f92672">.&lt;/span>update_records(records)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print &lt;span style="color:#e6db74">&amp;#39;done&amp;#39;&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。
 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。
 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。
@@ -51,20 +51,20 @@ Print 不是个好主意
 &lt;/h2>
 &lt;p>所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logging.basicConfig(level=logging.INFO)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger = logging.getLogger(__name__)
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logging&lt;span style="color:#f92672">.&lt;/span>basicConfig(level&lt;span style="color:#f92672">=&lt;/span>logging&lt;span style="color:#f92672">.&lt;/span>INFO)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger &lt;span style="color:#f92672">=&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>getLogger(__name__)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.info(&lt;span style="font-style:italic">&amp;#39;Start reading database&amp;#39;&lt;/span>)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># read database here&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>records = {&lt;span style="font-style:italic">&amp;#39;john&amp;#39;&lt;/span>: 55, &lt;span style="font-style:italic">&amp;#39;tom&amp;#39;&lt;/span>: 66}
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.debug(&lt;span style="font-style:italic">&amp;#39;Records: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>, records)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.info(&lt;span style="font-style:italic">&amp;#39;Updating records ...&amp;#39;&lt;/span>)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># update records here&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.info(&lt;span style="font-style:italic">&amp;#39;Finish updating records&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Start reading database&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># read database here&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>records &lt;span style="color:#f92672">=&lt;/span> {&lt;span style="color:#e6db74">&amp;#39;john&amp;#39;&lt;/span>: &lt;span style="color:#ae81ff">55&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;tom&amp;#39;&lt;/span>: &lt;span style="color:#ae81ff">66&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>debug(&lt;span style="color:#e6db74">&amp;#39;Records: &lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>, records)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Updating records ...&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># update records here&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Finish updating records&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>你可以运行得到下面输出：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>INFO:__main__:Start reading database
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>INFO:__main__:Updating records ...
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>INFO:__main__:Start reading database
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>INFO:__main__:Updating records &lt;span style="color:#f92672">...&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>INFO:__main__:Finish updating records
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>你可能会问这与 print 有什么区别。这样做当然是有好处的：&lt;/p>
 &lt;ul>
@@ -76,29 +76,29 @@ Print 不是个好主意
 时输出调试的详细信息。尝试改变日志级别为 debug 再观察下输出结果：&lt;/p>
 &lt;p>&lt;code>logging.basicConfig(level=logging.DEBUG)&lt;/code>&lt;/p>
 &lt;p>输出结果：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>INFO:__main__:Start reading database
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>DEBUG:__main__:Records: {&lt;span style="font-style:italic">&amp;#39;john&amp;#39;&lt;/span>: 55, &lt;span style="font-style:italic">&amp;#39;tom&amp;#39;&lt;/span>: 66}
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>INFO:__main__:Updating records ...
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>INFO:__main__:Start reading database
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>DEBUG:__main__:Records: {&lt;span style="color:#e6db74">&amp;#39;john&amp;#39;&lt;/span>: &lt;span style="color:#ae81ff">55&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;tom&amp;#39;&lt;/span>: &lt;span style="color:#ae81ff">66&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>INFO:__main__:Updating records &lt;span style="color:#f92672">...&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>INFO:__main__:Finish updating records
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定
 如何处理这些信息.举个例子你可以使用 FileHandler 让日志输出到一个文件中：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger = logging.getLogger(__name__)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.setLevel(logging.INFO)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger &lt;span style="color:#f92672">=&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>getLogger(__name__)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>setLevel(logging&lt;span style="color:#f92672">.&lt;/span>INFO)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># create a file handler&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handler = logging.FileHandler(&lt;span style="font-style:italic">&amp;#39;hello.log&amp;#39;&lt;/span>)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handler.setLevel(logging.INFO)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># create a file handler&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handler &lt;span style="color:#f92672">=&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>FileHandler(&lt;span style="color:#e6db74">&amp;#39;hello.log&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handler&lt;span style="color:#f92672">.&lt;/span>setLevel(logging&lt;span style="color:#f92672">.&lt;/span>INFO)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># create a logging format&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>formatter = logging.Formatter(&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(asctime)s&lt;/span>&lt;span style="font-style:italic"> - &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(name)s&lt;/span>&lt;span style="font-style:italic"> - &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(levelname)s&lt;/span>&lt;span style="font-style:italic"> - &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(message)s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handler.setFormatter(formatter)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># create a logging format&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>formatter &lt;span style="color:#f92672">=&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>Formatter(&lt;span style="color:#e6db74">&amp;#39;&lt;/span>&lt;span style="color:#e6db74">%(asctime)s&lt;/span>&lt;span style="color:#e6db74"> - &lt;/span>&lt;span style="color:#e6db74">%(name)s&lt;/span>&lt;span style="color:#e6db74"> - &lt;/span>&lt;span style="color:#e6db74">%(levelname)s&lt;/span>&lt;span style="color:#e6db74"> - &lt;/span>&lt;span style="color:#e6db74">%(message)s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handler&lt;span style="color:#f92672">.&lt;/span>setFormatter(formatter)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># add the handlers to the logger&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.addHandler(handler)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># add the handlers to the logger&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>addHandler(handler)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.info(&lt;span style="font-style:italic">&amp;#39;Hello baby&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Hello baby&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。
 你也可以自定义日志处理方式，更多信息可以参考： Basic Tutorial, Advanced Tutorial and Logging Cookbook.&lt;/p>
 &lt;h2 id="设置正确的日志级别">
@@ -113,40 +113,40 @@ Print 不是个好主意
 &lt;p>在大多数场景下，在日志中不希望去看到大量的详细信息。因此，debug 级别只是在你
 调试过程中开启。我只使用调试级别来获取详细的调试信息，特别是当数据量很大或者频率
 很高的时候，比如在一个 for 循环中记录某些内部的状态变化。&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> complex_algorithm(items):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">for&lt;/span> i, item &lt;span style="font-weight:bold">in&lt;/span> enumerate(items):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># do some complex algorithm computation&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.debug(&lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic"> iteration, item=&lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>, i, item)
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">complex_algorithm&lt;/span>(items):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> i, item &lt;span style="color:#f92672">in&lt;/span> enumerate(items):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># do some complex algorithm computation&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>debug(&lt;span style="color:#e6db74">&amp;#39;&lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74"> iteration, item=&lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>, i, item)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> handle_request(request):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.info(&lt;span style="font-style:italic">&amp;#39;Handling request &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>, request)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># handle request here&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> result = &lt;span style="font-style:italic">&amp;#39;result&amp;#39;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.info(&lt;span style="font-style:italic">&amp;#39;Return result: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>, result)
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">handle_request&lt;/span>(request):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Handling request &lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>, request)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># handle request here&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> result &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;result&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Return result: &lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>, result)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> start_service():
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.info(&lt;span style="font-style:italic">&amp;#39;Starting service at port &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic"> ...&amp;#39;&lt;/span>, port)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> service.start()
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.info(&lt;span style="font-style:italic">&amp;#39;Service is started&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">start_service&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Starting service at port &lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74"> ...&amp;#39;&lt;/span>, port)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> service&lt;span style="color:#f92672">.&lt;/span>start()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Service is started&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如
 当一个用户登录时使用了错误的密码或者连接很慢时：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> authenticate(user_name, password, ip_address):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> user_name != USER_NAME &lt;span style="font-weight:bold">and&lt;/span> password != PASSWORD:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.warn(&lt;span style="font-style:italic">&amp;#39;Login attempt to &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic"> from IP &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>, user_name, ip_address)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> &lt;span style="font-weight:bold">False&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic"># do authentication here&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">authenticate&lt;/span>(user_name, password, ip_address):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> user_name &lt;span style="color:#f92672">!=&lt;/span> USER_NAME &lt;span style="color:#f92672">and&lt;/span> password &lt;span style="color:#f92672">!=&lt;/span> PASSWORD:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>warn(&lt;span style="color:#e6db74">&amp;#39;Login attempt to &lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74"> from IP &lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>, user_name, ip_address)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">False&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e"># do authentication here&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> get_user_by_id(user_id):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> user = db.read_user(user_id)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> user &lt;span style="font-weight:bold">is&lt;/span> &lt;span style="font-weight:bold">None&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.error(&lt;span style="font-style:italic">&amp;#39;Cannot find user with user_id=&lt;/span>&lt;span style="font-weight:bold;font-style:italic">%s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>, user_id)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> user
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">return&lt;/span> user
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">get_user_by_id&lt;/span>(user_id):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> user &lt;span style="color:#f92672">=&lt;/span> db&lt;span style="color:#f92672">.&lt;/span>read_user(user_id)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> user &lt;span style="color:#f92672">is&lt;/span> &lt;span style="color:#66d9ef">None&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>error(&lt;span style="color:#e6db74">&amp;#39;Cannot find user with user_id=&lt;/span>&lt;span style="color:#e6db74">%s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>, user_id)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> user
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> user
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,
 磁盘空间不足.&lt;/p>
-&lt;h2 id="使用-__name__-作为-logger-名称">
+&lt;h2 id="使用-name-作为-logger-名称">
 使用 &lt;strong>name&lt;/strong> 作为 logger 名称
-&lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8-__name__-%e4%bd%9c%e4%b8%ba-logger-%e5%90%8d%e7%a7%b0">
+&lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8-name-%e4%bd%9c%e4%b8%ba-logger-%e5%90%8d%e7%a7%b0">
 &lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
 &lt;span class="sr-only">链接到标题&lt;/span>
 &lt;/a>
@@ -165,19 +165,19 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 &lt;/h2>
 &lt;p>记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
 异常并与 traceback 一起记录他们。像这个例子：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">try&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> open(&lt;span style="font-style:italic">&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span>, &lt;span style="font-style:italic">&amp;#39;rb&amp;#39;&lt;/span>)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">except&lt;/span> (&lt;span style="font-weight:bold">SystemExit&lt;/span>, &lt;span style="font-weight:bold">KeyboardInterrupt&lt;/span>):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">raise&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">except&lt;/span> &lt;span style="font-weight:bold">Exception&lt;/span>, e:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.error(&lt;span style="font-style:italic">&amp;#39;Failed to open file&amp;#39;&lt;/span>, exc_info=&lt;span style="font-weight:bold">True&lt;/span>)
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">try&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> open(&lt;span style="color:#e6db74">&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;rb&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">except&lt;/span> (&lt;span style="color:#a6e22e">SystemExit&lt;/span>, &lt;span style="color:#a6e22e">KeyboardInterrupt&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">raise&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">except&lt;/span> &lt;span style="color:#a6e22e">Exception&lt;/span>, e:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>error(&lt;span style="color:#e6db74">&amp;#39;Failed to open file&amp;#39;&lt;/span>, exc_info&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">True&lt;/span>)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以
 看到这样的结果：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>ERROR:__main__:Failed to open file
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>ERROR:__main__:Failed to open file
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Traceback (most recent call last):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="font-style:italic">&amp;#34;example.py&amp;#34;&lt;/span>, line 6, &lt;span style="font-weight:bold">in&lt;/span> &amp;lt;module&amp;gt;
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> open(&lt;span style="font-style:italic">&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span>, &lt;span style="font-style:italic">&amp;#39;rb&amp;#39;&lt;/span>)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">IOError&lt;/span>: [Errno 2] No such file &lt;span style="font-weight:bold">or&lt;/span> directory: &lt;span style="font-style:italic">&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> File &lt;span style="color:#e6db74">&amp;#34;example.py&amp;#34;&lt;/span>, line &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#f92672">in&lt;/span> &lt;span style="color:#f92672">&amp;lt;&lt;/span>module&lt;span style="color:#f92672">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> open(&lt;span style="color:#e6db74">&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;rb&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">IOError&lt;/span>: [Errno &lt;span style="color:#ae81ff">2&lt;/span>] No such file &lt;span style="color:#f92672">or&lt;/span> directory: &lt;span style="color:#e6db74">&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>你也可以调用 logger.Exception(msg, *args)，这相当于 logger.error(msg,exc_info=True,*args)。&lt;/p>
 &lt;h2 id="除非-disable_existing_loggers--false否则不要在模块级别获取-logger">
 除非 disable_existing_loggers == False，否则不要在模块级别获取 logger
@@ -191,105 +191,105 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 已经创建的 logger，如果你在模块级别获取 logger，像这种：&lt;/p>
 &lt;hr>
 &lt;p>my_module.py&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger = logging.getLogger(__name__)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger &lt;span style="color:#f92672">=&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>getLogger(__name__)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> foo():
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.info(&lt;span style="font-style:italic">&amp;#39;Hi, foo&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">foo&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Hi, foo&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">class&lt;/span> &lt;span style="font-weight:bold">Bar&lt;/span>(object):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> bar(self):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.info(&lt;span style="font-style:italic">&amp;#39;Hi, bar&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">Bar&lt;/span>(object):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">bar&lt;/span>(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Hi, bar&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
 &lt;p>main.py&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># load my module&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">my_module&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># load my module&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> my_module
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># load the logging configuration&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logging.config.fileConfig(&lt;span style="font-style:italic">&amp;#39;logging.ini&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># load the logging configuration&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logging&lt;span style="color:#f92672">.&lt;/span>config&lt;span style="color:#f92672">.&lt;/span>fileConfig(&lt;span style="color:#e6db74">&amp;#39;logging.ini&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>my_module.foo()
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>bar = my_module.Bar()
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>bar.bar()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>my_module&lt;span style="color:#f92672">.&lt;/span>foo()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>bar &lt;span style="color:#f92672">=&lt;/span> my_module&lt;span style="color:#f92672">.&lt;/span>Bar()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>bar&lt;span style="color:#f92672">.&lt;/span>bar()
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
 &lt;p>logging.ini&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>[loggers]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>keys=root
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>loggers&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>keys&lt;span style="color:#f92672">=&lt;/span>root
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[handlers]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>keys=consoleHandler
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>handlers&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>keys&lt;span style="color:#f92672">=&lt;/span>consoleHandler
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[formatters]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>keys=simpleFormatter
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>formatters&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>keys&lt;span style="color:#f92672">=&lt;/span>simpleFormatter
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[logger_root]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>level=DEBUG
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handlers=consoleHandler
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>logger_root&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>level&lt;span style="color:#f92672">=&lt;/span>DEBUG
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>handlers&lt;span style="color:#f92672">=&lt;/span>consoleHandler
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[handler_consoleHandler]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>class=StreamHandler
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>level=DEBUG
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>formatter=simpleFormatter
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>args=(sys.stdout,)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>handler_consoleHandler&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>class&lt;span style="color:#f92672">=&lt;/span>StreamHandler
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>level&lt;span style="color:#f92672">=&lt;/span>DEBUG
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>formatter&lt;span style="color:#f92672">=&lt;/span>simpleFormatter
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>args&lt;span style="color:#f92672">=(&lt;/span>sys.stdout,&lt;span style="color:#f92672">)&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[formatter_simpleFormatter]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>datefmt=
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>formatter_simpleFormatter&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>format&lt;span style="color:#f92672">=&lt;/span>%&lt;span style="color:#f92672">(&lt;/span>asctime&lt;span style="color:#f92672">)&lt;/span>s - %&lt;span style="color:#f92672">(&lt;/span>name&lt;span style="color:#f92672">)&lt;/span>s - %&lt;span style="color:#f92672">(&lt;/span>levelname&lt;span style="color:#f92672">)&lt;/span>s - %&lt;span style="color:#f92672">(&lt;/span>message&lt;span style="color:#f92672">)&lt;/span>s
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>datefmt&lt;span style="color:#f92672">=&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
 &lt;p>你期望看到记录显示在日志中，但是日志中是空的。为什么？ 因为你在模块级别创建 logger ，
 所以在从文件加载 logging 配置之前导入该模块。 logging.fileConfig 和 logging.dictConfig
 默认禁用已经存在的 logger。 所以配置文件中的配置不会在你的 logger 中生效。
 这适合在你需要的时候获取 logger。 你可以像下面这样编写：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> foo():
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger = logging.getLogger(__name__)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger.info(&lt;span style="font-style:italic">&amp;#39;Hi, foo&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">foo&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger &lt;span style="color:#f92672">=&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>getLogger(__name__)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Hi, foo&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">class&lt;/span> &lt;span style="font-weight:bold">Bar&lt;/span>(object):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> __init__(self, logger=&lt;span style="font-weight:bold">None&lt;/span>):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.logger = logger &lt;span style="font-weight:bold">or&lt;/span> logging.getLogger(__name__)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">Bar&lt;/span>(object):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">__init__&lt;/span>(self, logger&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#66d9ef">None&lt;/span>):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>logger &lt;span style="color:#f92672">=&lt;/span> logger &lt;span style="color:#f92672">or&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>getLogger(__name__)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">def&lt;/span> bar(self):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self.logger.info(&lt;span style="font-style:italic">&amp;#39;Hi, bar&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">bar&lt;/span>(self):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> self&lt;span style="color:#f92672">.&lt;/span>logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;Hi, bar&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>通过这样做， logger 将会在你加载配置之后创建，配置会正确生效。&lt;/p>
 &lt;p>从 Python 2.7 开始，添加一个新的参数名为 &amp;ldquo;disable_existing_loggers&amp;rdquo; 到 fileConfig 和
 dictConfig，通过将其设置为 False，可以解决上面提到的问题。比如：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging.config&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging.config
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger = logging.getLogger(__name__)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger &lt;span style="color:#f92672">=&lt;/span> logging&lt;span style="color:#f92672">.&lt;/span>getLogger(__name__)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># load config from file&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># logging.config.fileConfig(&amp;#39;logging.ini&amp;#39;, disable_existing_loggers=False)&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"># or, for dictConfig&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logging.config.dictConfig({
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;version&amp;#39;&lt;/span>: 1,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;disable_existing_loggers&amp;#39;&lt;/span>: &lt;span style="font-weight:bold">False&lt;/span>, &lt;span style="font-style:italic"># this fixes the problem&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;formatters&amp;#39;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;standard&amp;#39;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;format&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;&lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(asctime)s&lt;/span>&lt;span style="font-style:italic"> [&lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(levelname)s&lt;/span>&lt;span style="font-style:italic">] &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(name)s&lt;/span>&lt;span style="font-style:italic">: &lt;/span>&lt;span style="font-weight:bold;font-style:italic">%(message)s&lt;/span>&lt;span style="font-style:italic">&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># load config from file&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># logging.config.fileConfig(&amp;#39;logging.ini&amp;#39;, disable_existing_loggers=False)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># or, for dictConfig&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logging&lt;span style="color:#f92672">.&lt;/span>config&lt;span style="color:#f92672">.&lt;/span>dictConfig({
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;version&amp;#39;&lt;/span>: &lt;span style="color:#ae81ff">1&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;disable_existing_loggers&amp;#39;&lt;/span>: &lt;span style="color:#66d9ef">False&lt;/span>, &lt;span style="color:#75715e"># this fixes the problem&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;formatters&amp;#39;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;standard&amp;#39;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;format&amp;#39;&lt;/span>: &lt;span style="color:#e6db74">&amp;#39;&lt;/span>&lt;span style="color:#e6db74">%(asctime)s&lt;/span>&lt;span style="color:#e6db74"> [&lt;/span>&lt;span style="color:#e6db74">%(levelname)s&lt;/span>&lt;span style="color:#e6db74">] &lt;/span>&lt;span style="color:#e6db74">%(name)s&lt;/span>&lt;span style="color:#e6db74">: &lt;/span>&lt;span style="color:#e6db74">%(message)s&lt;/span>&lt;span style="color:#e6db74">&amp;#39;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;handlers&amp;#39;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;default&amp;#39;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;level&amp;#39;&lt;/span>:&lt;span style="font-style:italic">&amp;#39;INFO&amp;#39;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;class&amp;#39;&lt;/span>:&lt;span style="font-style:italic">&amp;#39;logging.StreamHandler&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;handlers&amp;#39;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;default&amp;#39;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;level&amp;#39;&lt;/span>:&lt;span style="color:#e6db74">&amp;#39;INFO&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;class&amp;#39;&lt;/span>:&lt;span style="color:#e6db74">&amp;#39;logging.StreamHandler&amp;#39;&lt;/span>,
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;loggers&amp;#39;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;&amp;#39;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;handlers&amp;#39;&lt;/span>: [&lt;span style="font-style:italic">&amp;#39;default&amp;#39;&lt;/span>],
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;level&amp;#39;&lt;/span>: &lt;span style="font-style:italic">&amp;#39;INFO&amp;#39;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#39;propagate&amp;#39;&lt;/span>: &lt;span style="font-weight:bold">True&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;loggers&amp;#39;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;&amp;#39;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;handlers&amp;#39;&lt;/span>: [&lt;span style="color:#e6db74">&amp;#39;default&amp;#39;&lt;/span>],
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;level&amp;#39;&lt;/span>: &lt;span style="color:#e6db74">&amp;#39;INFO&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#39;propagate&amp;#39;&lt;/span>: &lt;span style="color:#66d9ef">True&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>})
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger.info(&lt;span style="font-style:italic">&amp;#39;It works!&amp;#39;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>logger&lt;span style="color:#f92672">.&lt;/span>info(&lt;span style="color:#e6db74">&amp;#39;It works!&amp;#39;&lt;/span>)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="使用-json-和-yaml-配置-logging">
 使用 JSON 和 YAML 配置 logging
 &lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8-json-%e5%92%8c-yaml-%e9%85%8d%e7%bd%ae-logging">
@@ -304,149 +304,149 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 来说是困难的。这里我将展示通过 JSON 或者 YAML 的配置文件示例。&lt;/p>
 &lt;hr>
 &lt;p>logging.json&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;version&amp;#34;&lt;/span>: 1,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;disable_existing_loggers&amp;#34;&lt;/span>: &lt;span style="font-weight:bold">false&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;formatters&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;simple&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;format&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&amp;#34;&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;version&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">1&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;disable_existing_loggers&amp;#34;&lt;/span>: &lt;span style="color:#66d9ef">false&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;formatters&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;simple&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;format&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;handlers&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;console&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;class&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;logging.StreamHandler&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;DEBUG&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;formatter&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;simple&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;stream&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;ext://sys.stdout&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;handlers&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;console&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;class&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;logging.StreamHandler&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;DEBUG&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;formatter&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;simple&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;stream&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;ext://sys.stdout&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;info_file_handler&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;class&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;logging.handlers.RotatingFileHandler&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;INFO&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;formatter&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;simple&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;filename&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;info.log&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;maxBytes&amp;#34;&lt;/span>: 10485760,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;backupCount&amp;#34;&lt;/span>: 20,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;encoding&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;utf8&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;info_file_handler&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;class&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;logging.handlers.RotatingFileHandler&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;INFO&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;formatter&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;simple&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;filename&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;info.log&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;maxBytes&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">10485760&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;backupCount&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">20&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;encoding&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;utf8&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;error_file_handler&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;class&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;logging.handlers.RotatingFileHandler&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;ERROR&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;formatter&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;simple&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;filename&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;errors.log&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;maxBytes&amp;#34;&lt;/span>: 10485760,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;backupCount&amp;#34;&lt;/span>: 20,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;encoding&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;utf8&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;error_file_handler&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;class&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;logging.handlers.RotatingFileHandler&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;ERROR&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;formatter&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;simple&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;filename&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;errors.log&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;maxBytes&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">10485760&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;backupCount&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">20&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;encoding&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;utf8&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;loggers&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;my_module&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;ERROR&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;handlers&amp;#34;&lt;/span>: [&lt;span style="font-style:italic">&amp;#34;console&amp;#34;&lt;/span>],
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;propagate&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;no&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;loggers&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;my_module&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;ERROR&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;handlers&amp;#34;&lt;/span>: [&lt;span style="color:#e6db74">&amp;#34;console&amp;#34;&lt;/span>],
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;propagate&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;no&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;root&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="font-style:italic">&amp;#34;INFO&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">&amp;#34;handlers&amp;#34;&lt;/span>: [&lt;span style="font-style:italic">&amp;#34;console&amp;#34;&lt;/span>, &lt;span style="font-style:italic">&amp;#34;info_file_handler&amp;#34;&lt;/span>, &lt;span style="font-style:italic">&amp;#34;error_file_handler&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;root&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;level&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;INFO&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;handlers&amp;#34;&lt;/span>: [&lt;span style="color:#e6db74">&amp;#34;console&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;info_file_handler&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;error_file_handler&amp;#34;&lt;/span>]
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
 &lt;p>logging.yaml&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">---&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">version&lt;/span>: 1
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">disable_existing_loggers&lt;/span>: &lt;span style="font-weight:bold">False&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">formatters&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">simple&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">format&lt;/span>: &lt;span style="font-style:italic">&amp;#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&amp;#34;&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>---
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">version&lt;/span>: &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">disable_existing_loggers&lt;/span>: &lt;span style="color:#66d9ef">False&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">formatters&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">simple&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">format&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">handlers&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">console&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">class&lt;/span>: logging.StreamHandler
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">level&lt;/span>: DEBUG
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">formatter&lt;/span>: simple
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">stream&lt;/span>: ext://sys.stdout
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">handlers&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">console&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">class&lt;/span>: &lt;span style="color:#ae81ff">logging.StreamHandler&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">level&lt;/span>: &lt;span style="color:#ae81ff">DEBUG&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">formatter&lt;/span>: &lt;span style="color:#ae81ff">simple&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">stream&lt;/span>: &lt;span style="color:#ae81ff">ext://sys.stdout&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">info_file_handler&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">class&lt;/span>: logging.handlers.RotatingFileHandler
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">level&lt;/span>: INFO
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">formatter&lt;/span>: simple
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">filename&lt;/span>: info.log
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">maxBytes&lt;/span>: 10485760 &lt;span style="font-style:italic"># 10MB&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">backupCount&lt;/span>: 20
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">encoding&lt;/span>: utf8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">info_file_handler&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">class&lt;/span>: &lt;span style="color:#ae81ff">logging.handlers.RotatingFileHandler&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">level&lt;/span>: &lt;span style="color:#ae81ff">INFO&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">formatter&lt;/span>: &lt;span style="color:#ae81ff">simple&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">filename&lt;/span>: &lt;span style="color:#ae81ff">info.log&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">maxBytes&lt;/span>: &lt;span style="color:#ae81ff">10485760&lt;/span> &lt;span style="color:#75715e"># 10MB&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">backupCount&lt;/span>: &lt;span style="color:#ae81ff">20&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">encoding&lt;/span>: &lt;span style="color:#ae81ff">utf8&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">error_file_handler&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">class&lt;/span>: logging.handlers.RotatingFileHandler
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">level&lt;/span>: ERROR
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">formatter&lt;/span>: simple
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">filename&lt;/span>: errors.log
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">maxBytes&lt;/span>: 10485760 &lt;span style="font-style:italic"># 10MB&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">backupCount&lt;/span>: 20
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">encoding&lt;/span>: utf8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">error_file_handler&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">class&lt;/span>: &lt;span style="color:#ae81ff">logging.handlers.RotatingFileHandler&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">level&lt;/span>: &lt;span style="color:#ae81ff">ERROR&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">formatter&lt;/span>: &lt;span style="color:#ae81ff">simple&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">filename&lt;/span>: &lt;span style="color:#ae81ff">errors.log&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">maxBytes&lt;/span>: &lt;span style="color:#ae81ff">10485760&lt;/span> &lt;span style="color:#75715e"># 10MB&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">backupCount&lt;/span>: &lt;span style="color:#ae81ff">20&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">encoding&lt;/span>: &lt;span style="color:#ae81ff">utf8&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">loggers&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">my_module&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">level&lt;/span>: ERROR
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">handlers&lt;/span>: [console]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">propagate&lt;/span>: &lt;span style="font-weight:bold">no&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">loggers&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">my_module&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">level&lt;/span>: &lt;span style="color:#ae81ff">ERROR&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">handlers&lt;/span>: [&lt;span style="color:#ae81ff">console]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">propagate&lt;/span>: &lt;span style="color:#66d9ef">no&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">root&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">level&lt;/span>: INFO
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">handlers&lt;/span>: [console, info_file_handler, error_file_handler]
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">...&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">root&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">level&lt;/span>: &lt;span style="color:#ae81ff">INFO&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">handlers&lt;/span>: [&lt;span style="color:#ae81ff">console, info_file_handler, error_file_handler]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>...
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>以下配置展示了如何从 json 文件中读取 logging 配置：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">os&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">json&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">import&lt;/span> &lt;span style="font-weight:bold">logging.config&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Python" data-lang="Python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> os
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> json
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> logging.config
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">def&lt;/span> setup_logging(
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> default_path=&lt;span style="font-style:italic">&amp;#39;logging.json&amp;#39;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> default_level=logging.INFO,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> env_key=&lt;span style="font-style:italic">&amp;#39;LOG_CFG&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">setup_logging&lt;/span>(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> default_path&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#39;logging.json&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> default_level&lt;span style="color:#f92672">=&lt;/span>logging&lt;span style="color:#f92672">.&lt;/span>INFO,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> env_key&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#39;LOG_CFG&amp;#39;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#34;&amp;#34;&amp;#34;Setup logging configuration
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic">
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"> &amp;#34;&amp;#34;&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> path = default_path
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> value = os.getenv(env_key, &lt;span style="font-weight:bold">None&lt;/span>)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> value:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> path = value
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if&lt;/span> os.path.exists(path):
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">with&lt;/span> open(path, &lt;span style="font-style:italic">&amp;#39;rt&amp;#39;&lt;/span>) &lt;span style="font-weight:bold">as&lt;/span> f:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> config = json.load(f)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logging.config.dictConfig(config)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logging.basicConfig(level=default_level)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&amp;#34;Setup logging configuration
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74"> &amp;#34;&amp;#34;&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> path &lt;span style="color:#f92672">=&lt;/span> default_path
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> value &lt;span style="color:#f92672">=&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>getenv(env_key, &lt;span style="color:#66d9ef">None&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> value:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> path &lt;span style="color:#f92672">=&lt;/span> value
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> os&lt;span style="color:#f92672">.&lt;/span>path&lt;span style="color:#f92672">.&lt;/span>exists(path):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">with&lt;/span> open(path, &lt;span style="color:#e6db74">&amp;#39;rt&amp;#39;&lt;/span>) &lt;span style="color:#66d9ef">as&lt;/span> f:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> config &lt;span style="color:#f92672">=&lt;/span> json&lt;span style="color:#f92672">.&lt;/span>load(f)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logging&lt;span style="color:#f92672">.&lt;/span>config&lt;span style="color:#f92672">.&lt;/span>dictConfig(config)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logging&lt;span style="color:#f92672">.&lt;/span>basicConfig(level&lt;span style="color:#f92672">=&lt;/span>default_level)
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>使用 JSON 配置的一个优点是 json 是标准库中的模块，你不需要安装。但就个人来说，
 我更喜欢 YAML。这有非常好的可读性和可编辑性。你可以按照以下方式加载 YAML 配置：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>import os
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>import logging.config
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">import os&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">import logging.config&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>import yaml
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">import yaml&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>def setup_logging(
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> default_path=&amp;#39;logging.yaml&amp;#39;,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> default_level=logging.INFO,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> env_key=&amp;#39;LOG_CFG&amp;#39;
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-weight:bold">)&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-style:italic">&amp;#34;&amp;#34;&amp;#34;Setup logging configuration
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic">
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="font-style:italic"> &amp;#34;&amp;#34;&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> path = default_path
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> value = os.getenv(env_key, None)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if value&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> path = value
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">if os.path.exists(path)&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">with open(path, &amp;#39;rt&amp;#39;) as f&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> config = yaml.safe_load(f.read())
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logging.config.dictConfig(config)
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="font-weight:bold">else&lt;/span>:
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> logging.basicConfig(level=default_level)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">def setup_logging(&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">default_path=&amp;#39;logging.yaml&amp;#39;,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">default_level=logging.INFO,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">env_key=&amp;#39;LOG_CFG&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">)&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&amp;#34;Setup logging configuration
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74"> &amp;#34;&amp;#34;&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">path = default_path&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">value = os.getenv(env_key, None)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">if value&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">path = value&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">if os.path.exists(path)&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">with open(path, &amp;#39;rt&amp;#39;) as f&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">config = yaml.safe_load(f.read())&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">logging.config.dictConfig(config)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">else&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#ae81ff">logging.basicConfig(level=default_level)&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者
 logging.yaml。你也可以设置 LOG_CFG 环境变量去从指定的路径下加载配置文件。比如：&lt;/p>
 &lt;p>&lt;code>LOG_CFG=my_logging.json python my_server.py&lt;/code>&lt;/p>

@@ -1,0 +1,1168 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Golang on Yiran's Blog</title><link>https://zdyxry.github.io/tags/golang/</link><description>Recent content in Golang on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 09 Feb 2022 11:57:51 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/golang/atom.xml" rel="self" type="application/rss+xml"/><item><title>基于 Yamux 的内网穿透简易实现</title><link>https://zdyxry.github.io/2022/02/09/%E5%9F%BA%E4%BA%8E-yamux-%E7%9A%84%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</link><pubDate>Wed, 09 Feb 2022 11:57:51 +0000</pubDate><guid>https://zdyxry.github.io/2022/02/09/%E5%9F%BA%E4%BA%8E-yamux-%E7%9A%84%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</guid><description>&lt;h2 id="基于-yamux-的内网穿透简易实现">
+基于 Yamux 的内网穿透简易实现
+&lt;a class="heading-link" href="#%e5%9f%ba%e4%ba%8e-yamux-%e7%9a%84%e5%86%85%e7%bd%91%e7%a9%bf%e9%80%8f%e7%ae%80%e6%98%93%e5%ae%9e%e7%8e%b0">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;h3 id="server">
+Server
+&lt;a class="heading-link" href="#server">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>模拟真实服务器，假设运行在内网环境，端口 8881。&lt;/p>
+&lt;pre tabindex="0">&lt;code>package main
+import (
+&amp;#34;fmt&amp;#34;
+&amp;#34;log&amp;#34;
+&amp;#34;net/http&amp;#34;
+)
+func main() {
+http.HandleFunc(&amp;#34;/hello&amp;#34;, HelloHandler)
+fmt.Println(&amp;#34;Server started at port 8881&amp;#34;)
+log.Fatal(http.ListenAndServe(&amp;#34;:8881&amp;#34;, nil))
+}
+func HelloHandler(w http.ResponseWriter, r *http.Request) {
+fmt.Fprintf(w, &amp;#34;Hello, there\n&amp;#34;)
+}
+&lt;/code>&lt;/pre>&lt;h3 id="hub">
+Hub
+&lt;a class="heading-link" href="#hub">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>运行在公网环境的 Hub，用于 Agent 连接，并保持会话。端口 8882。&lt;/p>
+&lt;p>提供 session 管理机制，主要用来保存 Yamux session 和 Agent 对应关系。
+每个内网可以运行多个 Agent，每次新建连接会从已有的 Agent session 列表中随机选择一个 session，并通过创建一个新的 Yamux Stream 机制复用连接。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">SessionManager&lt;/span> &lt;span style="color:#66d9ef">interface&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">AddSession&lt;/span>(&lt;span style="color:#a6e22e">key&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>, &lt;span style="color:#a6e22e">sess&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">yamux&lt;/span>.&lt;span style="color:#a6e22e">Session&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">DialTarget&lt;/span>(&lt;span style="color:#a6e22e">key&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>) (&lt;span style="color:#a6e22e">net&lt;/span>.&lt;span style="color:#a6e22e">Conn&lt;/span>, &lt;span style="color:#66d9ef">error&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">NewSessionManager&lt;/span>() &lt;span style="color:#a6e22e">SessionManager&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">sessionManager&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">sessions&lt;/span>: &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>][]&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">yamux&lt;/span>.&lt;span style="color:#a6e22e">Session&lt;/span>{},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">sessionManager&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">sessions&lt;/span> &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>][]&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">yamux&lt;/span>.&lt;span style="color:#a6e22e">Session&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">mutex&lt;/span> &lt;span style="color:#a6e22e">sync&lt;/span>.&lt;span style="color:#a6e22e">Mutex&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">m&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">sessionManager&lt;/span>) &lt;span style="color:#a6e22e">AddSession&lt;/span>(&lt;span style="color:#a6e22e">key&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>, &lt;span style="color:#a6e22e">sess&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">yamux&lt;/span>.&lt;span style="color:#a6e22e">Session&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">mutex&lt;/span>.&lt;span style="color:#a6e22e">Lock&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">defer&lt;/span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">mutex&lt;/span>.&lt;span style="color:#a6e22e">Unlock&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">curr&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">sessions&lt;/span>[&lt;span style="color:#a6e22e">key&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">curr&lt;/span> &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">curr&lt;/span> = []&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">yamux&lt;/span>.&lt;span style="color:#a6e22e">Session&lt;/span>{}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">curr&lt;/span> = append(&lt;span style="color:#a6e22e">curr&lt;/span>, &lt;span style="color:#a6e22e">sess&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">sessions&lt;/span>[&lt;span style="color:#a6e22e">key&lt;/span>] = &lt;span style="color:#a6e22e">curr&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">m&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">sessionManager&lt;/span>) &lt;span style="color:#a6e22e">DialTarget&lt;/span>(&lt;span style="color:#a6e22e">key&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>) (&lt;span style="color:#a6e22e">net&lt;/span>.&lt;span style="color:#a6e22e">Conn&lt;/span>, &lt;span style="color:#66d9ef">error&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">mutex&lt;/span>.&lt;span style="color:#a6e22e">Lock&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">defer&lt;/span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">mutex&lt;/span>.&lt;span style="color:#a6e22e">Unlock&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">ss&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">sessions&lt;/span>[&lt;span style="color:#a6e22e">key&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> len(&lt;span style="color:#a6e22e">ss&lt;/span>) &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span>, &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Errorf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;no session found in &amp;#39;%s&amp;#39;&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">key&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">idx&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">rand&lt;/span>.&lt;span style="color:#a6e22e">Intn&lt;/span>(len(&lt;span style="color:#a6e22e">ss&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">conn&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">ss&lt;/span>[&lt;span style="color:#a6e22e">idx&lt;/span>].&lt;span style="color:#a6e22e">Open&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;removing session #%d of &amp;#39;%s&amp;#39; due to dial error: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">idx&lt;/span>, &lt;span style="color:#a6e22e">key&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">ss&lt;/span>[&lt;span style="color:#a6e22e">idx&lt;/span>].&lt;span style="color:#a6e22e">Close&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">ss&lt;/span> = append(&lt;span style="color:#a6e22e">ss&lt;/span>[:&lt;span style="color:#a6e22e">idx&lt;/span>], &lt;span style="color:#a6e22e">ss&lt;/span>[&lt;span style="color:#a6e22e">idx&lt;/span>&lt;span style="color:#f92672">+&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>:]&lt;span style="color:#f92672">...&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">sessions&lt;/span>[&lt;span style="color:#a6e22e">key&lt;/span>] = &lt;span style="color:#a6e22e">ss&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">continue&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;find session with key &amp;#39;%s&amp;#39;&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">key&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">conn&lt;/span>, &lt;span style="color:#66d9ef">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Hub 自身暴露两个 API 接口，其中 &lt;code>/api/v1/hubs/:id&lt;/code> 用于 Agent 建立 WebSocket 连接，&lt;code>api/v1/proxy/:id/*proxyPath&lt;/code> 用于后续 Client 通过 Hub 访问 Server 。当用户访问 &lt;code>/api/v1/proxy/&lt;/code> 并指定 Agent ID 时，通过&lt;code>NewSingleHostReverseProxy&lt;/code> 创建反向代理，并指定 Transport 中的 conn 为 Yamux Stream。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">SetupHandlers&lt;/span>(&lt;span style="color:#a6e22e">r&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">RouterGroup&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">m&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">NewSessionManager&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">r&lt;/span>.&lt;span style="color:#a6e22e">GET&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/hubs/:id&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">func&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">Context&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">upgrader&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">websocket&lt;/span>.&lt;span style="color:#a6e22e">Upgrader&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">ReadBufferSize&lt;/span>: &lt;span style="color:#ae81ff">1024&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">WriteBufferSize&lt;/span>: &lt;span style="color:#ae81ff">1024&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">conn&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">upgrader&lt;/span>.&lt;span style="color:#a6e22e">Upgrade&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Writer&lt;/span>, &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Request&lt;/span>, &lt;span style="color:#66d9ef">nil&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">JSON&lt;/span>(&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">StatusBadRequest&lt;/span>, &lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">H&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;msg&amp;#34;&lt;/span>: &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Sprintf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;failed to upgrade to WebSocket: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">session&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">yamux&lt;/span>.&lt;span style="color:#a6e22e">Server&lt;/span>(&lt;span style="color:#a6e22e">conn&lt;/span>.&lt;span style="color:#a6e22e">UnderlyingConn&lt;/span>(), &lt;span style="color:#66d9ef">nil&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">JSON&lt;/span>(&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">StatusBadRequest&lt;/span>, &lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">H&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;msg&amp;#34;&lt;/span>: &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Sprintf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;failed to multiplex channel: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">AddSession&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Param&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;id&amp;#34;&lt;/span>), &lt;span style="color:#a6e22e">session&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> })
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">r&lt;/span>.&lt;span style="color:#a6e22e">Any&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/proxy/:id/*proxyPath&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">func&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">Context&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">u&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">url&lt;/span>.&lt;span style="color:#a6e22e">Parse&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;http://127.0.0.1&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">JSON&lt;/span>(&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">StatusBadRequest&lt;/span>, &lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">H&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;msg&amp;#34;&lt;/span>: &lt;span style="color:#a6e22e">err&lt;/span>.&lt;span style="color:#a6e22e">Error&lt;/span>()})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">rp&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">httputil&lt;/span>.&lt;span style="color:#a6e22e">NewSingleHostReverseProxy&lt;/span>(&lt;span style="color:#a6e22e">u&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">key&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Param&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;id&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">rp&lt;/span>.&lt;span style="color:#a6e22e">Transport&lt;/span> = &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">Transport&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">DialContext&lt;/span>: &lt;span style="color:#66d9ef">func&lt;/span>(&lt;span style="color:#a6e22e">ctx&lt;/span> &lt;span style="color:#a6e22e">context&lt;/span>.&lt;span style="color:#a6e22e">Context&lt;/span>, &lt;span style="color:#a6e22e">network&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>, &lt;span style="color:#a6e22e">addr&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>) (&lt;span style="color:#a6e22e">net&lt;/span>.&lt;span style="color:#a6e22e">Conn&lt;/span>, &lt;span style="color:#66d9ef">error&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">conn&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">m&lt;/span>.&lt;span style="color:#a6e22e">DialTarget&lt;/span>(&lt;span style="color:#a6e22e">key&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">conn&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">rp&lt;/span>.&lt;span style="color:#a6e22e">ErrorHandler&lt;/span> = &lt;span style="color:#66d9ef">func&lt;/span>(&lt;span style="color:#a6e22e">w&lt;/span> &lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">ResponseWriter&lt;/span>, &lt;span style="color:#a6e22e">r&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">Request&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#66d9ef">error&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">JSON&lt;/span>(&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">StatusBadRequest&lt;/span>, &lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">H&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;msg&amp;#34;&lt;/span>: &lt;span style="color:#a6e22e">err&lt;/span>.&lt;span style="color:#a6e22e">Error&lt;/span>()})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">hostInQuery&lt;/span>, &lt;span style="color:#a6e22e">exist&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">GetQuery&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;x-proxy-host&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">exist&lt;/span> &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#66d9ef">true&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Request&lt;/span>.&lt;span style="color:#a6e22e">Header&lt;/span>.&lt;span style="color:#a6e22e">Add&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;X-Proxy-Host&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">hostInQuery&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Request&lt;/span>.&lt;span style="color:#a6e22e">Header&lt;/span>.&lt;span style="color:#a6e22e">Add&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;X-Proxy-Path&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Param&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;proxyPath&amp;#34;&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">rp&lt;/span>.&lt;span style="color:#a6e22e">ServeHTTP&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Writer&lt;/span>, &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">Request&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> })
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">setupRouter&lt;/span>() (&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">Engine&lt;/span>, &lt;span style="color:#66d9ef">error&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">r&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">Default&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">v1&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">r&lt;/span>.&lt;span style="color:#a6e22e">Group&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/api/v1&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">SetupHandlers&lt;/span>(&lt;span style="color:#a6e22e">v1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">r&lt;/span>, &lt;span style="color:#66d9ef">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="agent">
+Agent
+&lt;a class="heading-link" href="#agent">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>内网可以运行多个 Agent 用于连接 Hub，Agent 会通过 WebSocket 连接 Hub，后续所有通信均通过该连接进行传输。在连接建立后，创建 ReverseProxy，配置 Direcotr 修改 Request 参数，指定 host,path。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">Setup&lt;/span>(&lt;span style="color:#a6e22e">connectURL&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>) &lt;span style="color:#66d9ef">error&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">dialer&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">websocket&lt;/span>.&lt;span style="color:#a6e22e">DefaultDialer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">dialer&lt;/span>.&lt;span style="color:#a6e22e">TLSClientConfig&lt;/span> = &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">tls&lt;/span>.&lt;span style="color:#a6e22e">Config&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">InsecureSkipVerify&lt;/span>: &lt;span style="color:#66d9ef">true&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">wsConn&lt;/span>, &lt;span style="color:#a6e22e">_&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">dialer&lt;/span>.&lt;span style="color:#a6e22e">Dial&lt;/span>(&lt;span style="color:#a6e22e">connectURL&lt;/span>, &lt;span style="color:#66d9ef">nil&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">errors&lt;/span>.&lt;span style="color:#a6e22e">New&lt;/span>(&lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Sprintf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;failed to dial hub %q: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">connectURL&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">sess&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">yamux&lt;/span>.&lt;span style="color:#a6e22e">Client&lt;/span>(&lt;span style="color:#a6e22e">wsConn&lt;/span>.&lt;span style="color:#a6e22e">UnderlyingConn&lt;/span>(), &lt;span style="color:#66d9ef">nil&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">errors&lt;/span>.&lt;span style="color:#a6e22e">New&lt;/span>(&lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Sprintf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;failed to create multiplex channel: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;connected to hub&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">director&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#66d9ef">func&lt;/span>(&lt;span style="color:#a6e22e">req&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">Request&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#a6e22e">req&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">host&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">Header&lt;/span>.&lt;span style="color:#a6e22e">Get&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;X-Proxy-Host&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">path&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">Header&lt;/span>.&lt;span style="color:#a6e22e">Get&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;X-Proxy-Path&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">Header&lt;/span>.&lt;span style="color:#a6e22e">Add&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;X-Forwarded-Host&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">Host&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">Header&lt;/span>.&lt;span style="color:#a6e22e">Add&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;X-Origin-Host&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">host&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">URL&lt;/span>.&lt;span style="color:#a6e22e">Scheme&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;http&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">URL&lt;/span>.&lt;span style="color:#a6e22e">Host&lt;/span> = &lt;span style="color:#a6e22e">host&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">URL&lt;/span>.&lt;span style="color:#a6e22e">Path&lt;/span> = &lt;span style="color:#a6e22e">path&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">req&lt;/span>.&lt;span style="color:#a6e22e">Host&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#a6e22e">req&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">proxy&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">httputil&lt;/span>.&lt;span style="color:#a6e22e">ReverseProxy&lt;/span>{&lt;span style="color:#a6e22e">Director&lt;/span>: &lt;span style="color:#a6e22e">director&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">server&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">Server&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">Handler&lt;/span>: &lt;span style="color:#a6e22e">proxy&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">idleConnsClosed&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> make(&lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span>{})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">go&lt;/span> &lt;span style="color:#66d9ef">func&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">sigint&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> make(&lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">Signal&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">signal&lt;/span>.&lt;span style="color:#a6e22e">Notify&lt;/span>(&lt;span style="color:#a6e22e">sigint&lt;/span>, &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">Interrupt&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">signal&lt;/span>.&lt;span style="color:#a6e22e">Notify&lt;/span>(&lt;span style="color:#a6e22e">sigint&lt;/span>, &lt;span style="color:#a6e22e">syscall&lt;/span>.&lt;span style="color:#a6e22e">SIGTERM&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">sigint&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">server&lt;/span>.&lt;span style="color:#a6e22e">Shutdown&lt;/span>(&lt;span style="color:#a6e22e">context&lt;/span>.&lt;span style="color:#a6e22e">Background&lt;/span>()); &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;failed to shutdown server: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> close(&lt;span style="color:#a6e22e">idleConnsClosed&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;starting proxy&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">server&lt;/span>.&lt;span style="color:#a6e22e">Serve&lt;/span>(&lt;span style="color:#a6e22e">sess&lt;/span>); &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">errors&lt;/span>.&lt;span style="color:#a6e22e">New&lt;/span>(&lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Sprintf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;error running proxy: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">idleConnsClosed&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="client">
+Client
+&lt;a class="heading-link" href="#client">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>Client 可以通过访问 Hub 的 proxy API，将真实请求转发至 Agent ，再由 Agent 请求 Server。&lt;/p>
+&lt;h3 id="完整流程">
+完整流程
+&lt;a class="heading-link" href="#%e5%ae%8c%e6%95%b4%e6%b5%81%e7%a8%8b">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;ol>
+&lt;li>运行 Hub 对外提供服务&lt;/li>
+&lt;li>运行 Agent 通过 WebSocket 连接至 Hub，并创建 ReverseProxy&lt;/li>
+&lt;li>Client 请求 Hub proxy API&lt;/li>
+&lt;li>Hub 在已有 Session（WebSocket）上 Yamux Stream 将请求转发至 Agent&lt;/li>
+&lt;li>Agent 解析 Request，并将请求转发至 Server，返回&lt;/li>
+&lt;/ol>
+&lt;h3 id="参考链接">
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/hashicorp/yamux" class="external-link" target="_blank" rel="noopener">https://github.com/hashicorp/yamux&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/smartxworks/kopilot" class="external-link" target="_blank" rel="noopener">https://github.com/smartxworks/kopilot&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://gist.github.com/fengye87/76791723511f6867b02723ba0c437315" class="external-link" target="_blank" rel="noopener">https://gist.github.com/fengye87/76791723511f6867b02723ba0c437315&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://stackoverflow.com/questions/60657906/websocket-over-yamux-over-websocket-not-working" class="external-link" target="_blank" rel="noopener">https://stackoverflow.com/questions/60657906/websocket-over-yamux-over-websocket-not-working&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Server-Sent Events 简单使用</title><link>https://zdyxry.github.io/2020/02/03/server-sent-events-%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/</link><pubDate>Mon, 03 Feb 2020 07:36:46 +0000</pubDate><guid>https://zdyxry.github.io/2020/02/03/server-sent-events-%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>最近在刷 Twitter 的时候，发现 Twitter 会实时更新已加载页面的内容，以为是 Websocket，看了下请求发现是 Server-sent events，之前没有了解过这个，今天来学习一下。&lt;/p>
+&lt;h2 id="server-sent-events">
+Server-sent events
+&lt;a class="heading-link" href="#server-sent-events">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>引用维基百科：&lt;/p>
+&lt;blockquote>
+&lt;p>Server-Sent Events (SSE) is a server push technology enabling a client to receive automatic updates from a server via HTTP connection. The Server-Sent Events EventSource API is standardized as part of HTML5[1] by the W3C.&lt;/p>&lt;/blockquote>
+&lt;p>SSE 通常与 Websocket 相比较：&lt;/p>
+&lt;ul>
+&lt;li>SSE 提供单向通信，Websocket 提供双向通信；&lt;/li>
+&lt;li>SSE 是通过 HTTP 协议实现的，Websocket 是单独的协议；&lt;/li>
+&lt;li>实现上来说 SSE 比较容易，Websocket 复杂一些；&lt;/li>
+&lt;li>对浏览器来说，IE/Edge 不支持 SSE，其它的都是支持的。&lt;/li>
+&lt;li>SSE 有最大连接数限制&lt;/li>
+&lt;li>WS 可以传输二进制数据和文本数据，而 SSE 只有文本数据&lt;/li>
+&lt;/ul>
+&lt;p>SSE 使用场景：&lt;/p>
+&lt;ul>
+&lt;li>股票行情自动收录&lt;/li>
+&lt;li>社交网站自动更新（Twitter）&lt;/li>
+&lt;li>&amp;hellip;&lt;/li>
+&lt;/ul>
+&lt;p>Websocket 使用场景：&lt;/p>
+&lt;ul>
+&lt;li>VNC&lt;/li>
+&lt;li>协同编辑&lt;/li>
+&lt;li>&amp;hellip;&lt;/li>
+&lt;/ul>
+&lt;h2 id="使用">
+使用
+&lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>Golang 有 &lt;a href="https://github.com/antage/eventsource" class="external-link" target="_blank" rel="noopener">eventsource&lt;/a> 可以直接使用，示例如下：&lt;/p>
+&lt;h3 id="server">
+Server
+&lt;a class="heading-link" href="#server">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;gopkg.in/antage/eventsource.v1&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;log&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;net/http&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;time&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">es&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">eventsource&lt;/span>.&lt;span style="color:#a6e22e">New&lt;/span>(&lt;span style="color:#66d9ef">nil&lt;/span>, &lt;span style="color:#66d9ef">nil&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">defer&lt;/span> &lt;span style="color:#a6e22e">es&lt;/span>.&lt;span style="color:#a6e22e">Close&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">Handle&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">FileServer&lt;/span>(&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">Dir&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;./public&amp;#34;&lt;/span>)))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">Handle&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/events&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">es&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">go&lt;/span> &lt;span style="color:#66d9ef">func&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 每 2 秒发送一条消息，并打印对应客户端数量&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">es&lt;/span>.&lt;span style="color:#a6e22e">SendEventMessage&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;hello&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Hello has been sent (consumers: %d)&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">es&lt;/span>.&lt;span style="color:#a6e22e">ConsumersCount&lt;/span>())
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Sleep&lt;/span>(&lt;span style="color:#ae81ff">2&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Second&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Print&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Open URL http://localhost:8080/ in your browser.&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">ListenAndServe&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;:8080&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">nil&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">log&lt;/span>.&lt;span style="color:#a6e22e">Fatal&lt;/span>(&lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="client">
+Client
+&lt;a class="heading-link" href="#client">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-html" data-lang="html">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&amp;lt;!DOCTYPE html&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;&lt;span style="color:#f92672">html&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;&lt;span style="color:#f92672">head&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;&lt;span style="color:#f92672">title&lt;/span>&amp;gt;SSE test&amp;lt;/&lt;span style="color:#f92672">title&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;&lt;span style="color:#f92672">script&lt;/span> &lt;span style="color:#a6e22e">type&lt;/span>&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;text/javascript&amp;#34;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> window.&lt;span style="color:#a6e22e">addEventListener&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;DOMContentLoaded&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">function&lt;/span> () {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">var&lt;/span> &lt;span style="color:#a6e22e">evsrc&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">EventSource&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/events&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">evsrc&lt;/span>.&lt;span style="color:#a6e22e">onmessage&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">function&lt;/span> (&lt;span style="color:#a6e22e">ev&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> document.&lt;span style="color:#a6e22e">getElementById&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;log&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> .&lt;span style="color:#a6e22e">insertAdjacentHTML&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;beforeend&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;lt;li&amp;gt;&amp;#34;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#a6e22e">ev&lt;/span>.&lt;span style="color:#a6e22e">data&lt;/span> &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#34;&amp;lt;/li&amp;gt;&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">evsrc&lt;/span>.&lt;span style="color:#a6e22e">onerror&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">function&lt;/span> (&lt;span style="color:#a6e22e">ev&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">console&lt;/span>.&lt;span style="color:#a6e22e">log&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;readyState = &amp;#34;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#a6e22e">ev&lt;/span>.&lt;span style="color:#a6e22e">currentTarget&lt;/span>.&lt;span style="color:#a6e22e">readyState&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> })
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;/&lt;span style="color:#f92672">script&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;/&lt;span style="color:#f92672">head&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;&lt;span style="color:#f92672">body&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;&lt;span style="color:#f92672">h1&lt;/span>&amp;gt;SSE test&amp;lt;/&lt;span style="color:#f92672">h1&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;&lt;span style="color:#f92672">div&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;&lt;span style="color:#f92672">ul&lt;/span> &lt;span style="color:#a6e22e">id&lt;/span>&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;log&amp;#34;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;/&lt;span style="color:#f92672">ul&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;/&lt;span style="color:#f92672">div&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &amp;lt;/&lt;span style="color:#f92672">body&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;/&lt;span style="color:#f92672">html&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="总结">
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>SSE 很适合 Twitter 这种场景，还特意观察了下微博，发现微博没有。。&lt;/p>
+&lt;h2 id="参考链接">
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="https://stackoverflow.com/questions/5195452/websockets-vs-server-sent-events-eventsource" class="external-link" target="_blank" rel="noopener">https://stackoverflow.com/questions/5195452/websockets-vs-server-sent-events-eventsource&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>如何捕捉 Ctrl+C 指令</title><link>https://zdyxry.github.io/2019/11/23/%E5%A6%82%E4%BD%95%E6%8D%95%E6%8D%89-ctrl-c-%E6%8C%87%E4%BB%A4/</link><pubDate>Sat, 23 Nov 2019 21:23:24 +0000</pubDate><guid>https://zdyxry.github.io/2019/11/23/%E5%A6%82%E4%BD%95%E6%8D%95%E6%8D%89-ctrl-c-%E6%8C%87%E4%BB%A4/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>有时候在运行代码的时候，想要程序在接收到 Ctrl+C 指令的时候做一些平滑的处理，来写一下在 Python 和 Golang 中如何接收 Ctrl+C 指令。&lt;/p>
+&lt;h2 id="python">
+Python
+&lt;a class="heading-link" href="#python">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> signal
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> time
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> sys
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">run_program&lt;/span>():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">while&lt;/span> &lt;span style="color:#66d9ef">True&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="color:#e6db74">&amp;#34;Test code...&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> time&lt;span style="color:#f92672">.&lt;/span>sleep(&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">def&lt;/span> &lt;span style="color:#a6e22e">exit_gracefully&lt;/span>(signum, frame):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> signal&lt;span style="color:#f92672">.&lt;/span>signal(signal&lt;span style="color:#f92672">.&lt;/span>SIGINT, original_sigint)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> print(&lt;span style="color:#e6db74">&amp;#34;Receive Ctrl+C.&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> sys&lt;span style="color:#f92672">.&lt;/span>exit(&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">if&lt;/span> __name__ &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#e6db74">&amp;#39;__main__&amp;#39;&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> original_sigint &lt;span style="color:#f92672">=&lt;/span> signal&lt;span style="color:#f92672">.&lt;/span>getsignal(signal&lt;span style="color:#f92672">.&lt;/span>SIGINT)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> signal&lt;span style="color:#f92672">.&lt;/span>signal(signal&lt;span style="color:#f92672">.&lt;/span>SIGINT, exit_gracefully)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> run_program()
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="golang">
+Golang
+&lt;a class="heading-link" href="#golang">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-golang" data-lang="golang">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;os&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;os/signal&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;sync&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;time&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">WaitForCtrlC&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">var&lt;/span> &lt;span style="color:#a6e22e">end_waiter&lt;/span> &lt;span style="color:#a6e22e">sync&lt;/span>.&lt;span style="color:#a6e22e">WaitGroup&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">end_waiter&lt;/span>.&lt;span style="color:#a6e22e">Add&lt;/span>(&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">var&lt;/span> &lt;span style="color:#a6e22e">signal_channel&lt;/span> &lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">Signal&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">signal_channel&lt;/span> = make(&lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">Signal&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">signal&lt;/span>.&lt;span style="color:#a6e22e">Notify&lt;/span>(&lt;span style="color:#a6e22e">signal_channel&lt;/span>, &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">Interrupt&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">go&lt;/span> &lt;span style="color:#66d9ef">func&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">signal_channel&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">end_waiter&lt;/span>.&lt;span style="color:#a6e22e">Done&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">end_waiter&lt;/span>.&lt;span style="color:#a6e22e">Wait&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">testCode&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Test code...&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Sleep&lt;/span>(&lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Duration&lt;/span>(&lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Second&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Press Ctrl+C to end\n&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">go&lt;/span> &lt;span style="color:#a6e22e">testCode&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">WaitForCtrlC&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Receive Ctrl+C.\n&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Golang context 使用</title><link>https://zdyxry.github.io/2019/09/30/golang-context-%E4%BD%BF%E7%94%A8/</link><pubDate>Mon, 30 Sep 2019 18:33:32 +0000</pubDate><guid>https://zdyxry.github.io/2019/09/30/golang-context-%E4%BD%BF%E7%94%A8/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>前段时间在写 Cluster API Provider 的时候，经常会使用 context 传递参数，当时只是按照其他项目中的方式快速的实现，并没有认真的了解 context 具体包含什么，为了解决什么问题，这次来聊一下。&lt;/p>
+&lt;p>P.S. 虽然写了一周的 Golang，但是对于标准库有什么还一无所知，找时间应该认真过一遍的。。&lt;/p>
+&lt;h2 id="定义与使用">
+定义与使用
+&lt;a class="heading-link" href="#%e5%ae%9a%e4%b9%89%e4%b8%8e%e4%bd%bf%e7%94%a8">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>先看定义：&lt;/p>
+&lt;blockquote>
+&lt;p>Package context defines the Context type, which carries deadlines, cancellation signals, and other request-scoped values across API boundaries and between processes.&lt;/p>&lt;/blockquote>
+&lt;ul>
+&lt;li>当一个 goroutine 调用其他 goroutine，随着层级变多，我们想要在外层达到控制的效果&lt;/li>
+&lt;li>在必要场景下传递 &lt;strong>必需&lt;/strong> 的数据&lt;/li>
+&lt;/ul>
+&lt;p>其中 &lt;code>Context&lt;/code> 这个 interface 中定义了 4 个方法，具体如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">Context&lt;/span> &lt;span style="color:#66d9ef">interface&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">Deadline&lt;/span>() (&lt;span style="color:#a6e22e">deadline&lt;/span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Time&lt;/span>, &lt;span style="color:#a6e22e">ok&lt;/span> &lt;span style="color:#66d9ef">bool&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">Done&lt;/span>() &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span>{}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">Err&lt;/span>() &lt;span style="color:#66d9ef">error&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">Value&lt;/span>(&lt;span style="color:#a6e22e">key&lt;/span> &lt;span style="color:#66d9ef">interface&lt;/span>{}) &lt;span style="color:#66d9ef">interface&lt;/span>{}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在 &lt;code>context&lt;/code> 包中实现了4个函数，平时也都是使用这些函数：&lt;/p>
+&lt;ol>
+&lt;li>func WithCancel(parent Context) (ctx Context, cancel CancelFunc)&lt;/li>
+&lt;li>func WithDeadline(parent Context, d time.Time) (Context, CancelFunc)&lt;/li>
+&lt;li>func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)&lt;/li>
+&lt;li>func WithValue(parent Context, key, val interface{}) Context&lt;/li>
+&lt;/ol>
+&lt;p>可以看到 Cancel,Deadline,Timeout 都会返回一个 CancelFunc 函数，哪怕我们设定的时间还没到，我们也可以直接使用 CancelFunc 去设置 Context。&lt;/p>
+&lt;p>在 context 使用上有官方文档，且有很多博主已经写过很详细的博客，这里只是列一个简单的例子：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;context&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;time&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Pass a context with a timeout to tell a blocking function that it&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// should abandon its work after the timeout elapses.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">ctx&lt;/span>, &lt;span style="color:#a6e22e">cancel&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">context&lt;/span>.&lt;span style="color:#a6e22e">WithTimeout&lt;/span>(&lt;span style="color:#a6e22e">context&lt;/span>.&lt;span style="color:#a6e22e">Background&lt;/span>(), &lt;span style="color:#ae81ff">200&lt;/span>&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Millisecond&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">defer&lt;/span> &lt;span style="color:#a6e22e">cancel&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">select&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">After&lt;/span>(&lt;span style="color:#ae81ff">1&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Second&lt;/span>): &lt;span style="color:#75715e">// 等待 1s&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;overslept&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">ctx&lt;/span>.&lt;span style="color:#a6e22e">Done&lt;/span>(): &lt;span style="color:#75715e">// 只有当 Channel 关闭时才会返回非空，也就是到了设定的 Timeout 数值&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#a6e22e">ctx&lt;/span>.&lt;span style="color:#a6e22e">Err&lt;/span>()) &lt;span style="color:#75715e">// prints &amp;#34;context deadline exceeded&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="注意事项">
+注意事项
+&lt;a class="heading-link" href="#%e6%b3%a8%e6%84%8f%e4%ba%8b%e9%a1%b9">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;ol>
+&lt;li>不要把 Context 放到结构体中，以参数传递，在作为参数传递时，需要将其作为第一个参数传递&lt;/li>
+&lt;li>如果 Context 传递内容不确定，那么可以传递 &lt;code>context.Background()&lt;/code> 或 &lt;code>context.TODO()&lt;/code>，不要传递 nil&lt;/li>
+&lt;li>不建议使用 &lt;code>context.Value&lt;/code> 传递数据&lt;/li>
+&lt;li>Context 是通过 &lt;strong>通知&lt;/strong> 来达到 &lt;strong>控制&lt;/strong> 目的&lt;/li>
+&lt;li>Context 并非是全局的，只查询自身及父context 的数据，同理在 Cancel 也是一样的&lt;/li>
+&lt;/ol>
+&lt;h2 id="可能存在的问题">
+（可能存在的）问题
+&lt;a class="heading-link" href="#%e5%8f%af%e8%83%bd%e5%ad%98%e5%9c%a8%e7%9a%84%e9%97%ae%e9%a2%98">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>在搜索过程中，看到&lt;a href="https://faiface.github.io/post/context-should-go-away-go2/" class="external-link" target="_blank" rel="noopener">一篇博客&lt;/a>提到了 context 的一些问题：&lt;/p>
+&lt;ul>
+&lt;li>传播性
+&lt;ul>
+&lt;li>当我们有一个包含了100个函数的调用栈，当我们想要通过 context 来达到控制目的时，那么我们需要将 context 作为函数的第一个参数不断的传递下去。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>什么时候使用 &lt;code>context.TODO&lt;/code> ？&lt;/li>
+&lt;li>context.Value 不该用
+&lt;ul>
+&lt;li>非静态的&lt;/li>
+&lt;li>需要在指定功能上使用特定的 key/value&lt;/li>
+&lt;li>容易发生 key 冲突&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>效率低下&lt;/li>
+&lt;li>&amp;hellip;&lt;/li>
+&lt;/ul>
+&lt;h2 id="总结">
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>虽然上面说了那么多，比如上面提到的不应该用 &lt;code>context.Value&lt;/code> ，在 ClusterAPI 中有很多使用 &lt;code>context.Value&lt;/code> 传值的地方，该用还是用嘛。&lt;/p>
+&lt;h2 id="参考链接">
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="https://golang.org/pkg/context/#Background" class="external-link" target="_blank" rel="noopener">https://golang.org/pkg/context/#Background&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.flysnow.org/2017/05/12/go-in-action-go-context.html" class="external-link" target="_blank" rel="noopener">https://www.flysnow.org/2017/05/12/go-in-action-go-context.html&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://deepzz.com/post/golang-context-package-notes.html" class="external-link" target="_blank" rel="noopener">https://deepzz.com/post/golang-context-package-notes.html&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/34417106" class="external-link" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/34417106&lt;/a>&lt;/li>
+&lt;li>&lt;a href="http://imfox.io/2017/11/28/go-context-note/" class="external-link" target="_blank" rel="noopener">http://imfox.io/2017/11/28/go-context-note/&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://faiface.github.io/post/context-should-go-away-go2/" class="external-link" target="_blank" rel="noopener">https://faiface.github.io/post/context-should-go-away-go2/&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Linux 下磁盘设备自动发现方式</title><link>https://zdyxry.github.io/2019/08/02/linux-%E4%B8%8B%E7%A3%81%E7%9B%98%E8%AE%BE%E5%A4%87%E8%87%AA%E5%8A%A8%E5%8F%91%E7%8E%B0%E6%96%B9%E5%BC%8F/</link><pubDate>Fri, 02 Aug 2019 23:10:04 +0000</pubDate><guid>https://zdyxry.github.io/2019/08/02/linux-%E4%B8%8B%E7%A3%81%E7%9B%98%E8%AE%BE%E5%A4%87%E8%87%AA%E5%8A%A8%E5%8F%91%E7%8E%B0%E6%96%B9%E5%BC%8F/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>如果在 PC 上安装过 Linux，那么通常会遇到过硬件设备无法发现的问题，这类问题最终都可以通过 google 来解决掉。那么当我们在服务器场景下，如何做到设备自动发现且在设备发现后执行某些动作呢？&lt;/p>
+&lt;p>最近看了几个关于存储系统的 Operator 部分实现，记录一下。&lt;/p>
+&lt;h2 id="命令行">
+命令行
+&lt;a class="heading-link" href="#%e5%91%bd%e4%bb%a4%e8%a1%8c">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>最简单的肯定是我们写一个循环，永远检测我们要发现的设备，比如 lsblk 可以列举当前服务器所有 block 设备，那么我们就在循环内部执行 lsblk，diff 每次执行的结果，如果有新的设备，那么执行某些操作。&lt;/p>
+&lt;p>lsblk 是通过读取 /sys/block 下的具体目录判断的，那么我么也可以直接读取该路径下的目录来实现。&lt;/p>
+&lt;p>如果是网络设备也是一样，我们可以在循环内部执行 &lt;code>ip link list&lt;/code> 来获取所有网络设备。&lt;/p>
+&lt;h2 id="udev">
+UDEV
+&lt;a class="heading-link" href="#udev">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>照常先引用维基百科的解释：&lt;/p>
+&lt;blockquote>
+&lt;p>udev 是Linux kernel 2.6系列的设备管理器。它主要的功能是管理/dev目錄底下的设备节点。它同时也是用来接替devfs及hotplug的功能，这意味着它要在添加/删除硬件时处理/dev目录以及所有用户空间的行为，包括加载firmware时。&lt;/p>&lt;/blockquote>
+&lt;p>如果你的 OS 是通过 systemd 来管理所有进程的话，那么可以发现一个服务叫做 &lt;code>systemd-udevd&lt;/code> ，这个是 udev 的守护进程:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node90 19:58:10 ~&lt;span style="color:#f92672">]&lt;/span>$systemctl status systemd-udevd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>● systemd-udevd.service - udev Kernel Device Manager
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Loaded: loaded &lt;span style="color:#f92672">(&lt;/span>/usr/lib/systemd/system/systemd-udevd.service; static; vendor preset: disabled&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Active: active &lt;span style="color:#f92672">(&lt;/span>running&lt;span style="color:#f92672">)&lt;/span> since Fri 2019-06-14 15:25:55 CST; &lt;span style="color:#ae81ff">1&lt;/span> months &lt;span style="color:#ae81ff">18&lt;/span> days ago
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Docs: man:systemd-udevd.service&lt;span style="color:#f92672">(&lt;/span>8&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> man:udev&lt;span style="color:#f92672">(&lt;/span>7&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Main PID: &lt;span style="color:#ae81ff">698&lt;/span> &lt;span style="color:#f92672">(&lt;/span>systemd-udevd&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Status: &lt;span style="color:#e6db74">&amp;#34;Processing with 56 children at max&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Tasks: &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Memory: 24.0M
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> CGroup: /system.slice/systemd-udevd.service
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> └─698 /usr/lib/systemd/systemd-udevd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Aug &lt;span style="color:#ae81ff">02&lt;/span> 10:29:17 node90 python&lt;span style="color:#f92672">[&lt;/span>4395&lt;span style="color:#f92672">]&lt;/span>: detected unhandled Python exception in &lt;span style="color:#e6db74">&amp;#39;/usr/lib/python2.7/site-packages/cpuinfo/cpuinfo.py&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Aug &lt;span style="color:#ae81ff">02&lt;/span> 10:29:17 node90 python&lt;span style="color:#f92672">[&lt;/span>4395&lt;span style="color:#f92672">]&lt;/span>: can&lt;span style="color:#960050;background-color:#1e0010">&amp;#39;&lt;/span>t communicate with ABRT daemon, is it running? &lt;span style="color:#f92672">[&lt;/span>Errno 2&lt;span style="color:#f92672">]&lt;/span> No such file or directory
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Warning: Journal has been rotated since unit was started. Log output is incomplete or unavailable.
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>udev 可以让我们对硬件的使用限制大大减少，除了常见的硬件发现，还有一个场景就是网卡改名，比如 82599 网卡，在 CentOS 上大概率识别为 &lt;code>enp4s0f1&lt;/code> 之类的网卡名，如果我们想要统一服务器网卡名称，那么我们可以通过设置 udev 规则，匹配 mac 地址来做到，这里不细说。&lt;/p>
+&lt;p>我们来说说 udev 自动发现设备。udev 提供了完整的工具集，可以共我们使用，比如 udevadm：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node 20:02:41 ~&lt;span style="color:#f92672">]&lt;/span>$udevadm --help
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>udevadm &lt;span style="color:#f92672">[&lt;/span>--help&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>--version&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>--debug&lt;span style="color:#f92672">]&lt;/span> COMMAND &lt;span style="color:#f92672">[&lt;/span>COMMAND OPTIONS&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Send control commands or test the device manager.
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Commands:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> info Query sysfs or the udev database
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> trigger Request events from the kernel
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> settle Wait &lt;span style="color:#66d9ef">for&lt;/span> pending udev events
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> control Control the udev daemon
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> monitor Listen to kernel and udev events
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> test Test an event run
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> test-builtin Test a built-in command
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>我们可以通过 udevadm 来查看硬件设备的具体信息，也可以通过 udevadm 来进行显示的设备监控。&lt;/p>
+&lt;p>除了通过 udevadm 命令，我们还可以通过编写 udev 配置文件来实现设备发现后的具体动作，在 &lt;code>/etc/udev/rules.d/&lt;/code> 路径下可以防止我们自己的配置文件。&lt;/p>
+&lt;p>比如我们想实现功能：节点上插入磁盘后，执行某条命令，那么我们可以这么定义：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node90 20:05:21 rules.d&lt;span style="color:#f92672">]&lt;/span>$pwd
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/etc/udev/rules.d
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node 20:06:29 rules.d&lt;span style="color:#f92672">]&lt;/span>$cat 98-disk-udev.rules
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">==&lt;/span>&lt;span style="color:#e6db74">&amp;#34;sd[a-z]&amp;#34;&lt;/span>, SUBSYSTEM&lt;span style="color:#f92672">==&lt;/span>&lt;span style="color:#e6db74">&amp;#34;block&amp;#34;&lt;/span>, ACTION&lt;span style="color:#f92672">==&lt;/span>&lt;span style="color:#e6db74">&amp;#34;add&amp;#34;&lt;/span>, RUN&lt;span style="color:#f92672">+=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;echo add&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">==&lt;/span>&lt;span style="color:#e6db74">&amp;#34;sd[a-z]&amp;#34;&lt;/span>, SUBSYSTEM&lt;span style="color:#f92672">==&lt;/span>&lt;span style="color:#e6db74">&amp;#34;block&amp;#34;&lt;/span>, ACTION&lt;span style="color:#f92672">==&lt;/span>&lt;span style="color:#e6db74">&amp;#34;remove&amp;#34;&lt;/span>, RUN&lt;span style="color:#f92672">+=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;echo remove&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这个规则具体含义为：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>当检测到设备 &lt;code>sd[a-z]&lt;/code> , 类型为 &lt;code>block&lt;/code>且动作为 &lt;code>add&lt;/code> ，那么执行 &lt;code>echo add&lt;/code> 操作。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当检测到设备 &lt;code>sd[a-z]&lt;/code> ，类型为 &lt;code>block&lt;/code>且动作为 &lt;code>remove&lt;/code> ，那么执行 &lt;code>echo add&lt;/code> 操作。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>我们来看一个具体的例子，执行 &lt;code>udevadm monito&lt;/code> 来监控节点设备，然后插入一块 scsi 磁盘：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">[&lt;/span>root@node 20:14:04 rules.d&lt;span style="color:#f92672">]&lt;/span>$udevadm monitor
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>monitor will print the received events &lt;span style="color:#66d9ef">for&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV - the event which udev sends out after rule processing
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL - the kernel uevent
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.838205&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.838232&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.838241&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/scsi_disk/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi_disk&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.838248&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/scsi_device/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi_device&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.838344&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/scsi_generic/sg6 &lt;span style="color:#f92672">(&lt;/span>scsi_generic&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.838355&lt;span style="color:#f92672">]&lt;/span> add /devices/virtual/bdi/8:96 &lt;span style="color:#f92672">(&lt;/span>bdi&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.838364&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/bsg/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>bsg&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250923.844166&lt;span style="color:#f92672">]&lt;/span> add /devices/virtual/bdi/8:96 &lt;span style="color:#f92672">(&lt;/span>bdi&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250923.844180&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250923.844189&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250923.844196&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/scsi_device/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi_device&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250923.844203&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/scsi_disk/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>scsi_disk&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250923.848018&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/scsi_generic/sg6 &lt;span style="color:#f92672">(&lt;/span>scsi_generic&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250923.851041&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/bsg/6:0:0:0 &lt;span style="color:#f92672">(&lt;/span>bsg&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.882845&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/block/sdg &lt;span style="color:#f92672">(&lt;/span>block&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>KERNEL&lt;span style="color:#f92672">[&lt;/span>4250923.882863&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/block/sdg/sdg1 &lt;span style="color:#f92672">(&lt;/span>block&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250928.290659&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/block/sdg &lt;span style="color:#f92672">(&lt;/span>block&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>UDEV &lt;span style="color:#f92672">[&lt;/span>4250928.379634&lt;span style="color:#f92672">]&lt;/span> add /devices/pci0000:00/0000:00:1f.2/ata6/host6/target6:0:0/6:0:0:0/block/sdg/sdg1 &lt;span style="color:#f92672">(&lt;/span>block&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>可以看到 udev 监控到了设备名称，设备 pci id 以及设备触发的动作，这里与我们定义的规则相对应。&lt;/p>
+&lt;h2 id="具体使用">
+具体使用
+&lt;a class="heading-link" href="#%e5%85%b7%e4%bd%93%e4%bd%bf%e7%94%a8">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;h3 id="命令行-1">
+命令行
+&lt;a class="heading-link" href="#%e5%91%bd%e4%bb%a4%e8%a1%8c-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>在 OpenShift 的 local storage operator 中，是通过不断的执行 lsblk 比较结果来判断的，相关代码如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Run and create disk config&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">d&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">DiskMaker&lt;/span>) &lt;span style="color:#a6e22e">Run&lt;/span>(&lt;span style="color:#a6e22e">stop&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span>{}) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">ticker&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">NewTicker&lt;/span>(&lt;span style="color:#a6e22e">checkDuration&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">defer&lt;/span> &lt;span style="color:#a6e22e">ticker&lt;/span>.&lt;span style="color:#a6e22e">Stop&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">MkdirAll&lt;/span>(&lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">symlinkLocation&lt;/span>, &lt;span style="color:#ae81ff">0755&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">klog&lt;/span>.&lt;span style="color:#a6e22e">Errorf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;error creating local-storage directory %s: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">symlinkLocation&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">Exit&lt;/span>(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">select&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">ticker&lt;/span>.&lt;span style="color:#a6e22e">C&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">diskConfig&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">loadConfig&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">klog&lt;/span>.&lt;span style="color:#a6e22e">Errorf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;error loading configuration: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">symLinkDisks&lt;/span>(&lt;span style="color:#a6e22e">diskConfig&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">stop&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">klog&lt;/span>.&lt;span style="color:#a6e22e">Infof&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;exiting, received message on stop channel&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">os&lt;/span>.&lt;span style="color:#a6e22e">Exit&lt;/span>(&lt;span style="color:#ae81ff">0&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">d&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">DiskMaker&lt;/span>) &lt;span style="color:#a6e22e">symLinkDisks&lt;/span>(&lt;span style="color:#a6e22e">diskConfig&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">DiskConfig&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">cmd&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">exec&lt;/span>.&lt;span style="color:#a6e22e">Command&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;lsblk&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;--list&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;-o&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;NAME,MOUNTPOINT&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;--noheadings&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">var&lt;/span> &lt;span style="color:#a6e22e">out&lt;/span> &lt;span style="color:#a6e22e">bytes&lt;/span>.&lt;span style="color:#a6e22e">Buffer&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">var&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#66d9ef">error&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">cmd&lt;/span>.&lt;span style="color:#a6e22e">Stdout&lt;/span> = &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">out&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">err&lt;/span> = &lt;span style="color:#a6e22e">cmd&lt;/span>.&lt;span style="color:#a6e22e">Run&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">msg&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Sprintf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;error running lsblk: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">e&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">newEvent&lt;/span>(&lt;span style="color:#a6e22e">ErrorRunningBlockList&lt;/span>, &lt;span style="color:#a6e22e">msg&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">eventSync&lt;/span>.&lt;span style="color:#a6e22e">report&lt;/span>(&lt;span style="color:#a6e22e">e&lt;/span>, &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">localVolume&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">klog&lt;/span>.&lt;span style="color:#a6e22e">Errorf&lt;/span>(&lt;span style="color:#a6e22e">msg&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">deviceSet&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">findNewDisks&lt;/span>(&lt;span style="color:#a6e22e">out&lt;/span>.&lt;span style="color:#a6e22e">String&lt;/span>())
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">msg&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Sprintf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;error reading blocklist: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">e&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">newEvent&lt;/span>(&lt;span style="color:#a6e22e">ErrorReadingBlockList&lt;/span>, &lt;span style="color:#a6e22e">msg&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">eventSync&lt;/span>.&lt;span style="color:#a6e22e">report&lt;/span>(&lt;span style="color:#a6e22e">e&lt;/span>, &lt;span style="color:#a6e22e">d&lt;/span>.&lt;span style="color:#a6e22e">localVolume&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">klog&lt;/span>.&lt;span style="color:#a6e22e">Errorf&lt;/span>(&lt;span style="color:#a6e22e">msg&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> len(&lt;span style="color:#a6e22e">deviceSet&lt;/span>) &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">klog&lt;/span>.&lt;span style="color:#a6e22e">V&lt;/span>(&lt;span style="color:#ae81ff">3&lt;/span>).&lt;span style="color:#a6e22e">Infof&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;unable to find any new disks&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">...&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="udev-1">
+UDEV
+&lt;a class="heading-link" href="#udev-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;p>在 Rook 项目中，除了通过 lsblk 来获取设备，还监控了 udev 规则，具体代码如下：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Scans `udevadm monitor` output for block sub-system events. Each line of&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// output matching a set of substrings is sent to the provided channel. An event&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// is returned if it passes any matches tests, and passes all exclusion tests.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">rawUdevBlockMonitor&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span> &lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>, &lt;span style="color:#a6e22e">matches&lt;/span>, &lt;span style="color:#a6e22e">exclusions&lt;/span> []&lt;span style="color:#66d9ef">string&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">defer&lt;/span> close(&lt;span style="color:#a6e22e">c&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// stdbuf -oL performs line bufferred output&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 后台执行 udevadm monitor 命令&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">cmd&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">exec&lt;/span>.&lt;span style="color:#a6e22e">Command&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;stdbuf&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;-oL&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;udevadm&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;monitor&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;-u&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;-k&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;-s&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;block&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">stdout&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">cmd&lt;/span>.&lt;span style="color:#a6e22e">StdoutPipe&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">logger&lt;/span>.&lt;span style="color:#a6e22e">Warningf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Cannot open udevadm stdout: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">err&lt;/span> = &lt;span style="color:#a6e22e">cmd&lt;/span>.&lt;span style="color:#a6e22e">Start&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">logger&lt;/span>.&lt;span style="color:#a6e22e">Warningf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Cannot start udevadm monitoring: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 通过 bufio.NewScanner 实时获取 udevadm monitor 命令输出结果&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">scanner&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">bufio&lt;/span>.&lt;span style="color:#a6e22e">NewScanner&lt;/span>(&lt;span style="color:#a6e22e">stdout&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> &lt;span style="color:#a6e22e">scanner&lt;/span>.&lt;span style="color:#a6e22e">Scan&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">text&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">scanner&lt;/span>.&lt;span style="color:#a6e22e">Text&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">logger&lt;/span>.&lt;span style="color:#a6e22e">Debugf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;udevadm monitor: %s&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">text&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 对输出结果进行正则匹配&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">match&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">matchUdevEvent&lt;/span>(&lt;span style="color:#a6e22e">text&lt;/span>, &lt;span style="color:#a6e22e">matches&lt;/span>, &lt;span style="color:#a6e22e">exclusions&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">logger&lt;/span>.&lt;span style="color:#a6e22e">Warningf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;udevadm filtering failed: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">match&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 若匹配成功，则将结果发送到对应 channel，即 events&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span> &lt;span style="color:#a6e22e">text&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">scanner&lt;/span>.&lt;span style="color:#a6e22e">Err&lt;/span>(); &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">logger&lt;/span>.&lt;span style="color:#a6e22e">Warningf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;udevadm monitor scanner error: %v&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">err&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">logger&lt;/span>.&lt;span style="color:#a6e22e">Info&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;udevadm monitor finished&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Monitors udev for block device changes, and collapses these events such that&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// only one event is emitted per period in order to deal with flapping.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">udevBlockMonitor&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span> &lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>, &lt;span style="color:#a6e22e">period&lt;/span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">Duration&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">defer&lt;/span> close(&lt;span style="color:#a6e22e">c&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// return any add or remove events, but none that match device mapper&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// events. string matching is case-insensitve&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 定义 events channel，用于传输匹配结果&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">events&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> make(&lt;span style="color:#66d9ef">chan&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">go&lt;/span> &lt;span style="color:#a6e22e">rawUdevBlockMonitor&lt;/span>(&lt;span style="color:#a6e22e">events&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 正则表达式，用于获取设备名称&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> []&lt;span style="color:#66d9ef">string&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;(?i)add&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;(?i)remove&amp;#34;&lt;/span>},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> []&lt;span style="color:#66d9ef">string&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;(?i)dm-[0-9]+&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;(?i)rbd[0-9]+&amp;#34;&lt;/span>})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 死循环，不断从 events channel 中获取匹配后的结果&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">event&lt;/span>, &lt;span style="color:#a6e22e">ok&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">events&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> !&lt;span style="color:#a6e22e">ok&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">timeout&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">time&lt;/span>.&lt;span style="color:#a6e22e">NewTimer&lt;/span>(&lt;span style="color:#a6e22e">period&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 这里如果在 timeout 时间周期内，出现多次 events，貌似会丢弃掉后续 event 信息，不知道出于什么考虑。。&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">select&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">timeout&lt;/span>.&lt;span style="color:#a6e22e">C&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#a6e22e">_&lt;/span>, &lt;span style="color:#a6e22e">ok&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span>&lt;span style="color:#a6e22e">events&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> !&lt;span style="color:#a6e22e">ok&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">continue&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">c&lt;/span> &lt;span style="color:#f92672">&amp;lt;-&lt;/span> &lt;span style="color:#a6e22e">event&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="参考链接">
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="http://www.reactivated.net/writing_udev_rules.html" class="external-link" target="_blank" rel="noopener">http://www.reactivated.net/writing_udev_rules.html&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.thegeekdiary.com/beginners-guide-to-udev-in-linux/" class="external-link" target="_blank" rel="noopener">https://www.thegeekdiary.com/beginners-guide-to-udev-in-linux/&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Heap In Python &amp; Golang</title><link>https://zdyxry.github.io/2019/07/28/heap-in-python-golang/</link><pubDate>Sun, 28 Jul 2019 12:11:45 +0000</pubDate><guid>https://zdyxry.github.io/2019/07/28/heap-in-python-golang/</guid><description>&lt;h2 id="背景">
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>最近使用到了 heap 这个数据结构，记录一下在 Python 和 Golang 中最基本的使用方法～&lt;/p>
+&lt;blockquote>
+&lt;p>堆（英语：Heap）是计算机科学中的一種特別的樹狀数据结构。若是滿足以下特性，即可稱為堆積：「給定堆積中任意節點P和C，若P是C的母節點，那麼P的值會小於等於（或大於等於）C的值」。若母節點的值恆小於等於子節點的值，此堆積稱為最小堆積（min heap）；反之，若母節點的值恆大於等於子節點的值，此堆積稱為最大堆積（max heap）。在堆積中最頂端的那一個節點，稱作根節點（root node），根節點本身沒有母節點（parent node）。&lt;/p>&lt;/blockquote>
+&lt;h2 id="python">
+Python
+&lt;a class="heading-link" href="#python">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;h3 id="create">
+create
+&lt;a class="heading-link" href="#create">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">1&lt;/span>]: &lt;span style="color:#f92672">import&lt;/span> heapq
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">2&lt;/span>]: a &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#ae81ff">1&lt;/span>,&lt;span style="color:#ae81ff">3&lt;/span>,&lt;span style="color:#ae81ff">2&lt;/span>,&lt;span style="color:#ae81ff">5&lt;/span>,&lt;span style="color:#ae81ff">4&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">3&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heapify(a)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">4&lt;/span>]: a
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">4&lt;/span>]: [&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">5&lt;/span>]: b &lt;span style="color:#f92672">=&lt;/span> []
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">6&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappu
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>heapq&lt;span style="color:#f92672">.&lt;/span>heappush heapq&lt;span style="color:#f92672">.&lt;/span>heappushpop
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">6&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappush(b, &lt;span style="color:#ae81ff">1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">7&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappush(b, &lt;span style="color:#ae81ff">3&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">8&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappush(b, &lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">9&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappush(b, &lt;span style="color:#ae81ff">5&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">10&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappush(b, &lt;span style="color:#ae81ff">4&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">11&lt;/span>]: b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">11&lt;/span>]: [&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="read">
+read
+&lt;a class="heading-link" href="#read">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">28&lt;/span>]: b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">28&lt;/span>]: [&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">29&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>nlargest(&lt;span style="color:#ae81ff">3&lt;/span>, b)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">29&lt;/span>]: [&lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">30&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>nsmallest(&lt;span style="color:#ae81ff">2&lt;/span>, b)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">30&lt;/span>]: [&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="update">
+update
+&lt;a class="heading-link" href="#update">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">32&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappush(b, &lt;span style="color:#ae81ff">6&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">33&lt;/span>]: b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">33&lt;/span>]: [&lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">39&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heapreplace(b, &lt;span style="color:#ae81ff">7&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">39&lt;/span>]: &lt;span style="color:#ae81ff">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">40&lt;/span>]: b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">40&lt;/span>]: [&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">7&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">41&lt;/span>]: a &lt;span style="color:#f92672">=&lt;/span> [&lt;span style="color:#ae81ff">6&lt;/span>,&lt;span style="color:#ae81ff">8&lt;/span>,&lt;span style="color:#ae81ff">7&lt;/span>,&lt;span style="color:#ae81ff">9&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">42&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heapify(a)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">43&lt;/span>]: b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">43&lt;/span>]: [&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">7&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">45&lt;/span>]: c &lt;span style="color:#f92672">=&lt;/span> heapq&lt;span style="color:#f92672">.&lt;/span>merge(a,b)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">46&lt;/span>]: list(c)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">46&lt;/span>]: [&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">7&lt;/span>, &lt;span style="color:#ae81ff">8&lt;/span>, &lt;span style="color:#ae81ff">7&lt;/span>, &lt;span style="color:#ae81ff">9&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="delete">
+delete
+&lt;a class="heading-link" href="#delete">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">50&lt;/span>]: b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">50&lt;/span>]: [&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">7&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">51&lt;/span>]: heapq&lt;span style="color:#f92672">.&lt;/span>heappop(b)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">51&lt;/span>]: &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>In [&lt;span style="color:#ae81ff">52&lt;/span>]: b
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Out[&lt;span style="color:#ae81ff">52&lt;/span>]: [&lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#ae81ff">7&lt;/span>, &lt;span style="color:#ae81ff">6&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="golang">
+Golang
+&lt;a class="heading-link" href="#golang">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>Golang 中没有 heapq 这种封装好的库可以直接使用，不过有 &lt;code>container/heap&lt;/code> ，提供了同样的方法，只是我们需要先对我们的操作对象实现搜有的 &lt;code>heap.Interface&lt;/code> 方法。&lt;/p>
+&lt;h2 id="constructor">
+Constructor
+&lt;a class="heading-link" href="#constructor">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// This example demonstrates an integer heap built using the heap interface.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;container/heap&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// An IntHeap is a min-heap of ints.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span> []&lt;span style="color:#66d9ef">int&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Len&lt;/span>() &lt;span style="color:#66d9ef">int&lt;/span> { &lt;span style="color:#66d9ef">return&lt;/span> len(&lt;span style="color:#a6e22e">h&lt;/span>) }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Less&lt;/span>(&lt;span style="color:#a6e22e">i&lt;/span>, &lt;span style="color:#a6e22e">j&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span>) &lt;span style="color:#66d9ef">bool&lt;/span> { &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">i&lt;/span>] &amp;lt; &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">j&lt;/span>] }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Swap&lt;/span>(&lt;span style="color:#a6e22e">i&lt;/span>, &lt;span style="color:#a6e22e">j&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span>) { &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">i&lt;/span>], &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">j&lt;/span>] = &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">j&lt;/span>], &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">i&lt;/span>] }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Push&lt;/span>(&lt;span style="color:#a6e22e">x&lt;/span> &lt;span style="color:#66d9ef">interface&lt;/span>{}) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Push and Pop use pointer receivers because they modify the slice&amp;#39;s length,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// not just its contents.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span> = append(&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span>, &lt;span style="color:#a6e22e">x&lt;/span>.(&lt;span style="color:#66d9ef">int&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// 取最后一个元素，在 `container/heap.Pop` 中，将堆顶的元素放置在最后，然后调用 `container/heap.Down` 将当前堆顶元素下沉到适当位置。&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Pop&lt;/span>() &lt;span style="color:#66d9ef">interface&lt;/span>{} {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">old&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">n&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> len(&lt;span style="color:#a6e22e">old&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">x&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">old&lt;/span>[&lt;span style="color:#a6e22e">n&lt;/span>&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span> = &lt;span style="color:#a6e22e">old&lt;/span>[&lt;span style="color:#ae81ff">0&lt;/span> : &lt;span style="color:#a6e22e">n&lt;/span>&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">x&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// // An IntHeap is a max-heap of ints.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">MaxHeap&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">IntHeap&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#a6e22e">MaxHeap&lt;/span>) &lt;span style="color:#a6e22e">Less&lt;/span>(&lt;span style="color:#a6e22e">i&lt;/span>, &lt;span style="color:#a6e22e">j&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span>) &lt;span style="color:#66d9ef">bool&lt;/span> { &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">h&lt;/span>.&lt;span style="color:#a6e22e">IntHeap&lt;/span>[&lt;span style="color:#a6e22e">i&lt;/span>] &amp;gt; &lt;span style="color:#a6e22e">h&lt;/span>.&lt;span style="color:#a6e22e">IntHeap&lt;/span>[&lt;span style="color:#a6e22e">j&lt;/span>] }
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="create-1">
+create
+&lt;a class="heading-link" href="#create-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// This example demonstrates an integer heap built using the heap interface.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;container/heap&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// This example inserts several ints into an IntHeap, checks the minimum,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// and removes them in order of priority.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>{&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Init&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Push&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;minimum: %d\n&amp;#34;&lt;/span>, (&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span>)[&lt;span style="color:#ae81ff">0&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> &lt;span style="color:#a6e22e">h&lt;/span>.&lt;span style="color:#a6e22e">Len&lt;/span>() &amp;gt; &lt;span style="color:#ae81ff">0&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;%d &amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Pop&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="read-1">
+read
+&lt;a class="heading-link" href="#read-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;container/heap&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>{&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Init&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Push&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;minimum: %d\n&amp;#34;&lt;/span>, (&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span>)[&lt;span style="color:#ae81ff">0&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> &lt;span style="color:#a6e22e">h&lt;/span>.&lt;span style="color:#a6e22e">Len&lt;/span>() &amp;gt; &lt;span style="color:#ae81ff">0&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;%d &amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Pop&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">h1&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">MaxHeap&lt;/span>{[]&lt;span style="color:#66d9ef">int&lt;/span>{&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>}}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Init&lt;/span>(&lt;span style="color:#a6e22e">h1&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Push&lt;/span>(&lt;span style="color:#a6e22e">h1&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;maximum: %d\n&amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">h1&lt;/span>.&lt;span style="color:#a6e22e">IntHeap&lt;/span>[&lt;span style="color:#ae81ff">0&lt;/span>])
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> &lt;span style="color:#a6e22e">h1&lt;/span>.&lt;span style="color:#a6e22e">Len&lt;/span>() &amp;gt; &lt;span style="color:#ae81ff">0&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;%d &amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Pop&lt;/span>(&lt;span style="color:#a6e22e">h1&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="update-1">
+update
+&lt;a class="heading-link" href="#update-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;container/heap&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>{&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Init&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Push&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> &lt;span style="color:#a6e22e">h&lt;/span>.&lt;span style="color:#a6e22e">Len&lt;/span>() &amp;gt; &lt;span style="color:#ae81ff">0&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;%d &amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Pop&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="delete-1">
+delete
+&lt;a class="heading-link" href="#delete-1">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// This example demonstrates an integer heap built using the heap interface.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;container/heap&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// An IntHeap is a min-heap of ints.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span> []&lt;span style="color:#66d9ef">int&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Len&lt;/span>() &lt;span style="color:#66d9ef">int&lt;/span> { &lt;span style="color:#66d9ef">return&lt;/span> len(&lt;span style="color:#a6e22e">h&lt;/span>) }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Less&lt;/span>(&lt;span style="color:#a6e22e">i&lt;/span>, &lt;span style="color:#a6e22e">j&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span>) &lt;span style="color:#66d9ef">bool&lt;/span> { &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">i&lt;/span>] &amp;lt; &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">j&lt;/span>] }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Swap&lt;/span>(&lt;span style="color:#a6e22e">i&lt;/span>, &lt;span style="color:#a6e22e">j&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span>) { &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">i&lt;/span>], &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">j&lt;/span>] = &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">j&lt;/span>], &lt;span style="color:#a6e22e">h&lt;/span>[&lt;span style="color:#a6e22e">i&lt;/span>] }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Push&lt;/span>(&lt;span style="color:#a6e22e">x&lt;/span> &lt;span style="color:#66d9ef">interface&lt;/span>{}) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Push and Pop use pointer receivers because they modify the slice&amp;#39;s length,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// not just its contents.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span> = append(&lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span>, &lt;span style="color:#a6e22e">x&lt;/span>.(&lt;span style="color:#66d9ef">int&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> (&lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>) &lt;span style="color:#a6e22e">Pop&lt;/span>() &lt;span style="color:#66d9ef">interface&lt;/span>{} {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">old&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">n&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> len(&lt;span style="color:#a6e22e">old&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">x&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">old&lt;/span>[&lt;span style="color:#a6e22e">n&lt;/span>&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">h&lt;/span> = &lt;span style="color:#a6e22e">old&lt;/span>[&lt;span style="color:#ae81ff">0&lt;/span> : &lt;span style="color:#a6e22e">n&lt;/span>&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">x&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// This example inserts several ints into an IntHeap, checks the minimum,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// and removes them in order of priority.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">h&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">IntHeap&lt;/span>{&lt;span style="color:#ae81ff">2&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#ae81ff">5&lt;/span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Init&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Push&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Println&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Remove&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span> &lt;span style="color:#a6e22e">h&lt;/span>.&lt;span style="color:#a6e22e">Len&lt;/span>() &amp;gt; &lt;span style="color:#ae81ff">0&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">fmt&lt;/span>.&lt;span style="color:#a6e22e">Printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;%d &amp;#34;&lt;/span>, &lt;span style="color:#a6e22e">heap&lt;/span>.&lt;span style="color:#a6e22e">Pop&lt;/span>(&lt;span style="color:#a6e22e">h&lt;/span>))
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="总结">
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;p>Heap 的使用场景有：优先级队列、TopK 等等。&lt;/p>
+&lt;h2 id="参考链接">
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5">
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
+&lt;span class="sr-only">链接到标题&lt;/span>
+&lt;/a>
+&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="https://godoc.org/container/heap" class="external-link" target="_blank" rel="noopener">https://godoc.org/container/heap&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://docs.python.org/3.7/library/heapq.html" class="external-link" target="_blank" rel="noopener">https://docs.python.org/3.7/library/heapq.html&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://ieevee.com/tech/2018/01/29/go-heap.html" class="external-link" target="_blank" rel="noopener">https://ieevee.com/tech/2018/01/29/go-heap.html&lt;/a>&lt;/li>
+&lt;/ul></description></item></channel></rss>
