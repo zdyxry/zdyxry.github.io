@@ -48,6 +48,7 @@ email: zdyxry#gmail.com
 * 20230305 从 Hexo 转到 Hugo
 * 20230606 豆瓣记录迁移至 NeoDB
 * 20240809 调整 RSS 模版样式
+* 20250810 增加 Running 页面
 
 
 ## 知识共享协议
