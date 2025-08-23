@@ -122,7 +122,8 @@ class GarminDataFetcher:
             activity_type = activity.get('activityType', {})
             type_key = activity_type.get('typeKey', 'unknown')
             display_name = activity_type.get('displayName', 'unknown')
-            logger.info(f"活动 {i+1}: typeKey={type_key}, displayName={display_name}")
+            activity_category = self._get_activity_type(activity)
+            logger.info(f"活动 {i+1}: typeKey={type_key}, displayName={display_name}, category={activity_category}")
 
         # 尝试多种可能的跑步活动类型标识
         running_type_keys = ['running', 'run', 'jogging', 'trail_running', 'treadmill_running']
@@ -140,15 +141,58 @@ class GarminDataFetcher:
                 'run' in type_key or
                 'running' in type_key or
                 'run' in display_name or
-                'running' in display_name
+                'running' in display_name or
+                'treadmill' in type_key or
+                'treadmill' in display_name
             )
 
             if is_running:
                 running_activities.append(activity)
-                logger.info(f"找到跑步活动: {activity.get('startTimeLocal', '')} - {display_name}")
+                activity_category = self._get_activity_type(activity)
+                logger.info(f"找到跑步活动: {activity.get('startTimeLocal', '')} - {display_name} ({activity_category})")
 
         logger.info(f"过滤出 {len(running_activities)} 个跑步活动")
         return running_activities
+
+    def _get_activity_type(self, activity: Dict[str, Any]) -> str:
+        """
+        获取跑步活动类型（室外跑步或跑步机）
+
+        Args:
+            activity: 活动数据
+
+        Returns:
+            活动类型字符串：'室外跑步', '跑步机', '未知'
+        """
+        activity_type = activity.get('activityType', {})
+        type_key = activity_type.get('typeKey', '').lower()
+        display_name = activity_type.get('displayName', '').lower()
+
+        # 判断是否为跑步机
+        if ('treadmill' in type_key or
+            'treadmill' in display_name or
+            '跑步机' in display_name or
+            type_key == 'treadmill_running'):
+            return '跑步机'
+
+        # 判断是否为越野跑
+        elif ('trail' in type_key or
+              'trail' in display_name or
+              '越野' in display_name or
+              type_key == 'trail_running'):
+            return '越野跑'
+
+        # 判断是否为室外跑步（默认情况）
+        elif (type_key in ['running', 'run', 'jogging'] or
+              'running' in type_key or
+              'run' in type_key or
+              'jogging' in type_key or
+              '跑步' in display_name):
+            return '室外跑步'
+
+        # 其他情况返回未知
+        else:
+            return '未知'
 
     def format_running_data(self, activities: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -204,7 +248,8 @@ class GarminDataFetcher:
                 'heart_rate': activity.get('averageHR', 0),
                 'cadence': activity.get('avgRunningCadenceInStepsPerMinute', 0),
                 'route': activity.get('locationName', '未知路线'),
-                'weather': self._get_weather_info(activity)
+                'weather': self._get_weather_info(activity),
+                'activity_type': self._get_activity_type(activity)
             }
 
             formatted_runs.append(run_data)
@@ -305,14 +350,21 @@ class GarminDataFetcher:
         Returns:
             合并后的数据
         """
-        # 获取现有跑步记录的日期集合
-        existing_dates = {run['date'] for run in existing_data.get('runs', [])}
+        # 获取现有跑步记录的日期到记录的映射
+        existing_runs_map = {run['date']: run for run in existing_data.get('runs', [])}
 
-        # 添加新跑步记录（不重复的）
+        # 处理新跑步记录
         for new_run in new_data.get('runs', []):
-            if new_run['date'] not in existing_dates:
+            if new_run['date'] in existing_runs_map:
+                # 更新现有记录，添加新字段
+                existing_run = existing_runs_map[new_run['date']]
+                # 只更新缺失的字段，保留现有数据
+                for key, value in new_run.items():
+                    if key not in existing_run:
+                        existing_run[key] = value
+            else:
+                # 添加新记录
                 existing_data['runs'].append(new_run)
-                existing_dates.add(new_run['date'])
 
         # 按日期排序（最新的在前）
         existing_data['runs'].sort(key=lambda x: x['date'], reverse=True)
