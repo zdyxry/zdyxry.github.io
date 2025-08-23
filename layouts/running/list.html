@@ -9,6 +9,122 @@
     {{ if not $data }}
       <p>暂无数据。</p>
     {{ else }}
+    <h2>年度跑步日历</h2>
+    <div id="cal-heatmap" style="height: 200px; overflow: visible;"></div>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/cal-heatmap.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/cal-heatmap.css">
+
+    <script>
+      const cal = new CalHeatmap();
+      const runningData = {{ site.Data.running.runs | jsonify | safeJS }};
+
+      // 找到数据中的最新日期
+      let latestDate = new Date(0); // 初始化为最早日期
+      runningData.forEach(run => {
+        const runDate = new Date(run.date.split(' ')[0]);
+        if (runDate > latestDate) {
+          latestDate = runDate;
+        }
+      });
+
+      // 如果没有数据，使用当前日期
+      if (latestDate.getTime() === 0) {
+        latestDate = new Date();
+      }
+
+      // 直接设置显示范围：从2024年9月到2025年8月
+      // 如果当前是2025年8月，我们要显示过去12个月
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth(); // 0-based, 8月是7
+
+      // 强制设置为2024年9月1日开始，使用UTC避免时区问题
+      const startDate = new Date(Date.UTC(2024, 8, 1)); // 月份8 = 9月（0-based）
+
+      console.log('Current date:', currentDate.toISOString());
+      console.log('Force start date to:', startDate.toISOString());
+      console.log('Month check - startDate month (0-based):', startDate.getMonth(), 'should be 8 for September');
+      console.log('This should show 12 months: 2024-09 to 2025-08');
+
+      const processedData = {};
+      runningData.forEach(run => {
+        const runDate = new Date(run.date.split(' ')[0]);
+        // 使用计算出的起始日期过滤数据
+        if (runDate >= startDate) {
+          const dateStr = runDate.toISOString().split('T')[0];
+          if (processedData[dateStr]) {
+            processedData[dateStr] += run.distance;
+          } else {
+            processedData[dateStr] = run.distance;
+          }
+        }
+      });
+
+      const heatmapData = Object.keys(processedData).map(date => {
+        return { date: date, value: Math.round(processedData[date] * 10) / 10 };
+      });
+
+      console.log('Processed data points:', Object.keys(processedData).length);
+      console.log('Start date for heatmap:', startDate.toLocaleDateString());
+
+      cal.paint({
+        itemSelector: "#cal-heatmap",
+        domain: {
+          type: "month",
+          label: {
+            text: (timestamp) => {
+              const date = new Date(timestamp);
+              return d3.timeFormat('%Y-%m')(date);
+            },
+            position: "bottom",
+            textAlign: "start"
+          },
+          range: 12, // 改回12个月
+        },
+        subDomain: {
+          type: "ghDay",
+          radius: 2,
+          width: 15,
+          height: 15,
+          gutter: 2,
+          label: {
+            text: (timestamp) => {
+              const day = new Date(timestamp).getDay();
+              if (day === 1 || day === 3 || day === 5) {
+                  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day];
+              }
+              return '';
+            },
+            position: 'left',
+            textAlign: 'end',
+            width: 30,
+          },
+        },
+        data: {
+          source: heatmapData,
+          x: 'date',
+          y: 'value'
+        },
+        scale: {
+          color: {
+            type: 'threshold',
+            range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'],
+            domain: [1, 3, 5, 10],
+          },
+        },
+        date: {
+            start: startDate
+        },
+        legend: {
+            show: true,
+            tickSize: 0,
+            itemSelector: '#cal-heatmap-legend',
+            label: '跑步距离 (km)',
+        },
+      });
+    </script>
+    <div id="cal-heatmap-legend"></div>
   <h2>最近活动</h2>
   <div class="table-wrap">
   <table class="running-table">
