@@ -86,6 +86,15 @@ description:
 
 ---
 
+[996 | Armin Ronacher's Thoughts and Writings](https://lucumr.pocoo.org/2025/9/4/996/)
+
+> More importantly, a successful company is not a sprint, it’s a marathon.
+
+> And this is when this is your own company! When you devote 72 hours a week to someone else’s startup, you need to really think about that arrangement a few times.
+
+---
+
+
 
 ### 书影播客
 
