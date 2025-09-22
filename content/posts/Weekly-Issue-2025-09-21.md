@@ -20,7 +20,7 @@ description:
 
 [人人都能写程序：Vibe Coding 与问题规模](https://blog.lyric.im/p/everyone-can-code-vibe-coding-and-problem-scale?utm_source=twitter&utm_medium=social&utm_campaign=newsletter)
 
-> ## 程序 / 服务是商品  
+> 程序 / 服务是商品  
 > 不会写程序的人，通过**购买软件或订阅服务**来租用别人的解决方案。   
 > 供应方卖的不是代码，卖的是**可持续的可靠性**与**持续维护**。   
 
