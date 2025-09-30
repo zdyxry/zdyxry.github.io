@@ -33,19 +33,25 @@
         latestDate = new Date();
       }
 
-      // 直接设置显示范围：从2024年9月到2025年8月
-      // 如果当前是2025年8月，我们要显示过去12个月
+      // 自动计算显示范围：显示从11个月前到当前月的数据（共12个月）
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth(); // 0-based, 8月是7
+      const currentMonth = currentDate.getMonth(); // 0-based, 0=1月, 11=12月
 
-      // 强制设置为2024年9月1日开始，使用UTC避免时区问题
-      const startDate = new Date(Date.UTC(2024, 10, 1)); // 月份9 = 10月（0-based）
+      // 计算11个月前的年份和月份
+      let startYear = currentYear;
+      let startMonth = currentMonth - 11;
+      if (startMonth < 0) {
+        startMonth += 12;
+        startYear -= 1;
+      }
 
-      // console.log('Current date:', currentDate.toISOString());
-      // console.log('Force start date to:', startDate.toISOString());
-      // console.log('Month check - startDate month (0-based):', startDate.getMonth(), 'should be 8 for September');
-      // console.log('This should show 12 months: 2024-09 to 2025-08');
+      // 设置为该月的1号，使用UTC避免时区问题
+      const startDate = new Date(Date.UTC(startYear, startMonth, 1));
+
+      console.log('Current date:', currentDate.toISOString());
+      console.log('Auto-calculated start date:', startDate.toISOString());
+      console.log('Showing 12 months from', startDate.toLocaleDateString(), 'to current month');
 
       const processedData = {};
       runningData.forEach(run => {
