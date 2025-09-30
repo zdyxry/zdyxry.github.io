@@ -14,10 +14,16 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/cal-heatmap.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/cal-heatmap.css">
+    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/plugins/Tooltip.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.2/dist/plugins/Legend.min.js"></script>
 
     <script>
       const cal = new CalHeatmap();
       const runningData = {{ site.Data.running.runs | jsonify | safeJS }};
+
+      console.log('Tooltip plugin available:', typeof Tooltip !== 'undefined');
+      console.log('Legend plugin available:', typeof Legend !== 'undefined');
 
       // 找到数据中的最新日期
       let latestDate = new Date(0); // 初始化为最早日期
@@ -122,13 +128,27 @@
         date: {
             start: startDate
         },
-        legend: {
-            show: true,
-            tickSize: 0,
+      }, [
+        [
+          Tooltip,
+          {
+            text: function(date, value, dayjsDate) {
+              if (!value) {
+                return dayjsDate.format('YYYY-MM-DD') + ': 无运动记录';
+              }
+              return dayjsDate.format('YYYY-MM-DD') + ': ' + value + ' km';
+            }
+          }
+        ],
+        [
+          Legend,
+          {
             itemSelector: '#cal-heatmap-legend',
             label: '跑步距离 (km)',
-        },
-      });
+            width: 100,
+          }
+        ]
+      ]);
     </script>
     <div id="cal-heatmap-legend"></div>
   <h2>最近活动</h2>
