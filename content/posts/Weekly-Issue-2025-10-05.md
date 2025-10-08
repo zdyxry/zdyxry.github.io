@@ -38,6 +38,7 @@ We’re here to solve problems, not look cool..
 ---
 
 [TiDB 源码阅读（一）：服务监听、请求处理流程概览 - Jiajun的技术笔记](https://jiajunhuang.com/articles/2025_10_01-tidb_source_code.md.html)
+
 [TiDB 源码阅读（二）：MySQL协议概览 - Jiajun的技术笔记](https://jiajunhuang.com/articles/2025_10_02-tidb_source_code_mysql_protocol.md.html)
 
 [TiDB 源码阅读（三）：插入数据 - Jiajun的技术笔记](https://jiajunhuang.com/articles/2025_10_03-tidb_source_code_insert.md.html)
