@@ -34,7 +34,7 @@ description:
 
 [Pricing changes for GitHub Actions - GitHub Resources](https://resources.github.com/actions/2026-pricing-changes-for-github-actions/)
 
-[[github]] [[Actions]] self-hosted runner 将要收费，$0.002 没分钟，public repo 不受影响。如果在自己的 private repo 中跑一些定时任务的构建，需要考虑一下是否需要迁移。
+[[github]] [[Actions]] self-hosted runner 将要收费，$0.002 每分钟，public repo 不受影响。如果在自己的 private repo 中跑一些定时任务的构建，需要考虑一下是否需要迁移。
 
 Github 搞了一个 pricing calc 来帮助用户计算自己的成本，这个界面交互是我用过所有 cloud pricing calc 中最糟糕的了： [Pricing Calculator · GitHub](https://github.com/pricing/calculator) 
 
@@ -118,7 +118,7 @@ PPT 的最后一页是一只兔子做瓦肯举手礼：愿你通过多吃蔬菜�
 《我呀》，王梓晗单口喜剧专场，在 B 站上可以[免费观看](https://www.bilibili.com/video/BV1PL4az2EU1/)。
 这不是一个单纯搞笑的专场，而是一个注重文本和表达的专场，这个专场的文字稿如果单独拿出来看，应该也会是一个非常精彩的叙事作品。
 
-专场内容就是标题，讲述的是“我“。这样一个从小是别人家孩子，无论是家庭还是学习都是佼佼者，但是唯独缺少了“我“，一直在迎合着别人的期待。母亲是非常典型的“东亚母亲“，因为职业是教师，还是个加强版本，父亲是警察，存在感很低。她在大四的时候确诊了重度抑郁，于是开始了自己的心理治疗，甚至因为心理医生太过于紧张，她都会去找一些景点案例来编造故事，让心理医生感觉“这道题我学过“。
+专场内容就是标题，讲述的是“我“。这样一个从小是别人家孩子，无论是家庭还是学习都是佼佼者，但是唯独缺少了“我“，一直在迎合着别人的期待。母亲是非常典型的“东亚母亲“，因为职业是教师，还是个加强版本，父亲是警察，存在感很低。她在大四的时候确诊了重度抑郁，于是开始了自己的心理治疗，甚至因为心理医生太过于紧张，她都会去找一些经典案例来编造故事，让心理医生感觉“这道题我学过“。
 
 越缺少什么，就越想要什么。
 
