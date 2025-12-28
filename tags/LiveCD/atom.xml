@@ -1,145 +1,145 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>LiveCD on Yiran's Blog</title><link>https://zdyxry.github.io/tags/LiveCD/</link><description>Recent content in LiveCD on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sat, 04 Aug 2018 06:39:28 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/LiveCD/atom.xml" rel="self" type="application/rss+xml"/><item><title>CentOS LiveCD 构建及修改方式</title><link>https://zdyxry.github.io/2018/08/04/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</link><pubDate>Sat, 04 Aug 2018 06:39:28 +0000</pubDate><guid>https://zdyxry.github.io/2018/08/04/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</guid><description>&lt;h2 id="背景">
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>LiveCD on Yiran's Blog</title><link>https://zdyxry.github.io/tags/LiveCD/</link><description>Recent content in LiveCD on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sat, 04 Aug 2018 06:39:28 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/LiveCD/atom.xml" rel="self" type="application/rss+xml"/><item><title>CentOS LiveCD 构建及修改方式</title><link>https://zdyxry.github.io/2018/08/04/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</link><pubDate>Sat, 04 Aug 2018 06:39:28 +0000</pubDate><guid>https://zdyxry.github.io/2018/08/04/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</guid><description>&lt;h2 id="背景"&gt;
 背景
-&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af">
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
-&lt;span class="sr-only">链接到标题&lt;/span>
-&lt;/a>
-&lt;/h2>
-&lt;p>Linux 作为目前服务器占比超过 60% 的操作系统，日常使用过程中，都是采用官方发布的 DVD ISO 安装，可以选择安装桌面版本还是 Minimal 版本。但是如果我们想要验证服务器硬件是否满足产品需求，就需要通过 Live CD 的方式先在内存中运行操作系统，然后进行硬件检测。通过这种方式可以在最小成本（无需安装操作系统到磁盘中）下完成硬件检测。目前 OpenStack 厂商 Mirantis 及云计算厂商 Nutanix 均采用该种方式进行产品安装前校验。要进行校验的第一步，就是构建属于我们自己的 Live CD ISO，下面以 CentOS 为例介绍如何构建和定制 Live CD ISO。&lt;/p>
-&lt;h2 id="流程">
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;Linux 作为目前服务器占比超过 60% 的操作系统，日常使用过程中，都是采用官方发布的 DVD ISO 安装，可以选择安装桌面版本还是 Minimal 版本。但是如果我们想要验证服务器硬件是否满足产品需求，就需要通过 Live CD 的方式先在内存中运行操作系统，然后进行硬件检测。通过这种方式可以在最小成本（无需安装操作系统到磁盘中）下完成硬件检测。目前 OpenStack 厂商 Mirantis 及云计算厂商 Nutanix 均采用该种方式进行产品安装前校验。要进行校验的第一步，就是构建属于我们自己的 Live CD ISO，下面以 CentOS 为例介绍如何构建和定制 Live CD ISO。&lt;/p&gt;
+&lt;h2 id="流程"&gt;
 流程
-&lt;a class="heading-link" href="#%e6%b5%81%e7%a8%8b">
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
-&lt;span class="sr-only">链接到标题&lt;/span>
-&lt;/a>
-&lt;/h2>
-&lt;ol>
-&lt;li>准备构建工具&lt;/li>
-&lt;li>编写 KickStart 脚本&lt;/li>
-&lt;li>准备软件源&lt;/li>
-&lt;li>构建&lt;/li>
-&lt;/ol>
-&lt;h3 id="构建工具">
+&lt;a class="heading-link" href="#%e6%b5%81%e7%a8%8b"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;准备构建工具&lt;/li&gt;
+&lt;li&gt;编写 KickStart 脚本&lt;/li&gt;
+&lt;li&gt;准备软件源&lt;/li&gt;
+&lt;li&gt;构建&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id="构建工具"&gt;
 构建工具
-&lt;a class="heading-link" href="#%e6%9e%84%e5%bb%ba%e5%b7%a5%e5%85%b7">
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
-&lt;span class="sr-only">链接到标题&lt;/span>
-&lt;/a>
-&lt;/h3>
-&lt;p>核心工具 &lt;a href="https://github.com/livecd-tools/livecd-tools" class="external-link" target="_blank" rel="noopener">livecd-creator&lt;/a>。
-构建环境为 CentOS 7。指定官方 yum repo：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>root@yiran-30-250:/etc/yum.repos.d
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> $ ll
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>总用量 56K
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r-- &lt;span style="color:#ae81ff">1&lt;/span> root root 1.7K 1月 &lt;span style="color:#ae81ff">15&lt;/span> &lt;span style="color:#ae81ff">2018&lt;/span> CentOS-Base.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r--. &lt;span style="color:#ae81ff">1&lt;/span> root root 1.3K 12月 &lt;span style="color:#ae81ff">9&lt;/span> &lt;span style="color:#ae81ff">2015&lt;/span> CentOS-CR.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r--. &lt;span style="color:#ae81ff">1&lt;/span> root root &lt;span style="color:#ae81ff">649&lt;/span> 12月 &lt;span style="color:#ae81ff">9&lt;/span> &lt;span style="color:#ae81ff">2015&lt;/span> CentOS-Debuginfo.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r--. &lt;span style="color:#ae81ff">1&lt;/span> root root &lt;span style="color:#ae81ff">290&lt;/span> 12月 &lt;span style="color:#ae81ff">9&lt;/span> &lt;span style="color:#ae81ff">2015&lt;/span> CentOS-fasttrack.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r--. &lt;span style="color:#ae81ff">1&lt;/span> root root &lt;span style="color:#ae81ff">630&lt;/span> 12月 &lt;span style="color:#ae81ff">9&lt;/span> &lt;span style="color:#ae81ff">2015&lt;/span> CentOS-Media.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r-- &lt;span style="color:#ae81ff">1&lt;/span> root root &lt;span style="color:#ae81ff">916&lt;/span> 5月 &lt;span style="color:#ae81ff">23&lt;/span> &lt;span style="color:#ae81ff">2016&lt;/span> CentOS-SCLo-scl.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r-- &lt;span style="color:#ae81ff">1&lt;/span> root root &lt;span style="color:#ae81ff">892&lt;/span> 5月 &lt;span style="color:#ae81ff">23&lt;/span> &lt;span style="color:#ae81ff">2016&lt;/span> CentOS-SCLo-scl-rh.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r--. &lt;span style="color:#ae81ff">1&lt;/span> root root 1.3K 12月 &lt;span style="color:#ae81ff">9&lt;/span> &lt;span style="color:#ae81ff">2015&lt;/span> CentOS-Sources.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r--. &lt;span style="color:#ae81ff">1&lt;/span> root root 2.0K 12月 &lt;span style="color:#ae81ff">9&lt;/span> &lt;span style="color:#ae81ff">2015&lt;/span> CentOS-Vault.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r-- &lt;span style="color:#ae81ff">1&lt;/span> root root &lt;span style="color:#ae81ff">951&lt;/span> 10月 &lt;span style="color:#ae81ff">3&lt;/span> &lt;span style="color:#ae81ff">2017&lt;/span> epel.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r-- &lt;span style="color:#ae81ff">1&lt;/span> root root 1.1K 10月 &lt;span style="color:#ae81ff">3&lt;/span> &lt;span style="color:#ae81ff">2017&lt;/span> epel-testing.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r-- &lt;span style="color:#ae81ff">1&lt;/span> root root &lt;span style="color:#ae81ff">306&lt;/span> 7月 &lt;span style="color:#ae81ff">2&lt;/span> 13:58 mcepl-vim8-epel-7.repo
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>-rw-r--r-- &lt;span style="color:#ae81ff">1&lt;/span> root root 3.2K 6月 &lt;span style="color:#ae81ff">23&lt;/span> 19:00 smartx-idc.repo
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>通过 Yum 安装，会自动安装相应依赖软件包：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>yum install -y livecd-tools
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="kickstart-脚本">
+&lt;a class="heading-link" href="#%e6%9e%84%e5%bb%ba%e5%b7%a5%e5%85%b7"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
+&lt;p&gt;核心工具 &lt;a href="https://github.com/livecd-tools/livecd-tools" class="external-link" target="_blank" rel="noopener"&gt;livecd-creator&lt;/a&gt;。
+构建环境为 CentOS 7。指定官方 yum repo：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@yiran-30-250:/etc/yum.repos.d
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ ll
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;总用量 56K
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 1.7K 1月 15 2018 CentOS-Base.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 1.3K 12月 9 2015 CentOS-CR.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 649 12月 9 2015 CentOS-Debuginfo.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 290 12月 9 2015 CentOS-fasttrack.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 630 12月 9 2015 CentOS-Media.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 916 5月 23 2016 CentOS-SCLo-scl.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 892 5月 23 2016 CentOS-SCLo-scl-rh.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 1.3K 12月 9 2015 CentOS-Sources.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 2.0K 12月 9 2015 CentOS-Vault.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 951 10月 3 2017 epel.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 1.1K 10月 3 2017 epel-testing.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 306 7月 2 13:58 mcepl-vim8-epel-7.repo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 3.2K 6月 23 19:00 smartx-idc.repo
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;通过 Yum 安装，会自动安装相应依赖软件包：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;yum install -y livecd-tools
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="kickstart-脚本"&gt;
 KickStart 脚本
-&lt;a class="heading-link" href="#kickstart-%e8%84%9a%e6%9c%ac">
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
-&lt;span class="sr-only">链接到标题&lt;/span>
-&lt;/a>
-&lt;/h3>
-&lt;p>什么是 KickStart？许多系统管理员更愿意使用自动安装方法在其服务器上安装 Red Hat Enterprise Linux。为了满足这一需求，Red Hat 创建了 KickStart 安装方法。具体 KickStart 编写语法查看 &lt;a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-kickstart-syntax" class="external-link" target="_blank" rel="noopener">RedHat 官方&lt;/a>查看
-这里我们可以先参考&lt;a href="https://github.com/CentOS/sig-core-livemedia/blob/master/kickstarts/centos-7-livecd.cfg" class="external-link" target="_blank" rel="noopener">官方样例&lt;/a>，先确保通过官方样例可以构建成功，我们再来进行自己的定制操作。
-将官方样例下载到本地，接下来看下面一节，不着急定制。&lt;/p>
-&lt;p>如果按照官方样例已经正确构建了自己的 ISO，那么我们下面来看如何进行简单的定制，如配置网络。
+&lt;a class="heading-link" href="#kickstart-%e8%84%9a%e6%9c%ac"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
+&lt;p&gt;什么是 KickStart？许多系统管理员更愿意使用自动安装方法在其服务器上安装 Red Hat Enterprise Linux。为了满足这一需求，Red Hat 创建了 KickStart 安装方法。具体 KickStart 编写语法查看 &lt;a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-kickstart-syntax" class="external-link" target="_blank" rel="noopener"&gt;RedHat 官方&lt;/a&gt;查看
+这里我们可以先参考&lt;a href="https://github.com/CentOS/sig-core-livemedia/blob/master/kickstarts/centos-7-livecd.cfg" class="external-link" target="_blank" rel="noopener"&gt;官方样例&lt;/a&gt;，先确保通过官方样例可以构建成功，我们再来进行自己的定制操作。
+将官方样例下载到本地，接下来看下面一节，不着急定制。&lt;/p&gt;
+&lt;p&gt;如果按照官方样例已经正确构建了自己的 ISO，那么我们下面来看如何进行简单的定制，如配置网络。
 打开 KickStart.cfg 文件，我们可以看到除了特定的语法外，其他的都是 Shell 脚本，可见 KickStart 是兼容 Shell 语法的，那么我们就可以直接在 KickStart 内指定要进行的事情。
-如启动之后配置网卡信息：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># config eth0&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cat &amp;gt; /etc/sysconfig/network-scripts/ifcfg-eth0 &lt;span style="color:#e6db74">&amp;lt;&amp;lt; EOF
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">DEVICE=eth0
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">IPADDR=192.168.30.253
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">NETMASK=255.255.240.0
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">GATEWAY=192.168.16.1
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ONBOOT=yes
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">NAME=eth0
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">EOF&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ifup eth0
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>或者安装某指定软件并自动启动：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># install &amp;amp; start &amp;amp; enable dhcpd&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>yum install -y dhcpd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>systemctl enable dhcpd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>systemctl start dhcpd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>tail -n &lt;span style="color:#ae81ff">10&lt;/span> /var/lib/dhcpd/dhcpd.leases
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="准备软件源">
+如启动之后配置网卡信息：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# config eth0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;cat &amp;gt; /etc/sysconfig/network-scripts/ifcfg-eth0 &lt;span style="font-style:italic"&gt;&amp;lt;&amp;lt; EOF
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;DEVICE=eth0
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;IPADDR=192.168.30.253
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;NETMASK=255.255.240.0
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;GATEWAY=192.168.16.1
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;ONBOOT=yes
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;NAME=eth0
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;EOF&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ifup eth0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;或者安装某指定软件并自动启动：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# install &amp;amp; start &amp;amp; enable dhcpd&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;yum install -y dhcpd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;systemctl enable dhcpd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;systemctl start dhcpd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;tail -n 10 /var/lib/dhcpd/dhcpd.leases
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="准备软件源"&gt;
 准备软件源
-&lt;a class="heading-link" href="#%e5%87%86%e5%a4%87%e8%bd%af%e4%bb%b6%e6%ba%90">
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
-&lt;span class="sr-only">链接到标题&lt;/span>
-&lt;/a>
-&lt;/h3>
-&lt;p>在之前的博客中我们介绍过 RPM 及 Yum 等工具的概念及使用。
-我们现在需要构建一个本地的 Yum Repo。通用做法为：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$cd /data/
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$mkdir packages
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$cp $some_packages packages
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$createrepo .
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这样我们就创建好了一个本地的 Yum repo，如何让本地 Yum 生效呢？
-我们可以通过 http 或者 ftp 的方式配置，只需要将 /data/packages 这个路径允许通过文件方式访问。&lt;/p>
-&lt;p>上面这种方式通常用于定制化使用，我们此处为了简化操作，可以直接拷贝一个官方 ISO，挂载到本地的方式作为本地 Yum Repo。具体操作如下：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$cd /data/
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$mkdir /data/centos7
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$mount CentOS-7.4-x86_64-DVD-1708.iso /data/centos7
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$mkdir /etc/yum.repos.d/bk
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bk/
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$cat &amp;gt; /etc/yum.repos.d/local.repo &lt;span style="color:#e6db74">&amp;lt;&amp;lt; EOF
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">[local]
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">name=local
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">baseurl=file:///data/centos7
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">enabled=1
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">gpgcheck=0
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">EOF&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>我们就可以通过 yum 的方式安装软件包了。&lt;/p>
-&lt;h3 id="构建-live-cd-iso">
+&lt;a class="heading-link" href="#%e5%87%86%e5%a4%87%e8%bd%af%e4%bb%b6%e6%ba%90"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
+&lt;p&gt;在之前的博客中我们介绍过 RPM 及 Yum 等工具的概念及使用。
+我们现在需要构建一个本地的 Yum Repo。通用做法为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cd /data/
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir packages
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cp $some_packages packages
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$createrepo .
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这样我们就创建好了一个本地的 Yum repo，如何让本地 Yum 生效呢？
+我们可以通过 http 或者 ftp 的方式配置，只需要将 /data/packages 这个路径允许通过文件方式访问。&lt;/p&gt;
+&lt;p&gt;上面这种方式通常用于定制化使用，我们此处为了简化操作，可以直接拷贝一个官方 ISO，挂载到本地的方式作为本地 Yum Repo。具体操作如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cd /data/
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir /data/centos7
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mount CentOS-7.4-x86_64-DVD-1708.iso /data/centos7
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir /etc/yum.repos.d/bk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bk/
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cat &amp;gt; /etc/yum.repos.d/local.repo &lt;span style="font-style:italic"&gt;&amp;lt;&amp;lt; EOF
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;[local]
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;name=local
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;baseurl=file:///data/centos7
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;enabled=1
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;gpgcheck=0
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;EOF&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;我们就可以通过 yum 的方式安装软件包了。&lt;/p&gt;
+&lt;h3 id="构建-live-cd-iso"&gt;
 构建 Live CD ISO
-&lt;a class="heading-link" href="#%e6%9e%84%e5%bb%ba-live-cd-iso">
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
-&lt;span class="sr-only">链接到标题&lt;/span>
-&lt;/a>
-&lt;/h3>
-&lt;p>在一切准备好之后，我们开始构建 ISO。
-编辑官方样例，将 17 &amp;amp; 18 行替换为如下文件，指定我们刚刚指定的本地 Yum repo：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>repo --name&lt;span style="color:#f92672">=&lt;/span>base --baseurl&lt;span style="color:#f92672">=&lt;/span>file:///data/packages
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>使用 livecd-tools 构建名为 yiran-live.iso：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>livecd-creator -v --config centos-7-livecd.cfg --cache /var/cache/livecd --name yiran-livecd
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>构建过程大概需要 5 ~ 10 分钟，构建完成后我们可以再当前路径下看到 yiran-livecd.iso，我们来看下 ISO 中的目录结构：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>$mkdir /tmp/yiran-livecd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$mount yiran-livecd.iso /tmp/yiran-livecd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>$tree /tmp/yiran-livecd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/tmp/yiran-livecd
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── isolinux
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── boot.cat
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── initrd0.img
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── isolinux.bin
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── isolinux.cfg
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── vesamenu.c32
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ └── vmlinuz0
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└── LiveOS
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ├── osmin.img
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> └── squashfs.img
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>可以看到，用于启动引导的文件均在 isolinux 路径下，而设计到文件系统相关的文件均被打包压缩到 &lt;code>squashfs.img&lt;/code> 中，如果想要更多的定制方式，我们就需要解压这个 img 文件并修改对应路径下的内容，然后再压缩重新制作 ISO，这里不深入介绍。&lt;/p>
-&lt;h2 id="总结">
+&lt;a class="heading-link" href="#%e6%9e%84%e5%bb%ba-live-cd-iso"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
+&lt;p&gt;在一切准备好之后，我们开始构建 ISO。
+编辑官方样例，将 17 &amp;amp; 18 行替换为如下文件，指定我们刚刚指定的本地 Yum repo：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repo --name=base --baseurl=file:///data/packages
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;使用 livecd-tools 构建名为 yiran-live.iso：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;livecd-creator -v --config centos-7-livecd.cfg --cache /var/cache/livecd --name yiran-livecd
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;构建过程大概需要 5 ~ 10 分钟，构建完成后我们可以再当前路径下看到 yiran-livecd.iso，我们来看下 ISO 中的目录结构：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir /tmp/yiran-livecd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mount yiran-livecd.iso /tmp/yiran-livecd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$tree /tmp/yiran-livecd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/tmp/yiran-livecd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── isolinux
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── boot.cat
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── initrd0.img
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── isolinux.bin
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── isolinux.cfg
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── vesamenu.c32
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ └── vmlinuz0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;└── LiveOS
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ├── osmin.img
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; └── squashfs.img
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;可以看到，用于启动引导的文件均在 isolinux 路径下，而设计到文件系统相关的文件均被打包压缩到 &lt;code&gt;squashfs.img&lt;/code&gt; 中，如果想要更多的定制方式，我们就需要解压这个 img 文件并修改对应路径下的内容，然后再压缩重新制作 ISO，这里不深入介绍。&lt;/p&gt;
+&lt;h2 id="总结"&gt;
 总结
-&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93">
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题">&lt;/i>
-&lt;span class="sr-only">链接到标题&lt;/span>
-&lt;/a>
-&lt;/h2>
-&lt;p>构建属于自己的 ISO 可以很方便的在日常工作中开展工作，我们可以直接挂载 LiveCD 并直接查看磁盘内容，可以把我们常用的内置软件放到 ISO 中，减少重复的安装操作。&lt;/p>
-&lt;p>LiveCD 工作中用处不多，硬件检查是一项很符合 LiveCD 本职功能的需求，无论是时间成本还是实现成本都是很低的，推荐使用。&lt;/p></description></item></channel></rss>
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;构建属于自己的 ISO 可以很方便的在日常工作中开展工作，我们可以直接挂载 LiveCD 并直接查看磁盘内容，可以把我们常用的内置软件放到 ISO 中，减少重复的安装操作。&lt;/p&gt;
+&lt;p&gt;LiveCD 工作中用处不多，硬件检查是一项很符合 LiveCD 本职功能的需求，无论是时间成本还是实现成本都是很低的，推荐使用。&lt;/p&gt;</description></item></channel></rss>

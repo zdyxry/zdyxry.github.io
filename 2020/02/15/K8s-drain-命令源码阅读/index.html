@@ -43,7 +43,7 @@ drain 相关命令都属于 kubectl 的自命令，因此需要先看下 kubectl
 kubectl 链接到标题 drain 相关命令都属于 kubectl 的自命令，因此需要先看下 kubectl 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在 cmd/kubectl/kubectl.go ，实际的处理逻辑在 pkg/kubectl/cmd/cmd.go 中
 ... groups := templates.CommandGroups{ { Message: "Basic Commands (Beginner):", ... }, { Message: "Deploy Commands:", ... }, { Message: "Cluster Management Commands:", Commands: []*cobra.Command{ certificates.NewCmdCertificate(f, ioStreams), clusterinfo.NewCmdClusterInfo(f, ioStreams), top.NewCmdTop(f, ioStreams), drain.NewCmdCordon(f, ioStreams), drain.NewCmdUncordon(f, ioStreams), drain.NewCmdDrain(f, ioStreams), taint.NewCmdTaint(f, ioStreams), }, }, ... } groups.Add(cmds) 可以看到在 kubectl 所有子命令的入口，我们今天要看的 drain 命令都属于集群管理命令，包含了：'><meta property="og:url" content="https://zdyxry.github.io/2020/02/15/K8s-drain-%E5%91%BD%E4%BB%A4%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="K8s drain 命令源码阅读"><meta property="og:description" content='背景 链接到标题 之前写过一篇 《Kubernetes 实战-平滑移除节点》 讲如何从 K8s 集群中移除节点的，今天来看看 kubectl drain 命令具体做了什么，怎么实现的。
 kubectl 链接到标题 drain 相关命令都属于 kubectl 的自命令，因此需要先看下 kubectl 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在 cmd/kubectl/kubectl.go ，实际的处理逻辑在 pkg/kubectl/cmd/cmd.go 中
-... groups := templates.CommandGroups{ { Message: "Basic Commands (Beginner):", ... }, { Message: "Deploy Commands:", ... }, { Message: "Cluster Management Commands:", Commands: []*cobra.Command{ certificates.NewCmdCertificate(f, ioStreams), clusterinfo.NewCmdClusterInfo(f, ioStreams), top.NewCmdTop(f, ioStreams), drain.NewCmdCordon(f, ioStreams), drain.NewCmdUncordon(f, ioStreams), drain.NewCmdDrain(f, ioStreams), taint.NewCmdTaint(f, ioStreams), }, }, ... } groups.Add(cmds) 可以看到在 kubectl 所有子命令的入口，我们今天要看的 drain 命令都属于集群管理命令，包含了：'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-02-15T11:22:13+00:00"><meta property="article:modified_time" content="2020-02-15T11:22:13+00:00"><meta property="article:tag" content="Kubernetes"><link rel=canonical href=https://zdyxry.github.io/2020/02/15/K8s-drain-%E5%91%BD%E4%BB%A4%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.598b4dc0d87e9f8cf3ee27da13bf2d146bdef9d6b52584abc07e060846593bb2.css integrity="sha256-WYtNwNh+n4zz7ifaE78tFGve+da1JYSrwH4GCEZZO7I=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+... groups := templates.CommandGroups{ { Message: "Basic Commands (Beginner):", ... }, { Message: "Deploy Commands:", ... }, { Message: "Cluster Management Commands:", Commands: []*cobra.Command{ certificates.NewCmdCertificate(f, ioStreams), clusterinfo.NewCmdClusterInfo(f, ioStreams), top.NewCmdTop(f, ioStreams), drain.NewCmdCordon(f, ioStreams), drain.NewCmdUncordon(f, ioStreams), drain.NewCmdDrain(f, ioStreams), taint.NewCmdTaint(f, ioStreams), }, }, ... } groups.Add(cmds) 可以看到在 kubectl 所有子命令的入口，我们今天要看的 drain 命令都属于集群管理命令，包含了：'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-02-15T11:22:13+00:00"><meta property="article:modified_time" content="2020-02-15T11:22:13+00:00"><meta property="article:tag" content="Kubernetes"><link rel=canonical href=https://zdyxry.github.io/2020/02/15/K8s-drain-%E5%91%BD%E4%BB%A4%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.640169b0b3e4a7ff838f20af6fb06b691f38d1aaee51a06288af05702fce84b0.css integrity="sha256-ZAFpsLPkp/+DjyCvb7BraR840aruUaBiiK8FcC/OhLA=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.598b4dc0d87e9f8cf3ee27da13bf2d146bdef9d6b52584abc07e060846593bb2.css integrity="sha256-WYtNwNh+n4zz7ifaE78tFGve+da1JYSrwH4GCEZZO7I=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
 </a><input type=checkbox id=menu-toggle>
 <label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2020/02/15/K8s-drain-%E5%91%BD%E4%BB%A4%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/>K8s drain 命令源码阅读</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
 <time datetime=2020-02-15T11:22:13Z>February 15, 2020
@@ -53,285 +53,285 @@ kubectl 链接到标题 drain 相关命令都属于 kubectl 的自命令，因�
 <a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
 <span class=sr-only>链接到标题</span></a></h2><p>之前写过一篇 <a href=https://zdyxry.github.io/2019/08/01/Kubernetes-%E5%AE%9E%E6%88%98-%E5%B9%B3%E6%BB%91%E7%A7%BB%E9%99%A4%E8%8A%82%E7%82%B9/ class=external-link target=_blank rel=noopener>《Kubernetes 实战-平滑移除节点》</a> 讲如何从 K8s 集群中移除节点的，今天来看看 <code>kubectl drain</code> 命令具体做了什么，怎么实现的。</p><h2 id=kubectl>kubectl
 <a class=heading-link href=#kubectl><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p><code>drain</code> 相关命令都属于 <code>kubectl</code> 的自命令，因此需要先看下 <code>kubectl</code> 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在 <code>cmd/kubectl/kubectl.go</code> ，实际的处理逻辑在 <code>pkg/kubectl/cmd/cmd.go</code> 中</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>groups</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>templates</span>.<span style=color:#a6e22e>CommandGroups</span>{
+<span class=sr-only>链接到标题</span></a></h2><p><code>drain</code> 相关命令都属于 <code>kubectl</code> 的自命令，因此需要先看下 <code>kubectl</code> 的入口，K8s 使用 cobra 作为命令行构建组建（我自己使用 cobra 觉得不怎么好用，而且文档也不清晰。。），统一入口在 <code>cmd/kubectl/kubectl.go</code> ，实际的处理逻辑在 <code>pkg/kubectl/cmd/cmd.go</code> 中</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>	groups := templates.CommandGroups{
 </span></span><span style=display:flex><span>		{
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Message</span>: <span style=color:#e6db74>&#34;Basic Commands (Beginner):&#34;</span>,
-</span></span><span style=display:flex><span>			<span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>			Message: <span style=font-style:italic>&#34;Basic Commands (Beginner):&#34;</span>,
+</span></span><span style=display:flex><span>			...
 </span></span><span style=display:flex><span>		},
 </span></span><span style=display:flex><span>		{
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Message</span>: <span style=color:#e6db74>&#34;Deploy Commands:&#34;</span>,
-</span></span><span style=display:flex><span>			<span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>			Message: <span style=font-style:italic>&#34;Deploy Commands:&#34;</span>,
+</span></span><span style=display:flex><span>			...
 </span></span><span style=display:flex><span>		},
 </span></span><span style=display:flex><span>		{
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Message</span>: <span style=color:#e6db74>&#34;Cluster Management Commands:&#34;</span>,
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Commands</span>: []<span style=color:#f92672>*</span><span style=color:#a6e22e>cobra</span>.<span style=color:#a6e22e>Command</span>{
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>certificates</span>.<span style=color:#a6e22e>NewCmdCertificate</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>),
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>clusterinfo</span>.<span style=color:#a6e22e>NewCmdClusterInfo</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>),
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>top</span>.<span style=color:#a6e22e>NewCmdTop</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>),
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>drain</span>.<span style=color:#a6e22e>NewCmdCordon</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>),
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>drain</span>.<span style=color:#a6e22e>NewCmdUncordon</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>),
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>drain</span>.<span style=color:#a6e22e>NewCmdDrain</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>),
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>taint</span>.<span style=color:#a6e22e>NewCmdTaint</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>),
+</span></span><span style=display:flex><span>			Message: <span style=font-style:italic>&#34;Cluster Management Commands:&#34;</span>,
+</span></span><span style=display:flex><span>			Commands: []*cobra.Command{
+</span></span><span style=display:flex><span>				certificates.NewCmdCertificate(f, ioStreams),
+</span></span><span style=display:flex><span>				clusterinfo.NewCmdClusterInfo(f, ioStreams),
+</span></span><span style=display:flex><span>				top.NewCmdTop(f, ioStreams),
+</span></span><span style=display:flex><span>				drain.NewCmdCordon(f, ioStreams),
+</span></span><span style=display:flex><span>				drain.NewCmdUncordon(f, ioStreams),
+</span></span><span style=display:flex><span>				drain.NewCmdDrain(f, ioStreams),
+</span></span><span style=display:flex><span>				taint.NewCmdTaint(f, ioStreams),
 </span></span><span style=display:flex><span>			},
 </span></span><span style=display:flex><span>		},
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>    ...
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>groups</span>.<span style=color:#a6e22e>Add</span>(<span style=color:#a6e22e>cmds</span>)
+</span></span><span style=display:flex><span>    groups.Add(cmds)
 </span></span></code></pre></div><p>可以看到在 <code>kubectl</code> 所有子命令的入口，我们今天要看的 <code>drain</code> 命令都属于集群管理命令，包含了：</p><ul><li>cordon</li><li>uncordon</li><li>drain</li></ul><h2 id=cordon>Cordon
 <a class=heading-link href=#cordon><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>先来看看 <code>cordon</code> 命令，这条命令的用途是标记节点为不可调度状态，防止在进行节点维护时 K8s 仍调度资源到该节点上。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewCmdCordon</span>(<span style=color:#a6e22e>f</span> <span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>Factory</span>, <span style=color:#a6e22e>ioStreams</span> <span style=color:#a6e22e>genericclioptions</span>.<span style=color:#a6e22e>IOStreams</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>cobra</span>.<span style=color:#a6e22e>Command</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>o</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>NewDrainCmdOptions</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>ioStreams</span>)
+<span class=sr-only>链接到标题</span></a></h2><p>先来看看 <code>cordon</code> 命令，这条命令的用途是标记节点为不可调度状态，防止在进行节点维护时 K8s 仍调度资源到该节点上。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> NewCmdCordon(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+</span></span><span style=display:flex><span>	o := NewDrainCmdOptions(f, ioStreams)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cmd</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>cobra</span>.<span style=color:#a6e22e>Command</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Use</span>:                   <span style=color:#e6db74>&#34;cordon NODE&#34;</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>DisableFlagsInUseLine</span>: <span style=color:#66d9ef>true</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Short</span>:                 <span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>T</span>(<span style=color:#e6db74>&#34;Mark node as unschedulable&#34;</span>),
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Long</span>:                  <span style=color:#a6e22e>cordonLong</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Example</span>:               <span style=color:#a6e22e>cordonExample</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Run</span>: <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>cmd</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>cobra</span>.<span style=color:#a6e22e>Command</span>, <span style=color:#a6e22e>args</span> []<span style=color:#66d9ef>string</span>) {
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>CheckErr</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>Complete</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>cmd</span>, <span style=color:#a6e22e>args</span>))
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>CheckErr</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>RunCordonOrUncordon</span>(<span style=color:#66d9ef>true</span>))
+</span></span><span style=display:flex><span>	cmd := &amp;cobra.Command{
+</span></span><span style=display:flex><span>		Use:                   <span style=font-style:italic>&#34;cordon NODE&#34;</span>,
+</span></span><span style=display:flex><span>		DisableFlagsInUseLine: <span style=font-weight:700>true</span>,
+</span></span><span style=display:flex><span>		Short:                 i18n.T(<span style=font-style:italic>&#34;Mark node as unschedulable&#34;</span>),
+</span></span><span style=display:flex><span>		Long:                  cordonLong,
+</span></span><span style=display:flex><span>		Example:               cordonExample,
+</span></span><span style=display:flex><span>		Run: <span style=font-weight:700>func</span>(cmd *cobra.Command, args []<span>string</span>) {
+</span></span><span style=display:flex><span>			cmdutil.CheckErr(o.Complete(f, cmd, args))
+</span></span><span style=display:flex><span>			cmdutil.CheckErr(o.RunCordonOrUncordon(<span style=font-weight:700>true</span>))
 </span></span><span style=display:flex><span>		},
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cmd</span>.<span style=color:#a6e22e>Flags</span>().<span style=color:#a6e22e>StringVarP</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>Selector</span>, <span style=color:#e6db74>&#34;selector&#34;</span>, <span style=color:#e6db74>&#34;l&#34;</span>, <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>Selector</span>, <span style=color:#e6db74>&#34;Selector (label query) to filter on&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>AddDryRunFlag</span>(<span style=color:#a6e22e>cmd</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>cmd</span>
+</span></span><span style=display:flex><span>	cmd.Flags().StringVarP(&amp;o.drainer.Selector, <span style=font-style:italic>&#34;selector&#34;</span>, <span style=font-style:italic>&#34;l&#34;</span>, o.drainer.Selector, <span style=font-style:italic>&#34;Selector (label query) to filter on&#34;</span>)
+</span></span><span style=display:flex><span>	cmdutil.AddDryRunFlag(cmd)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> cmd
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>直接看 <code>Run</code> 中的内容，先忽略 <code>cmdutil.CheckErr</code> ，这里主要执行了两个方法：<code>o.Complete</code> 和 <code>o.RunCordonOrUncordon</code> 。这里就必须提一下 <code>kubectl</code> 的实现方式，<code>kubectl</code> 的根本目的是发送对应的 HTTP 请求到 APIServer，<code>kubectl</code> 通过 <code>Builder</code> 和 <code>Visitor</code> 来实现了一层封装，使每个子命令的实现方式统一、简洁。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// Builder provides convenience functions for taking arguments and parameters</span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// from the command line and converting them to a list of resources to iterate</span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// over using the Visitor interface.</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Builder</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
+</span></span></code></pre></div><p>直接看 <code>Run</code> 中的内容，先忽略 <code>cmdutil.CheckErr</code> ，这里主要执行了两个方法：<code>o.Complete</code> 和 <code>o.RunCordonOrUncordon</code> 。这里就必须提一下 <code>kubectl</code> 的实现方式，<code>kubectl</code> 的根本目的是发送对应的 HTTP 请求到 APIServer，<code>kubectl</code> 通过 <code>Builder</code> 和 <code>Visitor</code> 来实现了一层封装，使每个子命令的实现方式统一、简洁。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-style:italic>// Builder provides convenience functions for taking arguments and parameters</span>
+</span></span><span style=display:flex><span><span style=font-style:italic>// from the command line and converting them to a list of resources to iterate</span>
+</span></span><span style=display:flex><span><span style=font-style:italic>// over using the Visitor interface.</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>type</span> Builder <span style=font-weight:700>struct</span> {
+</span></span><span style=display:flex><span>    ...
 </span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span><span style=color:#75715e>// Visitor lets clients walk a list of resources.</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Visitor</span> <span style=color:#66d9ef>interface</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Visit</span>(<span style=color:#a6e22e>VisitorFunc</span>) <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span><span style=font-style:italic>// Visitor lets clients walk a list of resources.</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>type</span> Visitor <span style=font-weight:700>interface</span> {
+</span></span><span style=display:flex><span>	Visit(VisitorFunc) <span>error</span>
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>在 <code>o.Complete</code> 中构建了对应的 <code>builder</code>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 根据命令行参数构建 builder 实例</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>builder</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>NewBuilder</span>().
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>WithScheme</span>(<span style=color:#a6e22e>scheme</span>.<span style=color:#a6e22e>Scheme</span>, <span style=color:#a6e22e>scheme</span>.<span style=color:#a6e22e>Scheme</span>.<span style=color:#a6e22e>PrioritizedVersionsAllGroups</span>()<span style=color:#f92672>...</span>).
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>NamespaceParam</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>Namespace</span>).<span style=color:#a6e22e>DefaultNamespace</span>().
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>ResourceNames</span>(<span style=color:#e6db74>&#34;nodes&#34;</span>, <span style=color:#a6e22e>args</span><span style=color:#f92672>...</span>).
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>SingleResourceType</span>().
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Flatten</span>()
+</span></span></code></pre></div><p>在 <code>o.Complete</code> 中构建了对应的 <code>builder</code>:</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>...
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// 根据命令行参数构建 builder 实例</span>
+</span></span><span style=display:flex><span>	builder := f.NewBuilder().
+</span></span><span style=display:flex><span>		WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
+</span></span><span style=display:flex><span>		NamespaceParam(o.Namespace).DefaultNamespace().
+</span></span><span style=display:flex><span>		ResourceNames(<span style=font-style:italic>&#34;nodes&#34;</span>, args...).
+</span></span><span style=display:flex><span>		SingleResourceType().
+</span></span><span style=display:flex><span>		Flatten()
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> len(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>Selector</span>) &gt; <span style=color:#ae81ff>0</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>builder</span> = <span style=color:#a6e22e>builder</span>.<span style=color:#a6e22e>LabelSelectorParam</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>Selector</span>).
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>ResourceTypes</span>(<span style=color:#e6db74>&#34;nodes&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> len(o.drainer.Selector) &gt; 0 {
+</span></span><span style=display:flex><span>		builder = builder.LabelSelectorParam(o.drainer.Selector).
+</span></span><span style=display:flex><span>			ResourceTypes(<span style=font-style:italic>&#34;nodes&#34;</span>)
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// builder.Do 返回带有 Visitor 的 Result 对象</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>r</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>builder</span>.<span style=color:#a6e22e>Do</span>()
-</span></span></code></pre></div><p>来看看 <code>builder.Do()</code> 接下来是怎么做的来返回了 Result 类型资源：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Builder</span>) <span style=color:#a6e22e>Do</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>Result</span> {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 调用 visitorResult 返回 Result 类型</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>r</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>visitorResult</span>()
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>r</span>
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// builder.Do 返回带有 Visitor 的 Result 对象</span>
+</span></span><span style=display:flex><span>    r := builder.Do()
+</span></span></code></pre></div><p>来看看 <code>builder.Do()</code> 接下来是怎么做的来返回了 Result 类型资源：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (b *Builder) Do() *Result {
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// 调用 visitorResult 返回 Result 类型</span>
+</span></span><span style=display:flex><span>	r := b.visitorResult()
+</span></span><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> r
 </span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span><span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Builder</span>) <span style=color:#a6e22e>visitorResult</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>Result</span> {
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 跳过其他步骤，直接看最简单的通过 Name 来获取 Result</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> len(<span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>names</span>) <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>visitByName</span>()
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span><span style=font-weight:700>func</span> (b *Builder) visitorResult() *Result {
+</span></span><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// 跳过其他步骤，直接看最简单的通过 Name 来获取 Result</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> len(b.names) != 0 {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> b.visitByName()
 </span></span><span style=display:flex><span>    }
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>    ...
 </span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span><span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Builder</span>) <span style=color:#a6e22e>visitByName</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>Result</span> {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 声明 Result 对象</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>result</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>Result</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>singleItemImplied</span>:  len(<span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>names</span>) <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>targetsSingleItems</span>: <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span><span style=font-weight:700>func</span> (b *Builder) visitByName() *Result {
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// 声明 Result 对象</span>
+</span></span><span style=display:flex><span>	result := &amp;Result{
+</span></span><span style=display:flex><span>		singleItemImplied:  len(b.names) == 1,
+</span></span><span style=display:flex><span>		targetsSingleItems: <span style=font-weight:700>true</span>,
 </span></span><span style=display:flex><span>    }
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 获取 K8s client</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>client</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>getClient</span>(<span style=color:#a6e22e>mapping</span>.<span style=color:#a6e22e>GroupVersionKind</span>.<span style=color:#a6e22e>GroupVersion</span>())
-</span></span><span style=display:flex><span>	<span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>visitors</span> <span style=color:#f92672>:=</span> []<span style=color:#a6e22e>Visitor</span>{}
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>name</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>names</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>info</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>Info</span>{
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Client</span>:    <span style=color:#a6e22e>client</span>,
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Mapping</span>:   <span style=color:#a6e22e>mapping</span>,
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Namespace</span>: <span style=color:#a6e22e>selectorNamespace</span>,
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Name</span>:      <span style=color:#a6e22e>name</span>,
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Export</span>:    <span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>export</span>,
+</span></span><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// 获取 K8s client</span>
+</span></span><span style=display:flex><span>	client, err := b.getClient(mapping.GroupVersionKind.GroupVersion())
+</span></span><span style=display:flex><span>	...
+</span></span><span style=display:flex><span>	visitors := []Visitor{}
+</span></span><span style=display:flex><span>	<span style=font-weight:700>for</span> _, name := <span style=font-weight:700>range</span> b.names {
+</span></span><span style=display:flex><span>		info := &amp;Info{
+</span></span><span style=display:flex><span>			Client:    client,
+</span></span><span style=display:flex><span>			Mapping:   mapping,
+</span></span><span style=display:flex><span>			Namespace: selectorNamespace,
+</span></span><span style=display:flex><span>			Name:      name,
+</span></span><span style=display:flex><span>			Export:    b.export,
 </span></span><span style=display:flex><span>		}
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>visitors</span> = append(<span style=color:#a6e22e>visitors</span>, <span style=color:#a6e22e>info</span>)
+</span></span><span style=display:flex><span>		visitors = append(visitors, info)
 </span></span><span style=display:flex><span>    }
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// VisitorList 也实现了 Visit 接口，遍历执行 Visitor 的 Visit 方法</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>result</span>.<span style=color:#a6e22e>visitor</span> = <span style=color:#a6e22e>VisitorList</span>(<span style=color:#a6e22e>visitors</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>result</span>.<span style=color:#a6e22e>sources</span> = <span style=color:#a6e22e>visitors</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>result</span>
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// VisitorList 也实现了 Visit 接口，遍历执行 Visitor 的 Visit 方法</span>
+</span></span><span style=display:flex><span>	result.visitor = VisitorList(visitors)
+</span></span><span style=display:flex><span>	result.sources = visitors
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> result
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>看到了如何获取 Result 类型对象，我们再来看 <code>o.Complete</code> 如何处理的，传入一个 VisitorFunc，Result 的 visitor 都实现了 <code>Visit</code> 接口，<code>Visit</code> 接口的作用是接收 <code>VisitorFunc</code> 并执行。 ：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>return</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>Visit</span>(<span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>info</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>resource</span>.<span style=color:#a6e22e>Info</span>, <span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>		<span style=color:#f92672>...</span>
+</span></span></code></pre></div><p>看到了如何获取 Result 类型对象，我们再来看 <code>o.Complete</code> 如何处理的，传入一个 VisitorFunc，Result 的 visitor 都实现了 <code>Visit</code> 接口，<code>Visit</code> 接口的作用是接收 <code>VisitorFunc</code> 并执行。 ：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>return</span> r.Visit(<span style=font-weight:700>func</span>(info *resource.Info, err <span>error</span>) <span>error</span> {
+</span></span><span style=display:flex><span>		...
 </span></span><span style=display:flex><span>    })
-</span></span><span style=display:flex><span><span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>v</span> <span style=color:#a6e22e>DecoratedVisitor</span>) <span style=color:#a6e22e>Visit</span>(<span style=color:#a6e22e>fn</span> <span style=color:#a6e22e>VisitorFunc</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>v</span>.<span style=color:#a6e22e>visitor</span>.<span style=color:#a6e22e>Visit</span>(<span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>info</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Info</span>, <span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>        <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>i</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>v</span>.<span style=color:#a6e22e>decorators</span> {
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>v</span>.<span style=color:#a6e22e>decorators</span>[<span style=color:#a6e22e>i</span>](<span style=color:#a6e22e>info</span>, <span style=color:#66d9ef>nil</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span><span style=font-weight:700>func</span> (v DecoratedVisitor) Visit(fn VisitorFunc) <span>error</span> {
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> v.visitor.Visit(<span style=font-weight:700>func</span>(info *Info, err <span>error</span>) <span>error</span> {
+</span></span><span style=display:flex><span>        ...
+</span></span><span style=display:flex><span>		<span style=font-weight:700>for</span> i := <span style=font-weight:700>range</span> v.decorators {
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> err := v.decorators[i](info, <span style=font-weight:700>nil</span>); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>return</span> err
 </span></span><span style=display:flex><span>			}
 </span></span><span style=display:flex><span>		}
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fn</span>(<span style=color:#a6e22e>info</span>, <span style=color:#66d9ef>nil</span>)
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> fn(info, <span style=font-weight:700>nil</span>)
 </span></span><span style=display:flex><span>	})
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>接下来看看 <code>o.RunCordonOrUncordon</code> 做了什么：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>o</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>DrainCmdOptions</span>) <span style=color:#a6e22e>RunCordonOrUncordon</span>(<span style=color:#a6e22e>desired</span> <span style=color:#66d9ef>bool</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cordonOrUncordon</span> <span style=color:#f92672>:=</span> <span style=color:#e6db74>&#34;cordon&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>desired</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>cordonOrUncordon</span> = <span style=color:#e6db74>&#34;un&#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>cordonOrUncordon</span>
+</span></span></code></pre></div><p>接下来看看 <code>o.RunCordonOrUncordon</code> 做了什么：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (o *DrainCmdOptions) RunCordonOrUncordon(desired <span>bool</span>) <span>error</span> {
+</span></span><span style=display:flex><span>	cordonOrUncordon := <span style=font-style:italic>&#34;cordon&#34;</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> !desired {
+</span></span><span style=display:flex><span>		cordonOrUncordon = <span style=font-style:italic>&#34;un&#34;</span> + cordonOrUncordon
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 通过 Visit 获取到的 nodeInfos 列表</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>nodeInfo</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>nodeInfos</span> {
-</span></span><span style=display:flex><span>        <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>gvk</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>nodeInfo</span>.<span style=color:#a6e22e>ResourceMapping</span>().<span style=color:#a6e22e>GroupVersionKind</span>
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>gvk</span>.<span style=color:#a6e22e>Kind</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;Node&#34;</span> {
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>c</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>drain</span>.<span style=color:#a6e22e>NewCordonHelperFromRuntimeObject</span>(<span style=color:#a6e22e>nodeInfo</span>.<span style=color:#a6e22e>Object</span>, <span style=color:#a6e22e>scheme</span>.<span style=color:#a6e22e>Scheme</span>, <span style=color:#a6e22e>gvk</span>)
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>updateRequired</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>UpdateIfRequired</span>(<span style=color:#a6e22e>desired</span>); !<span style=color:#a6e22e>updateRequired</span> {
-</span></span><span style=display:flex><span>				<span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>			} <span style=color:#66d9ef>else</span> {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>DryRunStrategy</span> <span style=color:#f92672>!=</span> <span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>DryRunClient</span> {
-</span></span><span style=display:flex><span>                    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>                    <span style=color:#75715e>// 修改对应节点的配置</span>
-</span></span><span style=display:flex><span>					<span style=color:#a6e22e>err</span>, <span style=color:#a6e22e>patchErr</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>PatchOrReplace</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>Client</span>, <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>DryRunStrategy</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>DryRunServer</span>)
-</span></span><span style=display:flex><span>					<span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// 通过 Visit 获取到的 nodeInfos 列表</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>for</span> _, nodeInfo := <span style=font-weight:700>range</span> o.nodeInfos {
+</span></span><span style=display:flex><span>        ...
+</span></span><span style=display:flex><span>		gvk := nodeInfo.ResourceMapping().GroupVersionKind
+</span></span><span style=display:flex><span>		<span style=font-weight:700>if</span> gvk.Kind == <span style=font-style:italic>&#34;Node&#34;</span> {
+</span></span><span style=display:flex><span>			c, err := drain.NewCordonHelperFromRuntimeObject(nodeInfo.Object, scheme.Scheme, gvk)
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> updateRequired := c.UpdateIfRequired(desired); !updateRequired {
+</span></span><span style=display:flex><span>				...
+</span></span><span style=display:flex><span>			} <span style=font-weight:700>else</span> {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>if</span> o.drainer.DryRunStrategy != cmdutil.DryRunClient {
+</span></span><span style=display:flex><span>                    ...
+</span></span><span style=display:flex><span>                    <span style=font-style:italic>// 修改对应节点的配置</span>
+</span></span><span style=display:flex><span>					err, patchErr := c.PatchOrReplace(o.drainer.Client, o.drainer.DryRunStrategy == cmdutil.DryRunServer)
+</span></span><span style=display:flex><span>					...
 </span></span><span style=display:flex><span>				}
 </span></span><span style=display:flex><span>			}
 </span></span><span style=display:flex><span>        }
-</span></span><span style=display:flex><span>        <span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>        ...
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> <span style=font-weight:700>nil</span>
 </span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span><span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>c</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>CordonHelper</span>) <span style=color:#a6e22e>PatchOrReplace</span>(<span style=color:#a6e22e>clientset</span> <span style=color:#a6e22e>kubernetes</span>.<span style=color:#a6e22e>Interface</span>, <span style=color:#a6e22e>serverDryRun</span> <span style=color:#66d9ef>bool</span>) (<span style=color:#66d9ef>error</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>client</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>clientset</span>.<span style=color:#a6e22e>CoreV1</span>().<span style=color:#a6e22e>Nodes</span>()
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>oldData</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>Marshal</span>(<span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>node</span>)
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 更新 node Spec 的 Unschedulable 字段</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>Spec</span>.<span style=color:#a6e22e>Unschedulable</span> = <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>desired</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>newData</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>Marshal</span>(<span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>node</span>)
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// merge 数据，通过 diff 然后获取</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>patchBytes</span>, <span style=color:#a6e22e>patchErr</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategicpatch</span>.<span style=color:#a6e22e>CreateTwoWayMergePatch</span>(<span style=color:#a6e22e>oldData</span>, <span style=color:#a6e22e>newData</span>, <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>node</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>patchErr</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>client</span>.<span style=color:#a6e22e>Patch</span>(<span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>TODO</span>(), <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>node</span>.<span style=color:#a6e22e>Name</span>, <span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>StrategicMergePatchType</span>, <span style=color:#a6e22e>patchBytes</span>, <span style=color:#a6e22e>patchOptions</span>)
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span><span style=font-weight:700>func</span> (c *CordonHelper) PatchOrReplace(clientset kubernetes.Interface, serverDryRun <span>bool</span>) (<span>error</span>, <span>error</span>) {
+</span></span><span style=display:flex><span>	client := clientset.CoreV1().Nodes()
+</span></span><span style=display:flex><span>    oldData, err := json.Marshal(c.node)
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// 更新 node Spec 的 Unschedulable 字段</span>
+</span></span><span style=display:flex><span>	c.node.Spec.Unschedulable = c.desired
+</span></span><span style=display:flex><span>	newData, err := json.Marshal(c.node)
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// merge 数据，通过 diff 然后获取</span>
+</span></span><span style=display:flex><span>	patchBytes, patchErr := strategicpatch.CreateTwoWayMergePatch(oldData, newData, c.node)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> patchErr == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		...
+</span></span><span style=display:flex><span>		_, err = client.Patch(context.TODO(), c.node.Name, types.StrategicMergePatchType, patchBytes, patchOptions)
 </span></span><span style=display:flex><span>	} 
-</span></span><span style=display:flex><span>	<span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>	...
 </span></span><span style=display:flex><span>}
 </span></span></code></pre></div><h2 id=drain>Drain
 <a class=heading-link href=#drain><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>看完了 Cordon，再来看 Drain：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewCmdDrain</span>(<span style=color:#a6e22e>f</span> <span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>Factory</span>, <span style=color:#a6e22e>ioStreams</span> <span style=color:#a6e22e>genericclioptions</span>.<span style=color:#a6e22e>IOStreams</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>cobra</span>.<span style=color:#a6e22e>Command</span> {
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cmd</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>cobra</span>.<span style=color:#a6e22e>Command</span>{
-</span></span><span style=display:flex><span>		<span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Run</span>: <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>cmd</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>cobra</span>.<span style=color:#a6e22e>Command</span>, <span style=color:#a6e22e>args</span> []<span style=color:#66d9ef>string</span>) {
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>CheckErr</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>Complete</span>(<span style=color:#a6e22e>f</span>, <span style=color:#a6e22e>cmd</span>, <span style=color:#a6e22e>args</span>))
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>cmdutil</span>.<span style=color:#a6e22e>CheckErr</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>RunDrain</span>())
+<span class=sr-only>链接到标题</span></a></h2><p>看完了 Cordon，再来看 Drain：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> NewCmdDrain(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+</span></span><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>	cmd := &amp;cobra.Command{
+</span></span><span style=display:flex><span>		...
+</span></span><span style=display:flex><span>		Run: <span style=font-weight:700>func</span>(cmd *cobra.Command, args []<span>string</span>) {
+</span></span><span style=display:flex><span>			cmdutil.CheckErr(o.Complete(f, cmd, args))
+</span></span><span style=display:flex><span>			cmdutil.CheckErr(o.RunDrain())
 </span></span><span style=display:flex><span>		},
 </span></span><span style=display:flex><span>    }
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span></code></pre></div><p>直接看 <code>o.RunDrain</code>，我们会看到第一件事情就就是执行 <code>o.RunCordonOrUncordon</code> ，就是标记节点为不可调度，所以我之前写的那篇博客其实说法不正确，如果是想将节点下线，那么直接执行 <code>kubectl drain</code> 就好：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>o</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>DrainCmdOptions</span>) <span style=color:#a6e22e>RunDrain</span>() <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>RunCordonOrUncordon</span>(<span style=color:#66d9ef>true</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>    ...
+</span></span></code></pre></div><p>直接看 <code>o.RunDrain</code>，我们会看到第一件事情就就是执行 <code>o.RunCordonOrUncordon</code> ，就是标记节点为不可调度，所以我之前写的那篇博客其实说法不正确，如果是想将节点下线，那么直接执行 <code>kubectl drain</code> 就好：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (o *DrainCmdOptions) RunDrain() <span>error</span> {
+</span></span><span style=display:flex><span>    <span style=font-weight:700>if</span> err := o.RunCordonOrUncordon(<span style=font-weight:700>true</span>); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> err
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>drainedNodes</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>sets</span>.<span style=color:#a6e22e>NewString</span>()
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>var</span> <span style=color:#a6e22e>fatal</span> <span style=color:#66d9ef>error</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>info</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>nodeInfos</span> {
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 驱逐 Pod</span>
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>deleteOrEvictPodsSimple</span>(<span style=color:#a6e22e>info</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>drainedNodes</span>.<span style=color:#a6e22e>Insert</span>(<span style=color:#a6e22e>info</span>.<span style=color:#a6e22e>Name</span>)
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>printObj</span>(<span style=color:#a6e22e>info</span>.<span style=color:#a6e22e>Object</span>, <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>Out</span>)
-</span></span><span style=display:flex><span>		} <span style=color:#66d9ef>else</span> {
-</span></span><span style=display:flex><span>			<span style=color:#75715e>// 如果驱逐 Pod 失败，则显示对应的 Node 信息</span>
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> len(<span style=color:#a6e22e>remainingNodes</span>) &gt; <span style=color:#ae81ff>0</span> {
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Fprintf</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>ErrOut</span>, <span style=color:#e6db74>&#34;There are pending nodes to be drained:\n&#34;</span>)
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>nodeName</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>remainingNodes</span> {
-</span></span><span style=display:flex><span>					<span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Fprintf</span>(<span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>ErrOut</span>, <span style=color:#e6db74>&#34; %s\n&#34;</span>, <span style=color:#a6e22e>nodeName</span>)
+</span></span><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>	drainedNodes := sets.NewString()
+</span></span><span style=display:flex><span>	<span style=font-weight:700>var</span> fatal <span>error</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>for</span> _, info := <span style=font-weight:700>range</span> o.nodeInfos {
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// 驱逐 Pod</span>
+</span></span><span style=display:flex><span>		<span style=font-weight:700>if</span> err := o.deleteOrEvictPodsSimple(info); err == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>			drainedNodes.Insert(info.Name)
+</span></span><span style=display:flex><span>			printObj(info.Object, o.Out)
+</span></span><span style=display:flex><span>		} <span style=font-weight:700>else</span> {
+</span></span><span style=display:flex><span>			<span style=font-style:italic>// 如果驱逐 Pod 失败，则显示对应的 Node 信息</span>
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> len(remainingNodes) &gt; 0 {
+</span></span><span style=display:flex><span>				fmt.Fprintf(o.ErrOut, <span style=font-style:italic>&#34;There are pending nodes to be drained:\n&#34;</span>)
+</span></span><span style=display:flex><span>				<span style=font-weight:700>for</span> _, nodeName := <span style=font-weight:700>range</span> remainingNodes {
+</span></span><span style=display:flex><span>					fmt.Fprintf(o.ErrOut, <span style=font-style:italic>&#34; %s\n&#34;</span>, nodeName)
 </span></span><span style=display:flex><span>				}
 </span></span><span style=display:flex><span>			}
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>			<span style=font-weight:700>break</span>
 </span></span><span style=display:flex><span>		}
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>在 <code>deleteOrEvictPodsSimple</code> 中，先通过 Node 名称获取对应的 Pod 信息，然后进行驱逐动作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>o</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>DrainCmdOptions</span>) <span style=color:#a6e22e>deleteOrEvictPodsSimple</span>(<span style=color:#a6e22e>nodeInfo</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>resource</span>.<span style=color:#a6e22e>Info</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>list</span>, <span style=color:#a6e22e>errs</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>GetPodsForDeletion</span>(<span style=color:#a6e22e>nodeInfo</span>.<span style=color:#a6e22e>Name</span>)
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>o</span>.<span style=color:#a6e22e>drainer</span>.<span style=color:#a6e22e>DeleteOrEvictPods</span>(<span style=color:#a6e22e>list</span>.<span style=color:#a6e22e>Pods</span>()); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>        <span style=color:#f92672>...</span>
+</span></span></code></pre></div><p>在 <code>deleteOrEvictPodsSimple</code> 中，先通过 Node 名称获取对应的 Pod 信息，然后进行驱逐动作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (o *DrainCmdOptions) deleteOrEvictPodsSimple(nodeInfo *resource.Info) <span>error</span> {
+</span></span><span style=display:flex><span>	list, errs := o.drainer.GetPodsForDeletion(nodeInfo.Name)
+</span></span><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err := o.drainer.DeleteOrEvictPods(list.Pods()); err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>        ...
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>这里的 <code>GetPodsForDeletion</code> 会进行一个过滤，包含以下几种场景的过滤，需要注意的是，这里的过滤场景是有严格的顺序的：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>d</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Helper</span>) <span style=color:#a6e22e>makeFilters</span>() []<span style=color:#a6e22e>podFilter</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> []<span style=color:#a6e22e>podFilter</span>{
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 被标记删除的 Pod(DeletionTimestamp 不为0)</span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>d</span>.<span style=color:#a6e22e>skipDeletedFilter</span>,
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 属于 DaemonSet 的 Pod</span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>d</span>.<span style=color:#a6e22e>daemonSetFilter</span>,
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// mirror pod 其实就是 static pod，</span>
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 是我们在 /etc/kubernetes/manifests/ 中定义的由 kubelet 负责生命周期管理的 Pod</span>
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 在 `Annotations` 中会包含 `kubernetes.io/config.mirror` </span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>d</span>.<span style=color:#a6e22e>mirrorPodFilter</span>,
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 包含本地存储的 Pod，Pod 中的 Volume 字段不为空</span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>d</span>.<span style=color:#a6e22e>localStorageFilter</span>,
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 不属于 replicate 的 pod，`Controlled By` 不为空的 pod</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>d</span>.<span style=color:#a6e22e>unreplicatedFilter</span>,
+</span></span></code></pre></div><p>这里的 <code>GetPodsForDeletion</code> 会进行一个过滤，包含以下几种场景的过滤，需要注意的是，这里的过滤场景是有严格的顺序的：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (d *Helper) makeFilters() []podFilter {
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> []podFilter{
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// 被标记删除的 Pod(DeletionTimestamp 不为0)</span>
+</span></span><span style=display:flex><span>        d.skipDeletedFilter,
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// 属于 DaemonSet 的 Pod</span>
+</span></span><span style=display:flex><span>        d.daemonSetFilter,
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// mirror pod 其实就是 static pod，</span>
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// 是我们在 /etc/kubernetes/manifests/ 中定义的由 kubelet 负责生命周期管理的 Pod</span>
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// 在 `Annotations` 中会包含 `kubernetes.io/config.mirror` </span>
+</span></span><span style=display:flex><span>        d.mirrorPodFilter,
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// 包含本地存储的 Pod，Pod 中的 Volume 字段不为空</span>
+</span></span><span style=display:flex><span>        d.localStorageFilter,
+</span></span><span style=display:flex><span>        <span style=font-style:italic>// 不属于 replicate 的 pod，`Controlled By` 不为空的 pod</span>
+</span></span><span style=display:flex><span>		d.unreplicatedFilter,
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>获取到过滤后的 Pod 列表后，就开始执行驱逐动作，每个 Pod 起一个 goroutine ，提交驱逐动作后会等待，直到 Pod 驱逐完成：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>d</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Helper</span>) <span style=color:#a6e22e>evictPods</span>(<span style=color:#a6e22e>pods</span> []<span style=color:#a6e22e>corev1</span>.<span style=color:#a6e22e>Pod</span>, <span style=color:#a6e22e>policyGroupVersion</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>getPodFn</span> <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>namespace</span>, <span style=color:#a6e22e>name</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>corev1</span>.<span style=color:#a6e22e>Pod</span>, <span style=color:#66d9ef>error</span>)) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>returnCh</span> <span style=color:#f92672>:=</span> make(<span style=color:#66d9ef>chan</span> <span style=color:#66d9ef>error</span>, <span style=color:#ae81ff>1</span>)
-</span></span><span style=display:flex><span>    <span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>cancel</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>WithTimeout</span>(<span style=color:#a6e22e>d</span>.<span style=color:#a6e22e>getContext</span>(), <span style=color:#a6e22e>globalTimeout</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>cancel</span>()
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>pod</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>pods</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>go</span> <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>pod</span> <span style=color:#a6e22e>corev1</span>.<span style=color:#a6e22e>Pod</span>, <span style=color:#a6e22e>returnCh</span> <span style=color:#66d9ef>chan</span> <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>for</span> {
-</span></span><span style=display:flex><span>				<span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>select</span> {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>case</span> <span style=color:#f92672>&lt;-</span><span style=color:#a6e22e>ctx</span>.<span style=color:#a6e22e>Done</span>():
-</span></span><span style=display:flex><span>					<span style=color:#75715e>// 驱逐超时</span>
-</span></span><span style=display:flex><span>					<span style=color:#a6e22e>returnCh</span> <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;error when evicting pod %q: global timeout reached: %v&#34;</span>, <span style=color:#a6e22e>pod</span>.<span style=color:#a6e22e>Name</span>, <span style=color:#a6e22e>globalTimeout</span>)
-</span></span><span style=display:flex><span>					<span style=color:#66d9ef>return</span>
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>default</span>:
+</span></span></code></pre></div><p>获取到过滤后的 Pod 列表后，就开始执行驱逐动作，每个 Pod 起一个 goroutine ，提交驱逐动作后会等待，直到 Pod 驱逐完成：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (d *Helper) evictPods(pods []corev1.Pod, policyGroupVersion <span>string</span>, getPodFn <span style=font-weight:700>func</span>(namespace, name <span>string</span>) (*corev1.Pod, <span>error</span>)) <span>error</span> {
+</span></span><span style=display:flex><span>	returnCh := make(<span style=font-weight:700>chan</span> <span>error</span>, 1)
+</span></span><span style=display:flex><span>    ...
+</span></span><span style=display:flex><span>	ctx, cancel := context.WithTimeout(d.getContext(), globalTimeout)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>defer</span> cancel()
+</span></span><span style=display:flex><span>	<span style=font-weight:700>for</span> _, pod := <span style=font-weight:700>range</span> pods {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>go</span> <span style=font-weight:700>func</span>(pod corev1.Pod, returnCh <span style=font-weight:700>chan</span> <span>error</span>) {
+</span></span><span style=display:flex><span>			<span style=font-weight:700>for</span> {
+</span></span><span style=display:flex><span>				...
+</span></span><span style=display:flex><span>				<span style=font-weight:700>select</span> {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>case</span> &lt;-ctx.Done():
+</span></span><span style=display:flex><span>					<span style=font-style:italic>// 驱逐超时</span>
+</span></span><span style=display:flex><span>					returnCh &lt;- fmt.Errorf(<span style=font-style:italic>&#34;error when evicting pod %q: global timeout reached: %v&#34;</span>, pod.Name, globalTimeout)
+</span></span><span style=display:flex><span>					<span style=font-weight:700>return</span>
+</span></span><span style=display:flex><span>				<span style=font-weight:700>default</span>:
 </span></span><span style=display:flex><span>                }
-</span></span><span style=display:flex><span>                <span style=color:#75715e>// 驱逐 Pod 动作，最终执行 d.Client.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)</span>
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>d</span>.<span style=color:#a6e22e>EvictPod</span>(<span style=color:#a6e22e>pod</span>, <span style=color:#a6e22e>policyGroupVersion</span>)
-</span></span><span style=display:flex><span>				<span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>                <span style=font-style:italic>// 驱逐 Pod 动作，最终执行 d.Client.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)</span>
+</span></span><span style=display:flex><span>				err := d.EvictPod(pod, policyGroupVersion)
+</span></span><span style=display:flex><span>				...
 </span></span><span style=display:flex><span>			}
-</span></span><span style=display:flex><span>			<span style=color:#f92672>...</span>
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>params</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>waitForDeleteParams</span>{
-</span></span><span style=display:flex><span>				<span style=color:#f92672>...</span>
+</span></span><span style=display:flex><span>			...
+</span></span><span style=display:flex><span>			params := waitForDeleteParams{
+</span></span><span style=display:flex><span>				...
 </span></span><span style=display:flex><span>            }
-</span></span><span style=display:flex><span>            <span style=color:#75715e>// 等待驱逐动作完成</span>
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>waitForDelete</span>(<span style=color:#a6e22e>params</span>)
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>returnCh</span> <span style=color:#f92672>&lt;-</span> <span style=color:#66d9ef>nil</span>
-</span></span><span style=display:flex><span>			} <span style=color:#66d9ef>else</span> {
-</span></span><span style=display:flex><span>				<span style=color:#a6e22e>returnCh</span> <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;error when waiting for pod %q terminating: %v&#34;</span>, <span style=color:#a6e22e>pod</span>.<span style=color:#a6e22e>Name</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>            <span style=font-style:italic>// 等待驱逐动作完成</span>
+</span></span><span style=display:flex><span>			_, err := waitForDelete(params)
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> err == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>				returnCh &lt;- <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>			} <span style=font-weight:700>else</span> {
+</span></span><span style=display:flex><span>				returnCh &lt;- fmt.Errorf(<span style=font-style:italic>&#34;error when waiting for pod %q terminating: %v&#34;</span>, pod.Name, err)
 </span></span><span style=display:flex><span>			}
-</span></span><span style=display:flex><span>		}(<span style=color:#a6e22e>pod</span>, <span style=color:#a6e22e>returnCh</span>)
+</span></span><span style=display:flex><span>		}(pod, returnCh)
 </span></span><span style=display:flex><span>    }
-</span></span></code></pre></div><p><code>waitForDelete</code> 如果没有立即完成，会将 <code>ConditionFunc</code> 传入 <code>WaitFor</code> 循环检测，其中 <code>ConditionFunc</code> 的检测依据是 Pod 存在且 ObjectMeta UID发生了改变：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>WaitFor</span>(<span style=color:#a6e22e>wait</span> <span style=color:#a6e22e>WaitFunc</span>, <span style=color:#a6e22e>fn</span> <span style=color:#a6e22e>ConditionFunc</span>, <span style=color:#a6e22e>done</span> <span style=color:#f92672>&lt;-</span><span style=color:#66d9ef>chan</span> <span style=color:#66d9ef>struct</span>{}) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>stopCh</span> <span style=color:#f92672>:=</span> make(<span style=color:#66d9ef>chan</span> <span style=color:#66d9ef>struct</span>{})
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>defer</span> close(<span style=color:#a6e22e>stopCh</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>c</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>wait</span>(<span style=color:#a6e22e>stopCh</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>select</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>case</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>open</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&lt;-</span><span style=color:#a6e22e>c</span>:
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>ok</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>runConditionWithCrashProtection</span>(<span style=color:#a6e22e>fn</span>)
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span></code></pre></div><p><code>waitForDelete</code> 如果没有立即完成，会将 <code>ConditionFunc</code> 传入 <code>WaitFor</code> 循环检测，其中 <code>ConditionFunc</code> 的检测依据是 Pod 存在且 ObjectMeta UID发生了改变：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> WaitFor(wait WaitFunc, fn ConditionFunc, done &lt;-<span style=font-weight:700>chan</span> <span style=font-weight:700>struct</span>{}) <span>error</span> {
+</span></span><span style=display:flex><span>	stopCh := make(<span style=font-weight:700>chan</span> <span style=font-weight:700>struct</span>{})
+</span></span><span style=display:flex><span>	<span style=font-weight:700>defer</span> close(stopCh)
+</span></span><span style=display:flex><span>	c := wait(stopCh)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>for</span> {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>select</span> {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>case</span> _, open := &lt;-c:
+</span></span><span style=display:flex><span>			ok, err := runConditionWithCrashProtection(fn)
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>return</span> err
 </span></span><span style=display:flex><span>			}
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>ok</span> {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> ok {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>return</span> <span style=font-weight:700>nil</span>
 </span></span><span style=display:flex><span>			}
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>open</span> {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>ErrWaitTimeout</span>
+</span></span><span style=display:flex><span>			<span style=font-weight:700>if</span> !open {
+</span></span><span style=display:flex><span>				<span style=font-weight:700>return</span> ErrWaitTimeout
 </span></span><span style=display:flex><span>			}
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>case</span> <span style=color:#f92672>&lt;-</span><span style=color:#a6e22e>done</span>:
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>ErrWaitTimeout</span>
+</span></span><span style=display:flex><span>		<span style=font-weight:700>case</span> &lt;-done:
+</span></span><span style=display:flex><span>			<span style=font-weight:700>return</span> ErrWaitTimeout
 </span></span><span style=display:flex><span>		}
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
@@ -344,4 +344,4 @@ kubectl 链接到标题 drain 相关命令都属于 kubectl 的自命令，因�
 2025
 Yiran Zhou
 ·
-技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var doNotTrack=!1,dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes";if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

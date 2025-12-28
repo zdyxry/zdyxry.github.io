@@ -75,7 +75,7 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 部署 链接到标题 ControlPlane1 链接到标题 kubeadm 配置文件如下："><meta property="og:url" content="https://zdyxry.github.io/2019/12/19/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E6%97%A0LB/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="Kubernetes 实战-高可用集群部署（无LB）"><meta property="og:description" content="背景 链接到标题 之前写过一篇《Kubernetes 实战-高可用集群部署》 博客讲 K8S 高可用配置，当时采用的方式是使用 keepalived 配合 HAProxy 自建 LB 的方式，但是最近发现无论是 Kubespray 还是 Rancher RKE 都没有采用这种方式，而是在 worker node 上配置 nginx/haproxy 代理 APIServer 达到目的。今天来手动配置下这种方式，了解下注意事项。
 本文配置方式参考 Kubespray，主要是想加深自己对这方面的理解，如果只是单纯的想要搭建环境，那么直接使用 Kubespray 就好。
 环境 链接到标题 IP role 192.168.17.11 ControlPlane1 192.168.17.12 ControlPlane2 192.168.17.13 ControlPlane3 192.168.17.14 WorkerNode1 准备工作 链接到标题 软件安装 链接到标题 这部分准备工作与之前一样，没什么不同，因此不详细说明，需要安装 kubectl,kubeadm,kubelet 。
-部署 链接到标题 ControlPlane1 链接到标题 kubeadm 配置文件如下："><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-12-19T21:38:16+00:00"><meta property="article:modified_time" content="2019-12-19T21:38:16+00:00"><meta property="article:tag" content="Kubernetes"><link rel=canonical href=https://zdyxry.github.io/2019/12/19/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E6%97%A0LB/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.4cc167e491154564da0846631fe298eb32c51b51a97065b6cc64a76bec940495.css integrity="sha256-TMFn5JEVRWTaCEZjH+KY6zLFG1GpcGW2zGSna+yUBJU=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.598b4dc0d87e9f8cf3ee27da13bf2d146bdef9d6b52584abc07e060846593bb2.css integrity="sha256-WYtNwNh+n4zz7ifaE78tFGve+da1JYSrwH4GCEZZO7I=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+部署 链接到标题 ControlPlane1 链接到标题 kubeadm 配置文件如下："><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-12-19T21:38:16+00:00"><meta property="article:modified_time" content="2019-12-19T21:38:16+00:00"><meta property="article:tag" content="Kubernetes"><link rel=canonical href=https://zdyxry.github.io/2019/12/19/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E6%97%A0LB/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.640169b0b3e4a7ff838f20af6fb06b691f38d1aaee51a06288af05702fce84b0.css integrity="sha256-ZAFpsLPkp/+DjyCvb7BraR840aruUaBiiK8FcC/OhLA=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.598b4dc0d87e9f8cf3ee27da13bf2d146bdef9d6b52584abc07e060846593bb2.css integrity="sha256-WYtNwNh+n4zz7ifaE78tFGve+da1JYSrwH4GCEZZO7I=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
 </a><input type=checkbox id=menu-toggle>
 <label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2019/12/19/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E6%97%A0LB/>Kubernetes 实战-高可用集群部署（无LB）</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
 <time datetime=2019-12-19T21:38:16Z>December 19, 2019
@@ -93,57 +93,57 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 <a class=heading-link href=#%e9%83%a8%e7%bd%b2><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
 <span class=sr-only>链接到标题</span></a></h2><h3 id=controlplane1>ControlPlane1
 <a class=heading-link href=#controlplane1><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><p>kubeadm 配置文件如下：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install1 17:55:09 tmp<span style=color:#f92672>]</span>$cat kubeadm.yaml
+<span class=sr-only>链接到标题</span></a></h3><p>kubeadm 配置文件如下：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install1 17:55:09 tmp]$cat kubeadm.yaml
 </span></span><span style=display:flex><span>---
-</span></span><span style=display:flex><span>apiServer: <span style=color:#f92672>{}</span>
+</span></span><span style=display:flex><span>apiServer: {}
 </span></span><span style=display:flex><span>apiVersion: kubeadm.k8s.io/v1beta1
-</span></span><span style=display:flex><span>certificatesDir: <span style=color:#e6db74>&#34;&#34;</span>
+</span></span><span style=display:flex><span>certificatesDir: <span style=font-style:italic>&#34;&#34;</span>
 </span></span><span style=display:flex><span>clusterName: test
-</span></span><span style=display:flex><span>controlPlaneEndpoint: <span style=color:#e6db74>&#34;192.168.17.11:6443&#34;</span>
-</span></span><span style=display:flex><span>controllerManager: <span style=color:#f92672>{}</span>
+</span></span><span style=display:flex><span>controlPlaneEndpoint: <span style=font-style:italic>&#34;192.168.17.11:6443&#34;</span>
+</span></span><span style=display:flex><span>controllerManager: {}
 </span></span><span style=display:flex><span>dns:
-</span></span><span style=display:flex><span>  type: <span style=color:#e6db74>&#34;&#34;</span>
-</span></span><span style=display:flex><span>etcd: <span style=color:#f92672>{}</span>
+</span></span><span style=display:flex><span>  type: <span style=font-style:italic>&#34;&#34;</span>
+</span></span><span style=display:flex><span>etcd: {}
 </span></span><span style=display:flex><span>imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers
 </span></span><span style=display:flex><span>kind: ClusterConfiguration
-</span></span><span style=display:flex><span>kubernetesVersion: <span style=color:#e6db74>&#34;&#34;</span>
+</span></span><span style=display:flex><span>kubernetesVersion: <span style=font-style:italic>&#34;&#34;</span>
 </span></span><span style=display:flex><span>networking:
-</span></span><span style=display:flex><span>  dnsDomain: <span style=color:#e6db74>&#34;&#34;</span>
+</span></span><span style=display:flex><span>  dnsDomain: <span style=font-style:italic>&#34;&#34;</span>
 </span></span><span style=display:flex><span>  podSubnet: 10.244.0.0/16
-</span></span><span style=display:flex><span>  serviceSubnet: <span style=color:#e6db74>&#34;&#34;</span>
-</span></span><span style=display:flex><span>scheduler: <span style=color:#f92672>{}</span>
+</span></span><span style=display:flex><span>  serviceSubnet: <span style=font-style:italic>&#34;&#34;</span>
+</span></span><span style=display:flex><span>scheduler: {}
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>---
 </span></span><span style=display:flex><span>apiVersion: kubeadm.k8s.io/v1beta1
 </span></span><span style=display:flex><span>kind: InitConfiguration
 </span></span><span style=display:flex><span>localAPIEndpoint:
-</span></span><span style=display:flex><span>  advertiseAddress: <span style=color:#e6db74>&#34;192.168.17.11&#34;</span>
-</span></span><span style=display:flex><span>  bindPort: <span style=color:#ae81ff>6443</span>
+</span></span><span style=display:flex><span>  advertiseAddress: <span style=font-style:italic>&#34;192.168.17.11&#34;</span>
+</span></span><span style=display:flex><span>  bindPort: 6443
 </span></span><span style=display:flex><span>nodeRegistration:
-</span></span><span style=display:flex><span>  name: <span style=color:#e6db74>&#39;install1&#39;</span>
-</span></span></code></pre></div><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install1 17:55:10 tmp<span style=color:#f92672>]</span>$kubeadm init --config kubeadm.yaml --upload-certs
+</span></span><span style=display:flex><span>  name: <span style=font-style:italic>&#39;install1&#39;</span>
+</span></span></code></pre></div><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install1 17:55:10 tmp]$kubeadm init --config kubeadm.yaml --upload-certs
 </span></span><span style=display:flex><span>...
 </span></span><span style=display:flex><span>You should now deploy a pod network to the cluster.
-</span></span><span style=display:flex><span>Run <span style=color:#e6db74>&#34;kubectl apply -f [podnetwork].yaml&#34;</span> with one of the options listed at:
+</span></span><span style=display:flex><span>Run <span style=font-style:italic>&#34;kubectl apply -f [podnetwork].yaml&#34;</span> with one of the options listed at:
 </span></span><span style=display:flex><span>  https://kubernetes.io/docs/concepts/cluster-administration/addons/
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>You can now join any number of the control-plane node running the following command on each as root:
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>  kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 <span style=color:#ae81ff>\
-</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef <span style=color:#ae81ff>\
-</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    --control-plane --certificate-key 2368ee7ebe6697164c46812e358539638de1d7665b3111afde949bce73275029
+</span></span><span style=display:flex><span>  kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 <span style=font-weight:700;font-style:italic>\
+</span></span></span><span style=display:flex><span>    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef <span style=font-weight:700;font-style:italic>\
+</span></span></span><span style=display:flex><span>    --control-plane --certificate-key 2368ee7ebe6697164c46812e358539638de1d7665b3111afde949bce73275029
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
 </span></span><span style=display:flex><span>As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use 
-</span></span><span style=display:flex><span><span style=color:#e6db74>&#34;kubeadm init phase upload-certs --upload-certs&#34;</span> to reload certs afterward.
+</span></span><span style=display:flex><span><span style=font-style:italic>&#34;kubeadm init phase upload-certs --upload-certs&#34;</span> to reload certs afterward.
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>Then you can join any number of worker nodes by running the following on each as root:
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 <span style=color:#ae81ff>\
-</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef 
+</span></span><span style=display:flex><span>kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 <span style=font-weight:700;font-style:italic>\
+</span></span></span><span style=display:flex><span>    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef 
 </span></span></code></pre></div><h3 id=controlplane2>ControlPlane2
 <a class=heading-link href=#controlplane2><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><p>kubeadm 配置文件如下：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install2 17:40:52 tmp<span style=color:#f92672>]</span>$cat kubeadm.yaml
+<span class=sr-only>链接到标题</span></a></h3><p>kubeadm 配置文件如下：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install2 17:40:52 tmp]$cat kubeadm.yaml
 </span></span><span style=display:flex><span>apiVersion: kubeadm.k8s.io/v1beta2
 </span></span><span style=display:flex><span>kind: JoinConfiguration
 </span></span><span style=display:flex><span>discovery:
@@ -156,17 +156,17 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 </span></span><span style=display:flex><span>controlPlane:
 </span></span><span style=display:flex><span>  localAPIEndpoint:
 </span></span><span style=display:flex><span>    advertiseAddress: 192.168.17.12
-</span></span><span style=display:flex><span>    bindPort: <span style=color:#ae81ff>6443</span>
+</span></span><span style=display:flex><span>    bindPort: 6443
 </span></span><span style=display:flex><span>  certificateKey: 2368ee7ebe6697164c46812e358539638de1d7665b3111afde949bce73275029
 </span></span><span style=display:flex><span>nodeRegistration:
 </span></span><span style=display:flex><span>  name: installer2
-</span></span></code></pre></div><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install2 17:40:58 tmp<span style=color:#f92672>]</span>$kubeadm join --config kubeadm.yaml
+</span></span></code></pre></div><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install2 17:40:58 tmp]$kubeadm join --config kubeadm.yaml
 </span></span><span style=display:flex><span>...
 </span></span><span style=display:flex><span>This node has joined the cluster and a new control plane instance was created:
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>* Certificate signing request was sent to apiserver and approval was received.
 </span></span><span style=display:flex><span>* The Kubelet was informed of the new secure connection details.
-</span></span><span style=display:flex><span>* Control plane <span style=color:#f92672>(</span>master<span style=color:#f92672>)</span> label and taint were applied to the new node.
+</span></span><span style=display:flex><span>* Control plane (master) label and taint were applied to the new node.
 </span></span><span style=display:flex><span>* The Kubernetes control plane instances scaled up.
 </span></span><span style=display:flex><span>* A new etcd member was added to the local/stacked etcd cluster.
 </span></span><span style=display:flex><span>
@@ -174,12 +174,12 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>        mkdir -p $HOME/.kube
 </span></span><span style=display:flex><span>        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-</span></span><span style=display:flex><span>        sudo chown <span style=color:#66d9ef>$(</span>id -u<span style=color:#66d9ef>)</span>:<span style=color:#66d9ef>$(</span>id -g<span style=color:#66d9ef>)</span> $HOME/.kube/config
+</span></span><span style=display:flex><span>        sudo chown <span style=font-weight:700>$(</span>id -u<span style=font-weight:700>)</span>:<span style=font-weight:700>$(</span>id -g<span style=font-weight:700>)</span> $HOME/.kube/config
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>Run <span style=color:#e6db74>&#39;kubectl get nodes&#39;</span> to see this node join the cluster.
+</span></span><span style=display:flex><span>Run <span style=font-style:italic>&#39;kubectl get nodes&#39;</span> to see this node join the cluster.
 </span></span></code></pre></div><h3 id=controlplane3>ControlPlane3
 <a class=heading-link href=#controlplane3><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><p>kubeadm 配置文件如下：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install3 17:47:24 tmp<span style=color:#f92672>]</span>$cat kubeadm.yaml
+<span class=sr-only>链接到标题</span></a></h3><p>kubeadm 配置文件如下：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install3 17:47:24 tmp]$cat kubeadm.yaml
 </span></span><span style=display:flex><span>apiVersion: kubeadm.k8s.io/v1beta2
 </span></span><span style=display:flex><span>kind: JoinConfiguration
 </span></span><span style=display:flex><span>discovery:
@@ -192,17 +192,17 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 </span></span><span style=display:flex><span>controlPlane:
 </span></span><span style=display:flex><span>  localAPIEndpoint:
 </span></span><span style=display:flex><span>    advertiseAddress: 192.168.17.13
-</span></span><span style=display:flex><span>    bindPort: <span style=color:#ae81ff>6443</span>
+</span></span><span style=display:flex><span>    bindPort: 6443
 </span></span><span style=display:flex><span>  certificateKey: 2368ee7ebe6697164c46812e358539638de1d7665b3111afde949bce73275029
 </span></span><span style=display:flex><span>nodeRegistration:
 </span></span><span style=display:flex><span>  name: installer2
-</span></span></code></pre></div><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install3 17:47:25 tmp<span style=color:#f92672>]</span>$kubeadm join --config kubeadm.yaml
+</span></span></code></pre></div><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install3 17:47:25 tmp]$kubeadm join --config kubeadm.yaml
 </span></span><span style=display:flex><span>...
 </span></span><span style=display:flex><span>This node has joined the cluster and a new control plane instance was created:
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>* Certificate signing request was sent to apiserver and approval was received.
 </span></span><span style=display:flex><span>* The Kubelet was informed of the new secure connection details.
-</span></span><span style=display:flex><span>* Control plane <span style=color:#f92672>(</span>master<span style=color:#f92672>)</span> label and taint were applied to the new node.
+</span></span><span style=display:flex><span>* Control plane (master) label and taint were applied to the new node.
 </span></span><span style=display:flex><span>* The Kubernetes control plane instances scaled up.
 </span></span><span style=display:flex><span>* A new etcd member was added to the local/stacked etcd cluster.
 </span></span><span style=display:flex><span>
@@ -210,51 +210,51 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>        mkdir -p $HOME/.kube
 </span></span><span style=display:flex><span>        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-</span></span><span style=display:flex><span>        sudo chown <span style=color:#66d9ef>$(</span>id -u<span style=color:#66d9ef>)</span>:<span style=color:#66d9ef>$(</span>id -g<span style=color:#66d9ef>)</span> $HOME/.kube/config
+</span></span><span style=display:flex><span>        sudo chown <span style=font-weight:700>$(</span>id -u<span style=font-weight:700>)</span>:<span style=font-weight:700>$(</span>id -g<span style=font-weight:700>)</span> $HOME/.kube/config
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>Run <span style=color:#e6db74>&#39;kubectl get nodes&#39;</span> to see this node join the cluster.
+</span></span><span style=display:flex><span>Run <span style=font-style:italic>&#39;kubectl get nodes&#39;</span> to see this node join the cluster.
 </span></span></code></pre></div><h3 id=node1>node1
 <a class=heading-link href=#node1><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><p>3 个 ControlPlane 节点已经部署完成，我们可以通过 kubectl 命令获取对应的状态信息，因为没有部署 CNI，所以这里还是 NotReady 的：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install1 18:00:50 tmp<span style=color:#f92672>]</span>$kubectl get node -o wide
+<span class=sr-only>链接到标题</span></a></h3><p>3 个 ControlPlane 节点已经部署完成，我们可以通过 kubectl 命令获取对应的状态信息，因为没有部署 CNI，所以这里还是 NotReady 的：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install1 18:00:50 tmp]$kubectl get node -o wide
 </span></span><span style=display:flex><span>NAME         STATUS     ROLES    AGE     VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION                        CONTAINER-RUNTIME
-</span></span><span style=display:flex><span>install1     NotReady   master   5m2s    v1.16.3   172.18.19.11    &lt;none&gt;        CentOS Linux <span style=color:#ae81ff>7</span> <span style=color:#f92672>(</span>Core<span style=color:#f92672>)</span>   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5
-</span></span><span style=display:flex><span>installer2   NotReady   master   4m22s   v1.16.3   192.168.17.12   &lt;none&gt;        CentOS Linux <span style=color:#ae81ff>7</span> <span style=color:#f92672>(</span>Core<span style=color:#f92672>)</span>   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5
-</span></span><span style=display:flex><span>installer3   NotReady   master   3m1s    v1.16.3   192.168.17.13   &lt;none&gt;        CentOS Linux <span style=color:#ae81ff>7</span> <span style=color:#f92672>(</span>Core<span style=color:#f92672>)</span>   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@install1 18:00:53 tmp<span style=color:#f92672>]</span>$
+</span></span><span style=display:flex><span>install1     NotReady   master   5m2s    v1.16.3   172.18.19.11    &lt;none&gt;        CentOS Linux 7 (Core)   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5
+</span></span><span style=display:flex><span>installer2   NotReady   master   4m22s   v1.16.3   192.168.17.12   &lt;none&gt;        CentOS Linux 7 (Core)   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5
+</span></span><span style=display:flex><span>installer3   NotReady   master   3m1s    v1.16.3   192.168.17.13   &lt;none&gt;        CentOS Linux 7 (Core)   3.10.0-1062.1.2.el7.smartx.1.x86_64   docker://19.3.5
+</span></span><span style=display:flex><span>[root@install1 18:00:53 tmp]$
 </span></span></code></pre></div><p>现在要来部署 worker node，当我们有可用的 LB，时，我们无需关心 APIServer 的可用性，由 LB 来决定。那么现在没有可用的 LB，我们的 worker node 想要与 k8s 进行通信，就需要每个 worker node 自身启动一个 proxy，将自己的 kubelet 连接到自己本地，然后通过 proxy 到集群中已有的 APIServer 。</p><h4 id=配置-proxy>配置 Proxy
 <a class=heading-link href=#%e9%85%8d%e7%bd%ae-proxy><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h4><p>这里以 nginx 举例：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:05:03 ~<span style=color:#f92672>]</span>$mkdir /etc/nginx
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:06:02 ~<span style=color:#f92672>]</span>$chmod <span style=color:#ae81ff>700</span> /etc/nginx
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:14:23 ~<span style=color:#f92672>]</span>$cat /etc/nginx/nginx.conf
+<span class=sr-only>链接到标题</span></a></h4><p>这里以 nginx 举例：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install4 18:05:03 ~]$mkdir /etc/nginx
+</span></span><span style=display:flex><span>[root@install4 18:06:02 ~]$chmod 700 /etc/nginx
+</span></span><span style=display:flex><span>[root@install4 18:14:23 ~]$cat /etc/nginx/nginx.conf
 </span></span><span style=display:flex><span>error_log stderr notice;
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>worker_processes 2;
 </span></span><span style=display:flex><span>worker_rlimit_nofile 130048;
 </span></span><span style=display:flex><span>worker_shutdown_timeout 10s;
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>events <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>events {
 </span></span><span style=display:flex><span>  multi_accept on;
 </span></span><span style=display:flex><span>  use epoll;
 </span></span><span style=display:flex><span>  worker_connections 16384;
-</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>stream <span style=color:#f92672>{</span>
-</span></span><span style=display:flex><span>  upstream kube_apiserver <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>stream {
+</span></span><span style=display:flex><span>  upstream kube_apiserver {
 </span></span><span style=display:flex><span>    least_conn;
 </span></span><span style=display:flex><span>    server 192.168.17.11:6443;
 </span></span><span style=display:flex><span>    server 192.168.17.12:6443;
 </span></span><span style=display:flex><span>    server 192.168.17.13:6443;
-</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>  server <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>  server {
 </span></span><span style=display:flex><span>    listen        127.0.0.1:6443;
 </span></span><span style=display:flex><span>    proxy_pass    kube_apiserver;
 </span></span><span style=display:flex><span>    proxy_timeout 10m;
 </span></span><span style=display:flex><span>    proxy_connect_timeout 1s;
-</span></span><span style=display:flex><span>  <span style=color:#f92672>}</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>http <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>http {
 </span></span><span style=display:flex><span>  aio threads;
 </span></span><span style=display:flex><span>  aio_write on;
 </span></span><span style=display:flex><span>  tcp_nopush on;
@@ -266,52 +266,52 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 </span></span><span style=display:flex><span>  server_tokens off;
 </span></span><span style=display:flex><span>  autoindex off;
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>  server <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>  server {
 </span></span><span style=display:flex><span>    listen 8081;
-</span></span><span style=display:flex><span>    location /healthz <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    location /healthz {
 </span></span><span style=display:flex><span>      access_log off;
-</span></span><span style=display:flex><span>      <span style=color:#66d9ef>return</span> 200;
-</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
-</span></span><span style=display:flex><span>    location /stub_status <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>      <span style=font-weight:700>return</span> 200;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    location /stub_status {
 </span></span><span style=display:flex><span>      stub_status on;
 </span></span><span style=display:flex><span>      access_log off;
-</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
-</span></span><span style=display:flex><span>  <span style=color:#f92672>}</span>
-</span></span><span style=display:flex><span>  <span style=color:#f92672>}</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:18:29 manifests<span style=color:#f92672>]</span>$vim /etc/sysctl.conf 
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:18:54 manifests<span style=color:#f92672>]</span>$sysctl -p 
-</span></span><span style=display:flex><span>net.ipv4.ip_forward <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-</span></span><span style=display:flex><span>net.ipv4.ip_local_reserved_ports <span style=color:#f92672>=</span> 30000-32767
-</span></span><span style=display:flex><span>net.bridge.bridge-nf-call-iptables <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-</span></span><span style=display:flex><span>net.bridge.bridge-nf-call-arptables <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-</span></span><span style=display:flex><span>net.bridge.bridge-nf-call-ip6tables <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>[root@install4 18:18:29 manifests]$vim /etc/sysctl.conf 
+</span></span><span style=display:flex><span>[root@install4 18:18:54 manifests]$sysctl -p 
+</span></span><span style=display:flex><span>net.ipv4.ip_forward = 1
+</span></span><span style=display:flex><span>net.ipv4.ip_local_reserved_ports = 30000-32767
+</span></span><span style=display:flex><span>net.bridge.bridge-nf-call-iptables = 1
+</span></span><span style=display:flex><span>net.bridge.bridge-nf-call-arptables = 1
+</span></span><span style=display:flex><span>net.bridge.bridge-nf-call-ip6tables = 1
 </span></span></code></pre></div><h4 id=加入-k8s-集群>加入 K8s 集群
 <a class=heading-link href=#%e5%8a%a0%e5%85%a5-k8s-%e9%9b%86%e7%be%a4><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h4><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:31:10 tmp<span style=color:#f92672>]</span>$kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 <span style=color:#ae81ff>\
-</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef 
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>preflight<span style=color:#f92672>]</span> Running pre-flight checks
-</span></span><span style=display:flex><span>        <span style=color:#f92672>[</span>WARNING IsDockerSystemdCheck<span style=color:#f92672>]</span>: detected <span style=color:#e6db74>&#34;cgroupfs&#34;</span> as the Docker cgroup driver. The recommended driver is <span style=color:#e6db74>&#34;systemd&#34;</span>. Please follow the guide at https://kubernetes.io/docs/setup
+<span class=sr-only>链接到标题</span></a></h4><p>执行部署动作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install4 18:31:10 tmp]$kubeadm join 192.168.17.11:6443 --token 0xsbed.rcfk0ew0nlgrpjv0 <span style=font-weight:700;font-style:italic>\
+</span></span></span><span style=display:flex><span>    --discovery-token-ca-cert-hash sha256:1be9652019ef048fdd1d16385907c519e5559a1b786aa3ff1c46eeb489e1a6ef 
+</span></span><span style=display:flex><span>[preflight] Running pre-flight checks
+</span></span><span style=display:flex><span>        [WARNING IsDockerSystemdCheck]: detected <span style=font-style:italic>&#34;cgroupfs&#34;</span> as the Docker cgroup driver. The recommended driver is <span style=font-style:italic>&#34;systemd&#34;</span>. Please follow the guide at https://kubernetes.io/docs/setup
 </span></span><span style=display:flex><span>/cri/
-</span></span><span style=display:flex><span>        <span style=color:#f92672>[</span>WARNING SystemVerification<span style=color:#f92672>]</span>: this Docker version is not on the list of validated versions: 19.03.5. Latest validated version: 18.09
-</span></span><span style=display:flex><span>        <span style=color:#f92672>[</span>WARNING Hostname<span style=color:#f92672>]</span>: hostname <span style=color:#e6db74>&#34;install4&#34;</span> could not be reached
-</span></span><span style=display:flex><span>        <span style=color:#f92672>[</span>WARNING Hostname<span style=color:#f92672>]</span>: hostname <span style=color:#e6db74>&#34;install4&#34;</span>: lookup install4 on 192.168.31.215:53: no such host
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>preflight<span style=color:#f92672>]</span> Reading configuration from the cluster...
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>preflight<span style=color:#f92672>]</span> FYI: You can look at this config file with <span style=color:#e6db74>&#39;kubectl -n kube-system get cm kubeadm-config -oyaml&#39;</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>kubelet-start<span style=color:#f92672>]</span> Downloading configuration <span style=color:#66d9ef>for</span> the kubelet from the <span style=color:#e6db74>&#34;kubelet-config-1.16&#34;</span> ConfigMap in the kube-system namespace
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>kubelet-start<span style=color:#f92672>]</span> Writing kubelet configuration to file <span style=color:#e6db74>&#34;/var/lib/kubelet/config.yaml&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>kubelet-start<span style=color:#f92672>]</span> Writing kubelet environment file with flags to file <span style=color:#e6db74>&#34;/var/lib/kubelet/kubeadm-flags.env&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>kubelet-start<span style=color:#f92672>]</span> Activating the kubelet service
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>kubelet-start<span style=color:#f92672>]</span> Waiting <span style=color:#66d9ef>for</span> the kubelet to perform the TLS Bootstrap...
+</span></span><span style=display:flex><span>        [WARNING SystemVerification]: this Docker version is not on the list of validated versions: 19.03.5. Latest validated version: 18.09
+</span></span><span style=display:flex><span>        [WARNING Hostname]: hostname <span style=font-style:italic>&#34;install4&#34;</span> could not be reached
+</span></span><span style=display:flex><span>        [WARNING Hostname]: hostname <span style=font-style:italic>&#34;install4&#34;</span>: lookup install4 on 192.168.31.215:53: no such host
+</span></span><span style=display:flex><span>[preflight] Reading configuration from the cluster...
+</span></span><span style=display:flex><span>[preflight] FYI: You can look at this config file with <span style=font-style:italic>&#39;kubectl -n kube-system get cm kubeadm-config -oyaml&#39;</span>
+</span></span><span style=display:flex><span>[kubelet-start] Downloading configuration <span style=font-weight:700>for</span> the kubelet from the <span style=font-style:italic>&#34;kubelet-config-1.16&#34;</span> ConfigMap in the kube-system namespace
+</span></span><span style=display:flex><span>[kubelet-start] Writing kubelet configuration to file <span style=font-style:italic>&#34;/var/lib/kubelet/config.yaml&#34;</span>
+</span></span><span style=display:flex><span>[kubelet-start] Writing kubelet environment file with flags to file <span style=font-style:italic>&#34;/var/lib/kubelet/kubeadm-flags.env&#34;</span>
+</span></span><span style=display:flex><span>[kubelet-start] Activating the kubelet service
+</span></span><span style=display:flex><span>[kubelet-start] Waiting <span style=font-weight:700>for</span> the kubelet to perform the TLS Bootstrap...
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>This node has joined the cluster:
 </span></span><span style=display:flex><span>* Certificate signing request was sent to apiserver and a response was received.
 </span></span><span style=display:flex><span>* The Kubelet was informed of the new secure connection details.
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>Run <span style=color:#e6db74>&#39;kubectl get nodes&#39;</span> on the control-plane to see this node join the cluster.
-</span></span></code></pre></div><p>此时在 K8s 集群中存在 4个节点，其中 3 个是 ControlPlane 节点，1 个是 worker 节点，但是此时 worker 节点是连接的 192.168.17.11:6443 APIServer，如果 这个 APIServer 故障了，那么的 worker 节点就无法正常与集群通讯了，需要进行以下操作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:37:51 kubernetes<span style=color:#f92672>]</span>$systemctl stop kubelet docker
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:38:09 manifests<span style=color:#f92672>]</span>$pwd
+</span></span><span style=display:flex><span>Run <span style=font-style:italic>&#39;kubectl get nodes&#39;</span> on the control-plane to see this node join the cluster.
+</span></span></code></pre></div><p>此时在 K8s 集群中存在 4个节点，其中 3 个是 ControlPlane 节点，1 个是 worker 节点，但是此时 worker 节点是连接的 192.168.17.11:6443 APIServer，如果 这个 APIServer 故障了，那么的 worker 节点就无法正常与集群通讯了，需要进行以下操作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install4 18:37:51 kubernetes]$systemctl stop kubelet docker
+</span></span><span style=display:flex><span>[root@install4 18:38:09 manifests]$pwd
 </span></span><span style=display:flex><span>/etc/kubernetes/manifests
-</span></span><span style=display:flex><span><span style=color:#f92672>[</span>root@install4 18:38:12 manifests<span style=color:#f92672>]</span>$cat nginx-proxy.yml 
+</span></span><span style=display:flex><span>[root@install4 18:38:12 manifests]$cat nginx-proxy.yml 
 </span></span><span style=display:flex><span>apiVersion: v1
 </span></span><span style=display:flex><span>kind: Pod
 </span></span><span style=display:flex><span>metadata:
@@ -340,11 +340,11 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 </span></span><span style=display:flex><span>    livenessProbe:
 </span></span><span style=display:flex><span>      httpGet:
 </span></span><span style=display:flex><span>        path: /healthz
-</span></span><span style=display:flex><span>        port: <span style=color:#ae81ff>8081</span>
+</span></span><span style=display:flex><span>        port: 8081
 </span></span><span style=display:flex><span>    readinessProbe:
 </span></span><span style=display:flex><span>      httpGet:
 </span></span><span style=display:flex><span>        path: /healthz
-</span></span><span style=display:flex><span>        port: <span style=color:#ae81ff>8081</span>
+</span></span><span style=display:flex><span>        port: 8081
 </span></span><span style=display:flex><span>    volumeMounts:
 </span></span><span style=display:flex><span>    - mountPath: /etc/nginx
 </span></span><span style=display:flex><span>      name: etc-nginx
@@ -368,4 +368,4 @@ kubeadm 配置文件如下："><meta name=keywords content="blog,developer,perso
 2025
 Yiran Zhou
 ·
-技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var doNotTrack=!1,dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes";if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>
