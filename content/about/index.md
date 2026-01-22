@@ -5,41 +5,13 @@ date: 2018-05-29 20:50:29
 
 ## 关于我
 
-我是依然，日常使用 ID 是 `zdyxry` ，如果在其他地方遇到同名 ID 大概率是我。平时就是看书看剧，或者极少数玩玩游戏。博客中的文章均非 AI 生成。
+我是依然，日常使用 ID 是 `zdyxry` ，如果在其他地方遇到同名 ID 大概率是我。平时就是看书看剧，或者极少数玩玩游戏。在 AI 越来越侵入生活的时代，希望自己活人气息更重一些，博客中的文章均非 AI 生成。
 
-当前博客主要内容为周报，包含每周阅读的文章、观看的影视作品、以及部分想法。作为重度 RSS 用户，日常信息流是通过 RSS/Twitter 获取信息，初筛后通过 Notion Web Clipper 自动保存到 Notion 中（防止 404），定期阅读 Notion 中收藏的文章，整理到 Obsidian 笔记中，最后发送到 Blog。
+当前博客主要内容为周报，包含每周阅读的文章、观看的影视作品、以及部分碎碎念。阅读的内容没有特定偏好，不垂直。作为重度 RSS 用户，日常信息流是通过 RSS/Twitter 获取信息，初筛后通过 Notion Web Clipper 自动保存到 Notion 中（防止 404），定期阅读 Notion 中收藏的文章，整理到 Obsidian 笔记中，最后发送到 Blog。
+
+很高兴认识你。
 
 email: zdyxry#gmail.com
-
-[![Inoreader](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.swo.moe%2Fstats%2Finoreader%2Fhttps%253A%252F%252Fzdyxry.github.io%252Fatom.xml&query=count&color=282c34&label=Inoreader&labelColor=007bc7&logo=data%3Aimage%2Fsvg+xml%3Bbase64%2CPHN2ZyB3aWR0aD0iNzIiIGhlaWdodD0iNzIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTM2IDBjMTkuODgyIDAgMzYgMTYuMTE4IDM2IDM2UzU1Ljg4MiA3MiAzNiA3MiAwIDU1Ljg4MiAwIDM2IDE2LjExOCAwIDM2IDB6bS03Ljk5IDMwLjk4QzIwLjgyNSAzMC45OCAxNSAzNi44MDQgMTUgNDMuOTkgMTUgNTEuMTc1IDIwLjgyNSA1NyAyOC4wMSA1N2M3LjE4MyAwIDEzLjAwOS01LjgyNSAxMy4wMDktMTMuMDExIDAtNy4xODUtNS44MjYtMTMuMDA5LTEzLjAwOS0xMy4wMDl6bTMuNjcgNS41NjVhMy43MjcgMy43MjcgMCAxMS0uMDA1IDcuNDU0IDMuNzI3IDMuNzI3IDAgMDEuMDA0LTcuNDU0em0tMy42Ny0xNC43NTh2NC42ODdjOS42NTYgMCAxNy41MTYgNy44NTggMTcuNTE2IDE3LjUxNWg0LjY4OWMwLTEyLjI0Mi05Ljk2MS0yMi4yMDItMjIuMjA1LTIyLjIwMnptMC05Ljc4N3Y0LjY4N2M3LjI5MiAwIDE0LjE0OCAyLjg0IDE5LjMwNiA3Ljk5OCA1LjE1OCA1LjE1NyA3Ljk5NSAxMi4wMTQgNy45OTUgMTkuMzA0SDYwYzAtOC41NDQtMy4zMjgtMTYuNTc3LTkuMzctMjIuNjJDNDQuNTg1IDE1LjMyNiAzNi41NTQgMTIgMjguMDEgMTJ6IiBmaWxsPSIjRkZGIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48L3N2Zz4%3D&suffix=+subs&cacheSeconds=3600)](https://zdyxry.github.io/atom.xml)
-
-[![Feedly](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.swo.moe%2Fstats%2Ffeedly%2Fhttps%253A%252F%252Fzdyxry.github.io%252Fatom.xml&query=count&color=282c34&label=Feedly&labelColor=2bb24c&logo=feedly&logoColor=ffffff&suffix=+subs&cacheSeconds=3600)](https://zdyxry.github.io/atom.xml)
-
-
-### 硬件 & 软件
-
-主要使用的操作系统是：
-- Garuda Linux
-- MacOS
-- Windows
-- CentOS/openEuler
-
-工作主要使用的软件：
-- Neovim
-- Tmux
-- Ansible
-- Packer
-- Terraform
-- govc
-- VSCode
-
-日常主要使用的软件：
-- Obsidian
-- Miniflux
-- MS Todo
-- 随手记
-- Notion
-- Onedrive
 
 
 ## 博客更新
