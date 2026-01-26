@@ -1,0 +1,147 @@
+---
+title: Weekly Issue-《无可奈何》
+date: 2026-01-25
+tags:
+- Weekly
+description:
+---
+
+
+
+## 文章
+
+### 技术
+
+[20260102 关于过去的一年](https://six-rifle-2f5.notion.site/20260102-2dc262ed0f0f8085b6a4eba42101bae8)
+
+> 一直在 Dify 1.0 的发布上，做着各种各样的测试，即便它其实在 24 年 10 月就已经差不多完全了整体的开发，在年前就已经发布了 beta 版本，但因为各种各样的原因，一拖再拖，一直到 25 年的三月才正式发布，结果刚一发布，上线就开始出现各种乱七八糟的问题
+
+> 因为大家其实都明白一个事，大多数人都是迷茫的，是需要引导的，虽然我们嘴上说着自由意志，说着每个人都有权利决定自己人生是什么样的，但你真要问，你的人生你准备怎么走的时候，大多数人其实回答不上来
+
+> 这也是作为这家公司的管理团队的一员要直面的问题，方向到底在哪里？公司里那么多人到底要往哪里使力？不然就是一盘散沙，也许这也暗示了为什么 Dify 过去的一年让市场失望了，管理团队里一直都没有这个声音，而想要发出这个声音，更是难上加难，你需要面对的是一次又一次的舌战群儒。。
+
+看到能够按照迭代周期正常迭代的产品/公司，都会很有好感。   
+很多时候都是外行看的光鲜，实际上的状态只有自己知道。
+
+---
+
+
+[Vibe Engineering in 2026.1 - me.0xffff.me](https://me.0xffff.me/vibe_engineering_202601.html)
+
+> The implementation phase doesn’t have much to say. I basically don’t read AI-generated code line by line anymore. The main rule I follow is: either let AI do everything, or do everything yourself—never mix the two. In my experience, zero human intervention during implementation works better.
+
+生产力分化严重，顶尖工程师消耗的 token 可能超过其余80%的总和，同时不同人感受到的效率提升差异也很大，有些人可能 100%，有些人可能 10%。在协作上的差异也很大，大家用着不同的开发流程，按照原有的开发流程会明显阻碍部分人效，反过来如果一个人完全负责，可能效率反而更高。
+
+我司最近的 hackathon 推荐组队，但是第一反应就是组队可能不如自己一个人搞。
+
+---
+
+[Railway raises $100M Series B to unburden the builders](https://blog.railway.com/p/series-b)
+
+[[Railway]] B 轮融了 $100M，不知道他们提到的“first intelligent cloud provider“是什么，视频中的“Ship Software Peacefully”这个 Slogan 挺好的，想到设计同事之前自己 Vibe 的产品在部署的时候选择了 [[Zeabur]]，因为不会被墙。
+
+他们在文章中有这样一段话，印象中好像不常见与融资公告中：“We aspire to live in a world of rich tastes, colors, and experiences. We think it’s very difficult to do this drudging through the monotony of poor tooling, tied to your monitor, consuming the same greyscale slop as everybody else.”
+
+如果用 AI 去总结这篇文章，这样的一句话大概率会被忽略掉。
+
+---
+
+[Your App Subscription Is Now My Weekend Project · Roberto Selbach](https://rselbach.com/your-sub-is-now-my-weekend-project)
+
+作者利用周末时间，把之前自己付费购买的一些 “product”都用 AI 来实现了，现在的状态感觉有点像之前大家为了学习某项技术/技能，会选择构建一些 “toy”，可能不一定真正有用，在构建的过程中就很开心了。现在会选择构建一些 “feature”，在构建过程中很难说自己学到了什么，享受的更多的是构建后的日常使用。
+
+---
+
+[Why does SSH send 100 packets per keystroke? · eieio.games](https://eieio.games/blog/ssh-sends-100-packets-per-keystroke/)
+
+我一直很好奇“Keystroke timing obfuscation”的实际表现如何。
+
+---
+[Hi, I'm the founder of Docker. I started it in 2008 (under the name Dotcloud) an... | Hacker News](https://news.ycombinator.com/item?id=46733849)
+
+[[docker]] 创始人在 [[hacker news]] 上的 AMA，还提到了“远离 RedHat“。
+
+>Q: What would you have done differently in retrospect?    
+> A: What I would tell my younger self: Only listen to your users and customers, ignore everyone else.
+
+---
+
+
+### 生活
+
+[那些年我打过的日结工](https://geekplux.com/posts/daily-wage-jobs)
+
+> **你们学生不是更应该懂物理吗？**
+
+我爸也跟我说过这句话，当时场景是用大扫帚（sào zhou）扫雪，我站的很直，两只手很近，不弯腰扫，很累胳膊。我爸说要弯腰，两只手离远。
+
+---
+
+[2025：承启之年](https://polebug.github.io/2026/01/18/plog_2025/)
+
+> 当技术的护城河被消除之后，我开始羡慕其他行业的人，他们相比于程序员拥有了更多的视野，我时常感觉自己没什么创造力，审美也不太行。   
+> **“如果你能想得到，你就能拥有它”，想象力将成为这个时代最核心的生产力。**
+
+想到有一次餐桌聊天，聊到了想象力，其中一个同事非常自己，自己的想象力非常强，我很不信，因为他经常说烂梗。
+
+---
+
+[3,500 Miles in 2025 · Daniel Mangum](https://danielmangum.com/posts/3500-miles-2025/)
+
+> Running is certainly not the only way to learn more about yourself, but it is surely one of the most visceral. I think with so many things feeling like they were outside of my control in 2025, running offered a respite where I could continue to explore the limits of what is possible. Running past, or even running headlong into my limits is where I find some of my greatest joy in life.
+
+>跑步当然不是更多了解自己的唯一方式，但它肯定是最发自内心的方式之一。我认为 2025 年很多事情都超出了我的控制范围，跑步为我提供了一个喘息的机会，让我可以继续探索可能性的极限。超越自己的极限，甚至一头扎进自己的极限，才是我生命中最大的快乐。
+
+很喜欢这段话，翻译了下。
+
+---
+
+[一个中年人决定写日记](https://archive.is/aumXU)
+
+> 7 月 25 日，我和一个全国知名的神内专家吃饭，他高度赞扬了我写日记的习惯，说这是一种主动型健脑运动，可以在一定程度上延缓阿尔兹海默症的发作。
+
+语音[[输入法]]越来越强大，记录日常几乎没什么成本，多记录总是好的。
+
+---
+
+
+
+[世事无常，珍惜当下 | So!azy](https://blog.solazy.me/20260114/)
+
+> 生活不会按照我们预写的剧本去走，很多时候，我们以为还有时间去修正那些「以后再说」的事情，但命运未必会给出那个机会。珍惜当下，不只是珍惜眼前的感情，更是要尽可能坦诚、清醒地面对每一天的生活，不给未来留下那些不可控的隐患。
+
+---
+
+[春节自驾游：我看到了父母与现代性的距离 - Stay Out Space](https://www.wuyi.space/2025/03/07/%E6%98%A5%E8%8A%82%E8%87%AA%E9%A9%BE%E6%B8%B8%E6%88%91%E7%9C%8B%E5%88%B0%E4%BA%86%E7%88%B6%E6%AF%8D%E4%B8%8E%E7%8E%B0%E4%BB%A3%E6%80%A7%E7%9A%84%E8%B7%9D%E7%A6%BB/)
+
+> 如果从功利的视角来看，我们大多数人难以用更长远的眼光去做决策，缺少成功的参照，也缺少失败的底气。不曾见过蝴蝶，自然无法想象轻盈起舞的肆意人生。如果从相反的视角来看，如果可以实现普通而幸福的生活，那也是很不错的体验。不一定肆意，但可以安宁平和。
+
+---
+
+
+
+### 书影播客
+
+《Rust 权威指南》，短短续续看了好久，终于看完了。接下来尝试写几个小东西试试。看的时候也在想，如果让我自己写，肯定不如 AI 写的好，那我看的意义是什么？
+
+《模范出租车 3》，逃不脱打怪升级，这一季搞将军，下一季呢，传统艺能搞总统？再下一季呢？
+
+《无可奈何》，我还挺喜欢这个电影的，李星民这个青龙最佳男配是应得的。看完之后就想到这周看到的另一篇文章里的一句话：“你问，没有初级程序员，那怎么成长成高级程序员。不用担心，不需要高级程序员。正如新的纺织工厂里不需要高级纺织女工，工厂里的工程师也不是从纺织女工升职来的。“
+
+
+
+## 碎碎念
+* 我已经彻底遗忘 Poe 了。 
+* 第一次见到了认识的人中，处于孕妇状态的人，感觉挺微妙的。
+* g.ai 这个域名太妙了。
+* 同事强烈不推荐追觅的产品。
+* 构建产物无法直接查看构建版本信息，真是难受。
+* docker 也在 Ampcode 上面打广告了。
+* 如何查看 Github commit 的 email：找到具体的 commit，在 URL 加 .patch 后缀。
+* GTA6 先发布，还是20T SSD 能够降价到 3800? 我猜前者，因为后者的云厂商订单量已经积压很多了。同事：你可能很了解公有云，但是你不了解 R 星。
+* 看到一个2025年度kpop 新人候选有郑秀晶，愣住。
+* Lovable 取消订阅要点击 5 次，上一次有类似的体验还是在国产软件卸载中，好感败完了。
+* 曼德拉效应（Mandela Effect）是指一群人拥有对过去事件的共同错误记忆，与客观事实不符，但他们坚信自己的记忆是正确的
+* Cerebras 真快啊，快就是好！
+* 从来没想过 711 为什么叫 711，早上7点到晚上11点
+
