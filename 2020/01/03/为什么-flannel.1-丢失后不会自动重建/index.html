@@ -1,356 +1,375 @@
-<!doctype html><html lang=zh-cn><head><title>为什么 flannel.1 丢失后不会自动重建 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="
-  背景
-  
-    
-    链接到标题
-  
+<!DOCTYPE html><html lang="zh-CN"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Yiran Zhou's personal website"><meta name="generator" content="Astro v5.16.16"><!-- Favicon --><link rel="icon" type="image/png" href="/images/yiran.png"><!-- Canonical URL --><link rel="canonical" href="https://zdyxry.github.io/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/"><!-- RSS Feed --><link rel="alternate" type="application/rss+xml" title="Yiran's Blog" href="/atom.xml"><!-- Open Graph / Facebook --><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/"><meta property="og:title" content="为什么 flannel.1 丢失后不会自动重建 | Yiran's Blog"><meta property="og:description" content="Yiran Zhou's personal website"><meta property="og:image" content="https://zdyxry.github.io/images/yiran.png"><meta property="og:locale" content="zh_CN"><meta property="og:site_name" content="Yiran's Blog"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://zdyxry.github.io/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/"><meta property="twitter:title" content="为什么 flannel.1 丢失后不会自动重建 | Yiran's Blog"><meta property="twitter:description" content="Yiran Zhou's personal website"><meta property="twitter:image" content="https://zdyxry.github.io/images/yiran.png"><!-- Article specific meta tags --><meta property="article:published_time" content="2020-01-03T00:00:00.000Z"><meta property="article:tag" content="Kubernetes"><!-- Theme color for mobile browsers --><meta name="theme-color" content="#1565c0" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#1a1d21" media="(prefers-color-scheme: dark)"><!-- Preconnect to external domains --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><title>为什么 flannel.1 丢失后不会自动重建 | Yiran&#39;s Blog</title><!-- Theme initialization script to prevent flash --><script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script><!-- Analytics & Tracking --><!-- Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script> <script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-G0433XDZ3V');
+</script> <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;e3ef83c53de44e8ba2d047cae42e2b4a&quot;}"></script> <!-- Google AdSense --><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2067849739296009" crossorigin="anonymous"></script><link rel="stylesheet" href="/_astro/_slug_.CNI-BeCX.css">
+<link rel="stylesheet" href="/_astro/_slug_.7ZFJe8x3.css"></head> <body> <a href="#main-content" class="skip-link">跳转到主要内容</a> <header data-astro-cid-3ef6ksr2> <nav data-astro-cid-3ef6ksr2> <a href="/" class="logo" data-astro-cid-3ef6ksr2>Yiran's Blog</a> <div class="nav-right" data-astro-cid-3ef6ksr2> <ul class="nav-links" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a href="/" class data-astro-cid-3ef6ksr2> Home </a> </li><li data-astro-cid-3ef6ksr2> <a href="/posts" class data-astro-cid-3ef6ksr2> Posts </a> </li><li data-astro-cid-3ef6ksr2> <a href="/tags" class data-astro-cid-3ef6ksr2> Tags </a> </li><li data-astro-cid-3ef6ksr2> <a href="/mentions" class data-astro-cid-3ef6ksr2> Mentions </a> </li><li data-astro-cid-3ef6ksr2> <a href="/running" class data-astro-cid-3ef6ksr2> Running </a> </li><li data-astro-cid-3ef6ksr2> <a href="/friends" class data-astro-cid-3ef6ksr2> Friends </a> </li><li data-astro-cid-3ef6ksr2> <a href="/about" class data-astro-cid-3ef6ksr2> About </a> </li> </ul> <a href="/search" class="search-link" aria-label="搜索" data-astro-cid-3ef6ksr2> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> </a> <button id="theme-toggle" class="theme-toggle" aria-label="切换主题" data-astro-cid-3ef6ksr2> <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> </div> </nav> </header> <script type="module">const r=document.getElementById("theme-toggle"),e=document.documentElement,h=localStorage.getItem("theme")||"light";e.setAttribute("data-theme",h);r?.addEventListener("click",()=>{const m=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",m),localStorage.setItem("theme",m)});r?.addEventListener("keydown",t=>{if(t.key==="Enter"||t.key===" "){t.preventDefault();const n=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",n),localStorage.setItem("theme",n)}});</script>  <main id="main-content">  <article class="post" data-astro-cid-gjtny2mx> <header class="post-header" data-astro-cid-gjtny2mx> <h1 data-astro-cid-gjtny2mx>为什么 flannel.1 丢失后不会自动重建</h1> <div class="meta" data-astro-cid-gjtny2mx> <time datetime="2020-01-03T00:00:00.000Z" data-astro-cid-gjtny2mx> 2020年1月3日 </time>  <span class="reading-time" data-astro-cid-gjtny2mx>· 6 分钟阅读</span> </div> </header> <div class="tag-list" data-astro-cid-lga65v7i> <a href="/tags/Kubernetes" class="tag" data-astro-cid-lga65v7i>
+#Kubernetes </a> </div>   <div class="post-body" data-astro-cid-gjtny2mx> <div class="content" data-astro-cid-gjtny2mx>  <h2 id="背景">背景</h2>
+<p>在用 K8s 的同学应该多少都使用过 Flannel 作为自己的网络插件，不讨论性能稳定性，在复杂的网络环境配置中 Flannel 的要求应该是最低的，所以我通常使用 Flannel 作为 让 K8s Ready 的最后一步。</p>
+<p>在使用过程中，遇到过多次 flannel.1 这个 link 消失的情况，查看官方 Issue 中有人提到过： <a href="https://github.com/coreos/flannel/issues/869">flannel.1 is deleted by <code>service network restart</code>, and never recreated again.</a> ，但是这个 Issue 从 2017年创建一直到现在都处于 Open 状态，看上去社区也不打算去解决，其实不只是重启网络，如果没有特殊指定的话，找到默认网关所在的网卡，直接 ifdown ，flannel.1 也会丢失，并且不会重建，那为什么会出现这个问题，今天来看一看。</p>
+<h2 id="cni-flannel-plugin">CNI Flannel Plugin</h2>
+<p>我们常说的 Flannel 分为两部分：<a href="https://github.com/containernetworking/plugins/tree/master/plugins/meta/flannel">CNI Flannel Plugin</a> 及 Flannel。</p>
+<p>CNI Flannel Plugin 是 Flannel CNI 插件的具体接口实现， CNI 要求实现的 <code>cmdAdd</code> <code>cmdDel</code> <code>cmdCheck</code> 都是在这里实现的，来看看具体的调用流程：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> cmdAdd</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">args</span><span style="color:#F97583"> *</span><span style="color:#B392F0">skel</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">CmdArgs</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">error</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 从标准输入加载配置</span></span>
+<span class="line"><span style="color:#E1E4E8">	n, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> loadFlannelNetConf</span><span style="color:#E1E4E8">(args.StdinData)</span></span>
+<span class="line"><span style="color:#F97583">    ...</span></span>
+<span class="line"><span style="color:#6A737D">    // 加载子网配置：/run/flannel/subnet.env</span></span>
+<span class="line"><span style="color:#E1E4E8">	fenv, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> loadFlannelSubnetEnv</span><span style="color:#E1E4E8">(n.SubnetFile)</span></span>
+<span class="line"><span style="color:#F97583">    ...</span></span>
+<span class="line"><span style="color:#6A737D">    // 执行添加动作</span></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#B392F0"> doCmdAdd</span><span style="color:#E1E4E8">(args, n, fenv)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> doCmdAdd</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">args</span><span style="color:#F97583"> *</span><span style="color:#B392F0">skel</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">CmdArgs</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">n</span><span style="color:#F97583"> *</span><span style="color:#B392F0">NetConf</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">fenv</span><span style="color:#F97583"> *</span><span style="color:#B392F0">subnetEnv</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">error</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">	n.Delegate[</span><span style="color:#9ECBFF">"name"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> n.Name</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#F97583"> !</span><span style="color:#B392F0">hasKey</span><span style="color:#E1E4E8">(n.Delegate, </span><span style="color:#9ECBFF">"type"</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">		n.Delegate[</span><span style="color:#9ECBFF">"type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "bridge"</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"><span style="color:#F97583">	...</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> n.CNIVersion </span><span style="color:#F97583">!=</span><span style="color:#9ECBFF"> ""</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">		n.Delegate[</span><span style="color:#9ECBFF">"cniVersion"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> n.CNIVersion</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"><span style="color:#E1E4E8">	n.Delegate[</span><span style="color:#9ECBFF">"ipam"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#F97583"> map</span><span style="color:#E1E4E8">[</span><span style="color:#F97583">string</span><span style="color:#E1E4E8">]</span><span style="color:#F97583">interface</span><span style="color:#E1E4E8">{}{</span></span>
+<span class="line"><span style="color:#9ECBFF">		"type"</span><span style="color:#E1E4E8">:   </span><span style="color:#9ECBFF">"host-local"</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">		"subnet"</span><span style="color:#E1E4E8">: fenv.sn.</span><span style="color:#B392F0">String</span><span style="color:#E1E4E8">(),</span></span>
+<span class="line"><span style="color:#9ECBFF">		"routes"</span><span style="color:#E1E4E8">: []</span><span style="color:#B392F0">types</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Route</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">			{</span></span>
+<span class="line"><span style="color:#E1E4E8">				Dst: </span><span style="color:#F97583">*</span><span style="color:#E1E4E8">fenv.nw,</span></span>
+<span class="line"><span style="color:#E1E4E8">			},</span></span>
+<span class="line"><span style="color:#E1E4E8">		},</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"><span style="color:#6A737D">    // 进行配置解析及填充后，执行委托类型插件进行配置，默认是 bridge，创建过程中会将配置保存到 /var/lib/cni/flannel ，删除时会用到</span></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#B392F0"> delegateAdd</span><span style="color:#E1E4E8">(args.ContainerID, n.DataDir, n.Delegate)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>到这里已经跟 Flannel Plugin 无关了，是调用的其他插件完成的具体动作，再来看看删除动作：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> cmdDel</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">args</span><span style="color:#F97583"> *</span><span style="color:#B392F0">skel</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">CmdArgs</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">error</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">	nc, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> loadFlannelNetConf</span><span style="color:#E1E4E8">(args.StdinData)</span></span>
+<span class="line"><span style="color:#F97583">    ...</span></span>
+<span class="line"><span style="color:#6A737D">    // 执行删除动作</span></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#B392F0"> doCmdDel</span><span style="color:#E1E4E8">(args, nc)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> doCmdDel</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">args</span><span style="color:#F97583"> *</span><span style="color:#B392F0">skel</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">CmdArgs</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">n</span><span style="color:#F97583"> *</span><span style="color:#B392F0">NetConf</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">error</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 从 /var/lib/cni/flannel 中根据 ContainerID 读取配置，并在读取后删除配置</span></span>
+<span class="line"><span style="color:#E1E4E8">    netconfBytes, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> consumeScratchNetConf</span><span style="color:#E1E4E8">(args.ContainerID, n.DataDir)</span></span>
+<span class="line"><span style="color:#F97583">    ...</span></span>
+<span class="line"><span style="color:#E1E4E8">	nc </span><span style="color:#F97583">:=</span><span style="color:#F97583"> &#x26;</span><span style="color:#B392F0">types</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">NetConf</span><span style="color:#E1E4E8">{}</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> json.</span><span style="color:#B392F0">Unmarshal</span><span style="color:#E1E4E8">(netconfBytes, nc); err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#E1E4E8"> fmt.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"failed to parse netconf: </span><span style="color:#79B8FF">%v</span><span style="color:#9ECBFF">"</span><span style="color:#E1E4E8">, err)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"><span style="color:#6A737D">    // 委托其他插件执行删除动作，默认 bridge</span></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#E1E4E8"> invoke.</span><span style="color:#B392F0">DelegateDel</span><span style="color:#E1E4E8">(context.</span><span style="color:#B392F0">TODO</span><span style="color:#E1E4E8">(), nc.Type, netconfBytes, </span><span style="color:#79B8FF">nil</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>到这里我们来捋一捋整个流程：</p>
+<ol>
+<li>kubelet 启动时查找可用 CNI 插件，并根据配置加载</li>
+<li>kubelet 创建容器前，通过 CNI Interface 调用相应方法执行 cmdAdd/cmdDel 命令</li>
+<li>CNI 根据配置信息调用对应的 Plugin 执行 cmdAdd/cmdDel</li>
+</ol>
+<h3 id="相应文件路径">相应文件路径</h3>
+<h4 id="varlibcniflannel">/var/lib/cni/flannel</h4>
+<p>每个 Pod 的具体网络配置，配置内容如下</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@install2 09:29:48 cni]$pwd</span></span>
+<span class="line"><span style="color:#B392F0">/var/lib/cni</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@install2 09:29:51 cni]$cat flannel/d3f1220d58a72ebe5a92f8febbe6dd45d3bff65dce0ff6960f732f202026c24c </span><span style="color:#F97583">|</span><span style="color:#B392F0">jq</span></span>
+<span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#B392F0">  "cniVersion"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "0.3.1",</span></span>
+<span class="line"><span style="color:#B392F0">  "hairpinMode"</span><span style="color:#79B8FF">:</span><span style="color:#79B8FF"> true</span><span style="color:#9ECBFF">,</span></span>
+<span class="line"><span style="color:#B392F0">  "ipMasq"</span><span style="color:#79B8FF">:</span><span style="color:#79B8FF"> false</span><span style="color:#9ECBFF">,</span></span>
+<span class="line"><span style="color:#B392F0">  "ipam"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">    "routes"</span><span style="color:#79B8FF">:</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#E1E4E8">      {</span></span>
+<span class="line"><span style="color:#B392F0">        "dst"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "10.244.0.0/16"</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    ],</span></span>
+<span class="line"><span style="color:#B392F0">    "subnet"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "10.244.1.0/24",</span></span>
+<span class="line"><span style="color:#B392F0">    "type"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "host-local"</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#B392F0">  "isDefaultGateway"</span><span style="color:#79B8FF">:</span><span style="color:#79B8FF"> true</span><span style="color:#9ECBFF">,</span></span>
+<span class="line"><span style="color:#B392F0">  "isGateway"</span><span style="color:#79B8FF">:</span><span style="color:#79B8FF"> true</span><span style="color:#9ECBFF">,</span></span>
+<span class="line"><span style="color:#B392F0">  "mtu"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> 1450,</span></span>
+<span class="line"><span style="color:#B392F0">  "name"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "cbr0",</span></span>
+<span class="line"><span style="color:#B392F0">  "type"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "bridge"</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<h4 id="varlibcninetworks">/var/lib/cni/networks</h4>
+<p>IP 地址分配配置路径，默认 Flannel 使用的 ipam 是 host-local，bridge 是 cbr0 ，在这下面是已分配的 IP 地址：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@install2 09:31:48 cni]$pwd</span></span>
+<span class="line"><span style="color:#B392F0">/var/lib/cni</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@install2 09:31:49 cni]$tree networks/</span></span>
+<span class="line"><span style="color:#B392F0">networks/</span></span>
+<span class="line"><span style="color:#B392F0">└──</span><span style="color:#9ECBFF"> cbr0</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#79B8FF"> 10.244.1.160</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#79B8FF"> 10.244.1.161</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#79B8FF"> 10.244.1.162</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#9ECBFF"> last_reserved_ip.0</span></span>
+<span class="line"><span style="color:#B392F0">    └──</span><span style="color:#9ECBFF"> lock</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">1</span><span style="color:#9ECBFF"> directory,</span><span style="color:#79B8FF"> 5</span><span style="color:#9ECBFF"> files</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@install2 09:31:53 cni]$cat networks/cbr0/10.244.1.162</span></span>
+<span class="line"><span style="color:#B392F0">d3f1220d58a72ebe5a92f8febbe6dd45d3bff65dce0ff6960f732f202026c24c</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@install2 09:32:07 cni]$cat networks/cbr0/last_reserved_ip.0</span></span>
+<span class="line"><span style="color:#B392F0">10.244.1.162</span></span></code></pre>
+<h4 id="etccninetd">/etc/cni/net.d</h4>
+<p>CNI 插件配置文件</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@install2 09:34:47 net.d]$pwd</span></span>
+<span class="line"><span style="color:#B392F0">/etc/cni/net.d</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@install2 09:34:48 net.d]$cat 10-flannel.conflist</span></span>
+<span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#B392F0">  "name"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "cbr0",</span></span>
+<span class="line"><span style="color:#B392F0">  "cniVersion"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "0.3.1",</span></span>
+<span class="line"><span style="color:#B392F0">  "plugins"</span><span style="color:#79B8FF">:</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#B392F0">      "type"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "flannel",</span></span>
+<span class="line"><span style="color:#B392F0">      "delegate"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        "hairpinMode"</span><span style="color:#79B8FF">:</span><span style="color:#79B8FF"> true</span><span style="color:#9ECBFF">,</span></span>
+<span class="line"><span style="color:#B392F0">        "isDefaultGateway"</span><span style="color:#79B8FF">:</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#B392F0">      "type"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "portmap",</span></span>
+<span class="line"><span style="color:#B392F0">      "capabilities"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        "portMappings"</span><span style="color:#79B8FF">:</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  ]</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>大概了解了 CNI Flannel Plugin ，说好的 <code>flannel.1</code> 呢？既然确定了 <code>flannel.1</code> 不是 CNI Plugin 里面实现的，那肯定就是 Flannel 自己的行为了，接下来看 <code>Flannel</code> 代码就可以了。</p>
+<h2 id="flannel">Flannel</h2>
+<p>提到 Flannel，就不得不拿出这张图：</p>
+<p><img src="/images/posts/flannel.png" alt=""></p>
+<h3 id="目录结构">目录结构</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:~/go/src/github.com/coreos/flannel</span></span>
+<span class="line"><span style="color:#B392F0">master</span><span style="color:#9ECBFF"> ✗</span><span style="color:#E1E4E8"> $ </span><span style="color:#9ECBFF">tree</span><span style="color:#9ECBFF"> .</span><span style="color:#79B8FF"> -L</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> backend</span><span style="color:#6A737D"> # 后端实现：vxlan,udp,hostgw</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> main.go</span><span style="color:#6A737D"> # 入口</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> network</span><span style="color:#6A737D"> # IPtables 相关配置</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> pkg</span><span style="color:#6A737D">     # 辅助功能，如 IP，Namespace</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> README.md</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> subnet</span><span style="color:#6A737D">  # 子网管理，K8s 通信相关</span></span></code></pre>
+<h3 id="使用方式">使用方式</h3>
+<p>我们先来回想一下 K8s 集群部署，我们通过 kubeadm 指定了 Pod CIDR 为 <code>10.244.0.0/16</code> ：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#B392F0">---</span></span>
+<span class="line"><span style="color:#85E89D">apiServer</span><span style="color:#E1E4E8">: {}</span></span>
+<span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">kubeadm.k8s.io/v1beta1</span></span>
+<span class="line"><span style="color:#85E89D">kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">ClusterConfiguration</span></span>
+<span class="line"><span style="color:#85E89D">kubernetesVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">""</span></span>
+<span class="line"><span style="color:#85E89D">networking</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#85E89D">  dnsDomain</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">""</span></span>
+<span class="line"><span style="color:#85E89D">  podSubnet</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">10.244.0.0/16</span></span>
+<span class="line"><span style="color:#85E89D">  serviceSubnet</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">""</span></span></code></pre>
+<p>然后我们直接执行 <code>kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code> 等待 Node Ready 即可，这样做的前提是因为我们指定的 Pod 子网是 Flannel 默认子网，两者必须相同才可以配置正确。</p>
+<h3 id="代码入口">代码入口</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> main</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  ...</span></span>
+<span class="line"><span style="color:#E1E4E8">	sm, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> newSubnetManager</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">  ...</span></span>
+<span class="line"><span style="color:#6A737D">	// 从 K8s 中获取配置信息，主要是子网信息</span></span>
+<span class="line"><span style="color:#E1E4E8">	config, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> getConfig</span><span style="color:#E1E4E8">(ctx, sm)</span></span>
+<span class="line"><span style="color:#F97583">  ...</span></span>
+<span class="line"><span style="color:#6A737D">  // 创建 backend manager 并创建用来创建 backend 和注册网络</span></span>
+<span class="line"><span style="color:#E1E4E8">	bm </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> backend.</span><span style="color:#B392F0">NewManager</span><span style="color:#E1E4E8">(ctx, sm, extIface)</span></span>
+<span class="line"><span style="color:#E1E4E8">	be, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> bm.</span><span style="color:#B392F0">GetBackend</span><span style="color:#E1E4E8">(config.BackendType)</span></span>
+<span class="line"><span style="color:#F97583">  ...</span></span>
+<span class="line"><span style="color:#E1E4E8">	bn, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> be.</span><span style="color:#B392F0">RegisterNetwork</span><span style="color:#E1E4E8">(ctx, wg, config)</span></span>
+<span class="line"><span style="color:#F97583">  ...</span></span>
+<span class="line"><span style="color:#6A737D">	// 运行 backend</span></span>
+<span class="line"><span style="color:#E1E4E8">	log.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Running backend."</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">	wg.</span><span style="color:#B392F0">Add</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">	go</span><span style="color:#F97583"> func</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#E1E4E8">		bn.</span><span style="color:#B392F0">Run</span><span style="color:#E1E4E8">(ctx)</span></span>
+<span class="line"><span style="color:#E1E4E8">		wg.</span><span style="color:#B392F0">Done</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#E1E4E8">	}()</span></span>
+<span class="line"><span style="color:#F97583">  ...</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>在 main.go 中获取配置的来源是 ConfigMap：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#E1E4E8">[</span><span style="color:#9ECBFF">root@install1 11:00:39 ~</span><span style="color:#E1E4E8">]</span><span style="color:#9ECBFF">$kubectl get cm kube-flannel-cfg -n kube-system -o yaml</span></span>
+<span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">v1</span></span>
+<span class="line"><span style="color:#85E89D">data</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#85E89D">  cni-conf.json</span><span style="color:#E1E4E8">: </span><span style="color:#F97583">|</span></span>
+<span class="line"><span style="color:#9ECBFF">    {</span></span>
+<span class="line"><span style="color:#9ECBFF">      "name": "cbr0",</span></span>
+<span class="line"><span style="color:#9ECBFF">      "cniVersion": "0.3.1",</span></span>
+<span class="line"><span style="color:#9ECBFF">      "plugins": [</span></span>
+<span class="line"><span style="color:#9ECBFF">        {</span></span>
+<span class="line"><span style="color:#9ECBFF">          "type": "flannel",</span></span>
+<span class="line"><span style="color:#9ECBFF">          "delegate": {</span></span>
+<span class="line"><span style="color:#9ECBFF">            "hairpinMode": true,</span></span>
+<span class="line"><span style="color:#9ECBFF">            "isDefaultGateway": true</span></span>
+<span class="line"><span style="color:#9ECBFF">          }</span></span>
+<span class="line"><span style="color:#9ECBFF">        },</span></span>
+<span class="line"><span style="color:#9ECBFF">        {</span></span>
+<span class="line"><span style="color:#9ECBFF">          "type": "portmap",</span></span>
+<span class="line"><span style="color:#9ECBFF">          "capabilities": {</span></span>
+<span class="line"><span style="color:#9ECBFF">            "portMappings": true</span></span>
+<span class="line"><span style="color:#9ECBFF">          }</span></span>
+<span class="line"><span style="color:#9ECBFF">        }</span></span>
+<span class="line"><span style="color:#9ECBFF">      ]</span></span>
+<span class="line"><span style="color:#9ECBFF">    }</span></span>
+<span class="line"><span style="color:#85E89D">  net-conf.json</span><span style="color:#E1E4E8">: </span><span style="color:#F97583">|</span></span>
+<span class="line"><span style="color:#9ECBFF">    {</span></span>
+<span class="line"><span style="color:#9ECBFF">      "Network": "10.244.0.0/16",</span></span>
+<span class="line"><span style="color:#9ECBFF">      "Backend": {</span></span>
+<span class="line"><span style="color:#9ECBFF">        "Type": "vxlan"</span></span>
+<span class="line"><span style="color:#9ECBFF">      }</span></span>
+<span class="line"><span style="color:#9ECBFF">    }</span></span>
+<span class="line"><span style="color:#85E89D">kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">ConfigMap</span></span>
+<span class="line"><span style="color:#85E89D">metadata</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#85E89D">  annotations</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#85E89D">  creationTimestamp</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">"2019-12-30T02:37:21Z"</span></span>
+<span class="line"><span style="color:#85E89D">  labels</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#85E89D">    app</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">flannel</span></span>
+<span class="line"><span style="color:#85E89D">    tier</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">node</span></span>
+<span class="line"><span style="color:#85E89D">  name</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">kube-flannel-cfg</span></span>
+<span class="line"><span style="color:#85E89D">  namespace</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">kube-system</span></span>
+<span class="line"><span style="color:#85E89D">  resourceVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">"235454"</span></span>
+<span class="line"><span style="color:#85E89D">  selfLink</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">/api/v1/namespaces/kube-system/configmaps/kube-flannel-cfg</span></span>
+<span class="line"><span style="color:#85E89D">  uid</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">fd9f67ee-ee1b-411d-8403-23ab05de56c8</span></span></code></pre>
+<p>可以看到默认的 Backend 是 vxlan，我们接着看 backend 和 vxlan 相关处理，在 backend/ 路径下放着些统一的接口定义，vxlan 是接口的具体实现：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:~/go/src/github.com/coreos/flannel</span></span>
+<span class="line"><span style="color:#B392F0">master</span><span style="color:#9ECBFF"> ✗</span><span style="color:#E1E4E8"> $ </span><span style="color:#9ECBFF">tree</span><span style="color:#9ECBFF"> backend</span><span style="color:#79B8FF"> -L</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#B392F0">backend</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> common.go</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> manager.go</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> route_network.go</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> route_network_test.go</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> route_network_windows.go</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> simple_network.go</span></span>
+<span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> udp</span></span>
+<span class="line"><span style="color:#B392F0">└──</span><span style="color:#9ECBFF"> vxlan</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#9ECBFF"> device.go</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#9ECBFF"> device_windows.go</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#9ECBFF"> vxlan.go</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#9ECBFF"> vxlan_network.go</span></span>
+<span class="line"><span style="color:#B392F0">    ├──</span><span style="color:#9ECBFF"> vxlan_network_windows.go</span></span>
+<span class="line"><span style="color:#B392F0">    └──</span><span style="color:#9ECBFF"> vxlan_windows.go</span></span></code></pre>
+<p>如 <code>RegisterNetwork</code>：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> Backend</span><span style="color:#F97583"> interface</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">	// Called when the backend should create or begin managing a new network</span></span>
+<span class="line"><span style="color:#B392F0">	RegisterNetwork</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">ctx</span><span style="color:#B392F0"> context</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Context</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">wg</span><span style="color:#B392F0"> sync</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">WaitGroup</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">config</span><span style="color:#F97583"> *</span><span style="color:#B392F0">subnet</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Config</span><span style="color:#E1E4E8">) (</span><span style="color:#B392F0">Network</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>看看 vxlan RegisterNetwork 做了什么：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">be </span><span style="color:#F97583">*</span><span style="color:#B392F0">VXLANBackend</span><span style="color:#E1E4E8">) </span><span style="color:#B392F0">RegisterNetwork</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">ctx</span><span style="color:#B392F0"> context</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Context</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">wg</span><span style="color:#B392F0"> sync</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">WaitGroup</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">config</span><span style="color:#F97583"> *</span><span style="color:#B392F0">subnet</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Config</span><span style="color:#E1E4E8">) (</span><span style="color:#B392F0">backend</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Network</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">	// 解析配置</span></span>
+<span class="line"><span style="color:#E1E4E8">	cfg </span><span style="color:#F97583">:=</span><span style="color:#F97583"> struct</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">		VNI           </span><span style="color:#F97583">int</span></span>
+<span class="line"><span style="color:#E1E4E8">		Port          </span><span style="color:#F97583">int</span></span>
+<span class="line"><span style="color:#E1E4E8">		GBP           </span><span style="color:#F97583">bool</span></span>
+<span class="line"><span style="color:#E1E4E8">		Learning      </span><span style="color:#F97583">bool</span></span>
+<span class="line"><span style="color:#E1E4E8">		DirectRouting </span><span style="color:#F97583">bool</span></span>
+<span class="line"><span style="color:#E1E4E8">	}{</span></span>
+<span class="line"><span style="color:#E1E4E8">		VNI: defaultVNI,</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // vtep 配置信息</span></span>
+<span class="line"><span style="color:#E1E4E8">	devAttrs </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> vxlanDeviceAttrs</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">		vni:       </span><span style="color:#F97583">uint32</span><span style="color:#E1E4E8">(cfg.VNI),</span></span>
+<span class="line"><span style="color:#E1E4E8">		name:      fmt.</span><span style="color:#B392F0">Sprintf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"flannel.</span><span style="color:#79B8FF">%v</span><span style="color:#9ECBFF">"</span><span style="color:#E1E4E8">, cfg.VNI),</span></span>
+<span class="line"><span style="color:#E1E4E8">		vtepIndex: be.extIface.Iface.Index,</span></span>
+<span class="line"><span style="color:#E1E4E8">		vtepAddr:  be.extIface.IfaceAddr,</span></span>
+<span class="line"><span style="color:#E1E4E8">		vtepPort:  cfg.Port,</span></span>
+<span class="line"><span style="color:#E1E4E8">		gbp:       cfg.GBP,</span></span>
+<span class="line"><span style="color:#E1E4E8">		learning:  cfg.Learning,</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 创建 vtep</span></span>
+<span class="line"><span style="color:#E1E4E8">	dev, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> newVXLANDevice</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">&#x26;</span><span style="color:#E1E4E8">devAttrs)</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8">, err</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"><span style="color:#E1E4E8">	dev.directRouting </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> cfg.DirectRouting</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> newVXLANDevice</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">devAttrs</span><span style="color:#F97583"> *</span><span style="color:#B392F0">vxlanDeviceAttrs</span><span style="color:#E1E4E8">) (</span><span style="color:#F97583">*</span><span style="color:#B392F0">vxlanDevice</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">  // netlink 是 Golang 中操作网络相关的库，提供了创建 Vxlan 设备的接口</span></span>
+<span class="line"><span style="color:#E1E4E8">	link </span><span style="color:#F97583">:=</span><span style="color:#F97583"> &#x26;</span><span style="color:#B392F0">netlink</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Vxlan</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">		LinkAttrs: </span><span style="color:#B392F0">netlink</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">LinkAttrs</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">			Name: devAttrs.name,</span></span>
+<span class="line"><span style="color:#E1E4E8">		},</span></span>
+<span class="line"><span style="color:#E1E4E8">		VxlanId:      </span><span style="color:#F97583">int</span><span style="color:#E1E4E8">(devAttrs.vni),</span></span>
+<span class="line"><span style="color:#E1E4E8">		VtepDevIndex: devAttrs.vtepIndex,</span></span>
+<span class="line"><span style="color:#E1E4E8">		SrcAddr:      devAttrs.vtepAddr,</span></span>
+<span class="line"><span style="color:#E1E4E8">		Port:         devAttrs.vtepPort,</span></span>
+<span class="line"><span style="color:#E1E4E8">		Learning:     devAttrs.learning,</span></span>
+<span class="line"><span style="color:#E1E4E8">		GBP:          devAttrs.gbp,</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">	link, err </span><span style="color:#F97583">:=</span><span style="color:#B392F0"> ensureLink</span><span style="color:#E1E4E8">(link)</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8">, err</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#F97583"> &#x26;</span><span style="color:#B392F0">vxlanDevice</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">		link: link,</span></span>
+<span class="line"><span style="color:#E1E4E8">	}, </span><span style="color:#79B8FF">nil</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> ensureLink</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">vxlan</span><span style="color:#F97583"> *</span><span style="color:#B392F0">netlink</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Vxlan</span><span style="color:#E1E4E8">) (</span><span style="color:#F97583">*</span><span style="color:#B392F0">netlink</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Vxlan</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">	err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> netlink.</span><span style="color:#B392F0">LinkAdd</span><span style="color:#E1E4E8">(vxlan)</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">==</span><span style="color:#E1E4E8"> syscall.EEXIST {</span></span>
+<span class="line"><span style="color:#6A737D">		// it's ok if the device already exists as long as config is similar</span></span>
+<span class="line"><span style="color:#E1E4E8">    log.</span><span style="color:#B392F0">V</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">).</span><span style="color:#B392F0">Infof</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"VXLAN device already exists"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">    ...</span></span>
+<span class="line"><span style="color:#6A737D">		// 如果存在，则娇艳 原有设备是否兼容，如果不兼容则删除并重新创建设备</span></span>
+<span class="line"><span style="color:#F97583">		if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> netlink.</span><span style="color:#B392F0">LinkAdd</span><span style="color:#E1E4E8">(vxlan); err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">			return</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8">, fmt.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"failed to create vxlan interface: </span><span style="color:#79B8FF">%v</span><span style="color:#9ECBFF">"</span><span style="color:#E1E4E8">, err)</span></span>
+<span class="line"><span style="color:#E1E4E8">		}</span></span>
+<span class="line"><span style="color:#E1E4E8">	} </span><span style="color:#F97583">else</span><span style="color:#F97583"> if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8">, err</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  ...</span></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#E1E4E8"> vxlan, </span><span style="color:#79B8FF">nil</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>到这里我们就知道了是 Flannel 在进行 backend 注册的时候创建的 <code>flannel.1</code> 设备，如果我们想要简单粗暴的去修改代码实现，我们可以在 <code>backend.Run()</code> 方法中加入 <code>ensureLink</code> 检测逻辑，保证当发现对应 vtep 设备消失时，重新创建。但是这种实现方式就比较侵入，而且破坏了 backend 通用逻辑，我理解正确的处理方式应该是通过 health 探针去检测，如果检测到 Pod 处于 unhealthy 状态，自动重建 Pod，会重新进行 <code>backend.RegisterNetwork</code> 逻辑，就不存在这个问题了。</p>
+<p>来看下默认的 Flannel YAML 文件，发现其中并没有 health 探针配置，还是有点奇怪的，这么一个基础的服务，居然没有做任何的健康检查，听上去有些不合道理。</p>
+<p>于是我又去 Github 上查找相关的 Issue，果然发现了很多人遇到这个问题，倒是最终都没有提出比较好的方案来解决，其中 Eduard Català 分别提交了 2 个 PR 用来增加 Health Check 机制，但是不知道因为什么最终都没有合并：</p>
+<ul>
+<li><a href="https://github.com/coreos/flannel/pull/917">https://github.com/coreos/flannel/pull/917</a></li>
+<li><a href="https://github.com/coreos/flannel/pull/920">https://github.com/coreos/flannel/pull/920</a></li>
+</ul>
+<p>我们来看看他的对应实现，通过检测对应的设备是否存在，如果不存在则不健康：</p>
+<p>backend/vxlan/vxlan.go</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">be </span><span style="color:#F97583">*</span><span style="color:#B392F0">VXLANBackend</span><span style="color:#E1E4E8">) </span><span style="color:#B392F0">CheckHealthz</span><span style="color:#E1E4E8">() </span><span style="color:#F97583">error</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">	_, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> net.</span><span style="color:#B392F0">InterfaceByName</span><span style="color:#E1E4E8">(be.extIface.Iface.Name)</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">		log.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Master interface </span><span style="color:#79B8FF">%v</span><span style="color:#9ECBFF"> disappeared. Waiting its return..."</span><span style="color:#E1E4E8">, be.extIface.Iface.Name)</span></span>
+<span class="line"><span style="color:#F97583">		for</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">			time.</span><span style="color:#B392F0">Sleep</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">15</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second)</span></span>
+<span class="line"><span style="color:#E1E4E8">			_, err </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> net.</span><span style="color:#B392F0">InterfaceByName</span><span style="color:#E1E4E8">(be.extIface.Iface.Name)</span></span>
+<span class="line"><span style="color:#E1E4E8">		}</span></span>
+<span class="line"><span style="color:#E1E4E8">		log.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Master interface: </span><span style="color:#79B8FF">%v</span><span style="color:#9ECBFF"> reappeared"</span><span style="color:#E1E4E8">, be.extIface.Iface.Name)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">	_, err </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> net.</span><span style="color:#B392F0">InterfaceByName</span><span style="color:#E1E4E8">(be.network.dev.link.Name)</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">		log.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Flannel interface: </span><span style="color:#79B8FF">%v</span><span style="color:#9ECBFF"> not found - Requiring flannel restart "</span><span style="color:#E1E4E8">, be.network.dev.link.Name)</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#E1E4E8"> backend.FlannelRestart</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#79B8FF"> nil</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<h2 id="总结">总结</h2>
+<p>Flannel 社区活跃度不高，合并 PR 的速度更是慢的离谱，有很多存在很久的 Issue 也没有解决，感觉还是用着玩玩就好。</p>
+<h2 id="参考链接">参考链接</h2>
+<ul>
+<li><a href="https://github.com/containernetworking/plugins.git">https://github.com/containernetworking/plugins.git</a></li>
+<li><a href="https://github.com/Kevin-fqh/learning-k8s-source-code/blob/master/cni%20plugin/flannel%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB.md">https://github.com/Kevin-fqh/learning-k8s-source-code/blob/master/cni%20plugin/flannel%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB.md</a></li>
+<li><a href="https://cizixs.com/2016/07/16/flannel-source-code-insight/">https://cizixs.com/2016/07/16/flannel-source-code-insight/</a></li>
+</ul>  </div> <aside class="toc-sidebar" data-astro-cid-gjtny2mx> <nav class="toc" aria-label="目录" data-astro-cid-xvrfupwn><h2 class="toc-title" data-astro-cid-xvrfupwn>目录</h2><ul class="toc-list" data-astro-cid-xvrfupwn><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#背景" class="toc-link" data-astro-cid-xvrfupwn>背景</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#cni-flannel-plugin" class="toc-link" data-astro-cid-xvrfupwn>CNI Flannel Plugin</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#相应文件路径" class="toc-link" data-astro-cid-xvrfupwn>相应文件路径</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#flannel" class="toc-link" data-astro-cid-xvrfupwn>Flannel</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#目录结构" class="toc-link" data-astro-cid-xvrfupwn>目录结构</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#使用方式" class="toc-link" data-astro-cid-xvrfupwn>使用方式</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#代码入口" class="toc-link" data-astro-cid-xvrfupwn>代码入口</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#总结" class="toc-link" data-astro-cid-xvrfupwn>总结</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#参考链接" class="toc-link" data-astro-cid-xvrfupwn>参考链接</a></li></ul></nav><script type="module">const s={root:null,rootMargin:"-20% 0px -80% 0px",threshold:0},i=new IntersectionObserver(e=>{e.forEach(o=>{if(o.isIntersecting){const r=o.target.id;document.querySelectorAll(".toc-link").forEach(c=>{c.classList.remove("active")});const t=document.querySelector(`.toc-link[href="#${r}"]`);t&&t.classList.add("active")}})},s);document.querySelectorAll("h2[id], h3[id]").forEach(e=>{i.observe(e)});</script> </aside> </div>  <div id="disqus_thread" data-astro-cid-r2x3s5wt></div> <script>(function(){const url = "https://zdyxry.github.io/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/";
+const identifier = "2020/01/03/为什么-flannel-1-丢失后不会自动重建";
+const title = "为什么 flannel.1 丢失后不会自动重建";
 
-在用 K8s 的同学应该多少都使用过 Flannel 作为自己的网络插件，不讨论性能稳定性，在复杂的网络环境配置中 Flannel 的要求应该是最低的，所以我通常使用 Flannel 作为 让 K8s Ready 的最后一步。
-在使用过程中，遇到过多次 flannel.1 这个 link 消失的情况，查看官方 Issue 中有人提到过： flannel.1 is deleted by service network restart, and never recreated again. ，但是这个 Issue 从 2017年创建一直到现在都处于 Open 状态，看上去社区也不打算去解决，其实不只是重启网络，如果没有特殊指定的话，找到默认网关所在的网卡，直接 ifdown ，flannel.1 也会丢失，并且不会重建，那为什么会出现这个问题，今天来看一看。
-
-  CNI Flannel Plugin
+  var disqus_config = function () {
+    this.page.url = url;
+    this.page.identifier = identifier;
+    this.page.title = title;
+  };
   
-    
-    链接到标题
-  
-
-我们常说的 Flannel 分为两部分：CNI Flannel Plugin 及 Flannel。
-CNI Flannel Plugin 是 Flannel CNI 插件的具体接口实现， CNI 要求实现的 cmdAdd cmdDel cmdCheck 都是在这里实现的，来看看具体的调用流程："><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="为什么 flannel.1 丢失后不会自动重建"><meta name=twitter:description content="背景 链接到标题 在用 K8s 的同学应该多少都使用过 Flannel 作为自己的网络插件，不讨论性能稳定性，在复杂的网络环境配置中 Flannel 的要求应该是最低的，所以我通常使用 Flannel 作为 让 K8s Ready 的最后一步。
-在使用过程中，遇到过多次 flannel.1 这个 link 消失的情况，查看官方 Issue 中有人提到过： flannel.1 is deleted by service network restart, and never recreated again. ，但是这个 Issue 从 2017年创建一直到现在都处于 Open 状态，看上去社区也不打算去解决，其实不只是重启网络，如果没有特殊指定的话，找到默认网关所在的网卡，直接 ifdown ，flannel.1 也会丢失，并且不会重建，那为什么会出现这个问题，今天来看一看。
-CNI Flannel Plugin 链接到标题 我们常说的 Flannel 分为两部分：CNI Flannel Plugin 及 Flannel。
-CNI Flannel Plugin 是 Flannel CNI 插件的具体接口实现， CNI 要求实现的 cmdAdd cmdDel cmdCheck 都是在这里实现的，来看看具体的调用流程："><meta property="og:url" content="https://zdyxry.github.io/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="为什么 flannel.1 丢失后不会自动重建"><meta property="og:description" content="背景 链接到标题 在用 K8s 的同学应该多少都使用过 Flannel 作为自己的网络插件，不讨论性能稳定性，在复杂的网络环境配置中 Flannel 的要求应该是最低的，所以我通常使用 Flannel 作为 让 K8s Ready 的最后一步。
-在使用过程中，遇到过多次 flannel.1 这个 link 消失的情况，查看官方 Issue 中有人提到过： flannel.1 is deleted by service network restart, and never recreated again. ，但是这个 Issue 从 2017年创建一直到现在都处于 Open 状态，看上去社区也不打算去解决，其实不只是重启网络，如果没有特殊指定的话，找到默认网关所在的网卡，直接 ifdown ，flannel.1 也会丢失，并且不会重建，那为什么会出现这个问题，今天来看一看。
-CNI Flannel Plugin 链接到标题 我们常说的 Flannel 分为两部分：CNI Flannel Plugin 及 Flannel。
-CNI Flannel Plugin 是 Flannel CNI 插件的具体接口实现， CNI 要求实现的 cmdAdd cmdDel cmdCheck 都是在这里实现的，来看看具体的调用流程："><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-01-03T22:20:37+00:00"><meta property="article:modified_time" content="2020-01-03T22:20:37+00:00"><meta property="article:tag" content="Kubernetes"><link rel=canonical href=https://zdyxry.github.io/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.640169b0b3e4a7ff838f20af6fb06b691f38d1aaee51a06288af05702fce84b0.css integrity="sha256-ZAFpsLPkp/+DjyCvb7BraR840aruUaBiiK8FcC/OhLA=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.598b4dc0d87e9f8cf3ee27da13bf2d146bdef9d6b52584abc07e060846593bb2.css integrity="sha256-WYtNwNh+n4zz7ifaE78tFGve+da1JYSrwH4GCEZZO7I=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
-</a><input type=checkbox id=menu-toggle>
-<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/>为什么 flannel.1 丢失后不会自动重建</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
-<time datetime=2020-01-03T22:20:37Z>January 3, 2020
-</time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
-阅读时间：5 分钟</span></div><div class=tags><i class="fa-solid fa-tag" aria-hidden=true></i>
-<span class=tag><a href=/tags/Kubernetes/>Kubernetes</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#cni-flannel-plugin>CNI Flannel Plugin</a><ul><li><a href=#相应文件路径>相应文件路径</a></li></ul></li><li><a href=#flannel>Flannel</a><ul><li><a href=#目录结构>目录结构</a></li><li><a href=#使用方式>使用方式</a></li><li><a href=#代码入口>代码入口</a></li></ul></li><li><a href=#总结>总结</a></li><li><a href=#参考链接>参考链接</a></li></ul></nav><div class=post-content><h2 id=背景>背景
-<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>在用 K8s 的同学应该多少都使用过 Flannel 作为自己的网络插件，不讨论性能稳定性，在复杂的网络环境配置中 Flannel 的要求应该是最低的，所以我通常使用 Flannel 作为 让 K8s Ready 的最后一步。</p><p>在使用过程中，遇到过多次 flannel.1 这个 link 消失的情况，查看官方 Issue 中有人提到过： <a href=https://github.com/coreos/flannel/issues/869 class=external-link target=_blank rel=noopener>flannel.1 is deleted by <code>service network restart</code>, and never recreated again.</a> ，但是这个 Issue 从 2017年创建一直到现在都处于 Open 状态，看上去社区也不打算去解决，其实不只是重启网络，如果没有特殊指定的话，找到默认网关所在的网卡，直接 ifdown ，flannel.1 也会丢失，并且不会重建，那为什么会出现这个问题，今天来看一看。</p><h2 id=cni-flannel-plugin>CNI Flannel Plugin
-<a class=heading-link href=#cni-flannel-plugin><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>我们常说的 Flannel 分为两部分：<a href=https://github.com/containernetworking/plugins/tree/master/plugins/meta/flannel class=external-link target=_blank rel=noopener>CNI Flannel Plugin</a> 及 Flannel。</p><p>CNI Flannel Plugin 是 Flannel CNI 插件的具体接口实现， CNI 要求实现的 <code>cmdAdd</code> <code>cmdDel</code> <code>cmdCheck</code> 都是在这里实现的，来看看具体的调用流程：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> cmdAdd(args *skel.CmdArgs) <span>error</span> {
-</span></span><span style=display:flex><span>    <span style=font-style:italic>// 从标准输入加载配置</span>
-</span></span><span style=display:flex><span>	n, err := loadFlannelNetConf(args.StdinData)
-</span></span><span style=display:flex><span>    ...
-</span></span><span style=display:flex><span>    <span style=font-style:italic>// 加载子网配置：/run/flannel/subnet.env</span>
-</span></span><span style=display:flex><span>	fenv, err := loadFlannelSubnetEnv(n.SubnetFile)
-</span></span><span style=display:flex><span>    ...
-</span></span><span style=display:flex><span>    <span style=font-style:italic>// 执行添加动作</span>
-</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> doCmdAdd(args, n, fenv)
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> doCmdAdd(args *skel.CmdArgs, n *NetConf, fenv *subnetEnv) <span>error</span> {
-</span></span><span style=display:flex><span>	n.Delegate[<span style=font-style:italic>&#34;name&#34;</span>] = n.Name
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> !hasKey(n.Delegate, <span style=font-style:italic>&#34;type&#34;</span>) {
-</span></span><span style=display:flex><span>		n.Delegate[<span style=font-style:italic>&#34;type&#34;</span>] = <span style=font-style:italic>&#34;bridge&#34;</span>
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	...
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> n.CNIVersion != <span style=font-style:italic>&#34;&#34;</span> {
-</span></span><span style=display:flex><span>		n.Delegate[<span style=font-style:italic>&#34;cniVersion&#34;</span>] = n.CNIVersion
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	n.Delegate[<span style=font-style:italic>&#34;ipam&#34;</span>] = <span style=font-weight:700>map</span>[<span>string</span>]<span style=font-weight:700>interface</span>{}{
-</span></span><span style=display:flex><span>		<span style=font-style:italic>&#34;type&#34;</span>:   <span style=font-style:italic>&#34;host-local&#34;</span>,
-</span></span><span style=display:flex><span>		<span style=font-style:italic>&#34;subnet&#34;</span>: fenv.sn.String(),
-</span></span><span style=display:flex><span>		<span style=font-style:italic>&#34;routes&#34;</span>: []types.Route{
-</span></span><span style=display:flex><span>			{
-</span></span><span style=display:flex><span>				Dst: *fenv.nw,
-</span></span><span style=display:flex><span>			},
-</span></span><span style=display:flex><span>		},
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>    <span style=font-style:italic>// 进行配置解析及填充后，执行委托类型插件进行配置，默认是 bridge，创建过程中会将配置保存到 /var/lib/cni/flannel ，删除时会用到</span>
-</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> delegateAdd(args.ContainerID, n.DataDir, n.Delegate)
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>到这里已经跟 Flannel Plugin 无关了，是调用的其他插件完成的具体动作，再来看看删除动作：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> cmdDel(args *skel.CmdArgs) <span>error</span> {
-</span></span><span style=display:flex><span>	nc, err := loadFlannelNetConf(args.StdinData)
-</span></span><span style=display:flex><span>    ...
-</span></span><span style=display:flex><span>    <span style=font-style:italic>// 执行删除动作</span>
-</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> doCmdDel(args, nc)
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> doCmdDel(args *skel.CmdArgs, n *NetConf) <span>error</span> {
-</span></span><span style=display:flex><span>    <span style=font-style:italic>// 从 /var/lib/cni/flannel 中根据 ContainerID 读取配置，并在读取后删除配置</span>
-</span></span><span style=display:flex><span>    netconfBytes, err := consumeScratchNetConf(args.ContainerID, n.DataDir)
-</span></span><span style=display:flex><span>    ...
-</span></span><span style=display:flex><span>	nc := &amp;types.NetConf{}
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err = json.Unmarshal(netconfBytes, nc); err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> fmt.Errorf(<span style=font-style:italic>&#34;failed to parse netconf: %v&#34;</span>, err)
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>    <span style=font-style:italic>// 委托其他插件执行删除动作，默认 bridge</span>
-</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> invoke.DelegateDel(context.TODO(), nc.Type, netconfBytes, <span style=font-weight:700>nil</span>)
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>到这里我们来捋一捋整个流程：</p><ol><li>kubelet 启动时查找可用 CNI 插件，并根据配置加载</li><li>kubelet 创建容器前，通过 CNI Interface 调用相应方法执行 cmdAdd/cmdDel 命令</li><li>CNI 根据配置信息调用对应的 Plugin 执行 cmdAdd/cmdDel</li></ol><h3 id=相应文件路径>相应文件路径
-<a class=heading-link href=#%e7%9b%b8%e5%ba%94%e6%96%87%e4%bb%b6%e8%b7%af%e5%be%84><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><h4 id=varlibcniflannel>/var/lib/cni/flannel
-<a class=heading-link href=#varlibcniflannel><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h4><p>每个 Pod 的具体网络配置，配置内容如下</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install2 09:29:48 cni]$pwd
-</span></span><span style=display:flex><span>/var/lib/cni
-</span></span><span style=display:flex><span>[root@install2 09:29:51 cni]$cat flannel/d3f1220d58a72ebe5a92f8febbe6dd45d3bff65dce0ff6960f732f202026c24c |jq
-</span></span><span style=display:flex><span>{
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;cniVersion&#34;</span>: <span style=font-style:italic>&#34;0.3.1&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;hairpinMode&#34;</span>: true,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;ipMasq&#34;</span>: false,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;ipam&#34;</span>: {
-</span></span><span style=display:flex><span>    <span style=font-style:italic>&#34;routes&#34;</span>: [
-</span></span><span style=display:flex><span>      {
-</span></span><span style=display:flex><span>        <span style=font-style:italic>&#34;dst&#34;</span>: <span style=font-style:italic>&#34;10.244.0.0/16&#34;</span>
-</span></span><span style=display:flex><span>      }
-</span></span><span style=display:flex><span>    ],
-</span></span><span style=display:flex><span>    <span style=font-style:italic>&#34;subnet&#34;</span>: <span style=font-style:italic>&#34;10.244.1.0/24&#34;</span>,
-</span></span><span style=display:flex><span>    <span style=font-style:italic>&#34;type&#34;</span>: <span style=font-style:italic>&#34;host-local&#34;</span>
-</span></span><span style=display:flex><span>  },
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;isDefaultGateway&#34;</span>: true,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;isGateway&#34;</span>: true,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;mtu&#34;</span>: 1450,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;name&#34;</span>: <span style=font-style:italic>&#34;cbr0&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;type&#34;</span>: <span style=font-style:italic>&#34;bridge&#34;</span>
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h4 id=varlibcninetworks>/var/lib/cni/networks
-<a class=heading-link href=#varlibcninetworks><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h4><p>IP 地址分配配置路径，默认 Flannel 使用的 ipam 是 host-local，bridge 是 cbr0 ，在这下面是已分配的 IP 地址：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install2 09:31:48 cni]$pwd
-</span></span><span style=display:flex><span>/var/lib/cni
-</span></span><span style=display:flex><span>[root@install2 09:31:49 cni]$tree networks/
-</span></span><span style=display:flex><span>networks/
-</span></span><span style=display:flex><span>└── cbr0
-</span></span><span style=display:flex><span>    ├── 10.244.1.160
-</span></span><span style=display:flex><span>    ├── 10.244.1.161
-</span></span><span style=display:flex><span>    ├── 10.244.1.162
-</span></span><span style=display:flex><span>    ├── last_reserved_ip.0
-</span></span><span style=display:flex><span>    └── lock
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>1 directory, 5 files
-</span></span><span style=display:flex><span>[root@install2 09:31:53 cni]$cat networks/cbr0/10.244.1.162
-</span></span><span style=display:flex><span>d3f1220d58a72ebe5a92f8febbe6dd45d3bff65dce0ff6960f732f202026c24c
-</span></span><span style=display:flex><span>[root@install2 09:32:07 cni]$cat networks/cbr0/last_reserved_ip.0
-</span></span><span style=display:flex><span>10.244.1.162
-</span></span></code></pre></div><h4 id=etccninetd>/etc/cni/net.d
-<a class=heading-link href=#etccninetd><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h4><p>CNI 插件配置文件</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>[root@install2 09:34:47 net.d]$pwd
-</span></span><span style=display:flex><span>/etc/cni/net.d
-</span></span><span style=display:flex><span>[root@install2 09:34:48 net.d]$cat 10-flannel.conflist
-</span></span><span style=display:flex><span>{
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;name&#34;</span>: <span style=font-style:italic>&#34;cbr0&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;cniVersion&#34;</span>: <span style=font-style:italic>&#34;0.3.1&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=font-style:italic>&#34;plugins&#34;</span>: [
-</span></span><span style=display:flex><span>    {
-</span></span><span style=display:flex><span>      <span style=font-style:italic>&#34;type&#34;</span>: <span style=font-style:italic>&#34;flannel&#34;</span>,
-</span></span><span style=display:flex><span>      <span style=font-style:italic>&#34;delegate&#34;</span>: {
-</span></span><span style=display:flex><span>        <span style=font-style:italic>&#34;hairpinMode&#34;</span>: true,
-</span></span><span style=display:flex><span>        <span style=font-style:italic>&#34;isDefaultGateway&#34;</span>: true
-</span></span><span style=display:flex><span>      }
-</span></span><span style=display:flex><span>    },
-</span></span><span style=display:flex><span>    {
-</span></span><span style=display:flex><span>      <span style=font-style:italic>&#34;type&#34;</span>: <span style=font-style:italic>&#34;portmap&#34;</span>,
-</span></span><span style=display:flex><span>      <span style=font-style:italic>&#34;capabilities&#34;</span>: {
-</span></span><span style=display:flex><span>        <span style=font-style:italic>&#34;portMappings&#34;</span>: true
-</span></span><span style=display:flex><span>      }
-</span></span><span style=display:flex><span>    }
-</span></span><span style=display:flex><span>  ]
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>大概了解了 CNI Flannel Plugin ，说好的 <code>flannel.1</code> 呢？既然确定了 <code>flannel.1</code> 不是 CNI Plugin 里面实现的，那肯定就是 Flannel 自己的行为了，接下来看 <code>Flannel</code> 代码就可以了。</p><h2 id=flannel>Flannel
-<a class=heading-link href=#flannel><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>提到 Flannel，就不得不拿出这张图：</p><p><img src=/2020/01/03/%E4%B8%BA%E4%BB%80%E4%B9%88-flannel.1-%E4%B8%A2%E5%A4%B1%E5%90%8E%E4%B8%8D%E4%BC%9A%E8%87%AA%E5%8A%A8%E9%87%8D%E5%BB%BA/flannel.png alt></p><h3 id=目录结构>目录结构
-<a class=heading-link href=#%e7%9b%ae%e5%bd%95%e7%bb%93%e6%9e%84><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>root@localhost:~/go/src/github.com/coreos/flannel
-</span></span><span style=display:flex><span>master ✗ $ tree . -L 1
-</span></span><span style=display:flex><span>├── backend <span style=font-style:italic># 后端实现：vxlan,udp,hostgw</span>
-</span></span><span style=display:flex><span>├── main.go <span style=font-style:italic># 入口</span>
-</span></span><span style=display:flex><span>├── network <span style=font-style:italic># IPtables 相关配置</span>
-</span></span><span style=display:flex><span>├── pkg     <span style=font-style:italic># 辅助功能，如 IP，Namespace</span>
-</span></span><span style=display:flex><span>├── README.md
-</span></span><span style=display:flex><span>├── subnet  <span style=font-style:italic># 子网管理，K8s 通信相关</span>
-</span></span></code></pre></div><h3 id=使用方式>使用方式
-<a class=heading-link href=#%e4%bd%bf%e7%94%a8%e6%96%b9%e5%bc%8f><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><p>我们先来回想一下 K8s 集群部署，我们通过 kubeadm 指定了 Pod CIDR 为 <code>10.244.0.0/16</code> ：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=font-weight:700>---</span>
-</span></span><span style=display:flex><span><span style=font-weight:700>apiServer</span>: {}
-</span></span><span style=display:flex><span><span style=font-weight:700>apiVersion</span>: kubeadm.k8s.io/v1beta1
-</span></span><span style=display:flex><span><span style=font-weight:700>kind</span>: ClusterConfiguration
-</span></span><span style=display:flex><span><span style=font-weight:700>kubernetesVersion</span>: <span style=font-style:italic>&#34;&#34;</span>
-</span></span><span style=display:flex><span><span style=font-weight:700>networking</span>:
-</span></span><span style=display:flex><span>  <span style=font-weight:700>dnsDomain</span>: <span style=font-style:italic>&#34;&#34;</span>
-</span></span><span style=display:flex><span>  <span style=font-weight:700>podSubnet</span>: 10.244.0.0/16
-</span></span><span style=display:flex><span>  <span style=font-weight:700>serviceSubnet</span>: <span style=font-style:italic>&#34;&#34;</span>
-</span></span></code></pre></div><p>然后我们直接执行 <code>kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code> 等待 Node Ready 即可，这样做的前提是因为我们指定的 Pod 子网是 Flannel 默认子网，两者必须相同才可以配置正确。</p><h3 id=代码入口>代码入口
-<a class=heading-link href=#%e4%bb%a3%e7%a0%81%e5%85%a5%e5%8f%a3><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h3><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> main() {
-</span></span><span style=display:flex><span>  ...
-</span></span><span style=display:flex><span>	sm, err := newSubnetManager()
-</span></span><span style=display:flex><span>  ...
-</span></span><span style=display:flex><span>	<span style=font-style:italic>// 从 K8s 中获取配置信息，主要是子网信息</span>
-</span></span><span style=display:flex><span>	config, err := getConfig(ctx, sm)
-</span></span><span style=display:flex><span>  ...
-</span></span><span style=display:flex><span>  <span style=font-style:italic>// 创建 backend manager 并创建用来创建 backend 和注册网络</span>
-</span></span><span style=display:flex><span>	bm := backend.NewManager(ctx, sm, extIface)
-</span></span><span style=display:flex><span>	be, err := bm.GetBackend(config.BackendType)
-</span></span><span style=display:flex><span>  ...
-</span></span><span style=display:flex><span>	bn, err := be.RegisterNetwork(ctx, wg, config)
-</span></span><span style=display:flex><span>  ...
-</span></span><span style=display:flex><span>	<span style=font-style:italic>// 运行 backend</span>
-</span></span><span style=display:flex><span>	log.Info(<span style=font-style:italic>&#34;Running backend.&#34;</span>)
-</span></span><span style=display:flex><span>	wg.Add(1)
-</span></span><span style=display:flex><span>	<span style=font-weight:700>go</span> <span style=font-weight:700>func</span>() {
-</span></span><span style=display:flex><span>		bn.Run(ctx)
-</span></span><span style=display:flex><span>		wg.Done()
-</span></span><span style=display:flex><span>	}()
-</span></span><span style=display:flex><span>  ...
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>在 main.go 中获取配置的来源是 ConfigMap：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span>[root@install1 11:00:39 ~]$kubectl get cm kube-flannel-cfg -n kube-system -o yaml
-</span></span><span style=display:flex><span><span style=font-weight:700>apiVersion</span>: v1
-</span></span><span style=display:flex><span><span style=font-weight:700>data</span>:
-</span></span><span style=display:flex><span>  <span style=font-weight:700>cni-conf.json</span>: |<span style=font-style:italic>
-</span></span></span><span style=display:flex><span><span style=font-style:italic>    {
-</span></span></span><span style=display:flex><span><span style=font-style:italic>      &#34;name&#34;: &#34;cbr0&#34;,
-</span></span></span><span style=display:flex><span><span style=font-style:italic>      &#34;cniVersion&#34;: &#34;0.3.1&#34;,
-</span></span></span><span style=display:flex><span><span style=font-style:italic>      &#34;plugins&#34;: [
-</span></span></span><span style=display:flex><span><span style=font-style:italic>        {
-</span></span></span><span style=display:flex><span><span style=font-style:italic>          &#34;type&#34;: &#34;flannel&#34;,
-</span></span></span><span style=display:flex><span><span style=font-style:italic>          &#34;delegate&#34;: {
-</span></span></span><span style=display:flex><span><span style=font-style:italic>            &#34;hairpinMode&#34;: true,
-</span></span></span><span style=display:flex><span><span style=font-style:italic>            &#34;isDefaultGateway&#34;: true
-</span></span></span><span style=display:flex><span><span style=font-style:italic>          }
-</span></span></span><span style=display:flex><span><span style=font-style:italic>        },
-</span></span></span><span style=display:flex><span><span style=font-style:italic>        {
-</span></span></span><span style=display:flex><span><span style=font-style:italic>          &#34;type&#34;: &#34;portmap&#34;,
-</span></span></span><span style=display:flex><span><span style=font-style:italic>          &#34;capabilities&#34;: {
-</span></span></span><span style=display:flex><span><span style=font-style:italic>            &#34;portMappings&#34;: true
-</span></span></span><span style=display:flex><span><span style=font-style:italic>          }
-</span></span></span><span style=display:flex><span><span style=font-style:italic>        }
-</span></span></span><span style=display:flex><span><span style=font-style:italic>      ]
-</span></span></span><span style=display:flex><span><span style=font-style:italic>    }</span>
-</span></span><span style=display:flex><span>  <span style=font-weight:700>net-conf.json</span>: |<span style=font-style:italic>
-</span></span></span><span style=display:flex><span><span style=font-style:italic>    {
-</span></span></span><span style=display:flex><span><span style=font-style:italic>      &#34;Network&#34;: &#34;10.244.0.0/16&#34;,
-</span></span></span><span style=display:flex><span><span style=font-style:italic>      &#34;Backend&#34;: {
-</span></span></span><span style=display:flex><span><span style=font-style:italic>        &#34;Type&#34;: &#34;vxlan&#34;
-</span></span></span><span style=display:flex><span><span style=font-style:italic>      }
-</span></span></span><span style=display:flex><span><span style=font-style:italic>    }</span>
-</span></span><span style=display:flex><span><span style=font-weight:700>kind</span>: ConfigMap
-</span></span><span style=display:flex><span><span style=font-weight:700>metadata</span>:
-</span></span><span style=display:flex><span>  <span style=font-weight:700>annotations</span>:
-</span></span><span style=display:flex><span>  <span style=font-weight:700>creationTimestamp</span>: <span style=font-style:italic>&#34;2019-12-30T02:37:21Z&#34;</span>
-</span></span><span style=display:flex><span>  <span style=font-weight:700>labels</span>:
-</span></span><span style=display:flex><span>    <span style=font-weight:700>app</span>: flannel
-</span></span><span style=display:flex><span>    <span style=font-weight:700>tier</span>: node
-</span></span><span style=display:flex><span>  <span style=font-weight:700>name</span>: kube-flannel-cfg
-</span></span><span style=display:flex><span>  <span style=font-weight:700>namespace</span>: kube-system
-</span></span><span style=display:flex><span>  <span style=font-weight:700>resourceVersion</span>: <span style=font-style:italic>&#34;235454&#34;</span>
-</span></span><span style=display:flex><span>  <span style=font-weight:700>selfLink</span>: /api/v1/namespaces/kube-system/configmaps/kube-flannel-cfg
-</span></span><span style=display:flex><span>  <span style=font-weight:700>uid</span>: fd9f67ee-ee1b-411d-8403-23ab05de56c8
-</span></span></code></pre></div><p>可以看到默认的 Backend 是 vxlan，我们接着看 backend 和 vxlan 相关处理，在 backend/ 路径下放着些统一的接口定义，vxlan 是接口的具体实现：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>root@localhost:~/go/src/github.com/coreos/flannel
-</span></span><span style=display:flex><span>master ✗ $ tree backend -L 1
-</span></span><span style=display:flex><span>backend
-</span></span><span style=display:flex><span>├── common.go
-</span></span><span style=display:flex><span>├── manager.go
-</span></span><span style=display:flex><span>├── route_network.go
-</span></span><span style=display:flex><span>├── route_network_test.go
-</span></span><span style=display:flex><span>├── route_network_windows.go
-</span></span><span style=display:flex><span>├── simple_network.go
-</span></span><span style=display:flex><span>├── udp
-</span></span><span style=display:flex><span>└── vxlan
-</span></span><span style=display:flex><span>    ├── device.go
-</span></span><span style=display:flex><span>    ├── device_windows.go
-</span></span><span style=display:flex><span>    ├── vxlan.go
-</span></span><span style=display:flex><span>    ├── vxlan_network.go
-</span></span><span style=display:flex><span>    ├── vxlan_network_windows.go
-</span></span><span style=display:flex><span>    └── vxlan_windows.go
-</span></span></code></pre></div><p>如 <code>RegisterNetwork</code>：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>type</span> Backend <span style=font-weight:700>interface</span> {
-</span></span><span style=display:flex><span>	<span style=font-style:italic>// Called when the backend should create or begin managing a new network</span>
-</span></span><span style=display:flex><span>	RegisterNetwork(ctx context.Context, wg sync.WaitGroup, config *subnet.Config) (Network, <span>error</span>)
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>看看 vxlan RegisterNetwork 做了什么：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (be *VXLANBackend) RegisterNetwork(ctx context.Context, wg sync.WaitGroup, config *subnet.Config) (backend.Network, <span>error</span>) {
-</span></span><span style=display:flex><span>	<span style=font-style:italic>// 解析配置</span>
-</span></span><span style=display:flex><span>	cfg := <span style=font-weight:700>struct</span> {
-</span></span><span style=display:flex><span>		VNI           <span>int</span>
-</span></span><span style=display:flex><span>		Port          <span>int</span>
-</span></span><span style=display:flex><span>		GBP           <span>bool</span>
-</span></span><span style=display:flex><span>		Learning      <span>bool</span>
-</span></span><span style=display:flex><span>		DirectRouting <span>bool</span>
-</span></span><span style=display:flex><span>	}{
-</span></span><span style=display:flex><span>		VNI: defaultVNI,
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>  <span style=font-style:italic>// vtep 配置信息</span>
-</span></span><span style=display:flex><span>	devAttrs := vxlanDeviceAttrs{
-</span></span><span style=display:flex><span>		vni:       uint32(cfg.VNI),
-</span></span><span style=display:flex><span>		name:      fmt.Sprintf(<span style=font-style:italic>&#34;flannel.%v&#34;</span>, cfg.VNI),
-</span></span><span style=display:flex><span>		vtepIndex: be.extIface.Iface.Index,
-</span></span><span style=display:flex><span>		vtepAddr:  be.extIface.IfaceAddr,
-</span></span><span style=display:flex><span>		vtepPort:  cfg.Port,
-</span></span><span style=display:flex><span>		gbp:       cfg.GBP,
-</span></span><span style=display:flex><span>		learning:  cfg.Learning,
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>  <span style=font-style:italic>// 创建 vtep</span>
-</span></span><span style=display:flex><span>	dev, err := newVXLANDevice(&amp;devAttrs)
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> <span style=font-weight:700>nil</span>, err
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	dev.directRouting = cfg.DirectRouting
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> newVXLANDevice(devAttrs *vxlanDeviceAttrs) (*vxlanDevice, <span>error</span>) {
-</span></span><span style=display:flex><span>  <span style=font-style:italic>// netlink 是 Golang 中操作网络相关的库，提供了创建 Vxlan 设备的接口</span>
-</span></span><span style=display:flex><span>	link := &amp;netlink.Vxlan{
-</span></span><span style=display:flex><span>		LinkAttrs: netlink.LinkAttrs{
-</span></span><span style=display:flex><span>			Name: devAttrs.name,
-</span></span><span style=display:flex><span>		},
-</span></span><span style=display:flex><span>		VxlanId:      int(devAttrs.vni),
-</span></span><span style=display:flex><span>		VtepDevIndex: devAttrs.vtepIndex,
-</span></span><span style=display:flex><span>		SrcAddr:      devAttrs.vtepAddr,
-</span></span><span style=display:flex><span>		Port:         devAttrs.vtepPort,
-</span></span><span style=display:flex><span>		Learning:     devAttrs.learning,
-</span></span><span style=display:flex><span>		GBP:          devAttrs.gbp,
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	link, err := ensureLink(link)
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> <span style=font-weight:700>nil</span>, err
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> &amp;vxlanDevice{
-</span></span><span style=display:flex><span>		link: link,
-</span></span><span style=display:flex><span>	}, <span style=font-weight:700>nil</span>
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> ensureLink(vxlan *netlink.Vxlan) (*netlink.Vxlan, <span>error</span>) {
-</span></span><span style=display:flex><span>	err := netlink.LinkAdd(vxlan)
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err == syscall.EEXIST {
-</span></span><span style=display:flex><span>		<span style=font-style:italic>// it&#39;s ok if the device already exists as long as config is similar</span>
-</span></span><span style=display:flex><span>    log.V(1).Infof(<span style=font-style:italic>&#34;VXLAN device already exists&#34;</span>)
-</span></span><span style=display:flex><span>    ...
-</span></span><span style=display:flex><span>		<span style=font-style:italic>// 如果存在，则娇艳 原有设备是否兼容，如果不兼容则删除并重新创建设备</span>
-</span></span><span style=display:flex><span>		<span style=font-weight:700>if</span> err = netlink.LinkAdd(vxlan); err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>			<span style=font-weight:700>return</span> <span style=font-weight:700>nil</span>, fmt.Errorf(<span style=font-style:italic>&#34;failed to create vxlan interface: %v&#34;</span>, err)
-</span></span><span style=display:flex><span>		}
-</span></span><span style=display:flex><span>	} <span style=font-weight:700>else</span> <span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> <span style=font-weight:700>nil</span>, err
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>  ...
-</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> vxlan, <span style=font-weight:700>nil</span>
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>到这里我们就知道了是 Flannel 在进行 backend 注册的时候创建的 <code>flannel.1</code> 设备，如果我们想要简单粗暴的去修改代码实现，我们可以在 <code>backend.Run()</code> 方法中加入 <code>ensureLink</code> 检测逻辑，保证当发现对应 vtep 设备消失时，重新创建。但是这种实现方式就比较侵入，而且破坏了 backend 通用逻辑，我理解正确的处理方式应该是通过 health 探针去检测，如果检测到 Pod 处于 unhealthy 状态，自动重建 Pod，会重新进行 <code>backend.RegisterNetwork</code> 逻辑，就不存在这个问题了。</p><p>来看下默认的 Flannel YAML 文件，发现其中并没有 health 探针配置，还是有点奇怪的，这么一个基础的服务，居然没有做任何的健康检查，听上去有些不合道理。</p><p>于是我又去 Github 上查找相关的 Issue，果然发现了很多人遇到这个问题，倒是最终都没有提出比较好的方案来解决，其中 Eduard Català 分别提交了 2 个 PR 用来增加 Health Check 机制，但是不知道因为什么最终都没有合并：</p><ul><li><a href=https://github.com/coreos/flannel/pull/917 class=external-link target=_blank rel=noopener>https://github.com/coreos/flannel/pull/917</a></li><li><a href=https://github.com/coreos/flannel/pull/920 class=external-link target=_blank rel=noopener>https://github.com/coreos/flannel/pull/920</a></li></ul><p>我们来看看他的对应实现，通过检测对应的设备是否存在，如果不存在则不健康：</p><p>backend/vxlan/vxlan.go</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (be *VXLANBackend) CheckHealthz() <span>error</span> {
-</span></span><span style=display:flex><span>	_, err := net.InterfaceByName(be.extIface.Iface.Name)
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>		log.Errorf(<span style=font-style:italic>&#34;Master interface %v disappeared. Waiting its return...&#34;</span>, be.extIface.Iface.Name)
-</span></span><span style=display:flex><span>		<span style=font-weight:700>for</span> err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>			time.Sleep(15 * time.Second)
-</span></span><span style=display:flex><span>			_, err = net.InterfaceByName(be.extIface.Iface.Name)
-</span></span><span style=display:flex><span>		}
-</span></span><span style=display:flex><span>		log.Errorf(<span style=font-style:italic>&#34;Master interface: %v reappeared&#34;</span>, be.extIface.Iface.Name)
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	_, err = net.InterfaceByName(be.network.dev.link.Name)
-</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
-</span></span><span style=display:flex><span>		log.Errorf(<span style=font-style:italic>&#34;Flannel interface: %v not found - Requiring flannel restart &#34;</span>, be.network.dev.link.Name)
-</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> backend.FlannelRestart
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> <span style=font-weight:700>nil</span>
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h2 id=总结>总结
-<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><p>Flannel 社区活跃度不高，合并 PR 的速度更是慢的离谱，有很多存在很久的 Issue 也没有解决，感觉还是用着玩玩就好。</p><h2 id=参考链接>参考链接
-<a class=heading-link href=#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
-<span class=sr-only>链接到标题</span></a></h2><ul><li><a href=https://github.com/containernetworking/plugins.git class=external-link target=_blank rel=noopener>https://github.com/containernetworking/plugins.git</a></li><li><a href=https://github.com/Kevin-fqh/learning-k8s-source-code/blob/master/cni%20plugin/flannel%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB.md class=external-link target=_blank rel=noopener>https://github.com/Kevin-fqh/learning-k8s-source-code/blob/master/cni%20plugin/flannel%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB.md</a></li><li><a href=https://cizixs.com/2016/07/16/flannel-source-code-insight/ class=external-link target=_blank rel=noopener>https://cizixs.com/2016/07/16/flannel-source-code-insight/</a></li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
-2016 -
-2026
-Yiran Zhou
-·
-技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var doNotTrack=!1,dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes";if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://zdyxry.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+})();</script> <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" data-astro-cid-r2x3s5wt>comments powered by Disqus.</a></noscript>  </article>  </main> <footer data-astro-cid-sz7xmlte> <div class="footer-content" data-astro-cid-sz7xmlte> <div class="social-links" data-astro-cid-sz7xmlte> <a href="https://github.com/zdyxry" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" data-astro-cid-sz7xmlte></path> </svg>    </a><a href="https://twitter.com/zdyxry" target="_blank" rel="noopener" aria-label="Twitter" data-astro-cid-sz7xmlte>  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" data-astro-cid-sz7xmlte></path> </svg>   </a><a href="https://neodb.social/users/zdyxry/" target="_blank" rel="noopener" aria-label="NeoDB" data-astro-cid-sz7xmlte>   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" data-astro-cid-sz7xmlte></path> <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" data-astro-cid-sz7xmlte></path> </svg>  </a><a href="/atom.xml" aria-label="RSS" data-astro-cid-sz7xmlte>    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 11a9 9 0 0 1 9 9" data-astro-cid-sz7xmlte></path> <path d="M4 4a16 16 0 0 1 16 16" data-astro-cid-sz7xmlte></path> <circle cx="5" cy="19" r="1" data-astro-cid-sz7xmlte></circle> </svg> </a> </div> <p class="copyright" data-astro-cid-sz7xmlte>&copy; 2026 Yiran's Blog · Powered by <a href="https://astro.build" target="_blank" rel="noopener" data-astro-cid-sz7xmlte>Astro</a></p> </div> </footer>  </body></html> 

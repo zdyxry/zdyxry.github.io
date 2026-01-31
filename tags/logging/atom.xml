@@ -1,72 +1,48 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Logging on Yiran's Blog</title><link>https://zdyxry.github.io/tags/logging/</link><description>Recent content in Logging on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 22 Jul 2018 09:50:47 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/logging/atom.xml" rel="self" type="application/rss+xml"/><item><title>Python logging 最佳实践-译</title><link>https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</link><pubDate>Sun, 22 Jul 2018 09:50:47 +0000</pubDate><guid>https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</guid><description>&lt;p&gt;Python Logging 最佳实践&lt;/p&gt;
-&lt;h2 id="背景"&gt;
-背景
-&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: logging - My Blog</title><description>标签 &quot;logging&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>Python logging 最佳实践-译</title><link>https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</guid><pubDate>Sun, 22 Jul 2018 01:50:47 GMT</pubDate><content:encoded>&lt;p&gt;Python Logging 最佳实践&lt;/p&gt;
+&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
 &lt;p&gt;最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有
-了解过最佳实践， google 到了 fangpenlin 写的一篇博客（https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/），
+了解过最佳实践， google 到了 fangpenlin 写的一篇博客（&lt;a href=&quot;https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/%EF%BC%89%EF%BC%8C&quot;&gt;https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/），&lt;/a&gt;
 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~&lt;/p&gt;
-&lt;h2 id="good-logging-practice-in-python"&gt;
-Good Logging practice in Python
-&lt;a class="heading-link" href="#good-logging-practice-in-python"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;good-logging-practice-in-python&quot;&gt;Good Logging practice in Python&lt;/h2&gt;
 &lt;p&gt;在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。
 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查
 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现
 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你
 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远
 不知道在不同的电脑环境中会发生什么奇怪的问题.&lt;/p&gt;
-&lt;h2 id="print-不是个好主意"&gt;
-Print 不是个好主意
-&lt;a class="heading-link" href="#print-%e4%b8%8d%e6%98%af%e4%b8%aa%e5%a5%bd%e4%b8%bb%e6%84%8f"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;print-不是个好主意&quot;&gt;Print 不是个好主意&lt;/h2&gt;
 &lt;p&gt;尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
 一些 print ，在开发结束时删除这些 print。向下面这样：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;print &lt;span style="font-style:italic"&gt;&amp;#39;Start reading database&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;records = model.read_recrods()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;print &lt;span style="font-style:italic"&gt;&amp;#39;# records&amp;#39;&lt;/span&gt;, records
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;print &lt;span style="font-style:italic"&gt;&amp;#39;Updating record ...&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;model.update_records(records)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;print &lt;span style="font-style:italic"&gt;&amp;#39;done&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;print &apos;Start reading database&apos;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;records = model.read_recrods()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;print &apos;# records&apos;, records&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;print &apos;Updating record ...&apos;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;model.update_records(records)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;print &apos;done&apos;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。
 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。
 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。
 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是
 这仍不是记录日志的最佳实践。&lt;/p&gt;
-&lt;h2 id="使用-python-标准库-logging"&gt;
-使用 Python 标准库 Logging
-&lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8-python-%e6%a0%87%e5%87%86%e5%ba%93-logging"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;使用-python-标准库-logging&quot;&gt;使用 Python 标准库 Logging&lt;/h2&gt;
 &lt;p&gt;所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logging.basicConfig(level=logging.INFO)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger = logging.getLogger(__name__)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Start reading database&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# read database here&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;records = {&lt;span style="font-style:italic"&gt;&amp;#39;john&amp;#39;&lt;/span&gt;: 55, &lt;span style="font-style:italic"&gt;&amp;#39;tom&amp;#39;&lt;/span&gt;: 66}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.debug(&lt;span style="font-style:italic"&gt;&amp;#39;Records: &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;, records)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Updating records ...&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# update records here&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Finish updating records&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;你可以运行得到下面输出：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO:__main__:Start reading database
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO:__main__:Updating records ...
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO:__main__:Finish updating records
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;你可能会问这与 print 有什么区别。这样做当然是有好处的：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logging.basicConfig(level=logging.INFO)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger = logging.getLogger(__name__)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.info(&apos;Start reading database&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# read database here&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;records = {&apos;john&apos;: 55, &apos;tom&apos;: 66}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.debug(&apos;Records: %s&apos;, records)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.info(&apos;Updating records ...&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# update records here&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.info(&apos;Finish updating records&apos;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;你可以运行得到下面输出：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO:__main__:Start reading database&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO:__main__:Updating records ...&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO:__main__:Finish updating records&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;你可能会问这与 print 有什么区别。这样做当然是有好处的：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;你可以控制信息级别，过滤掉不重要的信息&lt;/li&gt;
 &lt;li&gt;你可以决定之后输出的位置和方式&lt;/li&gt;
@@ -76,227 +52,197 @@ Print 不是个好主意
 时输出调试的详细信息。尝试改变日志级别为 debug 再观察下输出结果：&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;logging.basicConfig(level=logging.DEBUG)&lt;/code&gt;&lt;/p&gt;
 &lt;p&gt;输出结果：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO:__main__:Start reading database
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;DEBUG:__main__:Records: {&lt;span style="font-style:italic"&gt;&amp;#39;john&amp;#39;&lt;/span&gt;: 55, &lt;span style="font-style:italic"&gt;&amp;#39;tom&amp;#39;&lt;/span&gt;: 66}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO:__main__:Updating records ...
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO:__main__:Finish updating records
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO:__main__:Start reading database&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;DEBUG:__main__:Records: {&apos;john&apos;: 55, &apos;tom&apos;: 66}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO:__main__:Updating records ...&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO:__main__:Finish updating records&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定
 如何处理这些信息.举个例子你可以使用 FileHandler 让日志输出到一个文件中：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger = logging.getLogger(__name__)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.setLevel(logging.INFO)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# create a file handler&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;handler = logging.FileHandler(&lt;span style="font-style:italic"&gt;&amp;#39;hello.log&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;handler.setLevel(logging.INFO)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# create a logging format&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;formatter = logging.Formatter(&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(asctime)s&lt;/span&gt;&lt;span style="font-style:italic"&gt; - &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(name)s&lt;/span&gt;&lt;span style="font-style:italic"&gt; - &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(levelname)s&lt;/span&gt;&lt;span style="font-style:italic"&gt; - &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(message)s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;handler.setFormatter(formatter)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# add the handlers to the logger&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.addHandler(handler)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Hello baby&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger = logging.getLogger(__name__)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.setLevel(logging.INFO)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# create a file handler&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;handler = logging.FileHandler(&apos;hello.log&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;handler.setLevel(logging.INFO)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# create a logging format&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;formatter = logging.Formatter(&apos;%(asctime)s - %(name)s - %(levelname)s - %(message)s&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;handler.setFormatter(formatter)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# add the handlers to the logger&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.addHandler(handler)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.info(&apos;Hello baby&apos;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。
 你也可以自定义日志处理方式，更多信息可以参考： Basic Tutorial, Advanced Tutorial and Logging Cookbook.&lt;/p&gt;
-&lt;h2 id="设置正确的日志级别"&gt;
-设置正确的日志级别
-&lt;a class="heading-link" href="#%e8%ae%be%e7%bd%ae%e6%ad%a3%e7%a1%ae%e7%9a%84%e6%97%a5%e5%bf%97%e7%ba%a7%e5%88%ab"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;设置正确的日志级别&quot;&gt;设置正确的日志级别&lt;/h2&gt;
 &lt;p&gt;由于 logging 的灵活性，你可以在任何地方配置适当的日志级别去记录日志，可以再之后配置他们。
 你可能会问，什么是正确的日志级别，这里我将分享我的经验。&lt;/p&gt;
 &lt;p&gt;在大多数场景下，在日志中不希望去看到大量的详细信息。因此，debug 级别只是在你
 调试过程中开启。我只使用调试级别来获取详细的调试信息，特别是当数据量很大或者频率
 很高的时候，比如在一个 for 循环中记录某些内部的状态变化。&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; complex_algorithm(items):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; i, item &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; enumerate(items):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;# do some complex algorithm computation&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.debug(&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt; iteration, item=&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;, i, item)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; handle_request(request):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Handling request &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;, request)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;# handle request here&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; result = &lt;span style="font-style:italic"&gt;&amp;#39;result&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Return result: &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;, result)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; start_service():
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Starting service at port &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt; ...&amp;#39;&lt;/span&gt;, port)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; service.start()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Service is started&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def complex_algorithm(items):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    for i, item in enumerate(items):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        # do some complex algorithm computation&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        logger.debug(&apos;%s iteration, item=%s&apos;, i, item)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def handle_request(request):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger.info(&apos;Handling request %s&apos;, request)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    # handle request here&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    result = &apos;result&apos;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger.info(&apos;Return result: %s&apos;, result)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def start_service():&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger.info(&apos;Starting service at port %s ...&apos;, port)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    service.start()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger.info(&apos;Service is started&apos;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如
 当一个用户登录时使用了错误的密码或者连接很慢时：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; authenticate(user_name, password, ip_address):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; user_name != USER_NAME &lt;span style="font-weight:bold"&gt;and&lt;/span&gt; password != PASSWORD:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.warn(&lt;span style="font-style:italic"&gt;&amp;#39;Login attempt to &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt; from IP &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;, user_name, ip_address)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;return&lt;/span&gt; &lt;span style="font-weight:bold"&gt;False&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;# do authentication here&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; get_user_by_id(user_id):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; user = db.read_user(user_id)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; user &lt;span style="font-weight:bold"&gt;is&lt;/span&gt; &lt;span style="font-weight:bold"&gt;None&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.error(&lt;span style="font-style:italic"&gt;&amp;#39;Cannot find user with user_id=&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;, user_id)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;return&lt;/span&gt; user
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;return&lt;/span&gt; user
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def authenticate(user_name, password, ip_address):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    if user_name != USER_NAME and password != PASSWORD:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        logger.warn(&apos;Login attempt to %s from IP %s&apos;, user_name, ip_address)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        return False&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    # do authentication here&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def get_user_by_id(user_id):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    user = db.read_user(user_id)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    if user is None:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        logger.error(&apos;Cannot find user with user_id=%s&apos;, user_id)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        return user&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    return user&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,
 磁盘空间不足.&lt;/p&gt;
-&lt;h2 id="使用-name-作为-logger-名称"&gt;
-使用 &lt;strong&gt;name&lt;/strong&gt; 作为 logger 名称
-&lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8-name-%e4%bd%9c%e4%b8%ba-logger-%e5%90%8d%e7%a7%b0"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;使用-name-作为-logger-名称&quot;&gt;使用 &lt;strong&gt;name&lt;/strong&gt; 作为 logger 名称&lt;/h2&gt;
 &lt;p&gt;你不需要讲 logger 名称设置为 &lt;strong&gt;name&lt;/strong&gt; ，但是如果这样做，会带来一些好处。
 &lt;strong&gt;name&lt;/strong&gt; 变量在 Python 中是当前模块名称。举个例子，你可以调用
-logger.getLogger(&lt;strong&gt;name&lt;/strong&gt;) 在模块 &amp;ldquo;foo.bar.my_module&amp;quot;中，这相当于
-logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配置为 &amp;ldquo;foo&amp;rdquo;，
+logger.getLogger(&lt;strong&gt;name&lt;/strong&gt;) 在模块 “foo.bar.my_module”中，这相当于
+logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配置为 “foo”，
 这样所有在 foo 包中的模块都共享同样的配置。你可以在阅读日志的时候了解模块信息。&lt;/p&gt;
-&lt;h2 id="捕获异常并使用-traceback-记录"&gt;
-捕获异常并使用 traceback 记录
-&lt;a class="heading-link" href="#%e6%8d%95%e8%8e%b7%e5%bc%82%e5%b8%b8%e5%b9%b6%e4%bd%bf%e7%94%a8-traceback-%e8%ae%b0%e5%bd%95"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;捕获异常并使用-traceback-记录&quot;&gt;捕获异常并使用 traceback 记录&lt;/h2&gt;
 &lt;p&gt;记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
 异常并与 traceback 一起记录他们。像这个例子：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; open(&lt;span style="font-style:italic"&gt;&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#39;rb&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;except&lt;/span&gt; (&lt;span style="font-weight:bold"&gt;SystemExit&lt;/span&gt;, &lt;span style="font-weight:bold"&gt;KeyboardInterrupt&lt;/span&gt;):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;raise&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;except&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Exception&lt;/span&gt;, e:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.error(&lt;span style="font-style:italic"&gt;&amp;#39;Failed to open file&amp;#39;&lt;/span&gt;, exc_info=&lt;span style="font-weight:bold"&gt;True&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;try:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    open(&apos;/path/to/does/not/exist&apos;, &apos;rb&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;except (SystemExit, KeyboardInterrupt):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    raise&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;except Exception, e:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger.error(&apos;Failed to open file&apos;, exc_info=True)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以
 看到这样的结果：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ERROR:__main__:Failed to open file
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Traceback (most recent call last):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; File &lt;span style="font-style:italic"&gt;&amp;#34;example.py&amp;#34;&lt;/span&gt;, line 6, &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; &amp;lt;module&amp;gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; open(&lt;span style="font-style:italic"&gt;&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#39;rb&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;IOError&lt;/span&gt;: [Errno 2] No such file &lt;span style="font-weight:bold"&gt;or&lt;/span&gt; directory: &lt;span style="font-style:italic"&gt;&amp;#39;/path/to/does/not/exist&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;你也可以调用 logger.Exception(msg, *args)，这相当于 logger.error(msg,exc_info=True,*args)。&lt;/p&gt;
-&lt;h2 id="除非-disable_existing_loggers--false否则不要在模块级别获取-logger"&gt;
-除非 disable_existing_loggers == False，否则不要在模块级别获取 logger
-&lt;a class="heading-link" href="#%e9%99%a4%e9%9d%9e-disable_existing_loggers--false%e5%90%a6%e5%88%99%e4%b8%8d%e8%a6%81%e5%9c%a8%e6%a8%a1%e5%9d%97%e7%ba%a7%e5%88%ab%e8%8e%b7%e5%8f%96-logger"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ERROR:__main__:Failed to open file&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Traceback (most recent call last):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  File &quot;example.py&quot;, line 6, in &amp;#x3C;module&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    open(&apos;/path/to/does/not/exist&apos;, &apos;rb&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;IOError: [Errno 2] No such file or directory: &apos;/path/to/does/not/exist&apos;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;你也可以调用 logger.Exception(msg, *args)，这相当于 logger.error(msg,exc_info=True,*args)。&lt;/p&gt;
+&lt;h2 id=&quot;除非-disable_existing_loggers--false否则不要在模块级别获取-logger&quot;&gt;除非 disable_existing_loggers == False，否则不要在模块级别获取 logger&lt;/h2&gt;
 &lt;p&gt;你可以看到很多的例子（包括这篇文章）在模块级别获取 logger。这看上去是无害的，
 但是实际上，这是一个陷阱 - 在你从一个文件加载配置前，logging 模块会遵守所有
 已经创建的 logger，如果你在模块级别获取 logger，像这种：&lt;/p&gt;
 &lt;hr&gt;
 &lt;p&gt;my_module.py&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger = logging.getLogger(__name__)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; foo():
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Hi, foo&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;class&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Bar&lt;/span&gt;(object):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;def&lt;/span&gt; bar(self):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Hi, bar&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger = logging.getLogger(__name__)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def foo():&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger.info(&apos;Hi, foo&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;class Bar(object):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    def bar(self):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        logger.info(&apos;Hi, bar&apos;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
 &lt;p&gt;main.py&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# load my module&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;my_module&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# load the logging configuration&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logging.config.fileConfig(&lt;span style="font-style:italic"&gt;&amp;#39;logging.ini&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;my_module.foo()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;bar = my_module.Bar()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;bar.bar()
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# load my module&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import my_module&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# load the logging configuration&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logging.config.fileConfig(&apos;logging.ini&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;my_module.foo()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;bar = my_module.Bar()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;bar.bar()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
 &lt;p&gt;logging.ini&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[loggers]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;keys=root
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[handlers]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;keys=consoleHandler
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[formatters]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;keys=simpleFormatter
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[logger_root]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;level=DEBUG
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;handlers=consoleHandler
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[handler_consoleHandler]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;class=StreamHandler
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;level=DEBUG
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;formatter=simpleFormatter
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;args=(sys.stdout,)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[formatter_simpleFormatter]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;datefmt=
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[loggers]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;keys&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;root&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[handlers]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;keys&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;consoleHandler&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[formatters]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;keys&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;simpleFormatter&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[logger_root]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;level&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;DEBUG&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;handlers&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;consoleHandler&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[handler_consoleHandler]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;class&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;StreamHandler&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;level&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;DEBUG&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;formatter&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;simpleFormatter&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;args&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;sys.stdout,&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[formatter_simpleFormatter]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;format&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;%&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;asctime&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; %&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;name&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; %&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;levelname&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; %&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;message&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;datefmt&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
 &lt;p&gt;你期望看到记录显示在日志中，但是日志中是空的。为什么？ 因为你在模块级别创建 logger ，
 所以在从文件加载 logging 配置之前导入该模块。 logging.fileConfig 和 logging.dictConfig
 默认禁用已经存在的 logger。 所以配置文件中的配置不会在你的 logger 中生效。
 这适合在你需要的时候获取 logger。 你可以像下面这样编写：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; foo():
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger = logging.getLogger(__name__)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Hi, foo&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;class&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Bar&lt;/span&gt;(object):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;def&lt;/span&gt; __init__(self, logger=&lt;span style="font-weight:bold"&gt;None&lt;/span&gt;):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.logger = logger &lt;span style="font-weight:bold"&gt;or&lt;/span&gt; logging.getLogger(__name__)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;def&lt;/span&gt; bar(self):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;Hi, bar&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;通过这样做， logger 将会在你加载配置之后创建，配置会正确生效。&lt;/p&gt;
-&lt;p&gt;从 Python 2.7 开始，添加一个新的参数名为 &amp;ldquo;disable_existing_loggers&amp;rdquo; 到 fileConfig 和
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def foo():&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger = logging.getLogger(__name__)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    logger.info(&apos;Hi, foo&apos;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;class Bar(object):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    def __init__(self, logger=None):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        self.logger = logger or logging.getLogger(__name__)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    def bar(self):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        self.logger.info(&apos;Hi, bar&apos;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;通过这样做， logger 将会在你加载配置之后创建，配置会正确生效。&lt;/p&gt;
+&lt;p&gt;从 Python 2.7 开始，添加一个新的参数名为 “disable_existing_loggers” 到 fileConfig 和
 dictConfig，通过将其设置为 False，可以解决上面提到的问题。比如：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging.config&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger = logging.getLogger(__name__)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# load config from file&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# logging.config.fileConfig(&amp;#39;logging.ini&amp;#39;, disable_existing_loggers=False)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# or, for dictConfig&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logging.config.dictConfig({
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;version&amp;#39;&lt;/span&gt;: 1,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;disable_existing_loggers&amp;#39;&lt;/span&gt;: &lt;span style="font-weight:bold"&gt;False&lt;/span&gt;, &lt;span style="font-style:italic"&gt;# this fixes the problem&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;formatters&amp;#39;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;standard&amp;#39;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;format&amp;#39;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(asctime)s&lt;/span&gt;&lt;span style="font-style:italic"&gt; [&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(levelname)s&lt;/span&gt;&lt;span style="font-style:italic"&gt;] &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(name)s&lt;/span&gt;&lt;span style="font-style:italic"&gt;: &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%(message)s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;handlers&amp;#39;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;default&amp;#39;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;level&amp;#39;&lt;/span&gt;:&lt;span style="font-style:italic"&gt;&amp;#39;INFO&amp;#39;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;class&amp;#39;&lt;/span&gt;:&lt;span style="font-style:italic"&gt;&amp;#39;logging.StreamHandler&amp;#39;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;loggers&amp;#39;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;&amp;#39;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;handlers&amp;#39;&lt;/span&gt;: [&lt;span style="font-style:italic"&gt;&amp;#39;default&amp;#39;&lt;/span&gt;],
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;level&amp;#39;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#39;INFO&amp;#39;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#39;propagate&amp;#39;&lt;/span&gt;: &lt;span style="font-weight:bold"&gt;True&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;})
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;logger.info(&lt;span style="font-style:italic"&gt;&amp;#39;It works!&amp;#39;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="使用-json-和-yaml-配置-logging"&gt;
-使用 JSON 和 YAML 配置 logging
-&lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8-json-%e5%92%8c-yaml-%e9%85%8d%e7%bd%ae-logging"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging.config&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger = logging.getLogger(__name__)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# load config from file&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# logging.config.fileConfig(&apos;logging.ini&apos;, disable_existing_loggers=False)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# or, for dictConfig&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logging.config.dictConfig({&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &apos;version&apos;: 1,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &apos;disable_existing_loggers&apos;: False,  # this fixes the problem&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &apos;formatters&apos;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        &apos;standard&apos;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            &apos;format&apos;: &apos;%(asctime)s [%(levelname)s] %(name)s: %(message)s&apos;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &apos;handlers&apos;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        &apos;default&apos;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            &apos;level&apos;:&apos;INFO&apos;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            &apos;class&apos;:&apos;logging.StreamHandler&apos;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &apos;loggers&apos;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        &apos;&apos;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            &apos;handlers&apos;: [&apos;default&apos;],&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            &apos;level&apos;: &apos;INFO&apos;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            &apos;propagate&apos;: True&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;})&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;logger.info(&apos;It works!&apos;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;使用-json-和-yaml-配置-logging&quot;&gt;使用 JSON 和 YAML 配置 logging&lt;/h2&gt;
 &lt;p&gt;你可以再 Python 代码中配置 logging 参数，但是这不够灵活。更好的方式
 是使用 logging 配置文件。在 Python2.7 之后，你可以加载 logging 配置
 从一个字典，这意味着你可以从 JSON 或 YAML 文件中加载 logging 配置。
@@ -304,181 +250,163 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 来说是困难的。这里我将展示通过 JSON 或者 YAML 的配置文件示例。&lt;/p&gt;
 &lt;hr&gt;
 &lt;p&gt;logging.json&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-json" data-lang="json"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;{
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;: 1,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;disable_existing_loggers&amp;#34;&lt;/span&gt;: &lt;span style="font-weight:bold"&gt;false&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;formatters&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;simple&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;format&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;handlers&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;console&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;class&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;logging.StreamHandler&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;level&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;DEBUG&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;formatter&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;simple&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;stream&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;ext://sys.stdout&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;info_file_handler&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;class&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;logging.handlers.RotatingFileHandler&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;level&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;INFO&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;formatter&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;simple&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;filename&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;info.log&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;maxBytes&amp;#34;&lt;/span&gt;: 10485760,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;backupCount&amp;#34;&lt;/span&gt;: 20,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;encoding&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;utf8&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;error_file_handler&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;class&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;logging.handlers.RotatingFileHandler&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;level&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;ERROR&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;formatter&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;simple&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;filename&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;errors.log&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;maxBytes&amp;#34;&lt;/span&gt;: 10485760,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;backupCount&amp;#34;&lt;/span&gt;: 20,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;encoding&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;utf8&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;loggers&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;my_module&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;level&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;ERROR&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;handlers&amp;#34;&lt;/span&gt;: [&lt;span style="font-style:italic"&gt;&amp;#34;console&amp;#34;&lt;/span&gt;],
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;propagate&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;no&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; },
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;root&amp;#34;&lt;/span&gt;: {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;level&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;INFO&amp;#34;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;&amp;#34;handlers&amp;#34;&lt;/span&gt;: [&lt;span style="font-style:italic"&gt;&amp;#34;console&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;info_file_handler&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;error_file_handler&amp;#34;&lt;/span&gt;]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;json&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;{&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;version&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;disable_existing_loggers&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;false&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;formatters&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        &quot;simple&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;format&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;%(asctime)s - %(name)s - %(levelname)s - %(message)s&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;handlers&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        &quot;console&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;class&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;logging.StreamHandler&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;level&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;DEBUG&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;formatter&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;simple&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;stream&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;ext://sys.stdout&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        &quot;info_file_handler&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;class&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;logging.handlers.RotatingFileHandler&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;level&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;INFO&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;formatter&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;simple&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;filename&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;info.log&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;maxBytes&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;10485760&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;backupCount&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;20&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;encoding&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;utf8&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        &quot;error_file_handler&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;class&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;logging.handlers.RotatingFileHandler&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;level&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;ERROR&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;formatter&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;simple&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;filename&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;errors.log&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;maxBytes&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;10485760&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;backupCount&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;20&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;encoding&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;utf8&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;loggers&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        &quot;my_module&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;level&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;ERROR&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;handlers&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: [&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;console&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;],&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            &quot;propagate&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;no&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    },&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;root&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        &quot;level&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;INFO&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        &quot;handlers&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: [&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;console&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;info_file_handler&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;error_file_handler&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
 &lt;p&gt;logging.yaml&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-yaml" data-lang="yaml"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;---&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;version&lt;/span&gt;: 1
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;disable_existing_loggers&lt;/span&gt;: &lt;span style="font-weight:bold"&gt;False&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;formatters&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;simple&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;format&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;%(asctime)s - %(name)s - %(levelname)s - %(message)s&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;handlers&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;console&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;class&lt;/span&gt;: logging.StreamHandler
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;level&lt;/span&gt;: DEBUG
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;formatter&lt;/span&gt;: simple
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;stream&lt;/span&gt;: ext://sys.stdout
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;info_file_handler&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;class&lt;/span&gt;: logging.handlers.RotatingFileHandler
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;level&lt;/span&gt;: INFO
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;formatter&lt;/span&gt;: simple
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;filename&lt;/span&gt;: info.log
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;maxBytes&lt;/span&gt;: 10485760 &lt;span style="font-style:italic"&gt;# 10MB&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;backupCount&lt;/span&gt;: 20
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;encoding&lt;/span&gt;: utf8
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;error_file_handler&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;class&lt;/span&gt;: logging.handlers.RotatingFileHandler
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;level&lt;/span&gt;: ERROR
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;formatter&lt;/span&gt;: simple
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;filename&lt;/span&gt;: errors.log
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;maxBytes&lt;/span&gt;: 10485760 &lt;span style="font-style:italic"&gt;# 10MB&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;backupCount&lt;/span&gt;: 20
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;encoding&lt;/span&gt;: utf8
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;loggers&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;my_module&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;level&lt;/span&gt;: ERROR
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;handlers&lt;/span&gt;: [console]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;propagate&lt;/span&gt;: &lt;span style="font-weight:bold"&gt;no&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;root&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;level&lt;/span&gt;: INFO
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;handlers&lt;/span&gt;: [console, info_file_handler, error_file_handler]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;...&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;以下配置展示了如何从 json 文件中读取 logging 配置：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Python" data-lang="Python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;os&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;json&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;logging.config&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; setup_logging(
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; default_path=&lt;span style="font-style:italic"&gt;&amp;#39;logging.json&amp;#39;&lt;/span&gt;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; default_level=logging.INFO,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; env_key=&lt;span style="font-style:italic"&gt;&amp;#39;LOG_CFG&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;Setup logging configuration
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; path = default_path
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; value = os.getenv(env_key, &lt;span style="font-weight:bold"&gt;None&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; value:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; path = value
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; os.path.exists(path):
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;with&lt;/span&gt; open(path, &lt;span style="font-style:italic"&gt;&amp;#39;rt&amp;#39;&lt;/span&gt;) &lt;span style="font-weight:bold"&gt;as&lt;/span&gt; f:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; config = json.load(f)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logging.config.dictConfig(config)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;else&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logging.basicConfig(level=default_level)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;使用 JSON 配置的一个优点是 json 是标准库中的模块，你不需要安装。但就个人来说，
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;yaml&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;version&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;disable_existing_loggers&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;False&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;formatters&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    simple&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        format&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;%(asctime)s - %(name)s - %(levelname)s - %(message)s&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;handlers&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    console&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        class&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;logging.StreamHandler&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        level&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;DEBUG&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        formatter&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;simple&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        stream&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;ext://sys.stdout&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    info_file_handler&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        class&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;logging.handlers.RotatingFileHandler&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        level&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;INFO&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        formatter&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;simple&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        filename&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;info.log&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        maxBytes&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;10485760&lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt; # 10MB&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        backupCount&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;20&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        encoding&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;utf8&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    error_file_handler&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        class&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;logging.handlers.RotatingFileHandler&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        level&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;ERROR&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        formatter&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;simple&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        filename&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;errors.log&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        maxBytes&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;10485760&lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt; # 10MB&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        backupCount&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;20&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        encoding&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;utf8&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;loggers&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    my_module&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        level&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;ERROR&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        handlers&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: [&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;console&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        propagate&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;no&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;root&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    level&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;INFO&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    handlers&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: [&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;console&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;info_file_handler&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;error_file_handler&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;...&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;以下配置展示了如何从 json 文件中读取 logging 配置：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import os&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import json&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;import logging.config&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def setup_logging(&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    default_path=&apos;logging.json&apos;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    default_level=logging.INFO,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    env_key=&apos;LOG_CFG&apos;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &quot;&quot;&quot;Setup logging configuration&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    path = default_path&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    value = os.getenv(env_key, None)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    if value:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        path = value&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    if os.path.exists(path):&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        with open(path, &apos;rt&apos;) as f:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            config = json.load(f)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        logging.config.dictConfig(config)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    else:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        logging.basicConfig(level=default_level)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用 JSON 配置的一个优点是 json 是标准库中的模块，你不需要安装。但就个人来说，
 我更喜欢 YAML。这有非常好的可读性和可编辑性。你可以按照以下方式加载 YAML 配置：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-yaml" data-lang="yaml"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;import os
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;import logging.config
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;import yaml
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;def setup_logging(
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; default_path=&amp;#39;logging.yaml&amp;#39;,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; default_level=logging.INFO,
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; env_key=&amp;#39;LOG_CFG&amp;#39;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;)&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;Setup logging configuration
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; path = default_path
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; value = os.getenv(env_key, None)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if value&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; path = value
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if os.path.exists(path)&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;with open(path, &amp;#39;rt&amp;#39;) as f&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; config = yaml.safe_load(f.read())
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logging.config.dictConfig(config)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;else&lt;/span&gt;:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; logging.basicConfig(level=default_level)
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;yaml&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;import os&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;import logging.config&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;import yaml&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;def setup_logging(&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    default_path=&apos;logging.yaml&apos;,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    default_level=logging.INFO,&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    env_key=&apos;LOG_CFG&apos;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    &quot;&quot;&quot;Setup logging configuration&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    path = default_path&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    value = os.getenv(env_key, None)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    if value&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        path = value&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    if os.path.exists(path)&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;        with open(path, &apos;rt&apos;) as f&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;            config = yaml.safe_load(f.read())&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        logging.config.dictConfig(config)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    else&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        logging.basicConfig(level=default_level)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者
 logging.yaml。你也可以设置 LOG_CFG 环境变量去从指定的路径下加载配置文件。比如：&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;LOG_CFG=my_logging.json python my_server.py&lt;/code&gt;&lt;/p&gt;
 &lt;p&gt;或者&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;LOG_CFG=my_logging.yaml python my_server.py&lt;/code&gt;&lt;/p&gt;
-&lt;h2 id="配置文件轮询"&gt;
-配置文件轮询
-&lt;a class="heading-link" href="#%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6%e8%bd%ae%e8%af%a2"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;配置文件轮询&quot;&gt;配置文件轮询&lt;/h2&gt;
 &lt;p&gt;如果你使用 FileHandler 去写日志，随着时间的增加日志文件大小也会增长，某一天，会撑爆你的磁盘。
 为了避免这种情况，你应该在生产环境中使用 RotatingFileHandler 替换 FileHandler 。&lt;/p&gt;
-&lt;h2 id="配置日志中心"&gt;
-配置日志中心
-&lt;a class="heading-link" href="#%e9%85%8d%e7%bd%ae%e6%97%a5%e5%bf%97%e4%b8%ad%e5%bf%83"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;配置日志中心&quot;&gt;配置日志中心&lt;/h2&gt;
 &lt;p&gt;当你有多台服务器和不同的日志文件时，你可以配置一个日志中心去手机所有重要的文件。这样你可以
 更方便的监控和通知你的系统发生了哪些报错。&lt;/p&gt;
-&lt;h2 id="结论"&gt;
-结论
-&lt;a class="heading-link" href="#%e7%bb%93%e8%ae%ba"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;结论&quot;&gt;结论&lt;/h2&gt;
 &lt;p&gt;我很开心 Python logging 库设置的很好，最好的是它是标准库中的一员，你无须选择。
 它非常灵活，你可以编辑自己的处理器和过滤器。还有第三方程序比如 pyzmq 提供的 ZeroMQ 日志处理，
 它允许你通过 zmq socket 发送日志信息。
 如果你不知道如何正确的使用 logging，那么本文对你会有所帮助。通过良好的日志记录练习，
-你可以更轻松的找到系统中的问题。&lt;/p&gt;</description></item></channel></rss>
+你可以更轻松的找到系统中的问题。&lt;/p&gt;</content:encoded><category>Python</category><category>logging</category></item></channel></rss>

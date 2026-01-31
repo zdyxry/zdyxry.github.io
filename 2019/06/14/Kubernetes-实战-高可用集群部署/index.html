@@ -1,0 +1,864 @@
+<!DOCTYPE html><html lang="zh-CN"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Yiran Zhou's personal website"><meta name="generator" content="Astro v5.16.16"><!-- Favicon --><link rel="icon" type="image/png" href="/images/yiran.png"><!-- Canonical URL --><link rel="canonical" href="https://zdyxry.github.io/2019/06/14/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/"><!-- RSS Feed --><link rel="alternate" type="application/rss+xml" title="Yiran's Blog" href="/atom.xml"><!-- Open Graph / Facebook --><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2019/06/14/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/"><meta property="og:title" content="Kubernetes 实战-高可用集群部署 | Yiran's Blog"><meta property="og:description" content="Yiran Zhou's personal website"><meta property="og:image" content="https://zdyxry.github.io/images/yiran.png"><meta property="og:locale" content="zh_CN"><meta property="og:site_name" content="Yiran's Blog"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://zdyxry.github.io/2019/06/14/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/"><meta property="twitter:title" content="Kubernetes 实战-高可用集群部署 | Yiran's Blog"><meta property="twitter:description" content="Yiran Zhou's personal website"><meta property="twitter:image" content="https://zdyxry.github.io/images/yiran.png"><!-- Article specific meta tags --><meta property="article:published_time" content="2019-06-14T17:44:28.000Z"><meta property="article:tag" content="Kubernetes"><!-- Theme color for mobile browsers --><meta name="theme-color" content="#1565c0" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#1a1d21" media="(prefers-color-scheme: dark)"><!-- Preconnect to external domains --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><title>Kubernetes 实战-高可用集群部署 | Yiran&#39;s Blog</title><!-- Theme initialization script to prevent flash --><script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script><!-- Analytics & Tracking --><!-- Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script> <script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-G0433XDZ3V');
+</script> <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;e3ef83c53de44e8ba2d047cae42e2b4a&quot;}"></script> <!-- Google AdSense --><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2067849739296009" crossorigin="anonymous"></script><link rel="stylesheet" href="/_astro/_slug_.CNI-BeCX.css">
+<link rel="stylesheet" href="/_astro/_slug_.7ZFJe8x3.css"></head> <body> <a href="#main-content" class="skip-link">跳转到主要内容</a> <header data-astro-cid-3ef6ksr2> <nav data-astro-cid-3ef6ksr2> <a href="/" class="logo" data-astro-cid-3ef6ksr2>Yiran's Blog</a> <div class="nav-right" data-astro-cid-3ef6ksr2> <ul class="nav-links" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a href="/" class data-astro-cid-3ef6ksr2> Home </a> </li><li data-astro-cid-3ef6ksr2> <a href="/posts" class data-astro-cid-3ef6ksr2> Posts </a> </li><li data-astro-cid-3ef6ksr2> <a href="/tags" class data-astro-cid-3ef6ksr2> Tags </a> </li><li data-astro-cid-3ef6ksr2> <a href="/mentions" class data-astro-cid-3ef6ksr2> Mentions </a> </li><li data-astro-cid-3ef6ksr2> <a href="/running" class data-astro-cid-3ef6ksr2> Running </a> </li><li data-astro-cid-3ef6ksr2> <a href="/friends" class data-astro-cid-3ef6ksr2> Friends </a> </li><li data-astro-cid-3ef6ksr2> <a href="/about" class data-astro-cid-3ef6ksr2> About </a> </li> </ul> <a href="/search" class="search-link" aria-label="搜索" data-astro-cid-3ef6ksr2> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> </a> <button id="theme-toggle" class="theme-toggle" aria-label="切换主题" data-astro-cid-3ef6ksr2> <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> </div> </nav> </header> <script type="module">const r=document.getElementById("theme-toggle"),e=document.documentElement,h=localStorage.getItem("theme")||"light";e.setAttribute("data-theme",h);r?.addEventListener("click",()=>{const m=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",m),localStorage.setItem("theme",m)});r?.addEventListener("keydown",t=>{if(t.key==="Enter"||t.key===" "){t.preventDefault();const n=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",n),localStorage.setItem("theme",n)}});</script>  <main id="main-content">  <article class="post" data-astro-cid-gjtny2mx> <header class="post-header" data-astro-cid-gjtny2mx> <h1 data-astro-cid-gjtny2mx>Kubernetes 实战-高可用集群部署</h1> <div class="meta" data-astro-cid-gjtny2mx> <time datetime="2019-06-14T17:44:28.000Z" data-astro-cid-gjtny2mx> 2019年6月14日 </time>  <span class="reading-time" data-astro-cid-gjtny2mx>· 22 分钟阅读</span> </div> </header> <div class="tag-list" data-astro-cid-lga65v7i> <a href="/tags/Kubernetes" class="tag" data-astro-cid-lga65v7i>
+#Kubernetes </a> </div>   <div class="post-body" data-astro-cid-gjtny2mx> <div class="content" data-astro-cid-gjtny2mx>  <h2 id="准备工作">准备工作</h2>
+<p>本文所有节点 OS 均为 CentOS 7.4 。</p>
+<h3 id="1关闭-selinux">1.关闭 selinux</h3>
+<p>所有节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat /etc/selinux/config </span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D"># This file controls the state of SELinux on the system.</span></span>
+<span class="line"><span style="color:#6A737D"># SELINUX= can take one of these three values:</span></span>
+<span class="line"><span style="color:#6A737D">#     enforcing - SELinux security policy is enforced.</span></span>
+<span class="line"><span style="color:#6A737D">#     permissive - SELinux prints warnings instead of enforcing.</span></span>
+<span class="line"><span style="color:#6A737D">#     disabled - No SELinux policy is loaded.</span></span>
+<span class="line"><span style="color:#E1E4E8">SELINUX</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">disabled</span></span>
+<span class="line"><span style="color:#6A737D"># SELINUXTYPE= can take one of three two values:</span></span>
+<span class="line"><span style="color:#6A737D">#     targeted - Targeted processes are protected,</span></span>
+<span class="line"><span style="color:#6A737D">#     minimum - Modification of targeted policy. Only selected processes are protected. </span></span>
+<span class="line"><span style="color:#6A737D">#     mls - Multi Level Security protection.</span></span>
+<span class="line"><span style="color:#E1E4E8">SELINUXTYPE</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">targeted</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# getenforce </span></span>
+<span class="line"><span style="color:#B392F0">Disabled</span></span></code></pre>
+<h3 id="2-关于-firewalld">2. 关于 firewalld</h3>
+<p>所有节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl disable firewalld</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl stop firewalld</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl status firewalld</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl status firewalld</span></span>
+<span class="line"><span style="color:#B392F0">●</span><span style="color:#9ECBFF"> firewalld.service</span><span style="color:#9ECBFF"> -</span><span style="color:#9ECBFF"> firewalld</span><span style="color:#9ECBFF"> -</span><span style="color:#9ECBFF"> dynamic</span><span style="color:#9ECBFF"> firewall</span><span style="color:#9ECBFF"> daemon</span></span>
+<span class="line"><span style="color:#B392F0">   Loaded:</span><span style="color:#9ECBFF"> loaded</span><span style="color:#E1E4E8"> (/usr/lib/systemd/system/firewalld.service; </span><span style="color:#B392F0">disabled</span><span style="color:#E1E4E8">; </span><span style="color:#B392F0">vendor</span><span style="color:#9ECBFF"> preset:</span><span style="color:#9ECBFF"> enabled</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#B392F0">   Active:</span><span style="color:#9ECBFF"> inactive</span><span style="color:#E1E4E8"> (dead)</span></span>
+<span class="line"><span style="color:#B392F0">     Docs:</span><span style="color:#9ECBFF"> man:firewalld</span><span style="color:#E1E4E8">(</span><span style="color:#B392F0">1</span><span style="color:#E1E4E8">)</span></span></code></pre>
+<h3 id="3-安装必要-yum-源epel-release">3. 安装必要 yum 源：epel-release</h3>
+<p>所有节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install epel-release</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# ls /etc/yum.repos.d/epel.repo </span></span>
+<span class="line"><span style="color:#B392F0">/etc/yum.repos.d/epel.repo</span></span></code></pre>
+<h3 id="4-关闭节点-swap-空间">4. 关闭节点 swap 空间</h3>
+<p>所有节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat /etc/fstab </span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">#</span></span>
+<span class="line"><span style="color:#6A737D"># /etc/fstab</span></span>
+<span class="line"><span style="color:#6A737D"># Created by anaconda on Thu Jun 13 09:45:52 2019</span></span>
+<span class="line"><span style="color:#6A737D">#</span></span>
+<span class="line"><span style="color:#6A737D"># Accessible filesystems, by reference, are maintained under '/dev/disk'</span></span>
+<span class="line"><span style="color:#6A737D"># See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info</span></span>
+<span class="line"><span style="color:#6A737D">#</span></span>
+<span class="line"><span style="color:#B392F0">/dev/mapper/centos-root</span><span style="color:#9ECBFF"> /</span><span style="color:#9ECBFF">                       xfs</span><span style="color:#9ECBFF">     defaults</span><span style="color:#79B8FF">        0</span><span style="color:#79B8FF"> 0</span></span>
+<span class="line"><span style="color:#E1E4E8">UUID</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">c0f0a31a-0c36-42cf-b52a-8f3b027ef948</span><span style="color:#B392F0"> /boot</span><span style="color:#9ECBFF">                   xfs</span><span style="color:#9ECBFF">     defaults</span><span style="color:#79B8FF">        0</span><span style="color:#79B8FF"> 0</span></span>
+<span class="line"><span style="color:#6A737D">#/dev/mapper/centos-swap swap                    swap    defaults        0 0</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# free -h</span></span>
+<span class="line"><span style="color:#B392F0">              total</span><span style="color:#9ECBFF">        used</span><span style="color:#9ECBFF">        free</span><span style="color:#9ECBFF">      shared</span><span style="color:#9ECBFF">  buff/cache</span><span style="color:#9ECBFF">   available</span></span>
+<span class="line"><span style="color:#B392F0">Mem:</span><span style="color:#9ECBFF">           3.7G</span><span style="color:#9ECBFF">        102M</span><span style="color:#9ECBFF">        3.3G</span><span style="color:#9ECBFF">        8.3M</span><span style="color:#9ECBFF">        230M</span><span style="color:#9ECBFF">        3.3G</span></span>
+<span class="line"><span style="color:#B392F0">Swap:</span><span style="color:#9ECBFF">            0B</span><span style="color:#9ECBFF">          0B</span><span style="color:#9ECBFF">          0B</span></span></code></pre>
+<h3 id="5-安装-docker-ce">5. 安装 docker-ce</h3>
+<p>所有节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# </span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# head -n 6 /etc/yum.repos.d/docker-ce.repo</span></span>
+<span class="line"><span style="color:#E1E4E8">[docker-ce-stable]</span></span>
+<span class="line"><span style="color:#E1E4E8">name</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">Docker</span><span style="color:#B392F0"> CE</span><span style="color:#9ECBFF"> Stable</span><span style="color:#9ECBFF"> -</span><span style="color:#E1E4E8"> $basearch</span></span>
+<span class="line"><span style="color:#E1E4E8">baseurl</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">https://download.docker.com/linux/centos/7/</span><span style="color:#E1E4E8">$basearch</span><span style="color:#9ECBFF">/stable</span></span>
+<span class="line"><span style="color:#E1E4E8">enabled</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">1</span></span>
+<span class="line"><span style="color:#E1E4E8">gpgcheck</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">1</span></span>
+<span class="line"><span style="color:#E1E4E8">gpgkey</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">https://download.docker.com/linux/centos/gpg</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# rpm -q docker</span></span>
+<span class="line"><span style="color:#B392F0">docker-1.13.1-96.gitb2f74b2.el7.centos.x86_64</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl enable docker</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl start docker</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl status docker</span></span>
+<span class="line"><span style="color:#B392F0">●</span><span style="color:#9ECBFF"> docker.service</span><span style="color:#9ECBFF"> -</span><span style="color:#9ECBFF"> Docker</span><span style="color:#9ECBFF"> Application</span><span style="color:#9ECBFF"> Container</span><span style="color:#9ECBFF"> Engine</span></span>
+<span class="line"><span style="color:#B392F0">   Loaded:</span><span style="color:#9ECBFF"> loaded</span><span style="color:#E1E4E8"> (/usr/lib/systemd/system/docker.service; </span><span style="color:#B392F0">enabled</span><span style="color:#E1E4E8">; </span><span style="color:#B392F0">vendor</span><span style="color:#9ECBFF"> preset:</span><span style="color:#9ECBFF"> disabled</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#B392F0">   Active:</span><span style="color:#9ECBFF"> active</span><span style="color:#E1E4E8"> (running) since Fri 2019-06-14 19:48:40 CST; </span><span style="color:#B392F0">3s</span><span style="color:#9ECBFF"> ago</span></span>
+<span class="line"><span style="color:#B392F0">     Docs:</span><span style="color:#9ECBFF"> http://docs.docker.com</span></span>
+<span class="line"><span style="color:#B392F0"> Main</span><span style="color:#9ECBFF"> PID:</span><span style="color:#79B8FF"> 11488</span><span style="color:#E1E4E8"> (dockerd-current)</span></span>
+<span class="line"><span style="color:#B392F0">   CGroup:</span><span style="color:#9ECBFF"> /system.slice/docker.service</span></span>
+<span class="line"><span style="color:#B392F0">           ├─11488</span><span style="color:#9ECBFF"> /usr/bin/dockerd-current</span><span style="color:#79B8FF"> --add-runtime</span><span style="color:#9ECBFF"> docker-runc=/usr/libexec/docker/docker-runc-current</span><span style="color:#79B8FF"> --default-runtime=docker-runc</span><span style="color:#79B8FF"> --exec-opt</span><span style="color:#9ECBFF"> native.cgroupdriver=systemd</span><span style="color:#79B8FF"> --userland-proxy-path=/usr/libexec/docker/docker-proxy-current</span><span style="color:#79B8FF"> --init-path=/usr...</span></span>
+<span class="line"><span style="color:#B392F0">           └─11495</span><span style="color:#9ECBFF"> /usr/bin/docker-containerd-current</span><span style="color:#79B8FF"> -l</span><span style="color:#9ECBFF"> unix:///var/run/docker/libcontainerd/docker-containerd.sock</span><span style="color:#79B8FF"> --metrics-interval=0</span><span style="color:#79B8FF"> --start-timeout</span><span style="color:#9ECBFF"> 2m</span><span style="color:#79B8FF"> --state-dir</span><span style="color:#9ECBFF"> /var/run/docker/libcontainerd/containerd</span><span style="color:#79B8FF"> --shim</span><span style="color:#9ECBFF"> docker-containerd-shim</span><span style="color:#79B8FF"> --runtime</span><span style="color:#9ECBFF"> docker-r...</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Jun</span><span style="color:#79B8FF"> 14</span><span style="color:#9ECBFF"> 19:48:40</span><span style="color:#9ECBFF"> node211</span><span style="color:#9ECBFF"> dockerd-current[11488]:</span><span style="color:#9ECBFF"> time="2019-06-14T19:48:40.282909889+08:00"</span><span style="color:#9ECBFF"> level=info</span><span style="color:#9ECBFF"> msg="Docker daemon"</span><span style="color:#9ECBFF"> commit="b2f74b2/1.13.1"</span><span style="color:#9ECBFF"> graphdriver=overlay2</span><span style="color:#9ECBFF"> version=</span><span style="color:#79B8FF">1.13.1</span></span>
+<span class="line"><span style="color:#B392F0">Jun</span><span style="color:#79B8FF"> 14</span><span style="color:#9ECBFF"> 19:48:40</span><span style="color:#9ECBFF"> node211</span><span style="color:#9ECBFF"> dockerd-current[11488]:</span><span style="color:#9ECBFF"> time="2019-06-14T19:48:40.293315055+08:00"</span><span style="color:#9ECBFF"> level=info</span><span style="color:#9ECBFF"> msg="API listen on /var/run/docker.sock"</span></span>
+<span class="line"><span style="color:#B392F0">Jun</span><span style="color:#79B8FF"> 14</span><span style="color:#9ECBFF"> 19:48:40</span><span style="color:#9ECBFF"> node211</span><span style="color:#9ECBFF"> systemd[1]:</span><span style="color:#9ECBFF"> Started</span><span style="color:#9ECBFF"> Docker</span><span style="color:#9ECBFF"> Application</span><span style="color:#9ECBFF"> Container</span><span style="color:#9ECBFF"> Engine.</span></span></code></pre>
+<h3 id="6-开启必要系统参数-sysctl">6. 开启必要系统参数 sysctl</h3>
+<p>所有节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# sysctl -p</span></span>
+<span class="line"><span style="color:#B392F0">net.bridge.bridge-nf-call-ip6tables</span><span style="color:#9ECBFF"> =</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#B392F0">net.bridge.bridge-nf-call-iptables</span><span style="color:#9ECBFF"> =</span><span style="color:#79B8FF"> 1</span></span></code></pre>
+<h2 id="kubeadm">kubeadm</h2>
+<p>因为 kubeadm 官方文档中没有详细步骤，因此相关描述尽量具体到命令行。</p>
+<h3 id="环境信息">环境信息</h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>ip</th><th>role</th></tr></thead><tbody><tr><td>192.168.77.211</td><td>master</td></tr><tr><td>192.168.77.212</td><td>master</td></tr><tr><td>192.168.77.213</td><td>master</td></tr><tr><td>192.168.77.214</td><td>node</td></tr></tbody></table>
+<h3 id="1-安装-kubeadm">1. 安装 kubeadm</h3>
+<p>所有节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat /etc/yum.repos.d/kubernetes.repo </span></span>
+<span class="line"><span style="color:#E1E4E8">[kubernetes]</span></span>
+<span class="line"><span style="color:#E1E4E8">name</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">Kubernetes</span></span>
+<span class="line"><span style="color:#E1E4E8">baseurl</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64</span></span>
+<span class="line"><span style="color:#E1E4E8">enabled</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">1</span></span>
+<span class="line"><span style="color:#E1E4E8">gpgcheck</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">1</span></span>
+<span class="line"><span style="color:#E1E4E8">repo_gpgcheck</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">1</span></span>
+<span class="line"><span style="color:#E1E4E8">gpgkey</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">https://packages.cloud.google.com/yum/doc/yum-key.gpg</span><span style="color:#B392F0"> https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg</span></span>
+<span class="line"><span style="color:#E1E4E8">proxy</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">socks5://127.0.0.1:1080</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install kubeadm kubelet</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# which kubeadm </span></span>
+<span class="line"><span style="color:#B392F0">/usr/bin/kubeadm</span></span></code></pre>
+<h3 id="2-安装-keepalived">2. 安装 keepalived</h3>
+<p>所有 master 节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install keepalived</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install keepalived </span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install keepalived</span></span></code></pre>
+<p>编辑 node211 配置文件：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat /etc/keepalived/keepalived.conf </span></span>
+<span class="line"><span style="color:#F97583">!</span><span style="color:#B392F0"> Configuration</span><span style="color:#9ECBFF"> File</span><span style="color:#9ECBFF"> for</span><span style="color:#9ECBFF"> keepalived</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">global_defs</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">   notification_email</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        feng110498@163.com</span></span>
+<span class="line"><span style="color:#E1E4E8">   }</span></span>
+<span class="line"><span style="color:#B392F0">   notification_email_from</span><span style="color:#9ECBFF"> Alexandre.Cassen@firewall.loc</span></span>
+<span class="line"><span style="color:#B392F0">   smtp_server</span><span style="color:#79B8FF"> 127.0.0.1</span></span>
+<span class="line"><span style="color:#B392F0">   smtp_connect_timeout</span><span style="color:#79B8FF"> 30</span></span>
+<span class="line"><span style="color:#B392F0">   router_id</span><span style="color:#9ECBFF"> LVS_1</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">vrrp_instance</span><span style="color:#9ECBFF"> VI_1</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">    state</span><span style="color:#9ECBFF"> MASTER</span><span style="color:#E1E4E8">          </span></span>
+<span class="line"><span style="color:#B392F0">    interface</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">    lvs_sync_daemon_inteface</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">    virtual_router_id</span><span style="color:#79B8FF"> 79</span></span>
+<span class="line"><span style="color:#B392F0">    advert_int</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#B392F0">    priority</span><span style="color:#79B8FF"> 100</span><span style="color:#E1E4E8">         </span></span>
+<span class="line"><span style="color:#B392F0">    authentication</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        auth_type</span><span style="color:#9ECBFF"> PASS</span></span>
+<span class="line"><span style="color:#B392F0">        auth_pass</span><span style="color:#79B8FF"> 1111</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#B392F0">    virtual_ipaddress</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">      192.168.77.219/20</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>编辑 node212 配置文件：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat /etc/keepalived/keepalived.conf </span></span>
+<span class="line"><span style="color:#F97583">!</span><span style="color:#B392F0"> Configuration</span><span style="color:#9ECBFF"> File</span><span style="color:#9ECBFF"> for</span><span style="color:#9ECBFF"> keepalived</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">global_defs</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">   notification_email</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        feng110498@163.com</span></span>
+<span class="line"><span style="color:#E1E4E8">   }</span></span>
+<span class="line"><span style="color:#B392F0">   notification_email_from</span><span style="color:#9ECBFF"> Alexandre.Cassen@firewall.loc</span></span>
+<span class="line"><span style="color:#B392F0">   smtp_server</span><span style="color:#79B8FF"> 127.0.0.1</span></span>
+<span class="line"><span style="color:#B392F0">   smtp_connect_timeout</span><span style="color:#79B8FF"> 30</span></span>
+<span class="line"><span style="color:#B392F0">   router_id</span><span style="color:#9ECBFF"> LVS_1</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">vrrp_instance</span><span style="color:#9ECBFF"> VI_1</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">    state</span><span style="color:#9ECBFF"> MASTER</span><span style="color:#E1E4E8">          </span></span>
+<span class="line"><span style="color:#B392F0">    interface</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">    lvs_sync_daemon_inteface</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">    virtual_router_id</span><span style="color:#79B8FF"> 79</span></span>
+<span class="line"><span style="color:#B392F0">    advert_int</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#B392F0">    priority</span><span style="color:#79B8FF"> 90</span><span style="color:#E1E4E8">         </span></span>
+<span class="line"><span style="color:#B392F0">    authentication</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        auth_type</span><span style="color:#9ECBFF"> PASS</span></span>
+<span class="line"><span style="color:#B392F0">        auth_pass</span><span style="color:#79B8FF"> 1111</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#B392F0">    virtual_ipaddress</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">      192.168.77.219/20</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>编辑 node213 配置文件：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat /etc/keepalived/keepalived.conf </span></span>
+<span class="line"><span style="color:#F97583">!</span><span style="color:#B392F0"> Configuration</span><span style="color:#9ECBFF"> File</span><span style="color:#9ECBFF"> for</span><span style="color:#9ECBFF"> keepalived</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">global_defs</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">   notification_email</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        feng110498@163.com</span></span>
+<span class="line"><span style="color:#E1E4E8">   }</span></span>
+<span class="line"><span style="color:#B392F0">   notification_email_from</span><span style="color:#9ECBFF"> Alexandre.Cassen@firewall.loc</span></span>
+<span class="line"><span style="color:#B392F0">   smtp_server</span><span style="color:#79B8FF"> 127.0.0.1</span></span>
+<span class="line"><span style="color:#B392F0">   smtp_connect_timeout</span><span style="color:#79B8FF"> 30</span></span>
+<span class="line"><span style="color:#B392F0">   router_id</span><span style="color:#9ECBFF"> LVS_1</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">vrrp_instance</span><span style="color:#9ECBFF"> VI_1</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">    state</span><span style="color:#9ECBFF"> MASTER</span><span style="color:#E1E4E8">          </span></span>
+<span class="line"><span style="color:#B392F0">    interface</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">    lvs_sync_daemon_inteface</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">    virtual_router_id</span><span style="color:#79B8FF"> 79</span></span>
+<span class="line"><span style="color:#B392F0">    advert_int</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#B392F0">    priority</span><span style="color:#79B8FF"> 70</span><span style="color:#E1E4E8">         </span></span>
+<span class="line"><span style="color:#B392F0">    authentication</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">        auth_type</span><span style="color:#9ECBFF"> PASS</span></span>
+<span class="line"><span style="color:#B392F0">        auth_pass</span><span style="color:#79B8FF"> 1111</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#B392F0">    virtual_ipaddress</span><span style="color:#9ECBFF"> {</span></span>
+<span class="line"><span style="color:#B392F0">      192.168.77.219/20</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>node211, node212, node213 重启 keepalived：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl restart keepalived</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl restart keepalived</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl restart keepalived</span></span></code></pre>
+<p>因为 node211 优先级最高，此时 VIP 192.168.77.219 应该在 node211 节点，查看 node211 节点 IP：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# ip ad </span></span>
+<span class="line"><span style="color:#B392F0">1:</span><span style="color:#9ECBFF"> lo:</span><span style="color:#F97583"> &#x3C;</span><span style="color:#9ECBFF">LOOPBACK,UP,LOWER_U</span><span style="color:#E1E4E8">P</span><span style="color:#F97583">></span><span style="color:#9ECBFF"> mtu</span><span style="color:#79B8FF"> 65536</span><span style="color:#9ECBFF"> qdisc</span><span style="color:#9ECBFF"> noqueue</span><span style="color:#9ECBFF"> state</span><span style="color:#9ECBFF"> UNKNOWN</span><span style="color:#9ECBFF"> qlen</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#B392F0">    link/loopback</span><span style="color:#9ECBFF"> 00:00:00:00:00:00</span><span style="color:#9ECBFF"> brd</span><span style="color:#9ECBFF"> 00:00:00:00:00:00</span></span>
+<span class="line"><span style="color:#B392F0">    inet</span><span style="color:#9ECBFF"> 127.0.0.1/8</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> lo</span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span>
+<span class="line"><span style="color:#B392F0">    inet6</span><span style="color:#9ECBFF"> ::1/128</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> host</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span>
+<span class="line"><span style="color:#B392F0">2:</span><span style="color:#9ECBFF"> eth0:</span><span style="color:#F97583"> &#x3C;</span><span style="color:#9ECBFF">BROADCAST,MULTICAST,UP,LOWER_U</span><span style="color:#E1E4E8">P</span><span style="color:#F97583">></span><span style="color:#9ECBFF"> mtu</span><span style="color:#79B8FF"> 1500</span><span style="color:#9ECBFF"> qdisc</span><span style="color:#9ECBFF"> pfifo_fast</span><span style="color:#9ECBFF"> state</span><span style="color:#9ECBFF"> UP</span><span style="color:#9ECBFF"> qlen</span><span style="color:#79B8FF"> 1000</span></span>
+<span class="line"><span style="color:#B392F0">    link/ether</span><span style="color:#9ECBFF"> 52:54:00:42:fd:a6</span><span style="color:#9ECBFF"> brd</span><span style="color:#9ECBFF"> ff:ff:ff:ff:ff:ff</span></span>
+<span class="line"><span style="color:#B392F0">    inet</span><span style="color:#9ECBFF"> 192.168.77.211/20</span><span style="color:#9ECBFF"> brd</span><span style="color:#79B8FF"> 192.168.79.255</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> global</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span>
+<span class="line"><span style="color:#B392F0">    inet</span><span style="color:#9ECBFF"> 192.168.77.219/20</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> global</span><span style="color:#9ECBFF"> secondary</span><span style="color:#9ECBFF"> eth0</span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span>
+<span class="line"><span style="color:#B392F0">    inet6</span><span style="color:#9ECBFF"> fe80::5554:b212:7895:c8ad/64</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> link</span><span style="color:#9ECBFF"> tentative</span><span style="color:#9ECBFF"> dadfailed</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span>
+<span class="line"><span style="color:#B392F0">    inet6</span><span style="color:#9ECBFF"> fe80::3e97:25b9:cc1a:809c/64</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> link</span><span style="color:#9ECBFF"> tentative</span><span style="color:#9ECBFF"> dadfailed</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span>
+<span class="line"><span style="color:#B392F0">    inet6</span><span style="color:#9ECBFF"> fe80::7a4f:3726:af17:18bf/64</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> link</span><span style="color:#9ECBFF"> tentative</span><span style="color:#9ECBFF"> dadfailed</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span>
+<span class="line"><span style="color:#B392F0">3:</span><span style="color:#9ECBFF"> docker0:</span><span style="color:#F97583"> &#x3C;</span><span style="color:#9ECBFF">NO-CARRIER,BROADCAST,MULTICAST,U</span><span style="color:#E1E4E8">P</span><span style="color:#F97583">></span><span style="color:#9ECBFF"> mtu</span><span style="color:#79B8FF"> 1500</span><span style="color:#9ECBFF"> qdisc</span><span style="color:#9ECBFF"> noqueue</span><span style="color:#9ECBFF"> state</span><span style="color:#9ECBFF"> DOWN</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"><span style="color:#B392F0">    link/ether</span><span style="color:#9ECBFF"> 02:42:6f:0e:81:59</span><span style="color:#9ECBFF"> brd</span><span style="color:#9ECBFF"> ff:ff:ff:ff:ff:ff</span></span>
+<span class="line"><span style="color:#B392F0">    inet</span><span style="color:#9ECBFF"> 172.17.0.1/16</span><span style="color:#9ECBFF"> scope</span><span style="color:#9ECBFF"> global</span><span style="color:#9ECBFF"> docker0</span></span>
+<span class="line"><span style="color:#B392F0">       valid_lft</span><span style="color:#9ECBFF"> forever</span><span style="color:#9ECBFF"> preferred_lft</span><span style="color:#9ECBFF"> forever</span></span></code></pre>
+<p>配置无异常，node211,node212,node213 设置开机自启动：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl enable keepalived</span></span>
+<span class="line"><span style="color:#B392F0">Created</span><span style="color:#9ECBFF"> symlink</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> /etc/systemd/system/multi-user.target.wants/keepalived.service</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> /usr/lib/systemd/system/keepalived.service.</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl enable keepalived</span></span>
+<span class="line"><span style="color:#B392F0">Created</span><span style="color:#9ECBFF"> symlink</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> /etc/systemd/system/multi-user.target.wants/keepalived.service</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> /usr/lib/systemd/system/keepalived.service.</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl enable keepalived</span></span>
+<span class="line"><span style="color:#B392F0">Created</span><span style="color:#9ECBFF"> symlink</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> /etc/systemd/system/multi-user.target.wants/keepalived.service</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> /usr/lib/systemd/system/keepalived.service.</span></span></code></pre>
+<h3 id="3-安装-haproxy">3. 安装 haproxy</h3>
+<p>所有 master 节点执行：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install haproxy</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install haproxy</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# yum install haproxy</span></span></code></pre>
+<p>编辑所有 master 节点配置文件：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat /etc/haproxy/haproxy.cfg </span></span>
+<span class="line"><span style="color:#B392F0">global</span></span>
+<span class="line"><span style="color:#B392F0">        chroot</span><span style="color:#9ECBFF">  /var/lib/haproxy</span></span>
+<span class="line"><span style="color:#B392F0">        daemon</span></span>
+<span class="line"><span style="color:#B392F0">        group</span><span style="color:#9ECBFF"> haproxy</span></span>
+<span class="line"><span style="color:#B392F0">        user</span><span style="color:#9ECBFF"> haproxy</span></span>
+<span class="line"><span style="color:#B392F0">        log</span><span style="color:#9ECBFF"> 127.0.0.1:514</span><span style="color:#9ECBFF"> local0</span><span style="color:#9ECBFF"> warning</span></span>
+<span class="line"><span style="color:#B392F0">        pidfile</span><span style="color:#9ECBFF"> /var/lib/haproxy.pid</span></span>
+<span class="line"><span style="color:#B392F0">        maxconn</span><span style="color:#79B8FF"> 20000</span></span>
+<span class="line"><span style="color:#B392F0">        spread-checks</span><span style="color:#79B8FF"> 3</span></span>
+<span class="line"><span style="color:#B392F0">        nbproc</span><span style="color:#79B8FF"> 8</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">defaults</span></span>
+<span class="line"><span style="color:#B392F0">        log</span><span style="color:#9ECBFF">     global</span></span>
+<span class="line"><span style="color:#B392F0">        mode</span><span style="color:#9ECBFF">    tcp</span></span>
+<span class="line"><span style="color:#B392F0">        retries</span><span style="color:#79B8FF"> 3</span></span>
+<span class="line"><span style="color:#B392F0">        option</span><span style="color:#9ECBFF"> redispatch</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">listen</span><span style="color:#9ECBFF"> https-apiserver</span></span>
+<span class="line"><span style="color:#B392F0">        bind</span><span style="color:#79B8FF"> *</span><span style="color:#9ECBFF">:8443</span></span>
+<span class="line"><span style="color:#B392F0">        mode</span><span style="color:#9ECBFF"> tcp</span></span>
+<span class="line"><span style="color:#B392F0">        balance</span><span style="color:#9ECBFF"> roundrobin</span></span>
+<span class="line"><span style="color:#B392F0">        timeout</span><span style="color:#9ECBFF"> server</span><span style="color:#9ECBFF"> 900s</span></span>
+<span class="line"><span style="color:#B392F0">        timeout</span><span style="color:#9ECBFF"> connect</span><span style="color:#9ECBFF"> 15s</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">        server</span><span style="color:#9ECBFF"> m1</span><span style="color:#9ECBFF"> 192.168.77.211:6443</span><span style="color:#9ECBFF"> check</span><span style="color:#9ECBFF"> port</span><span style="color:#79B8FF"> 6443</span><span style="color:#9ECBFF"> inter</span><span style="color:#79B8FF"> 5000</span><span style="color:#9ECBFF"> fall</span><span style="color:#79B8FF"> 5</span></span>
+<span class="line"><span style="color:#B392F0">        server</span><span style="color:#9ECBFF"> m2</span><span style="color:#9ECBFF"> 192.168.77.212:6443</span><span style="color:#9ECBFF"> check</span><span style="color:#9ECBFF"> port</span><span style="color:#79B8FF"> 6443</span><span style="color:#9ECBFF"> inter</span><span style="color:#79B8FF"> 5000</span><span style="color:#9ECBFF"> fall</span><span style="color:#79B8FF"> 5</span></span>
+<span class="line"><span style="color:#B392F0">        server</span><span style="color:#9ECBFF"> m3</span><span style="color:#9ECBFF"> 192.168.77.213:6443</span><span style="color:#9ECBFF"> check</span><span style="color:#9ECBFF"> port</span><span style="color:#79B8FF"> 6443</span><span style="color:#9ECBFF"> inter</span><span style="color:#79B8FF"> 5000</span><span style="color:#9ECBFF"> fall</span><span style="color:#79B8FF"> 5</span></span></code></pre>
+<p>所有 master 节点启动 haproxy，并设置 开机自启动：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl start haproxy </span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl enable haproxy</span></span>
+<span class="line"><span style="color:#B392F0">Created</span><span style="color:#9ECBFF"> symlink</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> /etc/systemd/system/multi-user.target.wants/haproxy.service</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> /usr/lib/systemd/system/haproxy.service.</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl start haproxy </span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl enable haproxy</span></span>
+<span class="line"><span style="color:#B392F0">Created</span><span style="color:#9ECBFF"> symlink</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> /etc/systemd/system/multi-user.target.wants/haproxy.service</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> /usr/lib/systemd/system/haproxy.service.</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl start haproxy </span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# systemctl enable haproxy</span></span>
+<span class="line"><span style="color:#B392F0">Created</span><span style="color:#9ECBFF"> symlink</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> /etc/systemd/system/multi-user.target.wants/haproxy.service</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> /usr/lib/systemd/system/haproxy.service.</span></span></code></pre>
+<h3 id="4-编写-kubeadm-配置文件">4. 编写 kubeadm 配置文件</h3>
+<p>在 node211 节点编写 kubeadm 配置文件：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# cat kubeadm-init.yaml</span></span>
+<span class="line"><span style="color:#B392F0">apiVersion:</span><span style="color:#9ECBFF"> kubeadm.k8s.io/v1beta1</span></span>
+<span class="line"><span style="color:#B392F0">kind:</span><span style="color:#9ECBFF"> ClusterConfiguration</span></span>
+<span class="line"><span style="color:#B392F0">apiServer:</span></span>
+<span class="line"><span style="color:#B392F0">  timeoutForControlPlane:</span><span style="color:#9ECBFF"> 4m0s</span></span>
+<span class="line"><span style="color:#B392F0">certificatesDir:</span><span style="color:#9ECBFF"> /etc/kubernetes/pki</span></span>
+<span class="line"><span style="color:#B392F0">clusterName:</span><span style="color:#9ECBFF"> kubernetes</span></span>
+<span class="line"><span style="color:#B392F0">controlPlaneEndpoint:</span><span style="color:#9ECBFF"> "192.168.77.219:8443"</span></span>
+<span class="line"><span style="color:#B392F0">dns:</span></span>
+<span class="line"><span style="color:#79B8FF">  type</span><span style="color:#9ECBFF">:</span><span style="color:#9ECBFF"> CoreDNS</span></span>
+<span class="line"><span style="color:#B392F0">etcd:</span></span>
+<span class="line"><span style="color:#B392F0">  local:</span></span>
+<span class="line"><span style="color:#B392F0">    dataDir:</span><span style="color:#9ECBFF"> /var/lib/etcd</span></span>
+<span class="line"><span style="color:#B392F0">imageRepository:</span><span style="color:#9ECBFF"> registry.cn-hangzhou.aliyuncs.com/google_containers</span></span>
+<span class="line"><span style="color:#B392F0">kubernetesVersion:</span><span style="color:#9ECBFF"> v1.14.3</span></span>
+<span class="line"><span style="color:#B392F0">networking:</span></span>
+<span class="line"><span style="color:#B392F0">  dnsDomain:</span><span style="color:#9ECBFF"> cluster.local</span></span>
+<span class="line"><span style="color:#B392F0">  podSubnet:</span><span style="color:#9ECBFF"> "10.123.0.0/16"</span></span>
+<span class="line"><span style="color:#B392F0">scheduler:</span><span style="color:#9ECBFF"> {}</span></span>
+<span class="line"><span style="color:#B392F0">controllerManager:</span><span style="color:#9ECBFF"> {}</span></span>
+<span class="line"><span style="color:#B392F0">---</span></span>
+<span class="line"><span style="color:#B392F0">apiVersion:</span><span style="color:#9ECBFF"> kubeproxy.config.k8s.io/v1alpha1</span></span>
+<span class="line"><span style="color:#B392F0">kind:</span><span style="color:#9ECBFF"> KubeProxyConfiguration</span></span>
+<span class="line"><span style="color:#B392F0">mode:</span><span style="color:#9ECBFF"> "ipvs"</span></span></code></pre>
+<h3 id="5-初始化">5. 初始化</h3>
+<p>在 node211 节点执行初始化操作：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubeadm init --config</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">kubeadm-init.yaml</span><span style="color:#B392F0"> --experimental-upload-certs</span></span>
+<span class="line"><span style="color:#E1E4E8">[init] Using Kubernetes version: v1.14.3</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Running pre-flight checks</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node211"</span><span style="color:#9ECBFF"> could</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> reached</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node211":</span><span style="color:#9ECBFF"> lookup</span><span style="color:#9ECBFF"> node211</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> 192.168.64.215:53:</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> such</span><span style="color:#9ECBFF"> host</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Service-Kubelet]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> kubelet</span><span style="color:#9ECBFF"> service</span><span style="color:#9ECBFF"> is</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> enabled,</span><span style="color:#9ECBFF"> please</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'systemctl enable kubelet.service'</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING RequiredIPVSKernelModulesAvailable]</span><span style="color:#79B8FF">:</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">The</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> proxier</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> used</span><span style="color:#9ECBFF"> because</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> required</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> loaded:</span><span style="color:#E1E4E8"> [ip_vs_rr </span><span style="color:#9ECBFF">ip_vs_wrr</span><span style="color:#9ECBFF"> ip_vs_sh]</span></span>
+<span class="line"><span style="color:#B392F0">or</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> builtin</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> was</span><span style="color:#9ECBFF"> found:</span><span style="color:#9ECBFF"> map[ip_vs:{}</span><span style="color:#9ECBFF"> ip_vs_rr:{}</span><span style="color:#9ECBFF"> ip_vs_sh:{}</span><span style="color:#9ECBFF"> ip_vs_wrr:{}</span><span style="color:#9ECBFF"> nf_conntrack_ipv4:{}].</span></span>
+<span class="line"><span style="color:#B392F0">However,</span><span style="color:#9ECBFF"> these</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> loaded</span><span style="color:#9ECBFF"> automatically</span><span style="color:#9ECBFF"> by</span><span style="color:#9ECBFF"> kube-proxy</span><span style="color:#9ECBFF"> if</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> available</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> system.</span></span>
+<span class="line"><span style="color:#B392F0">To</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">   Run</span><span style="color:#9ECBFF"> "lsmod | grep 'ip_vs|nf_conntrack'"</span><span style="color:#9ECBFF"> and</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> of</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> above</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> listed.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">If</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> listed,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> can</span><span style="color:#9ECBFF"> use</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> methods</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> load</span><span style="color:#9ECBFF"> them:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">1.</span><span style="color:#9ECBFF"> For</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#E1E4E8"> (e.g., </span><span style="color:#9ECBFF">'modprobe ip_vs',</span><span style="color:#9ECBFF"> 'modprobe ip_vs_rr',</span><span style="color:#9ECBFF"> ...</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#B392F0">2.</span><span style="color:#9ECBFF"> If</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#9ECBFF"> returns</span><span style="color:#9ECBFF"> an</span><span style="color:#9ECBFF"> error,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> will</span><span style="color:#9ECBFF"> need</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> install</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> for</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> kernel.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Pulling images required </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> setting up a Kubernetes cluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] This might take a minute or two, depending on the speed of your internet connection</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] You can also perform this action in beforehand using </span><span style="color:#9ECBFF">'kubeadm config images pull'</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet environment file with flags to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/kubeadm-flags.env"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet configuration to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/config.yaml"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Activating the kubelet service</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Using certificateDir folder </span><span style="color:#9ECBFF">"/etc/kubernetes/pki"</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"ca"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] apiserver serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node211 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [</span><span style="color:#79B8FF">10.96.0.1</span><span style="color:#79B8FF"> 192.168.77.211</span><span style="color:#E1E4E8"> 192.168.77.219]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver-kubelet-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"front-proxy-ca"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"front-proxy-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/ca"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/server"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] etcd/server serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node211 localhost] and IPs [</span><span style="color:#79B8FF">192.168.77.211</span><span style="color:#79B8FF"> 127.0.0.1</span><span style="color:#E1E4E8"> ::1]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/peer"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] etcd/peer serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node211 localhost] and IPs [</span><span style="color:#79B8FF">192.168.77.211</span><span style="color:#79B8FF"> 127.0.0.1</span><span style="color:#E1E4E8"> ::1]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/healthcheck-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver-etcd-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"sa"</span><span style="color:#E1E4E8"> key and public key</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Using kubeconfig folder </span><span style="color:#9ECBFF">"/etc/kubernetes"</span></span>
+<span class="line"><span style="color:#E1E4E8">[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"admin.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"kubelet.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"controller-manager.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"scheduler.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Using manifest folder </span><span style="color:#9ECBFF">"/etc/kubernetes/manifests"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-apiserver"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-controller-manager"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-scheduler"</span></span>
+<span class="line"><span style="color:#E1E4E8">[etcd] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> local etcd in </span><span style="color:#9ECBFF">"/etc/kubernetes/manifests"</span></span>
+<span class="line"><span style="color:#E1E4E8">[wait-control-plane] Waiting </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelet to boot up the control plane as static Pods from directory </span><span style="color:#9ECBFF">"/etc/kubernetes/manifests"</span><span style="color:#E1E4E8">. This can take up to 4m0s</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-check] Initial timeout of 40s passed.</span></span>
+<span class="line"><span style="color:#E1E4E8">[apiclient] All control plane components are healthy after 107.014141 seconds</span></span>
+<span class="line"><span style="color:#E1E4E8">[upload-config] storing the configuration used in ConfigMap </span><span style="color:#9ECBFF">"kubeadm-config"</span><span style="color:#E1E4E8"> in the </span><span style="color:#9ECBFF">"kube-system"</span><span style="color:#E1E4E8"> Namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet] Creating a ConfigMap </span><span style="color:#9ECBFF">"kubelet-config-1.14"</span><span style="color:#E1E4E8"> in namespace kube-system with the configuration </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelets in the cluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[upload-certs] Storing the certificates in ConfigMap </span><span style="color:#9ECBFF">"kubeadm-certs"</span><span style="color:#E1E4E8"> in the </span><span style="color:#9ECBFF">"kube-system"</span><span style="color:#E1E4E8"> Namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[upload-certs] Using certificate key:</span></span>
+<span class="line"><span style="color:#B392F0">1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span></span>
+<span class="line"><span style="color:#E1E4E8">[mark-control-plane] Marking the node node211 as control-plane by adding the label </span><span style="color:#9ECBFF">"node-role.kubernetes.io/master=''"</span></span>
+<span class="line"><span style="color:#E1E4E8">[mark-control-plane] Marking the node node211 as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]</span></span>
+<span class="line"><span style="color:#E1E4E8">[bootstrap-token] Using token: ptuvy5.hl4rzxugpxpgkgkh</span></span>
+<span class="line"><span style="color:#E1E4E8">[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles</span></span>
+<span class="line"><span style="color:#E1E4E8">[bootstrap-token] configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> nodes to get long term certificate credentials</span></span>
+<span class="line"><span style="color:#E1E4E8">[bootstrap-token] configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token</span></span>
+<span class="line"><span style="color:#E1E4E8">[bootstrap-token] configured RBAC rules to allow certificate rotation </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> all node client certificates in the cluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[bootstrap-token] creating the </span><span style="color:#9ECBFF">"cluster-info"</span><span style="color:#E1E4E8"> ConfigMap in the </span><span style="color:#9ECBFF">"kube-public"</span><span style="color:#E1E4E8"> namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[addons] Applied essential addon: CoreDNS</span></span>
+<span class="line"><span style="color:#E1E4E8">[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address</span></span>
+<span class="line"><span style="color:#E1E4E8">[addons] Applied essential addon: kube-proxy</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Your</span><span style="color:#9ECBFF"> Kubernetes</span><span style="color:#9ECBFF"> control-plane</span><span style="color:#9ECBFF"> has</span><span style="color:#9ECBFF"> initialized</span><span style="color:#9ECBFF"> successfully!</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">To</span><span style="color:#9ECBFF"> start</span><span style="color:#9ECBFF"> using</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> cluster,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> need</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> as</span><span style="color:#9ECBFF"> a</span><span style="color:#9ECBFF"> regular</span><span style="color:#9ECBFF"> user:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  mkdir</span><span style="color:#79B8FF"> -p</span><span style="color:#E1E4E8"> $HOME</span><span style="color:#9ECBFF">/.kube</span></span>
+<span class="line"><span style="color:#B392F0">  sudo</span><span style="color:#9ECBFF"> cp</span><span style="color:#79B8FF"> -i</span><span style="color:#9ECBFF"> /etc/kubernetes/admin.conf</span><span style="color:#E1E4E8"> $HOME</span><span style="color:#9ECBFF">/.kube/config</span></span>
+<span class="line"><span style="color:#B392F0">  sudo</span><span style="color:#9ECBFF"> chown</span><span style="color:#E1E4E8"> $(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -u</span><span style="color:#E1E4E8">)</span><span style="color:#9ECBFF">:</span><span style="color:#E1E4E8">$(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -g</span><span style="color:#E1E4E8">) $HOME</span><span style="color:#9ECBFF">/.kube/config</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">You</span><span style="color:#9ECBFF"> should</span><span style="color:#9ECBFF"> now</span><span style="color:#9ECBFF"> deploy</span><span style="color:#9ECBFF"> a</span><span style="color:#9ECBFF"> pod</span><span style="color:#9ECBFF"> network</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> cluster.</span></span>
+<span class="line"><span style="color:#B392F0">Run</span><span style="color:#9ECBFF"> "kubectl apply -f [podnetwork].yaml"</span><span style="color:#9ECBFF"> with</span><span style="color:#9ECBFF"> one</span><span style="color:#9ECBFF"> of</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> options</span><span style="color:#9ECBFF"> listed</span><span style="color:#9ECBFF"> at:</span></span>
+<span class="line"><span style="color:#B392F0">  https://kubernetes.io/docs/concepts/cluster-administration/addons/</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">You</span><span style="color:#9ECBFF"> can</span><span style="color:#9ECBFF"> now</span><span style="color:#9ECBFF"> join</span><span style="color:#9ECBFF"> any</span><span style="color:#9ECBFF"> number</span><span style="color:#9ECBFF"> of</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> control-plane</span><span style="color:#9ECBFF"> node</span><span style="color:#9ECBFF"> running</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> command</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> as</span><span style="color:#9ECBFF"> root:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  kubeadm</span><span style="color:#9ECBFF"> join</span><span style="color:#9ECBFF"> 192.168.77.219:8443</span><span style="color:#79B8FF"> --token</span><span style="color:#9ECBFF"> ptuvy5.hl4rzxugpxpgkgkh</span><span style="color:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#79B8FF">    --discovery-token-ca-cert-hash</span><span style="color:#9ECBFF"> sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4</span><span style="color:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#79B8FF">    --experimental-control-plane</span><span style="color:#79B8FF"> --certificate-key</span><span style="color:#9ECBFF"> 1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Please</span><span style="color:#9ECBFF"> note</span><span style="color:#9ECBFF"> that</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> certificate-key</span><span style="color:#9ECBFF"> gives</span><span style="color:#9ECBFF"> access</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> cluster</span><span style="color:#9ECBFF"> sensitive</span><span style="color:#9ECBFF"> data,</span><span style="color:#9ECBFF"> keep</span><span style="color:#9ECBFF"> it</span><span style="color:#9ECBFF"> secret!</span></span>
+<span class="line"><span style="color:#B392F0">As</span><span style="color:#9ECBFF"> a</span><span style="color:#9ECBFF"> safeguard,</span><span style="color:#9ECBFF"> uploaded-certs</span><span style="color:#9ECBFF"> will</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> deleted</span><span style="color:#9ECBFF"> in</span><span style="color:#9ECBFF"> two</span><span style="color:#9ECBFF"> hours</span><span style="color:#E1E4E8">; </span><span style="color:#B392F0">If</span><span style="color:#9ECBFF"> necessary,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> can</span><span style="color:#9ECBFF"> use</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"><span style="color:#B392F0">"kubeadm init phase upload-certs --experimental-upload-certs"</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> reload</span><span style="color:#9ECBFF"> certs</span><span style="color:#9ECBFF"> afterward.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Then</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> can</span><span style="color:#9ECBFF"> join</span><span style="color:#9ECBFF"> any</span><span style="color:#9ECBFF"> number</span><span style="color:#9ECBFF"> of</span><span style="color:#9ECBFF"> worker</span><span style="color:#9ECBFF"> nodes</span><span style="color:#9ECBFF"> by</span><span style="color:#9ECBFF"> running</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> as</span><span style="color:#9ECBFF"> root:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">kubeadm</span><span style="color:#9ECBFF"> join</span><span style="color:#9ECBFF"> 192.168.77.219:8443</span><span style="color:#79B8FF"> --token</span><span style="color:#9ECBFF"> ptuvy5.hl4rzxugpxpgkgkh</span><span style="color:#79B8FF"> \</span></span>
+<span class="line"><span style="color:#79B8FF">    --discovery-token-ca-cert-hash</span><span style="color:#9ECBFF"> sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4</span></span>
+<span class="line"></span></code></pre>
+<p>按照说明，拷贝 kubectl 配置文件并验证：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# mkdir -p $HOME/.kube</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# sudo chown $(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -u</span><span style="color:#E1E4E8">):$(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -g</span><span style="color:#E1E4E8">) $HOME/.kube/config</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubectl get node</span></span>
+<span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">      STATUS</span><span style="color:#9ECBFF">     ROLES</span><span style="color:#9ECBFF">    AGE</span><span style="color:#9ECBFF">   VERSION</span></span>
+<span class="line"><span style="color:#B392F0">node211</span><span style="color:#9ECBFF">   NotReady</span><span style="color:#9ECBFF">   master</span><span style="color:#9ECBFF">   82s</span><span style="color:#9ECBFF">   v1.14.3</span></span></code></pre>
+<h3 id="6-部署-flannel-网络插件">6. 部署 flannel 网络插件</h3>
+<p>在 node211 节点部署 flannel 插件：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/a70459be0084506e4ec919aa1c114638878db11b/Documentation/kube-flannel.yml</span></span>
+<span class="line"><span style="color:#B392F0">clusterrole.rbac.authorization.k8s.io/flannel</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">clusterrolebinding.rbac.authorization.k8s.io/flannel</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">serviceaccount/flannel</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">configmap/kube-flannel-cfg</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">daemonset.extensions/kube-flannel-ds-amd64</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">daemonset.extensions/kube-flannel-ds-arm64</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">daemonset.extensions/kube-flannel-ds-arm</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">daemonset.extensions/kube-flannel-ds-ppc64le</span><span style="color:#9ECBFF"> created</span></span>
+<span class="line"><span style="color:#B392F0">daemonset.extensions/kube-flannel-ds-s390x</span><span style="color:#9ECBFF"> created</span></span></code></pre>
+<p>查看部署状态：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubectl get pod -n kube-system</span></span>
+<span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">                              READY</span><span style="color:#9ECBFF">   STATUS</span><span style="color:#9ECBFF">    RESTARTS</span><span style="color:#9ECBFF">   AGE</span></span>
+<span class="line"><span style="color:#B392F0">coredns-d5947d4b-rn2wl</span><span style="color:#9ECBFF">            0/1</span><span style="color:#9ECBFF">     Pending</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3m17s</span></span>
+<span class="line"><span style="color:#B392F0">coredns-d5947d4b-zdptx</span><span style="color:#9ECBFF">            0/1</span><span style="color:#9ECBFF">     Pending</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3m17s</span></span>
+<span class="line"><span style="color:#B392F0">etcd-node211</span><span style="color:#9ECBFF">                      1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          2m48s</span></span>
+<span class="line"><span style="color:#B392F0">kube-apiserver-node211</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          2m28s</span></span>
+<span class="line"><span style="color:#B392F0">kube-controller-manager-node211</span><span style="color:#9ECBFF">   1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          2m59s</span></span>
+<span class="line"><span style="color:#B392F0">kube-flannel-ds-amd64-vzk7c</span><span style="color:#9ECBFF">       1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          36s</span></span>
+<span class="line"><span style="color:#B392F0">kube-proxy-w5gsg</span><span style="color:#9ECBFF">                  1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3m16s</span></span>
+<span class="line"><span style="color:#B392F0">kube-scheduler-node211</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          2m41s</span></span></code></pre>
+<h3 id="7-添加其他-master-节点">7. 添加其他 master 节点</h3>
+<p>按照 node211 初始化提示，在 node212 节点及 node213 节点添加到集群，角色为 master：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh </span><span style="color:#79B8FF">\</span></span>
+<span class="line"><span style="color:#F97583">></span><span style="color:#E1E4E8">     --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4 </span><span style="color:#79B8FF">\</span></span>
+<span class="line"><span style="color:#F97583">></span><span style="color:#E1E4E8">     --experimental-control-plane --certificate-key 1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Running pre-flight checks</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node212"</span><span style="color:#9ECBFF"> could</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> reached</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node212":</span><span style="color:#9ECBFF"> lookup</span><span style="color:#9ECBFF"> node212</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> 192.168.64.215:53:</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> such</span><span style="color:#9ECBFF"> host</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Service-Kubelet]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> kubelet</span><span style="color:#9ECBFF"> service</span><span style="color:#9ECBFF"> is</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> enabled,</span><span style="color:#9ECBFF"> please</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'systemctl enable kubelet.service'</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Reading configuration from the cluster...</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] FYI: You can look at this config file with </span><span style="color:#9ECBFF">'kubectl -n kube-system get cm kubeadm-config -oyaml'</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING RequiredIPVSKernelModulesAvailable]</span><span style="color:#79B8FF">:</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">The</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> proxier</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> used</span><span style="color:#9ECBFF"> because</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> required</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> loaded:</span><span style="color:#E1E4E8"> [ip_vs_sh </span><span style="color:#9ECBFF">ip_vs_rr</span><span style="color:#9ECBFF"> ip_vs_wrr]</span></span>
+<span class="line"><span style="color:#B392F0">or</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> builtin</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> was</span><span style="color:#9ECBFF"> found:</span><span style="color:#9ECBFF"> map[ip_vs:{}</span><span style="color:#9ECBFF"> ip_vs_rr:{}</span><span style="color:#9ECBFF"> ip_vs_sh:{}</span><span style="color:#9ECBFF"> ip_vs_wrr:{}</span><span style="color:#9ECBFF"> nf_conntrack_ipv4:{}].</span></span>
+<span class="line"><span style="color:#B392F0">However,</span><span style="color:#9ECBFF"> these</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> loaded</span><span style="color:#9ECBFF"> automatically</span><span style="color:#9ECBFF"> by</span><span style="color:#9ECBFF"> kube-proxy</span><span style="color:#9ECBFF"> if</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> available</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> system.</span></span>
+<span class="line"><span style="color:#B392F0">To</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">   Run</span><span style="color:#9ECBFF"> "lsmod | grep 'ip_vs|nf_conntrack'"</span><span style="color:#9ECBFF"> and</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> of</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> above</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> listed.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">If</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> listed,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> can</span><span style="color:#9ECBFF"> use</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> methods</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> load</span><span style="color:#9ECBFF"> them:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">1.</span><span style="color:#9ECBFF"> For</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#E1E4E8"> (e.g., </span><span style="color:#9ECBFF">'modprobe ip_vs',</span><span style="color:#9ECBFF"> 'modprobe ip_vs_rr',</span><span style="color:#9ECBFF"> ...</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#B392F0">2.</span><span style="color:#9ECBFF"> If</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#9ECBFF"> returns</span><span style="color:#9ECBFF"> an</span><span style="color:#9ECBFF"> error,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> will</span><span style="color:#9ECBFF"> need</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> install</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> for</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> kernel.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Running pre-flight checks before initializing the new control plane instance</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Pulling images required </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> setting up a Kubernetes cluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] This might take a minute or two, depending on the speed of your internet connection</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] You can also perform this action in beforehand using </span><span style="color:#9ECBFF">'kubeadm config images pull'</span></span>
+<span class="line"><span style="color:#E1E4E8">[download-certs] Downloading the certificates in Secret </span><span style="color:#9ECBFF">"kubeadm-certs"</span><span style="color:#E1E4E8"> in the </span><span style="color:#9ECBFF">"kube-system"</span><span style="color:#E1E4E8"> Namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Using certificateDir folder </span><span style="color:#9ECBFF">"/etc/kubernetes/pki"</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/server"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] etcd/server serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node212 localhost] and IPs [</span><span style="color:#79B8FF">192.168.77.212</span><span style="color:#79B8FF"> 127.0.0.1</span><span style="color:#E1E4E8"> ::1]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver-etcd-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/peer"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] etcd/peer serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node212 localhost] and IPs [</span><span style="color:#79B8FF">192.168.77.212</span><span style="color:#79B8FF"> 127.0.0.1</span><span style="color:#E1E4E8"> ::1]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/healthcheck-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] apiserver serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node212 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [</span><span style="color:#79B8FF">10.96.0.1</span><span style="color:#79B8FF"> 192.168.77.212</span><span style="color:#E1E4E8"> 192.168.77.219]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver-kubelet-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"front-proxy-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Valid certificates and keys now exist in </span><span style="color:#9ECBFF">"/etc/kubernetes/pki"</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Using the existing </span><span style="color:#9ECBFF">"sa"</span><span style="color:#E1E4E8"> key</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Generating kubeconfig files</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Using kubeconfig folder </span><span style="color:#9ECBFF">"/etc/kubernetes"</span></span>
+<span class="line"><span style="color:#E1E4E8">[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"admin.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"controller-manager.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"scheduler.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Using manifest folder </span><span style="color:#9ECBFF">"/etc/kubernetes/manifests"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-apiserver"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-controller-manager"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-scheduler"</span></span>
+<span class="line"><span style="color:#E1E4E8">[check-etcd] Checking that the etcd cluster is healthy</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Downloading configuration </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelet from the </span><span style="color:#9ECBFF">"kubelet-config-1.14"</span><span style="color:#E1E4E8"> ConfigMap in the kube-system namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet configuration to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/config.yaml"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet environment file with flags to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/kubeadm-flags.env"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Activating the kubelet service</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Waiting </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelet to perform the TLS Bootstrap...</span></span>
+<span class="line"><span style="color:#E1E4E8">[etcd] Announced new etcd member joining to the existing etcd cluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[etcd] Wrote Static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> a local etcd member to </span><span style="color:#9ECBFF">"/etc/kubernetes/manifests/etcd.yaml"</span></span>
+<span class="line"><span style="color:#E1E4E8">[etcd] Waiting </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the new etcd member to join the cluster. This can take up to 40s</span></span>
+<span class="line"><span style="color:#E1E4E8">[upload-config] storing the configuration used in ConfigMap </span><span style="color:#9ECBFF">"kubeadm-config"</span><span style="color:#E1E4E8"> in the </span><span style="color:#9ECBFF">"kube-system"</span><span style="color:#E1E4E8"> Namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[mark-control-plane] Marking the node node212 as control-plane by adding the label </span><span style="color:#9ECBFF">"node-role.kubernetes.io/master=''"</span></span>
+<span class="line"><span style="color:#E1E4E8">[mark-control-plane] Marking the node node212 as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">This</span><span style="color:#9ECBFF"> node</span><span style="color:#9ECBFF"> has</span><span style="color:#9ECBFF"> joined</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> cluster</span><span style="color:#9ECBFF"> and</span><span style="color:#9ECBFF"> a</span><span style="color:#9ECBFF"> new</span><span style="color:#9ECBFF"> control</span><span style="color:#9ECBFF"> plane</span><span style="color:#9ECBFF"> instance</span><span style="color:#9ECBFF"> was</span><span style="color:#9ECBFF"> created:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> Certificate signing request was sent to apiserver and approval was received.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> The Kubelet was informed of the new secure connection details.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> Control plane (</span><span style="color:#B392F0">master</span><span style="color:#E1E4E8">) label and taint were applied to the new node.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> The Kubernetes control plane instances scaled up.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> A new etcd member was added to the local/stacked etcd cluster.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">To</span><span style="color:#9ECBFF"> start</span><span style="color:#9ECBFF"> administering</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> cluster</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> this</span><span style="color:#9ECBFF"> node,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> need</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> as</span><span style="color:#9ECBFF"> a</span><span style="color:#9ECBFF"> regular</span><span style="color:#9ECBFF"> user:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">	mkdir</span><span style="color:#79B8FF"> -p</span><span style="color:#E1E4E8"> $HOME</span><span style="color:#9ECBFF">/.kube</span></span>
+<span class="line"><span style="color:#B392F0">	sudo</span><span style="color:#9ECBFF"> cp</span><span style="color:#79B8FF"> -i</span><span style="color:#9ECBFF"> /etc/kubernetes/admin.conf</span><span style="color:#E1E4E8"> $HOME</span><span style="color:#9ECBFF">/.kube/config</span></span>
+<span class="line"><span style="color:#B392F0">	sudo</span><span style="color:#9ECBFF"> chown</span><span style="color:#E1E4E8"> $(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -u</span><span style="color:#E1E4E8">)</span><span style="color:#9ECBFF">:</span><span style="color:#E1E4E8">$(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -g</span><span style="color:#E1E4E8">) $HOME</span><span style="color:#9ECBFF">/.kube/config</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Run</span><span style="color:#9ECBFF"> 'kubectl get nodes'</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> see</span><span style="color:#9ECBFF"> this</span><span style="color:#9ECBFF"> node</span><span style="color:#9ECBFF"> join</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> cluster.</span></span></code></pre>
+<p>按照说明，拷贝 kubectl 配置文件并验证：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# mkdir -p $HOME/.kube</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# sudo chown $(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -u</span><span style="color:#E1E4E8">):$(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -g</span><span style="color:#E1E4E8">) $HOME/.kube/config</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node212 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubectl get node</span></span>
+<span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">      STATUS</span><span style="color:#9ECBFF">   ROLES</span><span style="color:#9ECBFF">    AGE</span><span style="color:#9ECBFF">     VERSION</span></span>
+<span class="line"><span style="color:#B392F0">node211</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   7m48s</span><span style="color:#9ECBFF">   v1.14.3</span></span>
+<span class="line"><span style="color:#B392F0">node212</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   66s</span><span style="color:#9ECBFF">     v1.14.3</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh </span><span style="color:#79B8FF">\</span></span>
+<span class="line"><span style="color:#F97583">></span><span style="color:#E1E4E8">     --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4 </span><span style="color:#79B8FF">\</span></span>
+<span class="line"><span style="color:#F97583">></span><span style="color:#E1E4E8">     --experimental-control-plane --certificate-key 1436c652cc6bb7e91386b4f744e3376df7b3b6ffd5e9a1a2930f9b6241daac4a</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Running pre-flight checks</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node213"</span><span style="color:#9ECBFF"> could</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> reached</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node213":</span><span style="color:#9ECBFF"> lookup</span><span style="color:#9ECBFF"> node213</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> 192.168.64.215:53:</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> such</span><span style="color:#9ECBFF"> host</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Service-Kubelet]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> kubelet</span><span style="color:#9ECBFF"> service</span><span style="color:#9ECBFF"> is</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> enabled,</span><span style="color:#9ECBFF"> please</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'systemctl enable kubelet.service'</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Reading configuration from the cluster...</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] FYI: You can look at this config file with </span><span style="color:#9ECBFF">'kubectl -n kube-system get cm kubeadm-config -oyaml'</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING RequiredIPVSKernelModulesAvailable]</span><span style="color:#79B8FF">:</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">The</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> proxier</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> used</span><span style="color:#9ECBFF"> because</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> required</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> loaded:</span><span style="color:#E1E4E8"> [ip_vs_wrr </span><span style="color:#9ECBFF">ip_vs_sh</span><span style="color:#9ECBFF"> ip_vs_rr]</span></span>
+<span class="line"><span style="color:#B392F0">or</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> builtin</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> was</span><span style="color:#9ECBFF"> found:</span><span style="color:#9ECBFF"> map[ip_vs:{}</span><span style="color:#9ECBFF"> ip_vs_rr:{}</span><span style="color:#9ECBFF"> ip_vs_sh:{}</span><span style="color:#9ECBFF"> ip_vs_wrr:{}</span><span style="color:#9ECBFF"> nf_conntrack_ipv4:{}].</span></span>
+<span class="line"><span style="color:#B392F0">However,</span><span style="color:#9ECBFF"> these</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> loaded</span><span style="color:#9ECBFF"> automatically</span><span style="color:#9ECBFF"> by</span><span style="color:#9ECBFF"> kube-proxy</span><span style="color:#9ECBFF"> if</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> available</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> system.</span></span>
+<span class="line"><span style="color:#B392F0">To</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">   Run</span><span style="color:#9ECBFF"> "lsmod | grep 'ip_vs|nf_conntrack'"</span><span style="color:#9ECBFF"> and</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> of</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> above</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> listed.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">If</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> listed,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> can</span><span style="color:#9ECBFF"> use</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> methods</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> load</span><span style="color:#9ECBFF"> them:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">1.</span><span style="color:#9ECBFF"> For</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#E1E4E8"> (e.g., </span><span style="color:#9ECBFF">'modprobe ip_vs',</span><span style="color:#9ECBFF"> 'modprobe ip_vs_rr',</span><span style="color:#9ECBFF"> ...</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#B392F0">2.</span><span style="color:#9ECBFF"> If</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#9ECBFF"> returns</span><span style="color:#9ECBFF"> an</span><span style="color:#9ECBFF"> error,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> will</span><span style="color:#9ECBFF"> need</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> install</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> for</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> kernel.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Running pre-flight checks before initializing the new control plane instance</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Pulling images required </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> setting up a Kubernetes cluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] This might take a minute or two, depending on the speed of your internet connection</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] You can also perform this action in beforehand using </span><span style="color:#9ECBFF">'kubeadm config images pull'</span></span>
+<span class="line"><span style="color:#E1E4E8">[download-certs] Downloading the certificates in Secret </span><span style="color:#9ECBFF">"kubeadm-certs"</span><span style="color:#E1E4E8"> in the </span><span style="color:#9ECBFF">"kube-system"</span><span style="color:#E1E4E8"> Namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Using certificateDir folder </span><span style="color:#9ECBFF">"/etc/kubernetes/pki"</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"front-proxy-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/server"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] etcd/server serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node213 localhost] and IPs [</span><span style="color:#79B8FF">192.168.77.213</span><span style="color:#79B8FF"> 127.0.0.1</span><span style="color:#E1E4E8"> ::1]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/peer"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] etcd/peer serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node213 localhost] and IPs [</span><span style="color:#79B8FF">192.168.77.213</span><span style="color:#79B8FF"> 127.0.0.1</span><span style="color:#E1E4E8"> ::1]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"etcd/healthcheck-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver-etcd-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] apiserver serving cert is signed </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> DNS names [node213 kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [</span><span style="color:#79B8FF">10.96.0.1</span><span style="color:#79B8FF"> 192.168.77.213</span><span style="color:#E1E4E8"> 192.168.77.219]</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Generating </span><span style="color:#9ECBFF">"apiserver-kubelet-client"</span><span style="color:#E1E4E8"> certificate and key</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Valid certificates and keys now exist in </span><span style="color:#9ECBFF">"/etc/kubernetes/pki"</span></span>
+<span class="line"><span style="color:#E1E4E8">[certs] Using the existing </span><span style="color:#9ECBFF">"sa"</span><span style="color:#E1E4E8"> key</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Generating kubeconfig files</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Using kubeconfig folder </span><span style="color:#9ECBFF">"/etc/kubernetes"</span></span>
+<span class="line"><span style="color:#E1E4E8">[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"admin.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"controller-manager.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubeconfig] Writing </span><span style="color:#9ECBFF">"scheduler.conf"</span><span style="color:#E1E4E8"> kubeconfig file</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Using manifest folder </span><span style="color:#9ECBFF">"/etc/kubernetes/manifests"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-apiserver"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-controller-manager"</span></span>
+<span class="line"><span style="color:#E1E4E8">[control-plane] Creating static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#9ECBFF"> "kube-scheduler"</span></span>
+<span class="line"><span style="color:#E1E4E8">[check-etcd] Checking that the etcd cluster is healthy</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Downloading configuration </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelet from the </span><span style="color:#9ECBFF">"kubelet-config-1.14"</span><span style="color:#E1E4E8"> ConfigMap in the kube-system namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet configuration to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/config.yaml"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet environment file with flags to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/kubeadm-flags.env"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Activating the kubelet service</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Waiting </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelet to perform the TLS Bootstrap...</span></span>
+<span class="line"><span style="color:#E1E4E8">[etcd] Announced new etcd member joining to the existing etcd cluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[etcd] Wrote Static Pod manifest </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> a local etcd member to </span><span style="color:#9ECBFF">"/etc/kubernetes/manifests/etcd.yaml"</span></span>
+<span class="line"><span style="color:#E1E4E8">[etcd] Waiting </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the new etcd member to join the cluster. This can take up to 40s</span></span>
+<span class="line"><span style="color:#E1E4E8">[upload-config] storing the configuration used in ConfigMap </span><span style="color:#9ECBFF">"kubeadm-config"</span><span style="color:#E1E4E8"> in the </span><span style="color:#9ECBFF">"kube-system"</span><span style="color:#E1E4E8"> Namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[mark-control-plane] Marking the node node213 as control-plane by adding the label </span><span style="color:#9ECBFF">"node-role.kubernetes.io/master=''"</span></span>
+<span class="line"><span style="color:#E1E4E8">[mark-control-plane] Marking the node node213 as control-plane by adding the taints [node-role.kubernetes.io/master:NoSchedule]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">This</span><span style="color:#9ECBFF"> node</span><span style="color:#9ECBFF"> has</span><span style="color:#9ECBFF"> joined</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> cluster</span><span style="color:#9ECBFF"> and</span><span style="color:#9ECBFF"> a</span><span style="color:#9ECBFF"> new</span><span style="color:#9ECBFF"> control</span><span style="color:#9ECBFF"> plane</span><span style="color:#9ECBFF"> instance</span><span style="color:#9ECBFF"> was</span><span style="color:#9ECBFF"> created:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> Certificate signing request was sent to apiserver and approval was received.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> The Kubelet was informed of the new secure connection details.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> Control plane (</span><span style="color:#B392F0">master</span><span style="color:#E1E4E8">) label and taint were applied to the new node.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> The Kubernetes control plane instances scaled up.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> A new etcd member was added to the local/stacked etcd cluster.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">To</span><span style="color:#9ECBFF"> start</span><span style="color:#9ECBFF"> administering</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> cluster</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> this</span><span style="color:#9ECBFF"> node,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> need</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> as</span><span style="color:#9ECBFF"> a</span><span style="color:#9ECBFF"> regular</span><span style="color:#9ECBFF"> user:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">	mkdir</span><span style="color:#79B8FF"> -p</span><span style="color:#E1E4E8"> $HOME</span><span style="color:#9ECBFF">/.kube</span></span>
+<span class="line"><span style="color:#B392F0">	sudo</span><span style="color:#9ECBFF"> cp</span><span style="color:#79B8FF"> -i</span><span style="color:#9ECBFF"> /etc/kubernetes/admin.conf</span><span style="color:#E1E4E8"> $HOME</span><span style="color:#9ECBFF">/.kube/config</span></span>
+<span class="line"><span style="color:#B392F0">	sudo</span><span style="color:#9ECBFF"> chown</span><span style="color:#E1E4E8"> $(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -u</span><span style="color:#E1E4E8">)</span><span style="color:#9ECBFF">:</span><span style="color:#E1E4E8">$(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -g</span><span style="color:#E1E4E8">) $HOME</span><span style="color:#9ECBFF">/.kube/config</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Run</span><span style="color:#9ECBFF"> 'kubectl get nodes'</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> see</span><span style="color:#9ECBFF"> this</span><span style="color:#9ECBFF"> node</span><span style="color:#9ECBFF"> join</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> cluster.</span></span></code></pre>
+<p>按照说明，拷贝 kubectl 配置文件并验证：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# mkdir -p $HOME/.kube</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# sudo chown $(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -u</span><span style="color:#E1E4E8">):$(</span><span style="color:#B392F0">id</span><span style="color:#79B8FF"> -g</span><span style="color:#E1E4E8">) $HOME/.kube/config</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node213 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubectl get node</span></span>
+<span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">      STATUS</span><span style="color:#9ECBFF">   ROLES</span><span style="color:#9ECBFF">    AGE</span><span style="color:#9ECBFF">     VERSION</span></span>
+<span class="line"><span style="color:#B392F0">node211</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   11m</span><span style="color:#9ECBFF">     v1.14.3</span></span>
+<span class="line"><span style="color:#B392F0">node212</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   4m39s</span><span style="color:#9ECBFF">   v1.14.3</span></span>
+<span class="line"><span style="color:#B392F0">node213</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   72s</span><span style="color:#9ECBFF">     v1.14.3</span></span></code></pre>
+<h3 id="8-添加其他-node-节点">8. 添加其他 node 节点</h3>
+<p>按照 node211 初始化提示，添加 node214 节点到集群，角色为 node：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node214 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubeadm join 192.168.77.219:8443 --token ptuvy5.hl4rzxugpxpgkgkh </span><span style="color:#79B8FF">\</span></span>
+<span class="line"><span style="color:#F97583">></span><span style="color:#E1E4E8">     --discovery-token-ca-cert-hash sha256:2a190612b1e3a68a549d02b42335bfba4dd4af3bb1361124ad46862e1ab418d4 </span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Running pre-flight checks</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node214"</span><span style="color:#9ECBFF"> could</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> reached</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Hostname]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> hostname</span><span style="color:#9ECBFF"> "node214":</span><span style="color:#9ECBFF"> lookup</span><span style="color:#9ECBFF"> node214</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> 192.168.64.215:53:</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> such</span><span style="color:#9ECBFF"> host</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING Service-Kubelet]</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> kubelet</span><span style="color:#9ECBFF"> service</span><span style="color:#9ECBFF"> is</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> enabled,</span><span style="color:#9ECBFF"> please</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'systemctl enable kubelet.service'</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] Reading configuration from the cluster...</span></span>
+<span class="line"><span style="color:#E1E4E8">[preflight] FYI: You can look at this config file with </span><span style="color:#9ECBFF">'kubectl -n kube-system get cm kubeadm-config -oyaml'</span></span>
+<span class="line"><span style="color:#E1E4E8">	[WARNING RequiredIPVSKernelModulesAvailable]</span><span style="color:#79B8FF">:</span><span style="color:#E1E4E8"> </span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">The</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> proxier</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> used</span><span style="color:#9ECBFF"> because</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> required</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> loaded:</span><span style="color:#E1E4E8"> [ip_vs_wrr </span><span style="color:#9ECBFF">ip_vs_sh</span><span style="color:#9ECBFF"> ip_vs_rr]</span></span>
+<span class="line"><span style="color:#B392F0">or</span><span style="color:#9ECBFF"> no</span><span style="color:#9ECBFF"> builtin</span><span style="color:#9ECBFF"> kernel</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> was</span><span style="color:#9ECBFF"> found:</span><span style="color:#9ECBFF"> map[ip_vs:{}</span><span style="color:#9ECBFF"> ip_vs_rr:{}</span><span style="color:#9ECBFF"> ip_vs_sh:{}</span><span style="color:#9ECBFF"> ip_vs_wrr:{}</span><span style="color:#9ECBFF"> nf_conntrack_ipv4:{}].</span></span>
+<span class="line"><span style="color:#B392F0">However,</span><span style="color:#9ECBFF"> these</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> may</span><span style="color:#9ECBFF"> be</span><span style="color:#9ECBFF"> loaded</span><span style="color:#9ECBFF"> automatically</span><span style="color:#9ECBFF"> by</span><span style="color:#9ECBFF"> kube-proxy</span><span style="color:#9ECBFF"> if</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> available</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> system.</span></span>
+<span class="line"><span style="color:#B392F0">To</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> IPVS</span><span style="color:#9ECBFF"> support:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">   Run</span><span style="color:#9ECBFF"> "lsmod | grep 'ip_vs|nf_conntrack'"</span><span style="color:#9ECBFF"> and</span><span style="color:#9ECBFF"> verify</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> of</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> above</span><span style="color:#9ECBFF"> modules</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> listed.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">If</span><span style="color:#9ECBFF"> they</span><span style="color:#9ECBFF"> are</span><span style="color:#9ECBFF"> not</span><span style="color:#9ECBFF"> listed,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> can</span><span style="color:#9ECBFF"> use</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> following</span><span style="color:#9ECBFF"> methods</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> load</span><span style="color:#9ECBFF"> them:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">1.</span><span style="color:#9ECBFF"> For</span><span style="color:#9ECBFF"> each</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> run</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#E1E4E8"> (e.g., </span><span style="color:#9ECBFF">'modprobe ip_vs',</span><span style="color:#9ECBFF"> 'modprobe ip_vs_rr',</span><span style="color:#9ECBFF"> ...</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#B392F0">2.</span><span style="color:#9ECBFF"> If</span><span style="color:#9ECBFF"> 'modprobe $modulename'</span><span style="color:#9ECBFF"> returns</span><span style="color:#9ECBFF"> an</span><span style="color:#9ECBFF"> error,</span><span style="color:#9ECBFF"> you</span><span style="color:#9ECBFF"> will</span><span style="color:#9ECBFF"> need</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> install</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> missing</span><span style="color:#9ECBFF"> module</span><span style="color:#9ECBFF"> support</span><span style="color:#9ECBFF"> for</span><span style="color:#9ECBFF"> your</span><span style="color:#9ECBFF"> kernel.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Downloading configuration </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelet from the </span><span style="color:#9ECBFF">"kubelet-config-1.14"</span><span style="color:#E1E4E8"> ConfigMap in the kube-system namespace</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet configuration to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/config.yaml"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Writing kubelet environment file with flags to file </span><span style="color:#9ECBFF">"/var/lib/kubelet/kubeadm-flags.env"</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Activating the kubelet service</span></span>
+<span class="line"><span style="color:#E1E4E8">[kubelet-start] Waiting </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> the kubelet to perform the TLS Bootstrap...</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">This</span><span style="color:#9ECBFF"> node</span><span style="color:#9ECBFF"> has</span><span style="color:#9ECBFF"> joined</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> cluster:</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> Certificate signing request was sent to apiserver and a response was received.</span></span>
+<span class="line"><span style="color:#F97583">*</span><span style="color:#E1E4E8"> The Kubelet was informed of the new secure connection details.</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">Run</span><span style="color:#9ECBFF"> 'kubectl get nodes'</span><span style="color:#9ECBFF"> on</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> control-plane</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> see</span><span style="color:#9ECBFF"> this</span><span style="color:#9ECBFF"> node</span><span style="color:#9ECBFF"> join</span><span style="color:#9ECBFF"> the</span><span style="color:#9ECBFF"> cluster.</span></span></code></pre>
+<p>至此 kubeadm 配合 keepalived &#x26; haproxy 搭建高可用集群就完成了。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubectl get node</span></span>
+<span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">      STATUS</span><span style="color:#9ECBFF">   ROLES</span><span style="color:#9ECBFF">    AGE</span><span style="color:#9ECBFF">     VERSION</span></span>
+<span class="line"><span style="color:#B392F0">node211</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   4h10m</span><span style="color:#9ECBFF">   v1.14.3</span></span>
+<span class="line"><span style="color:#B392F0">node212</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   4h3m</span><span style="color:#9ECBFF">    v1.14.3</span></span>
+<span class="line"><span style="color:#B392F0">node213</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   4h</span><span style="color:#9ECBFF">      v1.14.3</span></span>
+<span class="line"><span style="color:#B392F0">node214</span><span style="color:#9ECBFF">   Ready</span><span style="color:#F97583">    &#x3C;</span><span style="color:#9ECBFF">non</span><span style="color:#E1E4E8">e</span><span style="color:#F97583">></span><span style="color:#9ECBFF">   3h57m</span><span style="color:#9ECBFF">   v1.14.3</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node211 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# kubectl get pod -n kube-system</span></span>
+<span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">                              READY</span><span style="color:#9ECBFF">   STATUS</span><span style="color:#9ECBFF">    RESTARTS</span><span style="color:#9ECBFF">   AGE</span></span>
+<span class="line"><span style="color:#B392F0">coredns-d5947d4b-rn2wl</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h10m</span></span>
+<span class="line"><span style="color:#B392F0">coredns-d5947d4b-zdptx</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h10m</span></span>
+<span class="line"><span style="color:#B392F0">etcd-node211</span><span style="color:#9ECBFF">                      1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h9m</span></span>
+<span class="line"><span style="color:#B392F0">etcd-node212</span><span style="color:#9ECBFF">                      1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h3m</span></span>
+<span class="line"><span style="color:#B392F0">etcd-node213</span><span style="color:#9ECBFF">                      1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h</span></span>
+<span class="line"><span style="color:#B392F0">kube-apiserver-node211</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h9m</span></span>
+<span class="line"><span style="color:#B392F0">kube-apiserver-node212</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   1</span><span style="color:#9ECBFF">          4h3m</span></span>
+<span class="line"><span style="color:#B392F0">kube-apiserver-node213</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3h59m</span></span>
+<span class="line"><span style="color:#B392F0">kube-controller-manager-node211</span><span style="color:#9ECBFF">   1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   1</span><span style="color:#9ECBFF">          4h9m</span></span>
+<span class="line"><span style="color:#B392F0">kube-controller-manager-node212</span><span style="color:#9ECBFF">   1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h2m</span></span>
+<span class="line"><span style="color:#B392F0">kube-controller-manager-node213</span><span style="color:#9ECBFF">   1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3h59m</span></span>
+<span class="line"><span style="color:#B392F0">kube-flannel-ds-amd64-gchpj</span><span style="color:#9ECBFF">       1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h</span></span>
+<span class="line"><span style="color:#B392F0">kube-flannel-ds-amd64-mx44p</span><span style="color:#9ECBFF">       1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3h57m</span></span>
+<span class="line"><span style="color:#B392F0">kube-flannel-ds-amd64-vzk7c</span><span style="color:#9ECBFF">       1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h7m</span></span>
+<span class="line"><span style="color:#B392F0">kube-flannel-ds-amd64-x9rm7</span><span style="color:#9ECBFF">       1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h3m</span></span>
+<span class="line"><span style="color:#B392F0">kube-proxy-fj448</span><span style="color:#9ECBFF">                  1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h</span></span>
+<span class="line"><span style="color:#B392F0">kube-proxy-jmhm7</span><span style="color:#9ECBFF">                  1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h3m</span></span>
+<span class="line"><span style="color:#B392F0">kube-proxy-s7jdf</span><span style="color:#9ECBFF">                  1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3h57m</span></span>
+<span class="line"><span style="color:#B392F0">kube-proxy-w5gsg</span><span style="color:#9ECBFF">                  1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h10m</span></span>
+<span class="line"><span style="color:#B392F0">kube-scheduler-node211</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   1</span><span style="color:#9ECBFF">          4h9m</span></span>
+<span class="line"><span style="color:#B392F0">kube-scheduler-node212</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          4h2m</span></span>
+<span class="line"><span style="color:#B392F0">kube-scheduler-node213</span><span style="color:#9ECBFF">            1/1</span><span style="color:#9ECBFF">     Running</span><span style="color:#79B8FF">   0</span><span style="color:#9ECBFF">          3h59m</span></span></code></pre>
+<h3 id="ha-机制">HA 机制</h3>
+<p>由集群节点上运行的 keepalived &#x26; haproxy 提供 VIP &#x26; LB，集群中所有节点的 kubelet 连接至 VIP:<haproxy port=""> EndPoints。</haproxy></p>
+<p>当 VIP 所在节点发生故障，VIP 切换到集群中其他 master 节点，即可正常提供服务。</p>
+<h3 id="坑">坑</h3>
+<ol>
+<li>kubeadm 需要正常网络支持，需要确保自己处于正常网络环境下；</li>
+<li>kubeadm 在添加节点时，有可能会 hang 住，未查明原因；</li>
+<li>kubeadm 默认生成证书有效期为 1年，若想要修改，则需要手动生成证书替换；</li>
+<li>…</li>
+</ol>
+<h2 id="kubespray">kubespray</h2>
+<p>因为 kubespray 项目主要使用 ansible 配合 kubeadm 部署，具体内容可以直接查看 github 文档，因此不详细记录具体步骤。</p>
+<h3 id="环境信息-1">环境信息</h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>ip</th><th>role</th></tr></thead><tbody><tr><td>192.168.77.201</td><td>master</td></tr><tr><td>192.168.77.202</td><td>master</td></tr><tr><td>192.168.77.203</td><td>master</td></tr><tr><td>192.168.77.204</td><td>node</td></tr></tbody></table>
+<h3 id="1-安装-kubespray">1. 安装 kubespray</h3>
+<p>在 GitHub <a href="https://github.com/kubernetes-sigs/kubespray/releases">项目链接</a>上下载最新 Release 版本代码。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node201 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]# wget https://github.com/kubernetes-sigs/kubespray/archive/v2.10.3.tar.gz</span></span></code></pre>
+<h3 id="2-安装必要依赖">2. 安装必要依赖</h3>
+<p>项目依赖于 Python3，所以这里采用 Python3.6 版本进行安装。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node201 kubespray-2.10.3]# yum install python36</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node201 kubespray-2.10.3]# yum install python36-pip</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node201 kubespray-2.10.3]# pip3 install -r requirements.txt </span></span></code></pre>
+<ol start="3">
+<li>生成 ansible inventory</li>
+</ol>
+<p>项目默认提供了一个 Python 脚本用于自动生成 inventory，该脚本生成 inventory 通常需要根据实际情况自己调整。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node201 kubespray-2.10.3]# cp -rfp inventory/sample inventory/mycluster</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node201 kubespray-2.10.3]# </span><span style="color:#F97583">declare</span><span style="color:#79B8FF"> -a</span><span style="color:#E1E4E8"> IPS</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">192.168.77.201</span><span style="color:#79B8FF"> 192.168.77.202</span><span style="color:#79B8FF"> 192.168.77.203</span><span style="color:#79B8FF"> 192.168.77.203</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">[root@node201 kubespray-2.10.3]# CONFIG_FILE</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">inventory/mycluster/hosts.yml</span><span style="color:#B392F0"> python3</span><span style="color:#9ECBFF"> contrib/inventory_builder/inventory.py</span><span style="color:#E1E4E8"> ${IPS[</span><span style="color:#F97583">@</span><span style="color:#E1E4E8">]}</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> Adding</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> all</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> Adding</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> kube-master</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> Adding</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> kube-node</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> Adding</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> etcd</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> Adding</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> k8s-cluster</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> Adding</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> calico-rr</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> Skipping</span><span style="color:#9ECBFF"> existing</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> 192.168.77.203.</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node1</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> all</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node2</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> all</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node3</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> all</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node1</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> etcd</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node2</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> etcd</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node3</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> etcd</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node1</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> kube-master</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node2</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> kube-master</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node1</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> kube-node</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node2</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> kube-node</span></span>
+<span class="line"><span style="color:#B392F0">DEBUG:</span><span style="color:#9ECBFF"> adding</span><span style="color:#9ECBFF"> host</span><span style="color:#9ECBFF"> node3</span><span style="color:#9ECBFF"> to</span><span style="color:#9ECBFF"> group</span><span style="color:#9ECBFF"> kube-node</span></span></code></pre>
+<p>查看生成 inventory 结果：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@node201 kubespray-2.10.3]# cat inventory/mycluster/hosts.yml </span></span>
+<span class="line"><span style="color:#B392F0">all:</span></span>
+<span class="line"><span style="color:#B392F0">  hosts:</span></span>
+<span class="line"><span style="color:#B392F0">    node1:</span></span>
+<span class="line"><span style="color:#B392F0">      ansible_host:</span><span style="color:#79B8FF"> 192.168.77.201</span></span>
+<span class="line"><span style="color:#B392F0">      ip:</span><span style="color:#79B8FF"> 192.168.77.201</span></span>
+<span class="line"><span style="color:#B392F0">      access_ip:</span><span style="color:#79B8FF"> 192.168.77.201</span></span>
+<span class="line"><span style="color:#B392F0">    node2:</span></span>
+<span class="line"><span style="color:#B392F0">      ansible_host:</span><span style="color:#79B8FF"> 192.168.77.202</span></span>
+<span class="line"><span style="color:#B392F0">      ip:</span><span style="color:#79B8FF"> 192.168.77.202</span></span>
+<span class="line"><span style="color:#B392F0">      access_ip:</span><span style="color:#79B8FF"> 192.168.77.202</span></span>
+<span class="line"><span style="color:#B392F0">    node3:</span></span>
+<span class="line"><span style="color:#B392F0">      ansible_host:</span><span style="color:#79B8FF"> 192.168.77.203</span></span>
+<span class="line"><span style="color:#B392F0">      ip:</span><span style="color:#79B8FF"> 192.168.77.203</span></span>
+<span class="line"><span style="color:#B392F0">      access_ip:</span><span style="color:#79B8FF"> 192.168.77.203</span></span>
+<span class="line"><span style="color:#B392F0">  children:</span></span>
+<span class="line"><span style="color:#B392F0">    kube-master:</span></span>
+<span class="line"><span style="color:#B392F0">      hosts:</span></span>
+<span class="line"><span style="color:#B392F0">        node1:</span></span>
+<span class="line"><span style="color:#B392F0">        node2:</span></span>
+<span class="line"><span style="color:#B392F0">    kube-node:</span></span>
+<span class="line"><span style="color:#B392F0">      hosts:</span></span>
+<span class="line"><span style="color:#B392F0">        node1:</span></span>
+<span class="line"><span style="color:#B392F0">        node2:</span></span>
+<span class="line"><span style="color:#B392F0">        node3:</span></span>
+<span class="line"><span style="color:#B392F0">    etcd:</span></span>
+<span class="line"><span style="color:#B392F0">      hosts:</span></span>
+<span class="line"><span style="color:#B392F0">        node1:</span></span>
+<span class="line"><span style="color:#B392F0">        node2:</span></span>
+<span class="line"><span style="color:#B392F0">        node3:</span></span>
+<span class="line"><span style="color:#B392F0">    k8s-cluster:</span></span>
+<span class="line"><span style="color:#B392F0">      children:</span></span>
+<span class="line"><span style="color:#B392F0">        kube-master:</span></span>
+<span class="line"><span style="color:#B392F0">        kube-node:</span></span>
+<span class="line"><span style="color:#B392F0">    calico-rr:</span></span>
+<span class="line"><span style="color:#B392F0">      hosts:</span><span style="color:#9ECBFF"> {}</span></span></code></pre>
+<p>可以看到跟我们计划中的有所差别，根据实际情况调整 kube-master 数量即可。</p>
+<h3 id="4-编写部署配置参数">4. 编写部署配置参数</h3>
+<p>在 <code>[root@node201 kubespray-2.10.3]# ls inventory/mycluster/group_vars/all/all.yml</code> 路径下包含了一些全局配置，比如 proxy 之类的，可以手动调整。</p>
+<h3 id="5-编写-k8s-配置参数">5. 编写 k8s 配置参数</h3>
+<p>在 <code>[root@node201 kubespray-2.10.3]# ls inventory/mycluster/group_vars/k8s-cluster/k8s-cluster.yml </code> 路径下包含了 k8s 所有配置项，根据实际情况编辑修改。</p>
+<h3 id="6-部署">6. 部署</h3>
+<p>在所有准备工作完成后，执行部署操作。</p>
+<p>注意， Kubespray 部署的前提条件是你的网络是一个正常的网络，可以正常访问所有网站，若无法访问，则根据自身实际情况，调整配置，配置路径为： <code>roles/download/defaults/main.yml</code> 。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">ansible-playbook</span><span style="color:#79B8FF"> -i</span><span style="color:#9ECBFF"> inventory/mycluster/hosts.yml</span><span style="color:#79B8FF"> --become</span><span style="color:#79B8FF"> --become-user=root</span><span style="color:#9ECBFF"> cluster.yml</span></span></code></pre>
+<p>等待部署完成即可。</p>
+<h3 id="ha-机制-1">HA 机制</h3>
+<p>集群中所有的 Node 节点自己启动一个 Nginx Static Pod，用于代理转发，将所有指定 <code>127.0.0.1:6443</code> 的请求转发至所有 master 节点真实 apiserver ，这样所有的 kubelet 只需要自己节点即可，无需其他节点参与。</p>
+<h3 id="坑-1">坑</h3>
+<ol>
+<li>CentOS 默认 Python2.7，需要单独安装 Python3.6</li>
+<li>通过 pip 安装依赖，部分软件包需要 gcc,python36-devel,openssl-devel 等依赖包，需要根据错误提示自行安装，文档中没有提到</li>
+<li>默认会安装 docker &#x26; containerd 服务，但是 containerd 服务未设置开机自启动，会导致 docker 无法自动运行</li>
+<li>在安装过程中，会安装 selinux 相应 Python 库，但是该依赖未在 <code>requirements.txt </code> 声明</li>
+<li>…</li>
+</ol>
+<h2 id="总结">总结</h2>
+<p>无论是直接只用 kubeadm + vip 方式部署 HA 集群，还是通过 Kubespray 部署，在网络正常情况下，是很快可以完成的。</p>
+<p>在使用 kubeadm 过程中，因为无需引入第三方依赖库，导致整体流程顺畅，体验极佳。</p>
+<p>在 Kubespray 过程中，因为采用 Python3 方式，但相关依赖又未显示声明，导致部署过程繁琐。但是也比较好理解，Kubespray 作为一个致力于部署企业级 k8s 集群的项目，需要处理大量的边界条件了，这个项目中 YAML 就写了 15k 行，可见一斑。</p>  </div> <aside class="toc-sidebar" data-astro-cid-gjtny2mx> <nav class="toc" aria-label="目录" data-astro-cid-xvrfupwn><h2 class="toc-title" data-astro-cid-xvrfupwn>目录</h2><ul class="toc-list" data-astro-cid-xvrfupwn><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#准备工作" class="toc-link" data-astro-cid-xvrfupwn>准备工作</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#1关闭-selinux" class="toc-link" data-astro-cid-xvrfupwn>1.关闭 selinux</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#2-关于-firewalld" class="toc-link" data-astro-cid-xvrfupwn>2. 关于 firewalld</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#3-安装必要-yum-源epel-release" class="toc-link" data-astro-cid-xvrfupwn>3. 安装必要 yum 源：epel-release</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#4-关闭节点-swap-空间" class="toc-link" data-astro-cid-xvrfupwn>4. 关闭节点 swap 空间</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#5-安装-docker-ce" class="toc-link" data-astro-cid-xvrfupwn>5. 安装 docker-ce</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#6-开启必要系统参数-sysctl" class="toc-link" data-astro-cid-xvrfupwn>6. 开启必要系统参数 sysctl</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#kubeadm" class="toc-link" data-astro-cid-xvrfupwn>kubeadm</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#环境信息" class="toc-link" data-astro-cid-xvrfupwn>环境信息</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#1-安装-kubeadm" class="toc-link" data-astro-cid-xvrfupwn>1. 安装 kubeadm</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#2-安装-keepalived" class="toc-link" data-astro-cid-xvrfupwn>2. 安装 keepalived</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#3-安装-haproxy" class="toc-link" data-astro-cid-xvrfupwn>3. 安装 haproxy</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#4-编写-kubeadm-配置文件" class="toc-link" data-astro-cid-xvrfupwn>4. 编写 kubeadm 配置文件</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#5-初始化" class="toc-link" data-astro-cid-xvrfupwn>5. 初始化</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#6-部署-flannel-网络插件" class="toc-link" data-astro-cid-xvrfupwn>6. 部署 flannel 网络插件</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#7-添加其他-master-节点" class="toc-link" data-astro-cid-xvrfupwn>7. 添加其他 master 节点</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#8-添加其他-node-节点" class="toc-link" data-astro-cid-xvrfupwn>8. 添加其他 node 节点</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#ha-机制" class="toc-link" data-astro-cid-xvrfupwn>HA 机制</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#坑" class="toc-link" data-astro-cid-xvrfupwn>坑</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#kubespray" class="toc-link" data-astro-cid-xvrfupwn>kubespray</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#环境信息-1" class="toc-link" data-astro-cid-xvrfupwn>环境信息</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#1-安装-kubespray" class="toc-link" data-astro-cid-xvrfupwn>1. 安装 kubespray</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#2-安装必要依赖" class="toc-link" data-astro-cid-xvrfupwn>2. 安装必要依赖</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#4-编写部署配置参数" class="toc-link" data-astro-cid-xvrfupwn>4. 编写部署配置参数</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#5-编写-k8s-配置参数" class="toc-link" data-astro-cid-xvrfupwn>5. 编写 k8s 配置参数</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#6-部署" class="toc-link" data-astro-cid-xvrfupwn>6. 部署</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#ha-机制-1" class="toc-link" data-astro-cid-xvrfupwn>HA 机制</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#坑-1" class="toc-link" data-astro-cid-xvrfupwn>坑</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#总结" class="toc-link" data-astro-cid-xvrfupwn>总结</a></li></ul></nav><script type="module">const s={root:null,rootMargin:"-20% 0px -80% 0px",threshold:0},i=new IntersectionObserver(e=>{e.forEach(o=>{if(o.isIntersecting){const r=o.target.id;document.querySelectorAll(".toc-link").forEach(c=>{c.classList.remove("active")});const t=document.querySelector(`.toc-link[href="#${r}"]`);t&&t.classList.add("active")}})},s);document.querySelectorAll("h2[id], h3[id]").forEach(e=>{i.observe(e)});</script> </aside> </div>  <div id="disqus_thread" data-astro-cid-r2x3s5wt></div> <script>(function(){const url = "https://zdyxry.github.io/2019/06/14/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/";
+const identifier = "2019/06/14/Kubernetes-实战-高可用集群部署";
+const title = "Kubernetes 实战-高可用集群部署";
+
+  var disqus_config = function () {
+    this.page.url = url;
+    this.page.identifier = identifier;
+    this.page.title = title;
+  };
+  
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://zdyxry.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+})();</script> <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" data-astro-cid-r2x3s5wt>comments powered by Disqus.</a></noscript>  </article>  </main> <footer data-astro-cid-sz7xmlte> <div class="footer-content" data-astro-cid-sz7xmlte> <div class="social-links" data-astro-cid-sz7xmlte> <a href="https://github.com/zdyxry" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" data-astro-cid-sz7xmlte></path> </svg>    </a><a href="https://twitter.com/zdyxry" target="_blank" rel="noopener" aria-label="Twitter" data-astro-cid-sz7xmlte>  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" data-astro-cid-sz7xmlte></path> </svg>   </a><a href="https://neodb.social/users/zdyxry/" target="_blank" rel="noopener" aria-label="NeoDB" data-astro-cid-sz7xmlte>   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" data-astro-cid-sz7xmlte></path> <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" data-astro-cid-sz7xmlte></path> </svg>  </a><a href="/atom.xml" aria-label="RSS" data-astro-cid-sz7xmlte>    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 11a9 9 0 0 1 9 9" data-astro-cid-sz7xmlte></path> <path d="M4 4a16 16 0 0 1 16 16" data-astro-cid-sz7xmlte></path> <circle cx="5" cy="19" r="1" data-astro-cid-sz7xmlte></circle> </svg> </a> </div> <p class="copyright" data-astro-cid-sz7xmlte>&copy; 2026 Yiran's Blog · Powered by <a href="https://astro.build" target="_blank" rel="noopener" data-astro-cid-sz7xmlte>Astro</a></p> </div> </footer>  </body></html> 

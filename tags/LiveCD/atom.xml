@@ -1,145 +1,103 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>LiveCD on Yiran's Blog</title><link>https://zdyxry.github.io/tags/LiveCD/</link><description>Recent content in LiveCD on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sat, 04 Aug 2018 06:39:28 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/LiveCD/atom.xml" rel="self" type="application/rss+xml"/><item><title>CentOS LiveCD 构建及修改方式</title><link>https://zdyxry.github.io/2018/08/04/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</link><pubDate>Sat, 04 Aug 2018 06:39:28 +0000</pubDate><guid>https://zdyxry.github.io/2018/08/04/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</guid><description>&lt;h2 id="背景"&gt;
-背景
-&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: LiveCD - My Blog</title><description>标签 &quot;LiveCD&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>CentOS LiveCD 构建及修改方式</title><link>https://zdyxry.github.io/2018/08/03/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/08/03/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</guid><pubDate>Fri, 03 Aug 2018 22:39:28 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
 &lt;p&gt;Linux 作为目前服务器占比超过 60% 的操作系统，日常使用过程中，都是采用官方发布的 DVD ISO 安装，可以选择安装桌面版本还是 Minimal 版本。但是如果我们想要验证服务器硬件是否满足产品需求，就需要通过 Live CD 的方式先在内存中运行操作系统，然后进行硬件检测。通过这种方式可以在最小成本（无需安装操作系统到磁盘中）下完成硬件检测。目前 OpenStack 厂商 Mirantis 及云计算厂商 Nutanix 均采用该种方式进行产品安装前校验。要进行校验的第一步，就是构建属于我们自己的 Live CD ISO，下面以 CentOS 为例介绍如何构建和定制 Live CD ISO。&lt;/p&gt;
-&lt;h2 id="流程"&gt;
-流程
-&lt;a class="heading-link" href="#%e6%b5%81%e7%a8%8b"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;流程&quot;&gt;流程&lt;/h2&gt;
 &lt;ol&gt;
 &lt;li&gt;准备构建工具&lt;/li&gt;
 &lt;li&gt;编写 KickStart 脚本&lt;/li&gt;
 &lt;li&gt;准备软件源&lt;/li&gt;
 &lt;li&gt;构建&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h3 id="构建工具"&gt;
-构建工具
-&lt;a class="heading-link" href="#%e6%9e%84%e5%bb%ba%e5%b7%a5%e5%85%b7"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h3&gt;
-&lt;p&gt;核心工具 &lt;a href="https://github.com/livecd-tools/livecd-tools" class="external-link" target="_blank" rel="noopener"&gt;livecd-creator&lt;/a&gt;。
+&lt;h3 id=&quot;构建工具&quot;&gt;构建工具&lt;/h3&gt;
+&lt;p&gt;核心工具 &lt;a href=&quot;https://github.com/livecd-tools/livecd-tools&quot;&gt;livecd-creator&lt;/a&gt;。
 构建环境为 CentOS 7。指定官方 yum repo：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@yiran-30-250:/etc/yum.repos.d
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ ll
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;总用量 56K
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 1.7K 1月 15 2018 CentOS-Base.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 1.3K 12月 9 2015 CentOS-CR.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 649 12月 9 2015 CentOS-Debuginfo.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 290 12月 9 2015 CentOS-fasttrack.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 630 12月 9 2015 CentOS-Media.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 916 5月 23 2016 CentOS-SCLo-scl.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 892 5月 23 2016 CentOS-SCLo-scl-rh.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 1.3K 12月 9 2015 CentOS-Sources.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r--. 1 root root 2.0K 12月 9 2015 CentOS-Vault.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 951 10月 3 2017 epel.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 1.1K 10月 3 2017 epel-testing.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 306 7月 2 13:58 mcepl-vim8-epel-7.repo
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rw-r--r-- 1 root root 3.2K 6月 23 19:00 smartx-idc.repo
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;通过 Yum 安装，会自动安装相应依赖软件包：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;yum install -y livecd-tools
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="kickstart-脚本"&gt;
-KickStart 脚本
-&lt;a class="heading-link" href="#kickstart-%e8%84%9a%e6%9c%ac"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h3&gt;
-&lt;p&gt;什么是 KickStart？许多系统管理员更愿意使用自动安装方法在其服务器上安装 Red Hat Enterprise Linux。为了满足这一需求，Red Hat 创建了 KickStart 安装方法。具体 KickStart 编写语法查看 &lt;a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-kickstart-syntax" class="external-link" target="_blank" rel="noopener"&gt;RedHat 官方&lt;/a&gt;查看
-这里我们可以先参考&lt;a href="https://github.com/CentOS/sig-core-livemedia/blob/master/kickstarts/centos-7-livecd.cfg" class="external-link" target="_blank" rel="noopener"&gt;官方样例&lt;/a&gt;，先确保通过官方样例可以构建成功，我们再来进行自己的定制操作。
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-30-250:/etc/yum.repos.d&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ll&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;总用量&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 56K&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1.7K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  15&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2018&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-Base.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1.3K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 12月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2015&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-CR.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  649&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 12月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2015&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-Debuginfo.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  290&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 12月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2015&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-fasttrack.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  630&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 12月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2015&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-Media.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  916&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 5月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  23&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2016&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-SCLo-scl.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  892&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 5月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  23&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2016&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-SCLo-scl-rh.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1.3K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 12月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2015&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-Sources.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 2.0K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 12月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2015&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CentOS-Vault.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  951&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 10月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  3&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2017&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; epel.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1.1K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 10月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  3&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2017&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; epel-testing.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  306&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 7月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 13:58&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; mcepl-vim8-epel-7.repo&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 3.2K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 6月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  23&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 19:00&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; smartx-idc.repo&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;通过 Yum 安装，会自动安装相应依赖软件包：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;yum&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; install&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -y&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; livecd-tools&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;kickstart-脚本&quot;&gt;KickStart 脚本&lt;/h3&gt;
+&lt;p&gt;什么是 KickStart？许多系统管理员更愿意使用自动安装方法在其服务器上安装 Red Hat Enterprise Linux。为了满足这一需求，Red Hat 创建了 KickStart 安装方法。具体 KickStart 编写语法查看 &lt;a href=&quot;https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-kickstart-syntax&quot;&gt;RedHat 官方&lt;/a&gt;查看
+这里我们可以先参考&lt;a href=&quot;https://github.com/CentOS/sig-core-livemedia/blob/master/kickstarts/centos-7-livecd.cfg&quot;&gt;官方样例&lt;/a&gt;，先确保通过官方样例可以构建成功，我们再来进行自己的定制操作。
 将官方样例下载到本地，接下来看下面一节，不着急定制。&lt;/p&gt;
 &lt;p&gt;如果按照官方样例已经正确构建了自己的 ISO，那么我们下面来看如何进行简单的定制，如配置网络。
 打开 KickStart.cfg 文件，我们可以看到除了特定的语法外，其他的都是 Shell 脚本，可见 KickStart 是兼容 Shell 语法的，那么我们就可以直接在 KickStart 内指定要进行的事情。
 如启动之后配置网卡信息：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# config eth0&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;cat &amp;gt; /etc/sysconfig/network-scripts/ifcfg-eth0 &lt;span style="font-style:italic"&gt;&amp;lt;&amp;lt; EOF
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;DEVICE=eth0
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;IPADDR=192.168.30.253
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;NETMASK=255.255.240.0
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;GATEWAY=192.168.16.1
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;ONBOOT=yes
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;NAME=eth0
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;EOF&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ifup eth0
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;或者安装某指定软件并自动启动：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# install &amp;amp; start &amp;amp; enable dhcpd&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;yum install -y dhcpd
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;systemctl enable dhcpd
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;systemctl start dhcpd
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;tail -n 10 /var/lib/dhcpd/dhcpd.leases
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="准备软件源"&gt;
-准备软件源
-&lt;a class="heading-link" href="#%e5%87%86%e5%a4%87%e8%bd%af%e4%bb%b6%e6%ba%90"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h3&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# config eth0&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;cat&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; &gt;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/sysconfig/network-scripts/ifcfg-eth0&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; &amp;#x3C;&amp;#x3C;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; EOF&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;DEVICE=eth0&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;IPADDR=192.168.30.253&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;NETMASK=255.255.240.0&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;GATEWAY=192.168.16.1&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;ONBOOT=yes&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;NAME=eth0&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;EOF&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ifup&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;或者安装某指定软件并自动启动：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# install &amp;#x26; start &amp;#x26; enable dhcpd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;yum&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; install&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -y&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; dhcpd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;systemctl&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; enable&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; dhcpd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;systemctl&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; start&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; dhcpd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;tail&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -n&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 10&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /var/lib/dhcpd/dhcpd.leases&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;准备软件源&quot;&gt;准备软件源&lt;/h3&gt;
 &lt;p&gt;在之前的博客中我们介绍过 RPM 及 Yum 等工具的概念及使用。
 我们现在需要构建一个本地的 Yum Repo。通用做法为：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cd /data/
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir packages
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cp $some_packages packages
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$createrepo .
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这样我们就创建好了一个本地的 Yum repo，如何让本地 Yum 生效呢？
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$cd /data/&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mkdir packages&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$cp $some_packages packages&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$createrepo &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这样我们就创建好了一个本地的 Yum repo，如何让本地 Yum 生效呢？
 我们可以通过 http 或者 ftp 的方式配置，只需要将 /data/packages 这个路径允许通过文件方式访问。&lt;/p&gt;
 &lt;p&gt;上面这种方式通常用于定制化使用，我们此处为了简化操作，可以直接拷贝一个官方 ISO，挂载到本地的方式作为本地 Yum Repo。具体操作如下：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cd /data/
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir /data/centos7
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mount CentOS-7.4-x86_64-DVD-1708.iso /data/centos7
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir /etc/yum.repos.d/bk
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bk/
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$cat &amp;gt; /etc/yum.repos.d/local.repo &lt;span style="font-style:italic"&gt;&amp;lt;&amp;lt; EOF
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;[local]
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;name=local
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;baseurl=file:///data/centos7
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;enabled=1
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;gpgcheck=0
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;EOF&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;我们就可以通过 yum 的方式安装软件包了。&lt;/p&gt;
-&lt;h3 id="构建-live-cd-iso"&gt;
-构建 Live CD ISO
-&lt;a class="heading-link" href="#%e6%9e%84%e5%bb%ba-live-cd-iso"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h3&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$cd /data/&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mkdir /data/centos7&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mount CentOS-7.4-x86_64-DVD-1708.iso /data/centos7&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mkdir /etc/yum.repos.d/bk&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mv /etc/yum.repos.d/&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;*&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.repo /etc/yum.repos.d/bk/&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$cat &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; /etc/yum.repos.d/local.repo &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&amp;#x3C;&amp;#x3C;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; EOF&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;[local]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;name=local&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;baseurl=file:///data/centos7&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;enabled=1&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;gpgcheck=0&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;EOF&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们就可以通过 yum 的方式安装软件包了。&lt;/p&gt;
+&lt;h3 id=&quot;构建-live-cd-iso&quot;&gt;构建 Live CD ISO&lt;/h3&gt;
 &lt;p&gt;在一切准备好之后，我们开始构建 ISO。
-编辑官方样例，将 17 &amp;amp; 18 行替换为如下文件，指定我们刚刚指定的本地 Yum repo：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repo --name=base --baseurl=file:///data/packages
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;使用 livecd-tools 构建名为 yiran-live.iso：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;livecd-creator -v --config centos-7-livecd.cfg --cache /var/cache/livecd --name yiran-livecd
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;构建过程大概需要 5 ~ 10 分钟，构建完成后我们可以再当前路径下看到 yiran-livecd.iso，我们来看下 ISO 中的目录结构：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mkdir /tmp/yiran-livecd
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$mount yiran-livecd.iso /tmp/yiran-livecd
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$tree /tmp/yiran-livecd
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/tmp/yiran-livecd
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── isolinux
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── boot.cat
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── initrd0.img
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── isolinux.bin
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── isolinux.cfg
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ ├── vesamenu.c32
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ └── vmlinuz0
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;└── LiveOS
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ├── osmin.img
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; └── squashfs.img
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;可以看到，用于启动引导的文件均在 isolinux 路径下，而设计到文件系统相关的文件均被打包压缩到 &lt;code&gt;squashfs.img&lt;/code&gt; 中，如果想要更多的定制方式，我们就需要解压这个 img 文件并修改对应路径下的内容，然后再压缩重新制作 ISO，这里不深入介绍。&lt;/p&gt;
-&lt;h2 id="总结"&gt;
-总结
-&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+编辑官方样例，将 17 &amp;#x26; 18 行替换为如下文件，指定我们刚刚指定的本地 Yum repo：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;repo&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --name=base&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --baseurl=file:///data/packages&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用 livecd-tools 构建名为 yiran-live.iso：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;livecd-creator&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -v&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --config&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; centos-7-livecd.cfg&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --cache&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /var/cache/livecd&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --name&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-livecd&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;构建过程大概需要 5 ~ 10 分钟，构建完成后我们可以再当前路径下看到 yiran-livecd.iso，我们来看下 ISO 中的目录结构：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mkdir /tmp/yiran-livecd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mount yiran-livecd.iso /tmp/yiran-livecd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$tree /tmp/yiran-livecd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;/tmp/yiran-livecd&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; isolinux&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; boot.cat&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; initrd0.img&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; isolinux.bin&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; isolinux.cfg&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; vesamenu.c32&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; vmlinuz0&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;└──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; LiveOS&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; osmin.img&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; squashfs.img&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以看到，用于启动引导的文件均在 isolinux 路径下，而设计到文件系统相关的文件均被打包压缩到 &lt;code&gt;squashfs.img&lt;/code&gt; 中，如果想要更多的定制方式，我们就需要解压这个 img 文件并修改对应路径下的内容，然后再压缩重新制作 ISO，这里不深入介绍。&lt;/p&gt;
+&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
 &lt;p&gt;构建属于自己的 ISO 可以很方便的在日常工作中开展工作，我们可以直接挂载 LiveCD 并直接查看磁盘内容，可以把我们常用的内置软件放到 ISO 中，减少重复的安装操作。&lt;/p&gt;
-&lt;p&gt;LiveCD 工作中用处不多，硬件检查是一项很符合 LiveCD 本职功能的需求，无论是时间成本还是实现成本都是很低的，推荐使用。&lt;/p&gt;</description></item></channel></rss>
+&lt;p&gt;LiveCD 工作中用处不多，硬件检查是一项很符合 LiveCD 本职功能的需求，无论是时间成本还是实现成本都是很低的，推荐使用。&lt;/p&gt;</content:encoded><category>Linux</category><category>LiveCD</category></item></channel></rss>
