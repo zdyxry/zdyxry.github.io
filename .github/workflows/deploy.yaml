@@ -3,7 +3,7 @@ name: GitHub Pages
 on:
   push:
     branches:
-      - hugo  # Set a branch to deploy
+      - astro  # Astro 作为默认分支
   pull_request:
   schedule:
     # 每天 00:10 UTC（北京时间 08:10）自动运行
@@ -15,11 +15,9 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          submodules: true  # Fetch Hugo themes (true OR recursive)
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
-
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -29,24 +27,28 @@ jobs:
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
         run: |
-          uv run scripts/get_garmin_data.py --email ${{ secrets.GARMIN_EMAIL }} --password ${{ secrets.GARMIN_PASSWORD }}  --days 30
+          uv run scripts/get_garmin_data.py --email ${{ secrets.GARMIN_EMAIL }} --password ${{ secrets.GARMIN_PASSWORD }} --days 30
+          # 复制 running.json 到 astro-blog/src/data/
+          cp data/running.json astro-blog/src/data/running.json
 
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          hugo-version: '0.153.3'
-          extended: true
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: astro-blog/package-lock.json
 
-      - name: Build
-        run: hugo --minify
+      - name: Install dependencies
+        working-directory: astro-blog
+        run: npm ci
+
+      - name: Build Astro site
+        working-directory: astro-blog
+        run: npm run build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.ref == 'refs/heads/hugo' }}
+        if: ${{ github.ref == 'refs/heads/astro' }}
         with:
-          #  Note that the GITHUB_TOKEN is NOT a personal access token. A GitHub Actions runner automatically creates a
-          #  GITHUB_TOKEN secret to authenticate in your workflow. So, you can start to deploy immediately without any
-          #  configuration.
-          # 不用管这个 secret，github action 会自动创建
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          publish_dir: ./astro-blog/dist
