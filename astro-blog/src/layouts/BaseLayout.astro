@@ -1,0 +1,107 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Analytics from '../components/Analytics.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  type?: string;
+  publishDate?: Date;
+  modifiedDate?: Date;
+  tags?: string[];
+  showFooterSocial?: boolean;
+}
+
+const { 
+  title, 
+  description = "Yiran Zhou's personal website", 
+  image = '/images/yiran.png',
+  type = 'website',
+  publishDate,
+  modifiedDate,
+  tags = [],
+  showFooterSocial = true
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const siteTitle = "Yiran's Blog";
+const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/yiran.png" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href={canonicalURL} />
+    
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title={siteTitle} href="/atom.xml" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(image, Astro.site)} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:site_name" content={siteTitle} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={fullTitle} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(image, Astro.site)} />
+    
+    <!-- Article specific meta tags -->
+    {type === 'article' && publishDate && (
+      <meta property="article:published_time" content={publishDate.toISOString()} />
+    )}
+    {type === 'article' && modifiedDate && (
+      <meta property="article:modified_time" content={modifiedDate.toISOString()} />
+    )}
+    {type === 'article' && tags.map(tag => (
+      <meta property="article:tag" content={tag} />
+    ))}
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#1565c0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1d21" media="(prefers-color-scheme: dark)" />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <title>{fullTitle}</title>
+    
+    <!-- Theme initialization script to prevent flash -->
+    <script is:inline>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    
+    <!-- Analytics & Tracking -->
+    <Analytics />
+  </head>
+  <body>
+    <a href="#main-content" class="skip-link">跳转到主要内容</a>
+    <Header />
+    <main id="main-content">
+      <slot />
+    </main>
+    <Footer showSocial={showFooterSocial} />
+  </body>
+</html>

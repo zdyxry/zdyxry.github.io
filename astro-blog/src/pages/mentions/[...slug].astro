@@ -1,0 +1,318 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  
+  // Collect all mentions from all posts
+  const mentionsMap = new Map<string, Array<{post: any, context: string}>>();
+  
+  for (const post of posts) {
+    const content = typeof post.body === 'string' ? post.body : '';
+    // Match [text](/mentions/keyword) syntax
+    const mentionRegex = /\[([^\]]+)\]\(\/mentions\/([^)]+)\)/g;
+    let match;
+    
+    while ((match = mentionRegex.exec(content)) !== null) {
+      const keyword = match[2].trim().toLowerCase();
+      const linkText = match[1];
+      
+      // Extract context around the mention (100 chars before and after)
+      const matchIndex = match.index;
+      const contextStart = Math.max(0, matchIndex - 100);
+      const contextEnd = Math.min(content.length, matchIndex + match[0].length + 100);
+      let context = content.slice(contextStart, contextEnd);
+      
+      // Clean up context: remove other markdown links, limit to one sentence
+      context = context.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+      context = context.replace(/[#*`_]/g, '');
+      context = context.trim();
+      
+      // Add ellipsis if truncated
+      if (contextStart > 0) context = '…' + context;
+      if (contextEnd < content.length) context = context + '…';
+      
+      if (!mentionsMap.has(keyword)) {
+        mentionsMap.set(keyword, []);
+      }
+      
+      // Avoid duplicate entries for same post
+      const existing = mentionsMap.get(keyword)!.find(m => m.post.slug === post.slug);
+      if (!existing) {
+        mentionsMap.get(keyword)!.push({ post, context });
+      }
+    }
+  }
+  
+  // Generate paths for each unique keyword
+  const paths = [];
+  for (const [keyword, mentions] of mentionsMap.entries()) {
+    paths.push({
+      params: { slug: keyword },
+      props: { 
+        keyword,
+        mentions,
+        count: mentions.length 
+      },
+    });
+  }
+  
+  // If no mentions found, return at least one example path
+  if (paths.length === 0) {
+    paths.push({
+      params: { slug: 'example' },
+      props: {
+        keyword: 'example',
+        mentions: [],
+        count: 0
+      }
+    });
+  }
+  
+  return paths;
+}
+
+interface Props {
+  keyword: string;
+  mentions: Array<{post: any, context: string}>;
+  count: number;
+}
+
+const { keyword, mentions, count } = Astro.props;
+
+// Sort by date (newest first)
+const sortedMentions = mentions.sort((a, b) => {
+  const dateA = new Date(a.post.data.pubDate || a.post.data.date);
+  const dateB = new Date(b.post.data.pubDate || b.post.data.date);
+  return dateB.getTime() - dateA.getTime();
+});
+
+// Capitalize first letter for display
+const displayKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+
+// Function to highlight keyword in text
+function highlightKeyword(text: string, keyword: string): string {
+  const regex = new RegExp(`(${keyword})`, 'gi');
+  return text.replace(regex, '<mark>$1</mark>');
+}
+---
+
+<BaseLayout 
+  title={`提到「${displayKeyword}」的文章`}
+  description={`${count} 篇文章提到了 ${displayKeyword}`}
+>
+  <div class="mentions-page">
+    <header>
+      <h1>
+        <span class="brackets">[[</span>
+        {displayKeyword}
+        <span class="brackets">]]</span>
+      </h1>
+      <p class="count">{count} 篇文章提到了此关键词</p>
+    </header>
+
+    {count > 0 ? (
+      <section class="mentions-list">
+        {sortedMentions.map(({ post, context }) => {
+          const date = new Date(post.data.pubDate || post.data.date);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const slugPart = post.data.customSlug || post.slug;
+          const postUrl = `/${year}/${month}/${day}/${slugPart}/`;
+          
+          return (
+            <article class="mention-item">
+              <p class="context" set:html={highlightKeyword(context, keyword)} />
+              
+              <footer class="mention-footer">
+                <a href={postUrl} class="post-ref">
+                  <time datetime={date.toISOString()}>
+                    {date.toLocaleDateString('zh-CN', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </time>
+                  <span class="post-title">{post.data.title}</span>
+                </a>
+              </footer>
+            </article>
+          );
+        })}
+      </section>
+    ) : (
+      <section class="empty-state">
+        <p>暂无相关文章</p>
+      </section>
+    )}
+
+    <nav class="back-nav">
+      <a href="/" class="back-link">← 返回首页</a>
+    </nav>
+  </div>
+</BaseLayout>
+
+<style>
+  .mentions-page {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-wrap: balance;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .brackets {
+    color: var(--accent);
+    opacity: 0.6;
+    font-weight: 300;
+  }
+
+  .count {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .mentions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .mention-item {
+    padding: 1.5rem 2rem;
+    background: var(--background-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .mention-item:hover {
+      box-shadow: var(--box-shadow-hover);
+      transform: translateY(-2px);
+    }
+  }
+
+  .mention-item:hover {
+    border-color: var(--accent);
+  }
+
+  .context {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    line-height: 1.8;
+    font-size: 1rem;
+  }
+
+  .context :global(mark) {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+  }
+
+  .mention-footer {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .post-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+  }
+
+  .post-ref:hover,
+  .post-ref:focus-visible {
+    color: var(--accent);
+    text-decoration: none;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .post-ref time {
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .post-title {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .post-ref:hover .post-title {
+    color: var(--accent);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+    background: var(--background-secondary);
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+  }
+
+  .back-nav {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .back-link:hover,
+  .back-link:focus-visible {
+    text-decoration: underline;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    .mention-item {
+      padding: 1.25rem;
+    }
+
+    .context {
+      font-size: 0.9375rem;
+    }
+
+    .post-ref {
+      flex-wrap: wrap;
+    }
+  }
+</style>
+</style>

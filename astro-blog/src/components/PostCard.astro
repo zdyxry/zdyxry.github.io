@@ -1,0 +1,194 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+  showYear?: boolean;
+}
+
+const { post, showYear = false } = Astro.props;
+const { title, description, pubDate, tags, customSlug } = post.data;
+
+const formattedDate = pubDate.toLocaleDateString('zh-CN', { 
+  year: showYear ? 'numeric' : undefined,
+  month: 'short', 
+  day: 'numeric' 
+});
+
+// Calculate reading time
+const content = typeof post.body === 'string' ? post.body : '';
+const wordCount = content.split(/\s+/).length;
+const readingTime = Math.ceil(wordCount / 200);
+
+// Generate Hugo-style URL: /YYYY/MM/DD/slug/
+const date = new Date(pubDate);
+const year = date.getFullYear();
+const month = String(date.getMonth() + 1).padStart(2, '0');
+const day = String(date.getDate()).padStart(2, '0');
+const slugPart = post.data.slug || customSlug || post.slug;
+const postUrl = `/${year}/${month}/${day}/${slugPart}/`;
+---
+
+<article class="post-card">
+  <div class="post-main">
+    <div class="post-content">
+      <h2 class="post-title">
+        <a href={postUrl}>{title}</a>
+      </h2>
+      {description && <p class="post-description">{description}</p>}
+    </div>
+    <div class="post-meta">
+      {tags.length > 0 && (
+        <div class="post-tags">
+          {tags.slice(0, 2).map(tag => (
+            <a href={`/tags/${tag}`} class="tag">{tag}</a>
+          ))}
+          {tags.length > 2 && <span class="tag-more">+{tags.length - 2}</span>}
+        </div>
+      )}
+      <time class="post-date" datetime={pubDate.toISOString()}>
+        {formattedDate}
+      </time>
+    </div>
+  </div>
+</article>
+
+<style>
+  .post-card {
+    padding: 1.25rem;
+    border-radius: 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s ease;
+    min-width: 0;
+  }
+
+  .post-card:hover {
+    border-color: var(--accent);
+  }
+
+  .post-main {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .post-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .post-date {
+    color: var(--text-secondary);
+    white-space: nowrap;
+    order: 2;
+  }
+
+
+  .post-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.125rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .post-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .post-title a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .post-title a:focus-visible {
+    color: var(--accent);
+    text-decoration: none;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .post-description {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 0.9375rem;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.375rem;
+    order: 1;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    background: var(--background);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .tag:hover,
+  .tag:focus-visible {
+    background: var(--accent);
+    color: white;
+    text-decoration: none;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .tag-more {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+  }
+
+  @media (max-width: 768px) {
+    .post-card {
+      padding: 1rem;
+    }
+
+    .post-main {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .post-meta {
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: left;
+      flex-wrap: wrap;
+    }
+
+    .post-tags {
+      justify-content: flex-start;
+    }
+
+    .post-title {
+      font-size: 1.0625rem;
+    }
+  }
+</style>

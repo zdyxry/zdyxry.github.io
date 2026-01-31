@@ -1,0 +1,285 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import TagList from '../components/TagList.astro';
+import Backlinks from '../components/Backlinks.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import Disqus from '../components/Disqus.astro';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+  headings?: { depth: number; slug: string; text: string }[];
+}
+
+const { post, headings = [] } = Astro.props;
+const { title, description, pubDate, updatedDate, tags, heroImage, customSlug } = post.data;
+
+// Calculate reading time (approx 200 words per minute)
+const content = typeof post.body === 'string' ? post.body : '';
+const wordCount = content.split(/\s+/).length;
+const readingTime = Math.ceil(wordCount / 200);
+
+// Generate Hugo-style slug for backlinks
+const date = new Date(pubDate);
+const year = date.getFullYear();
+const month = String(date.getMonth() + 1).padStart(2, '0');
+const day = String(date.getDate()).padStart(2, '0');
+const slugPart = customSlug || post.slug;
+const hugoSlug = `${year}/${month}/${day}/${slugPart}`;
+---
+
+<BaseLayout 
+  title={title} 
+  description={description}
+  type="article"
+  publishDate={pubDate}
+  modifiedDate={updatedDate}
+  tags={tags}
+  image={heroImage}
+>
+  <article class="post">
+    <header class="post-header">
+      <h1>{title}</h1>
+      <div class="meta">
+        <time datetime={pubDate.toISOString()}>
+          {pubDate.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </time>
+        {updatedDate && (
+          <span class="updated">
+            · 更新于 {updatedDate.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </span>
+        )}
+        <span class="reading-time">· {readingTime} 分钟阅读</span>
+      </div>
+    </header>
+
+    {tags.length > 0 && <TagList tags={tags} />}
+
+    {heroImage && <img src={heroImage} alt={title} class="hero-image" width="800" height="400" />}
+
+    <div class="post-body">
+      <div class="content">
+        <slot />
+      </div>
+      <aside class="toc-sidebar">
+        <TableOfContents headings={headings} />
+      </aside>
+    </div>
+
+    <Backlinks currentSlug={hugoSlug} />
+
+    <Disqus 
+      url={Astro.url.href} 
+      identifier={hugoSlug} 
+      title={title} 
+    />
+  </article>
+</BaseLayout>
+
+<style>
+  .post {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .post-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .content {
+    min-width: 0;
+  }
+
+  .toc-sidebar {
+    display: block;
+    position: sticky;
+    top: 5rem;
+    z-index: 10;
+  }
+
+  .post-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  .meta {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .updated {
+    font-style: italic;
+  }
+
+  .hero-image {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+  }
+
+  .content {
+    line-height: 1.8;
+    font-size: 1rem;
+  }
+
+  .content :global(h2) {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-wrap: balance;
+    scroll-margin-top: 1rem;
+  }
+
+  .content :global(h3) {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-wrap: balance;
+    scroll-margin-top: 1rem;
+  }
+
+  .content :global(h4) {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-wrap: balance;
+    scroll-margin-top: 1rem;
+  }
+
+  .content :global(p) {
+    margin-bottom: 1.25rem;
+    color: var(--text-primary);
+  }
+
+  .content :global(pre) {
+    padding: 1.25rem;
+    border-radius: 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+  }
+
+  .content :global(code) {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9em;
+  }
+
+  .content :global(pre code) {
+    background: none;
+    padding: 0;
+  }
+
+  .content :global(blockquote) {
+    border-left: 3px solid var(--accent);
+    padding-left: 1rem;
+    margin: 1.5rem 0;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  .content :global(ul), .content :global(ol) {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+  }
+
+  .content :global(li) {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .content :global(img) {
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 0.9375rem;
+  }
+
+  .content :global(th), .content :global(td) {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+
+  .content :global(th) {
+    background: var(--background-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .content :global(td) {
+    color: var(--text-primary);
+  }
+
+  .content :global(hr) {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  @media (max-width: 1100px) {
+    .post-body {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .toc-sidebar {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 1.625rem;
+    }
+
+    .content {
+      font-size: 0.9375rem;
+    }
+
+    .content :global(h2) {
+      font-size: 1.375rem;
+    }
+
+    .content :global(h3) {
+      font-size: 1.1875rem;
+    }
+
+    .content :global(h4) {
+      font-size: 1.0625rem;
+    }
+  }
+</style>

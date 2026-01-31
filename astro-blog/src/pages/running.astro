@@ -1,0 +1,453 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// 加载跑步数据
+import runningJson from '../data/running.json';
+
+const title = 'Running';
+const description = '这里展示我的跑步记录统计与列表。';
+
+const data = runningJson;
+const recentRuns = data.runs.slice(0, 10);
+
+// 转换时长格式："1小时16分钟" -> "1h16m", "41分钟" -> "41m"
+function formatDuration(duration: string): string {
+  const hourMatch = duration.match(/(\d+)小时/);
+  const minMatch = duration.match(/(\d+)分钟/);
+  const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
+  const mins = minMatch ? parseInt(minMatch[1]) : 0;
+  
+  if (hours > 0 && mins > 0) {
+    return `${hours}h${mins}m`;
+  } else if (hours > 0) {
+    return `${hours}h`;
+  } else {
+    return `${mins}m`;
+  }
+}
+
+// 准备日历数据 - 展示最近12个月，从每个月1号开始
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = today.getMonth();
+
+// 计算起始日期：12个月前的1号（使用UTC避免时区问题）
+const startYear = currentMonth >= 11 ? currentYear : currentYear - 1;
+const startMonth = currentMonth >= 11 ? currentMonth - 11 : currentMonth + 1;
+const startOfRange = new Date(Date.UTC(startYear, startMonth, 1));
+
+// 计算结束日期：本月的最后一天
+const endOfRange = new Date(Date.UTC(currentYear, currentMonth + 1, 0));
+
+// 生成日期映射
+const dateMap = new Map();
+data.runs.forEach(run => {
+  const dateStr = run.date.split(' ')[0];
+  const existing = dateMap.get(dateStr);
+  if (!existing || run.distance > existing.distance) {
+    dateMap.set(dateStr, run);
+  }
+});
+
+// 获取颜色强度
+function getIntensity(distance: number): number {
+  if (!distance) return 0;
+  if (distance < 3) return 1;
+  if (distance < 5) return 2;
+  if (distance < 10) return 3;
+  if (distance < 15) return 4;
+  return 5;
+}
+
+// 生成日历网格数据 - 从起始月1号之前的周一开始（使用UTC）
+const calendarStart = new Date(startOfRange);
+const dayOfWeek = calendarStart.getUTCDay();
+const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+calendarStart.setUTCDate(calendarStart.getUTCDate() - daysToSubtract);
+
+interface DayData {
+  dateStr: string;
+  isInRange: boolean;
+  intensity: number;
+  title: string;
+}
+
+interface WeekData {
+  days: DayData[];
+}
+
+const weeks: WeekData[] = [];
+// 生成足够的周数来覆盖整个范围
+const totalDays = Math.ceil((endOfRange.getTime() - calendarStart.getTime()) / (1000 * 60 * 60 * 24)) + 7;
+const totalWeeks = Math.ceil(totalDays / 7);
+
+for (let w = 0; w < totalWeeks; w++) {
+  const weekDays: DayData[] = [];
+  for (let d = 0; d < 7; d++) {
+    const idx = w * 7 + d;
+    const currentDate = new Date(calendarStart);
+    currentDate.setUTCDate(calendarStart.getUTCDate() + idx);
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const run = dateMap.get(dateStr);
+    const isInRange = currentDate >= startOfRange && currentDate <= endOfRange;
+    const intensity = getIntensity(run?.distance || 0);
+    const title = run 
+      ? `${dateStr}: ${run.distance.toFixed(1)}km, ${run.duration}`
+      : dateStr;
+    
+    weekDays.push({
+      dateStr,
+      isInRange,
+      intensity,
+      title
+    });
+  }
+  weeks.push({ days: weekDays });
+}
+
+// 获取月份标签 - 每个月1号所在的周
+const months: { label: string; weekIndex: number }[] = [];
+for (let m = 0; m < 12; m++) {
+  const monthDate = new Date(Date.UTC(startYear, startMonth + m, 1));
+  const monthLabel = `${monthDate.getUTCMonth() + 1}月`;
+  
+  // 找到该月1号所在的周
+  const daysSinceStart = Math.floor((monthDate.getTime() - calendarStart.getTime()) / (1000 * 60 * 60 * 24));
+  const weekIndex = Math.floor(daysSinceStart / 7);
+  
+  if (weekIndex >= 0 && weekIndex < weeks.length) {
+    months.push({ label: monthLabel, weekIndex });
+  }
+}
+
+// 统计数据
+const stats = data.stats;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="running-page">
+    <header class="page-header">
+      <h1>Running</h1>
+    </header>
+
+    <article>
+      {
+        (!data || !data.stats) ? (
+          <p>暂无数据。</p>
+        ) : (
+          <div>
+            <h2 class="section-title">年度跑步日历</h2>
+            <div class="contribution-graph">
+              <div class="calendar-wrapper">
+                <div class="weekday-labels">
+                  <span>一</span>
+                  <span>三</span>
+                  <span>五</span>
+                </div>
+                <div class="calendar">
+                  <div class="month-labels">
+                    {months.map(m => (
+                      <span class="month-label" style={`left: ${(m.weekIndex / weeks.length) * 100}%`}>{m.label}</span>
+                    ))}
+                  </div>
+                  <div class="weeks">
+                    {weeks.map(week => (
+                      <div class="week">
+                        {week.days.map(day => (
+                          <div 
+                            class={`day ${day.isInRange ? '' : 'out-of-range'} intensity-${day.intensity}`}
+                            data-tooltip={day.title}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h2 class="section-title">最近活动</h2>
+            <div class="run-list">
+              {recentRuns.map(run => (
+                <div class="run-card">
+                  <div class="run-main">
+                    <time class="run-date">{run.date}</time>
+                    <span class="run-type">{run.activity_type || '室外跑步'}</span>
+                  </div>
+                  <div class="run-stats">
+                    <div class="stat">
+                      <span class="stat-value">{run.distance.toFixed(1)}</span>
+                      <span class="stat-label">km</span>
+                    </div>
+                    <div class="stat">
+                      <span class="stat-value">{formatDuration(run.duration)}</span>
+                      <span class="stat-label">时长</span>
+                    </div>
+                    <div class="stat">
+                      <span class="stat-value">{run.pace}</span>
+                      <span class="stat-label">配速</span>
+                    </div>
+                    {run.heart_rate && (
+                      <div class="stat">
+                        <span class="stat-value">{Math.round(run.heart_rate)}</span>
+                        <span class="stat-label">bpm</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  .running-page {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem 0;
+    color: var(--text-primary);
+  }
+
+  .run-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .run-card {
+    padding: 1rem 1.25rem;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: border-color 0.2s ease;
+  }
+
+  .run-card:hover,
+  .run-card:focus-visible {
+    border-color: var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  .run-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .run-date {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .run-type {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+
+  .run-stats {
+    display: grid;
+    grid-template-columns: 70px 70px 70px 60px;
+    gap: 1rem;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .contribution-graph {
+    margin: 1.5rem 0;
+    padding: 0.5rem;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    width: 100%;
+  }
+
+  .calendar-wrapper {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .weekday-labels {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    padding-top: 1.5rem;
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    height: 84px;
+  }
+
+  .calendar {
+    flex: 1;
+    overflow-x: visible;
+  }
+
+  .month-labels {
+    position: relative;
+    height: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .month-label {
+    position: absolute;
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .weeks {
+    display: flex;
+    gap: 2px;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .week {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .day {
+    aspect-ratio: 1;
+    width: 100%;
+    border-radius: 2px;
+    background: #ebedf0;
+    transition: transform 0.1s ease;
+    position: relative;
+  }
+
+  .day:hover {
+    transform: scale(1.2);
+    outline: 1px solid var(--text-secondary);
+    z-index: 10;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .day {
+      transition: none;
+    }
+    .day:hover {
+      transform: none;
+    }
+  }
+
+  .day::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.1s ease, visibility 0.1s ease;
+    pointer-events: none;
+    box-shadow: var(--box-shadow);
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .day:hover::after {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .day.out-of-range {
+    background: transparent;
+  }
+
+  .day.intensity-1 { background: #9be9a8; }
+  .day.intensity-2 { background: #40c463; }
+  .day.intensity-3 { background: #30a14e; }
+  .day.intensity-4 { background: #216e39; }
+  .day.intensity-5 { background: #0e4429; }
+
+  :global([data-theme="dark"]) .day { background: #161b22; }
+  :global([data-theme="dark"]) .day.intensity-1 { background: #0e4429; }
+  :global([data-theme="dark"]) .day.intensity-2 { background: #006d32; }
+  :global([data-theme="dark"]) .day.intensity-3 { background: #26a641; }
+  :global([data-theme="dark"]) .day.intensity-4 { background: #39d353; }
+  :global([data-theme="dark"]) .day.intensity-5 { background: #56f576; }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    .run-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .run-stats {
+      width: 100%;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+
+    .day {
+      border-radius: 1px;
+    }
+  }
+</style>

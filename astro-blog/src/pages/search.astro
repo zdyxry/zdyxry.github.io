@@ -1,0 +1,216 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout 
+  title="搜索"
+  description="搜索 Yiran's Blog 的所有文章"
+>
+  <div class="search-container">
+    <h1>搜索文章</h1>
+    <div id="search">
+      <div class="search-box">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="输入关键词搜索..."
+          autocomplete="off"
+        />
+        <button id="search-button">搜索</button>
+      </div>
+      <div id="search-results"></div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  window.addEventListener('DOMContentLoaded', async () => {
+    const searchInput = document.getElementById('search-input');
+    const searchButton = document.getElementById('search-button');
+    const resultsContainer = document.getElementById('search-results');
+    
+    let pagefind;
+    
+    try {
+      // 初始化 pagefind
+      pagefind = await import('/pagefind/pagefind.js');
+      await pagefind.init();
+      
+      // 启用输入框
+      searchInput.placeholder = '搜索文章标题、内容...';
+      searchInput.disabled = false;
+    } catch (error) {
+      console.error('Failed to load Pagefind:', error);
+      resultsContainer.innerHTML = '<p class="error">搜索功能加载失败，请刷新页面重试</p>';
+      return;
+    }
+    
+    async function performSearch() {
+      const query = searchInput.value.trim();
+      if (!query) {
+        resultsContainer.innerHTML = '';
+        return;
+      }
+      
+      resultsContainer.innerHTML = '<p class="loading">搜索中...</p>';
+      
+      try {
+        const search = await pagefind.search(query);
+        
+        if (search.results.length === 0) {
+          resultsContainer.innerHTML = '<p class="no-results">未找到「' + query + '」的相关结果</p>';
+          return;
+        }
+        
+        let html = '<p class="result-count">找到 ' + search.results.length + ' 个结果</p>';
+        html += '<ul class="results-list">';
+        
+        for (const result of search.results.slice(0, 10)) {
+          const data = await result.data();
+          html += '<li class="result-item">';
+          html += '<a href="' + data.url + '" class="result-title">' + (data.meta.title || '无标题') + '</a>';
+          html += '<p class="result-excerpt">' + data.excerpt + '</p>';
+          html += '</li>';
+        }
+        
+        html += '</ul>';
+        
+        if (search.results.length > 10) {
+          html += '<p class="more-results">还有 ' + (search.results.length - 10) + ' 个结果...</p>';
+        }
+        
+        resultsContainer.innerHTML = html;
+      } catch (error) {
+        console.error('Search error:', error);
+        resultsContainer.innerHTML = '<p class="error">搜索出错，请重试</p>';
+      }
+    }
+    
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+  });
+</script>
+
+<style>
+  .search-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .search-box {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  #search-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--background);
+    color: var(--text-primary);
+  }
+
+  #search-input::placeholder {
+    color: var(--text-secondary);
+  }
+
+  #search-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  #search-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  #search-button:hover {
+    opacity: 0.9;
+  }
+
+  .loading,
+  .no-results,
+  .error {
+    color: var(--text-secondary);
+    padding: 1rem 0;
+  }
+
+  .error {
+    color: #dc2626;
+  }
+
+  .result-count {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .results-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .result-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-item:last-child {
+    border-bottom: none;
+  }
+
+  .result-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-title:hover {
+    text-decoration: underline;
+  }
+
+  .result-excerpt {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .result-excerpt :global(mark) {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+  }
+
+  .more-results {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+  }
+</style>
