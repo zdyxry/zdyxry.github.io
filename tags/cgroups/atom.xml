@@ -1,230 +1,200 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cgroups on Yiran's Blog</title><link>https://zdyxry.github.io/tags/cgroups/</link><description>Recent content in Cgroups on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Fri, 01 Jan 2021 18:28:00 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/cgroups/atom.xml" rel="self" type="application/rss+xml"/><item><title>cgroups notification API demo</title><link>https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/</link><pubDate>Fri, 01 Jan 2021 18:28:00 +0000</pubDate><guid>https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/</guid><description>&lt;h2 id="cgroups-notification-api-demo"&gt;
-cgroups notification API demo
-&lt;a class="heading-link" href="#cgroups-notification-api-demo"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;package&lt;/span&gt; main
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; (
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;flag&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;fmt&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;io/ioutil&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;os&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;path/filepath&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;golang.org/x/sys/unix&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;func&lt;/span&gt; main() {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cgName := flag.String(&lt;span style="font-style:italic"&gt;&amp;#34;cgName&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;yiran&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;cgroup path&amp;#34;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; flag.Parse()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; level := &lt;span style="font-style:italic"&gt;&amp;#34;critical&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cgDir := filepath.Join(&lt;span style="font-style:italic"&gt;&amp;#34;/sys/fs/cgroup/memory/&amp;#34;&lt;/span&gt;, *cgName)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; evName := &lt;span style="font-style:italic"&gt;&amp;#34;memory.pressure_level&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fmt.Printf(&lt;span style="font-style:italic"&gt;&amp;#34;cgroup name is: %s\n&amp;#34;&lt;/span&gt;, *cgName)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fmt.Printf(&lt;span style="font-style:italic"&gt;&amp;#34;cgroup path is: %s\n&amp;#34;&lt;/span&gt;, cgDir)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fmt.Printf(&lt;span style="font-style:italic"&gt;&amp;#34;cgroup event name is: %s\n&amp;#34;&lt;/span&gt;, evName)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; evFile, err := os.Open(filepath.Join(cgDir, evName))
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; err != &lt;span style="font-weight:bold"&gt;nil&lt;/span&gt; {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; panic(err)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fd, err := unix.Eventfd(0, unix.EFD_CLOEXEC)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; err != &lt;span style="font-weight:bold"&gt;nil&lt;/span&gt; {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; evFile.Close()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; panic(err)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; eventfd := os.NewFile(uintptr(fd), &lt;span style="font-style:italic"&gt;&amp;#34;eventfd&amp;#34;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; eventControlPath := filepath.Join(cgDir, &lt;span style="font-style:italic"&gt;&amp;#34;cgroup.event_control&amp;#34;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; data := fmt.Sprintf(&lt;span style="font-style:italic"&gt;&amp;#34;%d %d %s&amp;#34;&lt;/span&gt;, eventfd.Fd(), evFile.Fd(), level)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; err := ioutil.WriteFile(eventControlPath, []byte(data), 0700); err != &lt;span style="font-weight:bold"&gt;nil&lt;/span&gt; {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; eventfd.Close()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; evFile.Close()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; panic(err)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;defer&lt;/span&gt; &lt;span style="font-weight:bold"&gt;func&lt;/span&gt;() {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; eventfd.Close()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; evFile.Close()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }()
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; buf := make([]&lt;span style=""&gt;byte&lt;/span&gt;, 8)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fmt.Println(&lt;span style="font-style:italic"&gt;&amp;#34;start...&amp;#34;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; _, err := eventfd.Read(buf); err != &lt;span style="font-weight:bold"&gt;nil&lt;/span&gt; {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; panic(err)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; _, err := os.Lstat(eventControlPath); os.IsNotExist(err) {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; panic(err)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fmt.Println(&lt;span style="font-style:italic"&gt;&amp;#34;test success ...&amp;#34;&lt;/span&gt;)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;准备 memory cgroup 配置，并限制内存上限：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;go build /tmp/demo.go
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;mkdir /sys/fs/cgroup/memory/yiran/
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo 10M &amp;gt; /sys/fs/cgroup/memory/yiran/memory.limit_in_bytes
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo $$ &amp;gt; /sys/fs/cgroup/memory/yiran/tasks
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;nohup /tmp/demo -cgName=yiran &amp;amp;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;dd &lt;span style="font-weight:bold"&gt;if&lt;/span&gt;=/dev/zero | read x
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;tailf /tmp/nohup.out&lt;/code&gt; 查看输出结果。&lt;/p&gt;
-&lt;h2 id="参考链接"&gt;
-参考链接
-&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: cgroups - My Blog</title><description>标签 &quot;cgroups&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>cgroups notification API demo</title><link>https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/</link><guid isPermaLink="true">https://zdyxry.github.io/2021/01/01/cgroups-notification-API-demo/</guid><pubDate>Fri, 01 Jan 2021 10:28:00 GMT</pubDate><content:encoded>&lt;h2 id=&quot;cgroups-notification-api-demo&quot;&gt;cgroups notification API demo&lt;/h2&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;go&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;package&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; main&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;flag&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fmt&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;io/ioutil&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;os&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;path/filepath&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;golang.org/x/sys/unix&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;func&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; main&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;() {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        cgName &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; flag.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;String&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;cgName&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;yiran&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;cgroup path&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        flag.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Parse&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        level &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;critical&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        cgDir &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; filepath.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Join&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;/sys/fs/cgroup/memory/&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;*&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;cgName)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        evName &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;memory.pressure_level&quot;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        fmt.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Printf&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;cgroup name is: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s\n&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;*&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;cgName)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        fmt.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Printf&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;cgroup path is: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s\n&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, cgDir)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        fmt.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Printf&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;cgroup event name is: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s\n&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, evName)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        evFile, err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; os.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Open&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(filepath.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Join&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(cgDir, evName))&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;!=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; nil&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;                panic&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(err)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        fd, err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; unix.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Eventfd&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, unix.EFD_CLOEXEC)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;!=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; nil&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                evFile.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Close&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;                panic&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(err)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        eventfd &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; os.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;NewFile&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;uintptr&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(fd), &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;eventfd&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        eventControlPath &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; filepath.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Join&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(cgDir, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;cgroup.event_control&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        data &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; fmt.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Sprintf&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%d&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; %d&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; %s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, eventfd.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Fd&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(), evFile.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Fd&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(), level)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; ioutil.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;WriteFile&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(eventControlPath, []&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;byte&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(data), &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0700&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;); err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;!=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; nil&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                eventfd.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Close&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                evFile.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Close&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;                panic&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(err)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        defer&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; func&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;() {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                eventfd.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Close&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                evFile.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Close&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }()&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        buf &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; make&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;([]&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;byte&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;8&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        for&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                fmt.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Println&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;start...&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; _, err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; eventfd.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Read&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(buf); err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;!=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; nil&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;                        panic&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(err)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; _, err &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; os.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Lstat&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(eventControlPath); os.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;IsNotExist&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(err) {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;                        panic&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(err)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                fmt.&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Println&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;test success ...&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;准备 memory cgroup 配置，并限制内存上限：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;go&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; build&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /tmp/demo.go&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;mkdir&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /sys/fs/cgroup/memory/yiran/&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;echo&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 10M&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; &gt;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  /sys/fs/cgroup/memory/yiran/memory.limit_in_bytes&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;echo&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; $$&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; &gt;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /sys/fs/cgroup/memory/yiran/tasks&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;nohup&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /tmp/demo&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -cgName=yiran&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &amp;#x26; &lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;dd&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; if=/dev/zero&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; read&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; x&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;tailf /tmp/nohup.out&lt;/code&gt; 查看输出结果。&lt;/p&gt;
+&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href="https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt" class="external-link" target="_blank" rel="noopener"&gt;https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</description></item><item><title>记一次 libcgroup 配置失败</title><link>https://zdyxry.github.io/2019/04/11/%E8%AE%B0%E4%B8%80%E6%AC%A1-libcgroup-%E9%85%8D%E7%BD%AE%E5%A4%B1%E8%B4%A5/</link><pubDate>Thu, 11 Apr 2019 22:04:47 +0000</pubDate><guid>https://zdyxry.github.io/2019/04/11/%E8%AE%B0%E4%B8%80%E6%AC%A1-libcgroup-%E9%85%8D%E7%BD%AE%E5%A4%B1%E8%B4%A5/</guid><description>&lt;h2 id="cgroup-配置失败解决方案"&gt;
-cgroup 配置失败解决方案
-&lt;a class="heading-link" href="#cgroup-%e9%85%8d%e7%bd%ae%e5%a4%b1%e8%b4%a5%e8%a7%a3%e5%86%b3%e6%96%b9%e6%a1%88"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt&quot;&gt;https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content:encoded><category>Linux</category><category>cgroups</category></item><item><title>记一次 libcgroup 配置失败</title><link>https://zdyxry.github.io/2019/04/11/%E8%AE%B0%E4%B8%80%E6%AC%A1-libcgroup-%E9%85%8D%E7%BD%AE%E5%A4%B1%E8%B4%A5/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/04/11/%E8%AE%B0%E4%B8%80%E6%AC%A1-libcgroup-%E9%85%8D%E7%BD%AE%E5%A4%B1%E8%B4%A5/</guid><pubDate>Thu, 11 Apr 2019 14:04:47 GMT</pubDate><content:encoded>&lt;h2 id=&quot;cgroup-配置失败解决方案&quot;&gt;cgroup 配置失败解决方案&lt;/h2&gt;
 &lt;p&gt;看过之前博客的同学应该知道，我一直使用的 libcgroup 来进行 cgroup 配置，简单方便。
 最近遇到了一个报错，很坑，记录一下。&lt;/p&gt;
-&lt;h2 id="报错"&gt;
-报错
-&lt;a class="heading-link" href="#%e6%8a%a5%e9%94%99"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;报错&quot;&gt;报错&lt;/h2&gt;
 &lt;p&gt;接到反馈说有个环境在产品升级之后， cgconfig.service 无法启动，当时的配置如下：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:31:59 ~]$cat /etc/cgconfig.conf
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# yiran cgroups configuration&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group . {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.memory_pressure_enabled = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;0,1,2,3,4,5&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran/bb-main {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;0&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran/bb-io {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran/aa-main {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;2&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran/others {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;3&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran/app {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;4,5&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;0&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group qemu {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;0&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;咋一看，配置文件看上去是正确的，除了最后一个组的 &lt;code&gt;cpuset.cpus&lt;/code&gt; 配置略长，但是也没错，按道理应该服务正常启动才对，尝试重启服务查看服务报错信息：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:33:55 ~]$systemctl restart cgred
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:33:59 ~]$systemctl restart cgconfig
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Job &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; cgconfig.service failed because the control process exited with error code. See &lt;span style="font-style:italic"&gt;&amp;#34;systemctl status cgconfig.service&amp;#34;&lt;/span&gt; and &lt;span style="font-style:italic"&gt;&amp;#34;journalctl -xe&amp;#34;&lt;/span&gt; &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; details.
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:34:05 ~]$systemctl status cgconfig
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;● cgconfig.service - Control Group configuration service
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Loaded: loaded (/usr/lib/systemd/system/cgconfig.service; enabled; vendor preset: disabled)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Active: failed (Result: exit-code) since 四 2019-04-11 21:34:05 CST; 4s ago
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Process: 6744 ExecStop=/usr/sbin/cgclear -l /etc/cgconfig.conf -L /etc/cgconfig.d -e (code=exited, status=3)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Process: 11465 ExecStart=/usr/sbin/cgconfigparser -l /etc/cgconfig.conf -L /etc/cgconfig.d -s 1664 (code=exited, status=109)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Main PID: 11465 (code=exited, status=109)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test systemd[1]: Starting Control Group configuration service...
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test cgconfigparser[11465]: /usr/sbin/cgconfigparser; error loading /etc/cgconfig.conf: Failed to remove a non-empty group
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test cgconfigparser[11465]: Error: failed to set /sys/fs/cgroup/cpuset/qemu/cpuset.cpus: Invalid argument
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test systemd[1]: cgconfig.service: main process exited, code=exited, status=109/n/a
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test systemd[1]: Failed to start Control Group configuration service.
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test systemd[1]: Unit cgconfig.service entered failed state.
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test systemd[1]: cgconfig.service failed.
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;发现在重启 cgconfig 时报错，报错信息如下：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test cgconfigparser[11465]: /usr/sbin/cgconfigparser; error loading /etc/cgconfig.conf: Failed to remove a non-empty group
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:34:05 yiran-test cgconfigparser[11465]: Error: failed to set /sys/fs/cgroup/cpuset/qemu/cpuset.cpus: Invalid argument
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;第一行说移除一个非空的 cgroup 失败，下一条提示 &lt;code&gt;/sys/fs/cgroup/cpuset/qemu/cpuset.cpus&lt;/code&gt; 也就是我们觉得略微异常的 cgroup 参数无效，可是参数明明是正确配置的，为啥就无效了呢？&lt;/p&gt;
-&lt;h2 id="调查"&gt;
-调查
-&lt;a class="heading-link" href="#%e8%b0%83%e6%9f%a5"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:31:59 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$cat /etc/cgconfig.conf&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# yiran cgroups configuration&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; .&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.memory_pressure_enabled&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0,1,2,3,4,5&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran/bb-main&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran/bb-io&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran/aa-main&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;2&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran/others&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;3&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran/app&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;4,5&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; qemu&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;咋一看，配置文件看上去是正确的，除了最后一个组的 &lt;code&gt;cpuset.cpus&lt;/code&gt; 配置略长，但是也没错，按道理应该服务正常启动才对，尝试重启服务查看服务报错信息：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:33:55 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$systemctl restart cgred&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:33:59 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$systemctl restart cgconfig&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Job&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; for&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfig.service&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; failed&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; because&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; the&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; control&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; process&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; exited&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; with&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; error&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; code.&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; See&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;systemctl status cgconfig.service&quot;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; and&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;journalctl -xe&quot;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; for&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; details.&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:34:05 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$systemctl status cgconfig&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;●&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfig.service&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Control&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; configuration&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; service&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   Loaded:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; loaded&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (/usr/lib/systemd/system/cgconfig.service; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;enabled&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;vendor&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; preset:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; disabled&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   Active:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; failed&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (Result: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;exit-code&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) since 四 2019-04-11 21:34:05 CST; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ago&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  Process:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 6744&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ExecStop=/usr/sbin/cgclear&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -l&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.conf&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -L&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.d&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -e&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (code=exited, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;status=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;3&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  Process:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11465&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ExecStart=/usr/sbin/cgconfigparser&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -l&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.conf&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -L&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.d&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -s&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1664&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (code=exited, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;status=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;109&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; Main&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; PID:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11465&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (code=exited, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;status=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;109&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; systemd[1]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Starting&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Control&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; configuration&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; service...&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfigparser[11465]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /usr/sbin/cgconfigparser&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;error&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; loading&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.conf:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Failed&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; remove&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; a&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; non-empty&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; group&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfigparser[11465]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Error:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; failed&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; set&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /sys/fs/cgroup/cpuset/qemu/cpuset.cpus:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Invalid&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; argument&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; systemd[1]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfig.service:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; main&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; process&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; exited,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; code=exited,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; status=109/n/a&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; systemd[1]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Failed&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; start&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Control&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; configuration&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; service.&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; systemd[1]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Unit&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfig.service&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; entered&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; failed&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; state.&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; systemd[1]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfig.service&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; failed.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;发现在重启 cgconfig 时报错，报错信息如下：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfigparser[11465]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /usr/sbin/cgconfigparser&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;error&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; loading&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.conf:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Failed&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; remove&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; a&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; non-empty&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; group&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:34:05&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfigparser[11465]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Error:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; failed&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; set&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /sys/fs/cgroup/cpuset/qemu/cpuset.cpus:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Invalid&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; argument&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;第一行说移除一个非空的 cgroup 失败，下一条提示 &lt;code&gt;/sys/fs/cgroup/cpuset/qemu/cpuset.cpus&lt;/code&gt; 也就是我们觉得略微异常的 cgroup 参数无效，可是参数明明是正确配置的，为啥就无效了呢？&lt;/p&gt;
+&lt;h2 id=&quot;调查&quot;&gt;调查&lt;/h2&gt;
 &lt;p&gt;尝试修改 &lt;code&gt;cpuset.cpus&lt;/code&gt; ，将其调整为：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:36:32 ~]$tail /etc/cgconfig.conf
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group qemu {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;6,7,8,9,10&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;0&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;重启 cgconfig 服务：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:36:36 ~]$systemctl restart cgred
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:36:55 ~]$systemctl restart cgconfig
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:37:00 ~]$systemctl status cgconfig
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;● cgconfig.service - Control Group configuration service
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Loaded: loaded (/usr/lib/systemd/system/cgconfig.service; enabled; vendor preset: disabled)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Active: active (exited) since 四 2019-04-11 21:37:00 CST; 3s ago
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Process: 6744 ExecStop=/usr/sbin/cgclear -l /etc/cgconfig.conf -L /etc/cgconfig.d -e (code=exited, status=3)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Process: 17491 ExecStart=/usr/sbin/cgconfigparser -l /etc/cgconfig.conf -L /etc/cgconfig.d -s 1664 (code=exited, status=0/SUCCESS)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Main PID: 17491 (code=exited, status=0/SUCCESS)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:37:00 yiran-test systemd[1]: Starting Control Group configuration service...
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;4月 11 21:37:00 yiran-test systemd[1]: Started Control Group configuration service.
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;服务正常运行了，那么我推测可能是跟 &lt;code&gt;cpuset.cpus&lt;/code&gt; 长度有关，这时候只能求助于 Google 啦。&lt;/p&gt;
-&lt;p&gt;很容易，我们找到了这个答案，RedHat &lt;a href="https://access.redhat.com/solutions/3364311" class="external-link" target="_blank" rel="noopener"&gt;官方 KB&lt;/a&gt; 中的介绍：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:36:32 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$tail /etc/cgconfig.conf&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; qemu&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;6,7,8,9,10&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重启 cgconfig 服务：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:36:36 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$systemctl restart cgred&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:36:55 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$systemctl restart cgconfig&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:37:00 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$systemctl status cgconfig&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;●&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgconfig.service&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Control&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; configuration&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; service&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   Loaded:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; loaded&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (/usr/lib/systemd/system/cgconfig.service; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;enabled&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;vendor&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; preset:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; disabled&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   Active:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; active&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (exited) since 四 2019-04-11 21:37:00 CST; &lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;3s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ago&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  Process:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 6744&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ExecStop=/usr/sbin/cgclear&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -l&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.conf&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -L&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.d&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -e&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (code=exited, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;status=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;3&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  Process:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 17491&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ExecStart=/usr/sbin/cgconfigparser&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -l&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.conf&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -L&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/cgconfig.d&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -s&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1664&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (code=exited, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;status=0/SUCCESS&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; Main&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; PID:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 17491&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (code=exited, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;status=0/SUCCESS&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:37:00&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; systemd[1]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Starting&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Control&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; configuration&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; service...&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;4月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 21:37:00&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-test&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; systemd[1]:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Started&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Control&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; configuration&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; service.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;服务正常运行了，那么我推测可能是跟 &lt;code&gt;cpuset.cpus&lt;/code&gt; 长度有关，这时候只能求助于 Google 啦。&lt;/p&gt;
+&lt;p&gt;很容易，我们找到了这个答案，RedHat &lt;a href=&quot;https://access.redhat.com/solutions/3364311&quot;&gt;官方 KB&lt;/a&gt; 中的介绍：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Root Cause
 Previously, the internal representation of a value of any cgroup subsystem parameter was limited to have the length of 100 characters at maximum. Consequently, the libcgroup library truncated the values longer than 100 characters before writing them to a file representing matching cgroup subsystem parameter in the kernel.&lt;/p&gt;
@@ -232,46 +202,22 @@ Previously, the internal representation of a value of any cgroup subsystem param
 &lt;blockquote&gt;
 &lt;p&gt;Resolution
 The maximal length of values of cgroup subsystem parameters in libcgroup has been extended to 4096 characters. As a result, libcgroup now handles values of cgroup subsystem parameters with any length correctly. (BZ#1549175)
-RHEL 6 &lt;a href="https://access.redhat.com/downloads/content/rhel---6/x86_64/169/libcgroup/0.40.rc1-26.el6/src/fd431d51/package" class="external-link" target="_blank" rel="noopener"&gt;https://access.redhat.com/downloads/content/rhel---6/x86_64/169/libcgroup/0.40.rc1-26.el6/src/fd431d51/package&lt;/a&gt; (or newer) via RHBA-2018:1861
+RHEL 6 &lt;a href=&quot;https://access.redhat.com/downloads/content/rhel---6/x86_64/169/libcgroup/0.40.rc1-26.el6/src/fd431d51/package&quot;&gt;https://access.redhat.com/downloads/content/rhel---6/x86_64/169/libcgroup/0.40.rc1-26.el6/src/fd431d51/package&lt;/a&gt; (or newer) via RHBA-2018:1861
 RHEL 7 libcgroup-0.41-20.el7 (or newer) via RHBA-2018:3058&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;官方给出的解决方式是通过升级 libcgroup 来解决，但是我不想这么做。&lt;/p&gt;
 &lt;p&gt;为什么？要知道在生产环境中，我们想要进行第三方软件包的升级是要经过层层测试的，等到测试完成不知道什么时候了，所以我们需要一个快速折中方案。&lt;/p&gt;
-&lt;h2 id="解决方案"&gt;
-解决方案
-&lt;a class="heading-link" href="#%e8%a7%a3%e5%86%b3%e6%96%b9%e6%a1%88"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;解决方案&quot;&gt;解决方案&lt;/h2&gt;
 &lt;p&gt;我们知道，libcgroup 只是作为一个配置 cgroup 软件的一种，最终操作的都是 cgroup 实际挂载点下的配置文件，比如 CentOS 默认的 &lt;code&gt;/sys/fs/cgroup/&lt;/code&gt; 。&lt;/p&gt;
 &lt;p&gt;那么我们来看下正常配置下 qemu 组中的 &lt;code&gt;cpuset.cpus&lt;/code&gt; 配置长什么样：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran-test 21:37:04 ~]$cat /sys/fs/cgroup/cpuset/qemu/cpuset.cpus
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;6-10
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Ok，我们明明在 libcgroup 配置文件中写的是 &lt;code&gt;6,7,8,9,10&lt;/code&gt; ,在 cgroup 配置文件中就转换成了 &lt;code&gt;6-10&lt;/code&gt;， 那么一切都简单了。&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran-test 21:37:04 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$cat /sys/fs/cgroup/cpuset/qemu/cpuset.cpus&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;6-10&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Ok，我们明明在 libcgroup 配置文件中写的是 &lt;code&gt;6,7,8,9,10&lt;/code&gt; ,在 cgroup 配置文件中就转换成了 &lt;code&gt;6-10&lt;/code&gt;， 那么一切都简单了。&lt;/p&gt;
 &lt;p&gt;当我们配置 cgroup 如果 cpu processor id 是连续的，那么我们就可以通过 &lt;code&gt;-&lt;/code&gt; 来连接起始和终止 id 就可以了，问题解决。&lt;/p&gt;
-&lt;h2 id="总结"&gt;
-总结
-&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
-&lt;p&gt;libcgroup 作为 RedHat 官方指定的 cgroup 配置工具，没想到会出现这种问题，如果 &lt;code&gt;cpuset.cpus&lt;/code&gt; 我们要设置非连续的 cpu processor id 的话，只能通过升级方式解决了。&lt;/p&gt;</description></item><item><title>cgroups 常用配置</title><link>https://zdyxry.github.io/2018/09/23/cgroups-%E5%B8%B8%E7%94%A8%E9%85%8D%E7%BD%AE/</link><pubDate>Sun, 23 Sep 2018 11:40:19 +0000</pubDate><guid>https://zdyxry.github.io/2018/09/23/cgroups-%E5%B8%B8%E7%94%A8%E9%85%8D%E7%BD%AE/</guid><description>&lt;h2 id="背景"&gt;
-背景
-&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+&lt;p&gt;libcgroup 作为 RedHat 官方指定的 cgroup 配置工具，没想到会出现这种问题，如果 &lt;code&gt;cpuset.cpus&lt;/code&gt; 我们要设置非连续的 cpu processor id 的话，只能通过升级方式解决了。&lt;/p&gt;</content:encoded><category>cgroups</category></item><item><title>cgroups 常用配置</title><link>https://zdyxry.github.io/2018/09/23/cgroups-%E5%B8%B8%E7%94%A8%E9%85%8D%E7%BD%AE/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/09/23/cgroups-%E5%B8%B8%E7%94%A8%E9%85%8D%E7%BD%AE/</guid><pubDate>Sun, 23 Sep 2018 03:40:19 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
 &lt;p&gt;在软件运行过程中，我们经常需要限制 CPU 、内存、磁盘的使用，方式程序超出了限定边界范围。在 Linux 中，我们可以通过 cgroups 来进行限制。&lt;/p&gt;
-&lt;h2 id="cgroups"&gt;
-cgroups
-&lt;a class="heading-link" href="#cgroups"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;cgroups&quot;&gt;cgroups&lt;/h2&gt;
 &lt;p&gt;中文名称为控制组群，具体功能分类为：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;资源限制：组可以被设置不超过设定的内存限制；这也包括虚拟内存。&lt;/li&gt;
@@ -280,13 +226,7 @@ cgroups
 &lt;li&gt;控制：冻结组或检查点和重启动。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;下面来说下常见的使用方式&lt;/p&gt;
-&lt;h3 id="cpu"&gt;
-CPU
-&lt;a class="heading-link" href="#cpu"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h3&gt;
+&lt;h3 id=&quot;cpu&quot;&gt;CPU&lt;/h3&gt;
 &lt;p&gt;RedHat 官方文档中描述 cgroups 在 RHEL7/CentOS7 之后的版本需要通过 systemd 配置，不再使用 libcgconfig 方式。
 但是在 systemd 的配置中，CPU 相关的配置项比较简单，或者说 OS 自动配置了很多，没有暴露出来。所以我们这里还是采用 libcgconfig 的配置方式。&lt;/p&gt;
 &lt;p&gt;在进行 CPU 限制之前，我们需要了解一下 NUMA 结构。什么是 NUMA？ NUMA 是一种为多处理器的计算机设计的内存，内存访问时间取决于内存相对于处理器的位置。在NUMA下，处理器访问它自己的本地内存的速度比非本地内存快一些。
@@ -299,114 +239,84 @@ CPU
 &lt;/ol&gt;
 &lt;p&gt;简单的说就是如果你的程序是计算密集型，那么尽可能的要让 CPU 限制在同一个 NUMA node 上。
 查看 NUMA node 方式：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@test 10:53:43 ~]$numactl -H
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;available: 2 nodes (0-1)
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node 0 size: 65221 MB
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node 0 free: 52239 MB
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node 1 size: 65536 MB
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node 1 free: 57566 MB
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node distances:
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;node 0 1
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 0: 10 21
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 1: 21 10
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这台服务器的配置为 2(socket) * &lt;code&gt;Intel(R) Xeon(R) Silver 4110 CPU @ 2.10GHz&lt;/code&gt; ，内存为 128 GB。观察 NUMA node 分配，可以看到分为两个 node，分别为 node 0 和 node 1。
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@test 10:53:43 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$numactl -H&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;available:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; nodes&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (0-1)&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cpus:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 4&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 6&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 8&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 10&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 12&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 14&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 16&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 18&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 20&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 22&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 24&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 26&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 28&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 30&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; size:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 65221&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; MB&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; free:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 52239&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; MB&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cpus:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 3&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 5&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 7&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 11&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 13&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 15&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 17&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 19&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 21&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 23&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 25&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 27&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 29&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 31&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; size:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 65536&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; MB&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; free:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 57566&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; MB&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; distances:&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;node&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   0&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   1&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  0:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  10&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  21&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  1:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  21&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  10&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这台服务器的配置为 2(socket) * &lt;code&gt;Intel(R) Xeon(R) Silver 4110 CPU @ 2.10GHz&lt;/code&gt; ，内存为 128 GB。观察 NUMA node  分配，可以看到分为两个 node，分别为 node 0 和 node 1。
 那么 &lt;code&gt;node $index cpus&lt;/code&gt; 字段代表的是什么意思呢？ 在这里对应的是两个 socket ，也就是两个物理插槽上的 CPU 对应的 Thread。 Thread 排序方式是优先按照不同 Core 排序的，比如 Thread 0 在 Core 0 上，Thread 2 在 Core 1 上，以此类推。
 具体的 CPU 配置大家可以通过 &lt;code&gt;lscpu&lt;/code&gt; ， 或者查看 &lt;code&gt;/proc/cpuinfo&lt;/code&gt; 了解。&lt;/p&gt;
 &lt;p&gt;根据 NUMA 配置，我们可以选择将程序限制在 Thread 0,2,4,6,8 上。
 那么我们编辑配置文件 &lt;code&gt;/etc/cgconfig.conf&lt;/code&gt;&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@test 11:03:45 ~]$cat /etc/cgconfig.conf |head -n 25
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# yiran cgroups configuration&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group . {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.memory_pressure_enabled = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;0,2,4,6,8&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;group yiran/flask {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset {
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpus = &lt;span style="font-style:italic"&gt;&amp;#34;0,2,4&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mems = &lt;span style="font-style:italic"&gt;&amp;#34;0-1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.cpu_exclusive = &lt;span style="font-style:italic"&gt;&amp;#34;0&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cpuset.mem_hardwall = &lt;span style="font-style:italic"&gt;&amp;#34;1&amp;#34;&lt;/span&gt;;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;首先，我们定义了一个组，组名叫 &lt;code&gt;yiran&lt;/code&gt;，我们又在 &lt;code&gt;yiran&lt;/code&gt; 下创建了一个叫 &lt;code&gt;flask&lt;/code&gt; 的组，限制 CPU在 &lt;code&gt;0,2,4&lt;/code&gt; 上。
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@test 11:03:45 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$cat /etc/cgconfig.conf &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;head&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -n&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 25&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# yiran cgroups configuration&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; .&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.memory_pressure_enabled&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0,2,4,6,8&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;group&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran/flask&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    cpuset&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpus&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0,2,4&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mems&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0-1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.cpu_exclusive&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        cpuset.mem_hardwall&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;1&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;首先，我们定义了一个组，组名叫 &lt;code&gt;yiran&lt;/code&gt;，我们又在 &lt;code&gt;yiran&lt;/code&gt; 下创建了一个叫 &lt;code&gt;flask&lt;/code&gt; 的组，限制 CPU在 &lt;code&gt;0,2,4&lt;/code&gt; 上。
 接下来我们重启 cgconfig 相关服务，注意遵守重启顺序：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@test 11:04:45 ~]systemctl restart cgconfig
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@test 11:04:46 ~]systemctl restart cgred
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;我们可以通过 lscgroup 检测配置是否生效，或者通过查看 &lt;code&gt;/proc/$pid/cgroup&lt;/code&gt; 检查。&lt;/p&gt;
-&lt;h3 id="内存"&gt;
-内存
-&lt;a class="heading-link" href="#%e5%86%85%e5%ad%98"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h3&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@test 11:04:45 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]systemctl restart cgconfig&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@test 11:04:46 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]systemctl restart cgred&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们可以通过 lscgroup 检测配置是否生效，或者通过查看 &lt;code&gt;/proc/$pid/cgroup&lt;/code&gt; 检查。&lt;/p&gt;
+&lt;h3 id=&quot;内存&quot;&gt;内存&lt;/h3&gt;
 &lt;p&gt;相对于 CPU，内存配置我们可以直接通过 systemd 配置，就简化很多了。
 最简单的，如果我们想立即配置一个服务的内存限制，我们可以直接执行命令：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@test 11:05:50 ~]systemctl set-property &amp;lt;service name&amp;gt; MemoryLimit=500M
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;执行完这条命令后，系统会自动在该服务的 systemd 配置路径(&lt;code&gt;/etc/systemd/system/&amp;lt;service name&amp;gt;.d/&lt;/code&gt; 下生成文件 &lt;code&gt;50-MemoryLimit.conf&lt;/code&gt; ，文件内容为：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[Slice]
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;MemoryLimit=5368709120
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;当然我们如果直接在该路径下编写配置文件也是可以的，重启服务后生效。&lt;/p&gt;
-&lt;h4 id="slice-配置"&gt;
-Slice 配置
-&lt;a class="heading-link" href="#slice-%e9%85%8d%e7%bd%ae"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h4&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@test 11:05:50 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]systemctl set-property &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&amp;#x3C;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;service name&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; MemoryLimit&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;500M&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;执行完这条命令后，系统会自动在该服务的 systemd 配置路径(&lt;code&gt;/etc/systemd/system/&amp;#x3C;service name&gt;.d/&lt;/code&gt; 下生成文件 &lt;code&gt;50-MemoryLimit.conf&lt;/code&gt; ，文件内容为：&lt;/p&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[Slice]&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;MemoryLimit&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;5368709120&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当然我们如果直接在该路径下编写配置文件也是可以的，重启服务后生效。&lt;/p&gt;
+&lt;h4 id=&quot;slice-配置&quot;&gt;Slice 配置&lt;/h4&gt;
 &lt;p&gt;上面这种方式只是针对单一的服务配置，如果我们想创建一个组，控制多个服务计算资源总和的配置，我们就需要通过配置 Slice 完成。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;slice&lt;/strong&gt; —— 一组按层级排列的单位。slice 并不包含进程，但会组建一个层级，并将 scope 和 service 都放置其中。真正的进程包含在 scope 或 service 中。在这一被划分层级的树中，每一个 slice 单位的名字对应通向层级中一个位置的路径。小横线（&amp;quot;&lt;code&gt;-&lt;/code&gt;&amp;quot;）起分离路径组件的作用。例如，如果一个 slice 的名字是：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;slice&lt;/strong&gt; —— 一组按层级排列的单位。slice 并不包含进程，但会组建一个层级，并将 scope 和 service 都放置其中。真正的进程包含在 scope 或 service 中。在这一被划分层级的树中，每一个 slice 单位的名字对应通向层级中一个位置的路径。小横线（“&lt;code&gt;-&lt;/code&gt;”）起分离路径组件的作用。例如，如果一个 slice 的名字是：&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;parent&lt;/em&gt;-&lt;em&gt;name&lt;/em&gt;.&lt;code&gt;slice&lt;/code&gt;&lt;/p&gt;
 &lt;p&gt;这说明 &lt;em&gt;parent&lt;/em&gt;-&lt;em&gt;name&lt;/em&gt;.&lt;code&gt;slice&lt;/code&gt; 是 &lt;em&gt;parent&lt;/em&gt;.&lt;code&gt;slice&lt;/code&gt; 的一个子 slice。这一子 slice 可以再拥有自己的子 slice，被命名为：&lt;em&gt;parent&lt;/em&gt;-&lt;em&gt;name&lt;/em&gt;-&lt;em&gt;name2&lt;/em&gt;.&lt;code&gt;slice&lt;/code&gt;，以此类推。&lt;/p&gt;
 &lt;p&gt;根 slice 的表示方式：&lt;code&gt;-.slice&lt;/code&gt;&lt;/p&gt;
 &lt;p&gt;我们在 &lt;code&gt;/etc/systemd/system/&lt;/code&gt; 下创建一个组，名称还是 &lt;code&gt;yiran&lt;/code&gt; ，创建 &lt;code&gt;flask&lt;/code&gt; 在 &lt;code&gt;yiran&lt;/code&gt; 下：&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/etc/systemd/system
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── flask.service.d
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ └── cgroup.conf
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── system-yiran.slice
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── system-yiran.slice.d
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│ └── 50-MemoryLimit.conf
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;配置完成后，我们重启 cgconfig 相关服务即可使能配置。&lt;/p&gt;
-&lt;h3 id="磁盘"&gt;
-磁盘
-&lt;a class="heading-link" href="#%e7%a3%81%e7%9b%98"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h3&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;/etc/systemd/system&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; flask.service.d&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cgroup.conf&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; system-yiran.slice&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; system-yiran.slice.d&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 50-MemoryLimit.conf&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;配置完成后，我们重启 cgconfig 相关服务即可使能配置。&lt;/p&gt;
+&lt;h3 id=&quot;磁盘&quot;&gt;磁盘&lt;/h3&gt;
 &lt;p&gt;如要降低 flask 服务读取某个目录 block IO 的权重，只需要修改该服务配置文件 增加 &lt;code&gt;BlockIODeviceWeight=/home/jdoe 750&lt;/code&gt; 字段即可。&lt;/p&gt;
-&lt;h2 id="后续"&gt;
-后续
-&lt;a class="heading-link" href="#%e5%90%8e%e7%bb%ad"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;后续&quot;&gt;后续&lt;/h2&gt;
 &lt;p&gt;日常用到最多的应该就是 CPU 和内存，如果很多对 IO 要求高的服务运行在一块磁盘上，那么可以先通过针对不同服务进行不同磁盘分区的方式（此方式不包括 lvm）验证，如果还不能解决的话，再考虑针对服务控制磁盘 IO。&lt;/p&gt;
 &lt;p&gt;为了追求性能，我们在 CPU 配置的时候给应用程序分配的 Thread 都位于同一个 Socket 上 CPU 的不同的 Core 上。 老板说还要考虑网卡、磁盘等 PCI 设备接入的 Socket ，如果应用程序分配在了 NUMA node0 上，但是网卡、磁盘等 PCI 设备连接在了 NUMA node1 上，还是会对性能有影响，还没找到相应配置，后续有时间再了解吧。&lt;/p&gt;
-&lt;h2 id="参考链接"&gt;
-参考链接
-&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
-&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
-&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
-&lt;/a&gt;
-&lt;/h2&gt;
+&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href="https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/resource_management_guide/" class="external-link" target="_blank" rel="noopener"&gt;https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/resource_management_guide/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.kernel.org/doc/Documentation/cgroup-v1/" class="external-link" target="_blank" rel="noopener"&gt;https://www.kernel.org/doc/Documentation/cgroup-v1/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.kernel.org/doc/Documentation/cgroup-v2.txt" class="external-link" target="_blank" rel="noopener"&gt;https://www.kernel.org/doc/Documentation/cgroup-v2.txt&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</description></item></channel></rss>
+&lt;li&gt;&lt;a href=&quot;https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/resource_management_guide/&quot;&gt;https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/resource_management_guide/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.kernel.org/doc/Documentation/cgroup-v1/&quot;&gt;https://www.kernel.org/doc/Documentation/cgroup-v1/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.kernel.org/doc/Documentation/cgroup-v2.txt&quot;&gt;https://www.kernel.org/doc/Documentation/cgroup-v2.txt&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content:encoded><category>Linux</category><category>cgroups</category></item></channel></rss>

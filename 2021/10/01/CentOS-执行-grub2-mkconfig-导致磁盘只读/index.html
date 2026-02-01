@@ -1,0 +1,219 @@
+<!DOCTYPE html><html lang="zh-CN"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Yiran Zhou's personal website"><meta name="generator" content="Astro v5.16.16"><!-- Favicon --><link rel="icon" type="image/png" href="/images/yiran.png"><!-- Canonical URL --><link rel="canonical" href="https://zdyxry.github.io/2021/10/01/CentOS-%E6%89%A7%E8%A1%8C-grub2-mkconfig-%E5%AF%BC%E8%87%B4%E7%A3%81%E7%9B%98%E5%8F%AA%E8%AF%BB/"><!-- RSS Feed --><link rel="alternate" type="application/rss+xml" title="Yiran's Blog" href="/atom.xml"><!-- Open Graph / Facebook --><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2021/10/01/CentOS-%E6%89%A7%E8%A1%8C-grub2-mkconfig-%E5%AF%BC%E8%87%B4%E7%A3%81%E7%9B%98%E5%8F%AA%E8%AF%BB/"><meta property="og:title" content="CentOS 执行 grub2-mkconfig 导致磁盘只读 | Yiran's Blog"><meta property="og:description" content="Yiran Zhou's personal website"><meta property="og:image" content="https://zdyxry.github.io/images/yiran.png"><meta property="og:locale" content="zh_CN"><meta property="og:site_name" content="Yiran's Blog"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://zdyxry.github.io/2021/10/01/CentOS-%E6%89%A7%E8%A1%8C-grub2-mkconfig-%E5%AF%BC%E8%87%B4%E7%A3%81%E7%9B%98%E5%8F%AA%E8%AF%BB/"><meta property="twitter:title" content="CentOS 执行 grub2-mkconfig 导致磁盘只读 | Yiran's Blog"><meta property="twitter:description" content="Yiran Zhou's personal website"><meta property="twitter:image" content="https://zdyxry.github.io/images/yiran.png"><!-- Article specific meta tags --><meta property="article:published_time" content="2021-10-01T23:30:09.000Z"><meta property="article:tag" content="Linux"><!-- Theme color for mobile browsers --><meta name="theme-color" content="#1565c0" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#1a1d21" media="(prefers-color-scheme: dark)"><!-- Preconnect to external domains --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><title>CentOS 执行 grub2-mkconfig 导致磁盘只读 | Yiran&#39;s Blog</title><!-- Theme initialization script to prevent flash --><script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script><!-- Analytics & Tracking --><!-- Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script> <script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-G0433XDZ3V');
+</script> <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;e3ef83c53de44e8ba2d047cae42e2b4a&quot;}"></script> <!-- Google AdSense --><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2067849739296009" crossorigin="anonymous"></script><link rel="stylesheet" href="/_astro/_slug_.C7YbQvZ1.css">
+<link rel="stylesheet" href="/_astro/_slug_.7ZFJe8x3.css"></head> <body> <a href="#main-content" class="skip-link">跳转到主要内容</a> <header data-astro-cid-3ef6ksr2> <nav data-astro-cid-3ef6ksr2> <a href="/" class="logo" data-astro-cid-3ef6ksr2>Yiran's Blog</a> <div class="nav-right" data-astro-cid-3ef6ksr2> <ul class="nav-links" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a href="/" class data-astro-cid-3ef6ksr2> Home </a> </li><li data-astro-cid-3ef6ksr2> <a href="/posts" class data-astro-cid-3ef6ksr2> Posts </a> </li><li data-astro-cid-3ef6ksr2> <a href="/tags" class data-astro-cid-3ef6ksr2> Tags </a> </li><li data-astro-cid-3ef6ksr2> <a href="/mentions" class data-astro-cid-3ef6ksr2> Mentions </a> </li><li data-astro-cid-3ef6ksr2> <a href="/running" class data-astro-cid-3ef6ksr2> Running </a> </li><li data-astro-cid-3ef6ksr2> <a href="/friends" class data-astro-cid-3ef6ksr2> Friends </a> </li><li data-astro-cid-3ef6ksr2> <a href="/about" class data-astro-cid-3ef6ksr2> About </a> </li> </ul> <a href="/search" class="search-link" aria-label="搜索" data-astro-cid-3ef6ksr2> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> </a> <button id="theme-toggle" class="theme-toggle" aria-label="切换主题" data-astro-cid-3ef6ksr2> <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> </div> </nav> </header> <script type="module">const r=document.getElementById("theme-toggle"),e=document.documentElement,h=localStorage.getItem("theme")||"light";e.setAttribute("data-theme",h);r?.addEventListener("click",()=>{const m=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",m),localStorage.setItem("theme",m)});r?.addEventListener("keydown",t=>{if(t.key==="Enter"||t.key===" "){t.preventDefault();const n=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",n),localStorage.setItem("theme",n)}});</script>  <main id="main-content">  <article class="post" data-astro-cid-gjtny2mx> <header class="post-header" data-astro-cid-gjtny2mx> <h1 data-astro-cid-gjtny2mx>CentOS 执行 grub2-mkconfig 导致磁盘只读</h1> <div class="meta" data-astro-cid-gjtny2mx> <time datetime="2021-10-01T23:30:09.000Z" data-astro-cid-gjtny2mx> 2021年10月1日 </time>  <span class="reading-time" data-astro-cid-gjtny2mx>· 4 分钟阅读</span> </div> </header> <div class="tag-list" data-astro-cid-lga65v7i> <a href="/tags/Linux" class="tag" data-astro-cid-lga65v7i>
+#Linux </a> </div>   <div class="post-body" data-astro-cid-gjtny2mx> <div class="content" data-astro-cid-gjtny2mx>  <h2 id="背景">背景</h2>
+<p>最近遇到了一个故障，在集群软件升级过程中，发现某一个磁盘分区变为只读，导致存储应用识别该磁盘不可用。调查发现集群升级过程中，会重新生成每个节点的 GRUB 配置文件，在执行 <code>grub2-mkconfig</code> 过程中导致的磁盘分区只读。记录下 <code>grub2-mkconfig</code> 命令执行到真正磁盘只读指令下发的流程。</p>
+<h2 id="调查">调查</h2>
+<h3 id="grub2-mkconfig"><code>grub2-mkconfig</code></h3>
+<p>在执行 <code>grub2-mkconfig</code> 命令时，如果没有指定配置 <code>GRUB_DISABLE_OS_PROBER=true</code> 时，则 GRUB 会调用 os-prober （/etc/grub.d/30_os-prober）用于扫描其他操作系统进行后续配置。</p>
+<h3 id="os-prober">os-prober</h3>
+<p>os-prober 是用来探测其他磁盘中存在操作系统的情况。通常由各个发行版本提供，源码地址：<a href="https://salsa.debian.org/installer-team/os-prober">https://salsa.debian.org/installer-team/os-prober</a> 。</p>
+<p>CentOS 默认包含的 os-prober 与源码版本并不相同，包含了一些额外的配置，通过 RPM changelog 可以查看：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Name        : os-prober</span></span>
+<span class="line"><span>Version     : 1.58</span></span>
+<span class="line"><span>Release     : 9.el7</span></span>
+<span class="line"><span>Architecture: x86_64</span></span>
+<span class="line"><span>Install Date: Wed 18 Aug 2021 03:44:43 PM CST</span></span>
+<span class="line"><span>Group       : System Environment/Base</span></span>
+<span class="line"><span>Size        : 97946</span></span>
+<span class="line"><span>License     : GPLv2+ and GPL+</span></span>
+<span class="line"><span>Signature   : RSA/SHA256, Mon 21 Nov 2016 03:50:19 AM CST, Key ID 24c6a8a7f4a80eb5</span></span>
+<span class="line"><span>Source RPM  : os-prober-1.58-9.el7.src.rpm</span></span>
+<span class="line"><span>Build Date  : Sun 06 Nov 2016 11:30:02 AM CST</span></span>
+<span class="line"><span>Build Host  : worker1.bsys.centos.org</span></span>
+<span class="line"><span>Relocations : (not relocatable)</span></span>
+<span class="line"><span>Packager    : CentOS BuildSystem &#x3C;http://bugs.centos.org></span></span>
+<span class="line"><span>Vendor      : CentOS</span></span>
+<span class="line"><span>URL         : http://kitenet.net/~joey/code/os-prober/</span></span>
+<span class="line"><span>Summary     : Probes disks on the system for installed operating systems</span></span>
+<span class="line"><span>Description :</span></span>
+<span class="line"><span>This package detects other OSes available on a system and outputs the results</span></span>
+<span class="line"><span>in a generic machine-readable format. Support for new OSes and Linux</span></span>
+<span class="line"><span>distributions can be added easily.</span></span>
+<span class="line"><span>* Wed Sep 14 2016 rmarshall@redhat.com - 1.58-9</span></span>
+<span class="line"><span>- Fix regular expression that missed a corner case when detecting</span></span>
+<span class="line"><span>extended dos partitions.</span></span>
+<span class="line"><span>Resolves: rhbz#1322957</span></span>
+<span class="line"><span>        </span></span>
+<span class="line"><span>* Wed Jul 06 2016 rmarshall@redhat.com - 1.58-8</span></span>
+<span class="line"><span>- Resolve some coverity concerns with how the previous patch detected</span></span>
+<span class="line"><span>whether or not a partition was a device mapper device.</span></span>
+<span class="line"><span>Related: rhbz#1300262</span></span>
+<span class="line"><span>        </span></span>
+<span class="line"><span>* Tue Jul 05 2016 rmarshall@redhat.com - 1.58-7</span></span>
+<span class="line"><span>- Do not resolve device mapper links when generating stanzas</span></span>
+<span class="line"><span>for bootloader.</span></span>
+<span class="line"><span>Resolves: rhbz#1300262</span></span>
+<span class="line"><span>        </span></span>
+<span class="line"><span>* Wed May 04 2016 rmarshall@redhat.com - 1.58-6</span></span>
+<span class="line"><span>- Adding handling to skip probing extended dos partitions</span></span>
+<span class="line"><span>Resolves: rhbz#1322957</span></span>
+<span class="line"><span>- Improve Windows detection for dual boot and support Windows 10</span></span>
+<span class="line"><span>Resolves: rhbz#1322956</span></span>
+<span class="line"><span>- Suppress non-blocking dmraid sector size warning message</span></span>
+<span class="line"><span>Resolves: rhbz#1198918</span></span>
+<span class="line"><span>        </span></span>
+<span class="line"><span>* Fri Jan 24 2014 Daniel Mach &#x3C;dmach@redhat.com> - 1.58-5</span></span>
+<span class="line"><span>- Mass rebuild 2014-01-24</span></span>
+<span class="line"><span>        </span></span>
+<span class="line"><span>* Mon Jan 20 2014 Peter Jones &#x3C;pjones@redhat.com> - 1.58-4</span></span>
+<span class="line"><span>- Add man pages.</span></span>
+<span class="line"><span>Resolves: rhbz#948848</span></span></code></pre>
+<p>通过下载 os-prober 的 source RPM 可以查看具体改动内容，查看 os-prober.spec 文件，查看额外的 Patch 列表：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Name:           os-prober</span></span>
+<span class="line"><span>Version:        1.58</span></span>
+<span class="line"><span>Release:        9%{?dist}</span></span>
+<span class="line"><span>Summary:        Probes disks on the system for installed operating systems</span></span>
+<span class="line"><span>            </span></span>
+<span class="line"><span>Group:          System Environment/Base</span></span>
+<span class="line"><span># For more information about licensing, see copyright file.</span></span>
+<span class="line"><span>License:        GPLv2+ and GPL+</span></span>
+<span class="line"><span>URL:            http://kitenet.net/~joey/code/os-prober/</span></span>
+<span class="line"><span>Source0:        http://ftp.de.debian.org/debian/pool/main/o/os-prober/%{name}_%{version}.tar.gz</span></span>
+<span class="line"><span># move newns binary outside of os-prober subdirectory, so that debuginfo</span></span>
+<span class="line"><span># can be automatically generated for it</span></span>
+<span class="line"><span>Patch0001: 0001-Change-filepath-to-newns.patch</span></span>
+<span class="line"><span>Patch0002: 0002-Don-t-count-dummy-mach_kernel-as-MacOS-X-811412.patch</span></span>
+<span class="line"><span>Patch0003: 0003-Detect-OS-installed-to-mdraid-partition-752402.patch</span></span>
+<span class="line"><span>Patch0004: 0004-Yaboot-allows-spaces-in-append-825041.patch</span></span>
+<span class="line"><span>Patch0005: 0005-Detect-ld.so-after-usr-move-826754.patch</span></span>
+<span class="line"><span>Patch0006: 0006-Use-shell-processing-instead-of-basename-875356.patch</span></span>
+<span class="line"><span>Patch0007: 0007-Add-option-for-less-logging-893997.patch</span></span>
+<span class="line"><span>Patch0008: 0008-Improve-btrfs-detection-support-888341.patch</span></span>
+<span class="line"><span>Patch0009: 0009-Support-detection-on-btrfs-software-raid-906847.patch</span></span>
+<span class="line"><span>Patch0010: 0010-Name-lvm-boot-partitions-by-fstab-entry-893472.patch</span></span>
+<span class="line"><span>Patch0011: 0011-Set-correct-boot-partition-906886.patch</span></span>
+<span class="line"><span>Patch0012: 0012-Factor-out-unnecessary-logger-calls-875356.patch</span></span>
+<span class="line"><span>Patch0013: 0013-Issue-with-EFI-detection-in-logger-873207.patch</span></span>
+<span class="line"><span>Patch0014: 0014-Man-pages-missing-948848.patch</span></span>
+<span class="line"><span>Patch0015: 0015-Properly-handle-extended-dos-partitions-1322957.patch</span></span>
+<span class="line"><span>Patch0016: 0016-Windows-detection-requires-binary-grep-1322956.patch</span></span>
+<span class="line"><span>Patch0017: 0017-Add-Windows-10-detection-support-1322956.patch</span></span>
+<span class="line"><span>Patch0018: 0018-Suppress-non-blocking-dmraid-error-info-1198918.patch</span></span>
+<span class="line"><span>Patch0019: 0019-Do-not-resolve-device-mapper-symlinks-1300262.patch</span></span>
+<span class="line"><span>Patch0020: 0020-Use-POSIX-shell-syntax-1300262.patch</span></span>
+<span class="line"><span>Patch0021: 0021-Fix-extended-dos-partition-regex-1322957.patch</span></span></code></pre>
+<p>单独查看每一个 Patch 很麻烦，直接看操作系统上已经安装的 os-prober 相关文件：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>$rpm -ql os-prober</span></span>
+<span class="line"><span>/usr/bin/linux-boot-prober</span></span>
+<span class="line"><span>/usr/bin/os-prober</span></span>
+<span class="line"><span>/usr/libexec/linux-boot-probes</span></span>
+<span class="line"><span>/usr/libexec/linux-boot-probes/50mounted-tests</span></span>
+<span class="line"><span>/usr/libexec/linux-boot-probes/mounted</span></span>
+<span class="line"><span>/usr/libexec/linux-boot-probes/mounted/40grub</span></span>
+<span class="line"><span>/usr/libexec/linux-boot-probes/mounted/40grub2</span></span>
+<span class="line"><span>/usr/libexec/linux-boot-probes/mounted/50lilo</span></span>
+<span class="line"><span>/usr/libexec/linux-boot-probes/mounted/90fallback</span></span>
+<span class="line"><span>/usr/libexec/newns</span></span>
+<span class="line"><span>/usr/libexec/os-probes</span></span>
+<span class="line"><span>/usr/libexec/os-probes/50mounted-tests</span></span>
+<span class="line"><span>/usr/libexec/os-probes/init</span></span>
+<span class="line"><span>/usr/libexec/os-probes/init/10filesystems</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/05efi</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/10freedos</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/10qnx</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/20macosx</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/20microsoft</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/30utility</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/40lsb</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/70hurd</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/80minix</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/83haiku</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/90linux-distro</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/90solaris</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/efi</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/efi/10elilo</span></span>
+<span class="line"><span>/usr/libexec/os-probes/mounted/efi/20microsoft</span></span>
+<span class="line"><span>/usr/share/doc/os-prober-1.58</span></span>
+<span class="line"><span>/usr/share/doc/os-prober-1.58/README</span></span>
+<span class="line"><span>/usr/share/doc/os-prober-1.58/TODO</span></span>
+<span class="line"><span>/usr/share/doc/os-prober-1.58/changelog</span></span>
+<span class="line"><span>/usr/share/doc/os-prober-1.58/copyright</span></span>
+<span class="line"><span>/usr/share/man/man1/linux-boot-prober.1.gz</span></span>
+<span class="line"><span>/usr/share/man/man1/os-prober.1.gz</span></span>
+<span class="line"><span>/usr/share/os-prober</span></span>
+<span class="line"><span>/usr/share/os-prober/common.sh</span></span>
+<span class="line"><span>/var/lib/os-prober</span></span></code></pre>
+<h3 id="grub2-mkconfig-调用-os-prober-流程">grub2-mkconfig 调用 os-prober 流程</h3>
+<p><code>grub2-mkconfig</code> 最终目的是生成 grub.cfg ，在执行过程中，会通过调用 <code>/etc/grub.d/</code> 路径下的配置脚本来依次执行，在 CentOS 存在 <code>/etc/grub.d/30_os-prober</code> 配置脚本。</p>
+<p>执行 <code>os-prober</code> 的具体代码如下：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>OSPROBED="`os-prober | tr ' ' '^' | paste -s -d ' '`"</span></span>
+<span class="line"><span>if [ -z "${OSPROBED}" ] ; then</span></span>
+<span class="line"><span>  # empty os-prober output, nothing doing</span></span>
+<span class="line"><span>  exit 0</span></span>
+<span class="line"><span>fi</span></span></code></pre>
+<h3 id="centos-os-prober-执行流程">CentOS os-prober 执行流程</h3>
+<ul>
+<li>创建新的 namespace，在调试 os-prober 过程中建议注释掉该行为</li>
+<li>确保所有的文件系统类型是支持的，执行 <code>/usr/libexec/os-prober/init/*</code></li>
+<li>获取节点处于已挂载分区信息、swap 分区信息、RAID 设备分区信息</li>
+<li>获取节点所有 partition 信息
+<ul>
+<li>如果 partition 已经存在于swap 分区信息或 RAID 设备分区信息中，则跳过</li>
+<li>
+<h2 id="通过-blkid--o-value--s-type-path-获取文件系统信息作为-type比如">通过 <code>blkid -o value -S type $path</code> 获取文件系统信息作为 type，比如：</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>```</span></span>
+<span class="line"><span>$blkid -o value -s TYPE /dev/vdb1</span></span>
+<span class="line"><span>xfs_external_log</span></span>
+<span class="line"><span>```</span></span></code></pre>
+<ul>
+<li>如果 type == btrfs，则判断是否为 btrfs volume，如果是则过滤；如果不是，则使用 <code>/usr/libexec/os-probes/50mounted-tests</code> 针对该分区进行探测</li>
+<li>如果分区不在已挂载分区信息中，则使用 <code>/usr/libexec/os-probes/50mounted-tests</code> 路径下的所有方式进行探测，遍历执行</li>
+<li>如果分区处于已挂载分区信息中，则使用 <code>/usr/libexec/os-probes/50mounted-tests</code> 路径下的所有方式进行探测，遍历执行</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>探测结束</li>
+</ul>
+<h3 id="centos-usrlibexecos-probes50mounted-tests-探测流程">CentOS <code>/usr/libexec/os-probes/50mounted-tests</code> 探测流程</h3>
+<ul>
+<li>参数校验，获取 partition 的 fs type 属性
+<ul>
+<li>如果 type 处于未探测、空、LVM、swap、ctypto、ntfs则直接退出</li>
+</ul>
+</li>
+<li>如果 type == btrfs ，则针对 subvolume 进行探测流程</li>
+<li>如果节点存在 grub-mount ，存在 grub2-probe 则判断 partition 是否被GRUB 挂载</li>
+<li>如果上述分支都没有进入，则将分区置为只读
+<ul>
+<li>blockdev —setro $partition</li>
+<li>并通过 trap 设置信号处理函数，当接收到 EXIT,HUP,INT,QUIT,TERM 信号时，则将partition 重新置为可读可写</li>
+</ul>
+</li>
+<li>将分区根据当前 type 类型挂载到临时挂载点下，试用 <code>/usr/libexec/os-probes/mounted/</code> 路径下的探测方式进行探测，遍历执行</li>
+<li>探测结束</li>
+</ul>
+<h2 id="总结">总结</h2>
+<p>如果你的节点上存在处于未被挂载，且文件系统类型不为空的情况，那么建议通过设置 GRUB 配置：<code>GRUB_DISABLE_OS_PROBER=true</code> 来禁用 os-prober 的执行，防止磁盘分区变为只读。</p>
+<h2 id="参考链接">参考链接</h2>
+<ul>
+<li><a href="https://tracker.ceph.com/issues/11298">https://tracker.ceph.com/issues/11298</a></li>
+<li><a href="https://www.thegeekdiary.com/how-to-disable-os-prober-in-centos-rhel-7/">https://www.thegeekdiary.com/how-to-disable-os-prober-in-centos-rhel-7/</a></li>
+</ul>  </div> <aside class="toc-sidebar" data-astro-cid-gjtny2mx> <nav class="toc" aria-label="目录" data-astro-cid-xvrfupwn><h2 class="toc-title" data-astro-cid-xvrfupwn>目录</h2><ul class="toc-list" data-astro-cid-xvrfupwn><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#背景" class="toc-link" data-astro-cid-xvrfupwn>背景</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#调查" class="toc-link" data-astro-cid-xvrfupwn>调查</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#grub2-mkconfig" class="toc-link" data-astro-cid-xvrfupwn>grub2-mkconfig</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#os-prober" class="toc-link" data-astro-cid-xvrfupwn>os-prober</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#grub2-mkconfig-调用-os-prober-流程" class="toc-link" data-astro-cid-xvrfupwn>grub2-mkconfig 调用 os-prober 流程</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#centos-os-prober-执行流程" class="toc-link" data-astro-cid-xvrfupwn>CentOS os-prober 执行流程</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#通过-blkid--o-value--s-type-path-获取文件系统信息作为-type比如" class="toc-link" data-astro-cid-xvrfupwn>通过 blkid -o value -S type $path 获取文件系统信息作为 type，比如：</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#centos-usrlibexecos-probes50mounted-tests-探测流程" class="toc-link" data-astro-cid-xvrfupwn>CentOS /usr/libexec/os-probes/50mounted-tests 探测流程</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#总结" class="toc-link" data-astro-cid-xvrfupwn>总结</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#参考链接" class="toc-link" data-astro-cid-xvrfupwn>参考链接</a></li></ul></nav><script type="module">const s={root:null,rootMargin:"-20% 0px -80% 0px",threshold:0},i=new IntersectionObserver(e=>{e.forEach(o=>{if(o.isIntersecting){const r=o.target.id;document.querySelectorAll(".toc-link").forEach(c=>{c.classList.remove("active")});const t=document.querySelector(`.toc-link[href="#${r}"]`);t&&t.classList.add("active")}})},s);document.querySelectorAll("h2[id], h3[id]").forEach(e=>{i.observe(e)});</script> </aside> </div>  <div id="disqus_thread" data-astro-cid-r2x3s5wt></div> <script>(function(){const url = "https://zdyxry.github.io/2021/10/01/CentOS-%E6%89%A7%E8%A1%8C-grub2-mkconfig-%E5%AF%BC%E8%87%B4%E7%A3%81%E7%9B%98%E5%8F%AA%E8%AF%BB/";
+const identifier = "2021/10/01/CentOS-执行-grub2-mkconfig-导致磁盘只读";
+const title = "CentOS 执行 grub2-mkconfig 导致磁盘只读";
+
+  var disqus_config = function () {
+    this.page.url = url;
+    this.page.identifier = identifier;
+    this.page.title = title;
+  };
+  
+  (function() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://zdyxry.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+})();</script> <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" data-astro-cid-r2x3s5wt>comments powered by Disqus.</a></noscript>  </article>  </main> <footer data-astro-cid-sz7xmlte> <div class="footer-content" data-astro-cid-sz7xmlte> <div class="social-links" data-astro-cid-sz7xmlte> <a href="https://github.com/zdyxry" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" data-astro-cid-sz7xmlte></path> </svg>    </a><a href="https://twitter.com/zdyxry" target="_blank" rel="noopener" aria-label="Twitter" data-astro-cid-sz7xmlte>  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" data-astro-cid-sz7xmlte></path> </svg>   </a><a href="https://neodb.social/users/zdyxry/" target="_blank" rel="noopener" aria-label="NeoDB" data-astro-cid-sz7xmlte>   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" data-astro-cid-sz7xmlte></path> <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" data-astro-cid-sz7xmlte></path> </svg>  </a><a href="/atom.xml" aria-label="RSS" data-astro-cid-sz7xmlte>    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 11a9 9 0 0 1 9 9" data-astro-cid-sz7xmlte></path> <path d="M4 4a16 16 0 0 1 16 16" data-astro-cid-sz7xmlte></path> <circle cx="5" cy="19" r="1" data-astro-cid-sz7xmlte></circle> </svg> </a> </div> <p class="copyright" data-astro-cid-sz7xmlte>&copy; 2026 Yiran's Blog · Powered by <a href="https://astro.build" target="_blank" rel="noopener" data-astro-cid-sz7xmlte>Astro</a></p> </div> </footer>  </body></html> 
