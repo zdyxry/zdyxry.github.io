@@ -1,286 +1,263 @@
-<!DOCTYPE html><html lang="zh-CN"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Yiran Zhou's personal website"><meta name="generator" content="Astro v5.16.16"><!-- Favicon --><link rel="icon" type="image/png" href="/images/yiran.png"><!-- Canonical URL --><link rel="canonical" href="https://zdyxry.github.io/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/"><!-- RSS Feed --><link rel="alternate" type="application/rss+xml" title="Yiran's Blog" href="/atom.xml"><!-- Open Graph / Facebook --><meta property="og:type" content="article"><meta property="og:url" content="https://zdyxry.github.io/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/"><meta property="og:title" content="Kubernetes 实战-Cluster API v1alpha2 | Yiran's Blog"><meta property="og:description" content="Yiran Zhou's personal website"><meta property="og:image" content="https://zdyxry.github.io/images/yiran.png"><meta property="og:locale" content="zh_CN"><meta property="og:site_name" content="Yiran's Blog"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://zdyxry.github.io/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/"><meta property="twitter:title" content="Kubernetes 实战-Cluster API v1alpha2 | Yiran's Blog"><meta property="twitter:description" content="Yiran Zhou's personal website"><meta property="twitter:image" content="https://zdyxry.github.io/images/yiran.png"><!-- Article specific meta tags --><meta property="article:published_time" content="2019-08-23T12:13:50.000Z"><meta property="article:tag" content="Kubernetes"><!-- Theme color for mobile browsers --><meta name="theme-color" content="#1565c0" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#1a1d21" media="(prefers-color-scheme: dark)"><!-- Preconnect to external domains --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><title>Kubernetes 实战-Cluster API v1alpha2 | Yiran&#39;s Blog</title><!-- Theme initialization script to prevent flash --><script>
-      (function() {
-        const theme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-      })();
-    </script><!-- Analytics & Tracking --><!-- Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script> <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-G0433XDZ3V');
-</script> <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;e3ef83c53de44e8ba2d047cae42e2b4a&quot;}"></script> <!-- Google AdSense --><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2067849739296009" crossorigin="anonymous"></script><link rel="stylesheet" href="/_astro/_slug_.C7YbQvZ1.css">
-<link rel="stylesheet" href="/_astro/_slug_.7ZFJe8x3.css"></head> <body> <a href="#main-content" class="skip-link">跳转到主要内容</a> <header data-astro-cid-3ef6ksr2> <nav data-astro-cid-3ef6ksr2> <a href="/" class="logo" data-astro-cid-3ef6ksr2>Yiran's Blog</a> <div class="nav-right" data-astro-cid-3ef6ksr2> <ul class="nav-links" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a href="/" class data-astro-cid-3ef6ksr2> Home </a> </li><li data-astro-cid-3ef6ksr2> <a href="/posts" class data-astro-cid-3ef6ksr2> Posts </a> </li><li data-astro-cid-3ef6ksr2> <a href="/tags" class data-astro-cid-3ef6ksr2> Tags </a> </li><li data-astro-cid-3ef6ksr2> <a href="/mentions" class data-astro-cid-3ef6ksr2> Mentions </a> </li><li data-astro-cid-3ef6ksr2> <a href="/running" class data-astro-cid-3ef6ksr2> Running </a> </li><li data-astro-cid-3ef6ksr2> <a href="/friends" class data-astro-cid-3ef6ksr2> Friends </a> </li><li data-astro-cid-3ef6ksr2> <a href="/about" class data-astro-cid-3ef6ksr2> About </a> </li> </ul> <a href="/search" class="search-link" aria-label="搜索" data-astro-cid-3ef6ksr2> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> </a> <button id="theme-toggle" class="theme-toggle" aria-label="切换主题" data-astro-cid-3ef6ksr2> <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> </div> </nav> </header> <script type="module">const r=document.getElementById("theme-toggle"),e=document.documentElement,h=localStorage.getItem("theme")||"light";e.setAttribute("data-theme",h);r?.addEventListener("click",()=>{const m=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",m),localStorage.setItem("theme",m)});r?.addEventListener("keydown",t=>{if(t.key==="Enter"||t.key===" "){t.preventDefault();const n=e.getAttribute("data-theme")==="light"?"dark":"light";e.setAttribute("data-theme",n),localStorage.setItem("theme",n)}});</script>  <main id="main-content">  <article class="post" data-astro-cid-gjtny2mx> <header class="post-header" data-astro-cid-gjtny2mx> <h1 data-astro-cid-gjtny2mx>Kubernetes 实战-Cluster API v1alpha2</h1> <div class="meta" data-astro-cid-gjtny2mx> <time datetime="2019-08-23T12:13:50.000Z" data-astro-cid-gjtny2mx> 2019年8月23日 </time>  <span class="reading-time" data-astro-cid-gjtny2mx>· 6 分钟阅读</span> </div> </header> <div class="tag-list" data-astro-cid-lga65v7i> <a href="/tags/Kubernetes" class="tag" data-astro-cid-lga65v7i>
-#Kubernetes </a> </div>   <div class="post-body" data-astro-cid-gjtny2mx> <div class="content" data-astro-cid-gjtny2mx>  <h2 id="背景">背景</h2>
-<p>今天继续来聊一聊 cluster-api，在上周看 cluster-api-provider-vsphere 代码的时候吐槽过，cluster-api 最近因为 v1alpha2 版本的开发，变化太快，几乎每天都在变，那么我们就来看看 v1alpha2 具体做了什么。</p>
-<h2 id="cluster-api-v1alpha2">Cluster-API v1alpha2</h2>
-<p>虽然目前 v1alpha2 还没有正式的 release，但是已经趋于稳定，且两个主要的 provider：aws 和 vsphere 都在进行 v1alpha2 版本的适配（最近每天都有 pr 更新）。我们先来了解下为啥要进行 v1alpha2 改动，改动的目的是啥。</p>
-<p>在 v1alpha1 版本中，cluster-api 要求 provider 实现从节点置备到 k8s 部署的全套流程，cluster-api 自身只负责具体的 API 定义及相关控制，在 provider 实现上也不是一个标准的 Operator，（至少）我从概念的理解上比较吃力，每个 provider 需要实现对应 cluster  与 machine 的 actuator ，开发起来要求对 cluster-api 项目本身很熟悉。</p>
-<p>其次，每个 provider 都包含了 k8s 集群部署的流程，虽然大部分实现最终都是使用 kubeadm 工具，但是使用方式千差万别，有 cloud-init、有 ssh 配合密钥、有 ssh 配合密码等等。这部分 provider 中的代码完全都是重复的，可以复用的。</p>
-<p>上面提到的一些缺点，在 v1alpha2 版本中进行了改进，对各个组件进行了拆分，现在使用 cluster-api 需要 3 个控制器：</p>
-<ol>
-<li>Core(cluster-api)</li>
-<li>Bootstrap(kubeadm)</li>
-<li>Infrastructure(aws, gcp, azure, vsphere, etc)</li>
-</ol>
-<p><img src="/images/v1alpha2-1769851789386.png" alt=""></p>
-<p>下面来说说各个控制器负责什么。</p>
-<h2 id="corecluster-api">Core(cluster-api)</h2>
-<p>核心控制器，也就是 cluster-api 项目自身，相比于 v1alpha1 版本 v1alpha2 各个方面简直可爱，来看看具体的改动：</p>
-<h3 id="clusterctl">clusterctl</h3>
-<p>在 v1alpha1 中，clusterctl 因为耦合了最终的 provider 项目，命令行是由对应的 provider 提供，在 v1alpha2 中完全由 cluster-api 维护。具体代码在 <a href="https://github.com/kubernetes-sigs/cluster-api/blob/master/cmd/clusterctl/README.md">cmd/clusterctl</a> 下，整体结构感觉跟 kubeadm 很像。</p>
-<h3 id="api">API</h3>
-<p>仍然包含两个主要的 CRD：cluster 和 machine，针对两个资源进行了阶段定义，根据注释就很好 cluster 和 machine 会处于哪些状态：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> (</span></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhasePending is the first state a Machine is assigned by</span></span>
-<span class="line"><span style="color:#6A737D">	// Cluster API Machine controller after being created.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhasePending</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"pending"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhaseProvisioning is the state when the</span></span>
-<span class="line"><span style="color:#6A737D">	// Machine infrastructure is being created.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhaseProvisioning</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"provisioning"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhaseProvisioned is the state when its</span></span>
-<span class="line"><span style="color:#6A737D">	// infrastructure has been created and configured.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhaseProvisioned</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"provisioned"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhaseRunning is the Machine state when it has</span></span>
-<span class="line"><span style="color:#6A737D">	// become a Kubernetes Node in a Ready state.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhaseRunning</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"running"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhaseDeleting is the Machine state when a delete</span></span>
-<span class="line"><span style="color:#6A737D">	// request has been sent to the API Server,</span></span>
-<span class="line"><span style="color:#6A737D">	// but its infrastructure has not yet been fully deleted.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhaseDeleting</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"deleting"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhaseDeleted is the Machine state when the object</span></span>
-<span class="line"><span style="color:#6A737D">	// and the related infrastructure is deleted and</span></span>
-<span class="line"><span style="color:#6A737D">	// ready to be garbage collected by the API Server.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhaseDeleted</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"deleted"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhaseFailed is the Machine state when the system</span></span>
-<span class="line"><span style="color:#6A737D">	// might require user intervention.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhaseFailed</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"failed"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// MachinePhaseUnknown is returned if the Machine state cannot be determined.</span></span>
-<span class="line"><span style="color:#79B8FF">	MachinePhaseUnknown</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> MachinePhase</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">""</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"><span style="color:#E1E4E8">)</span></span></code></pre>
-<h3 id="controller">Controller</h3>
-<p>cluster-api 不再负责具体的 API 所有资源的定义，而是通过设置资源的 owner 来达到最终 cluster 包含 machine 的效果。</p>
-<p>用 AWS 官方示例展示：</p>
-<p>cluster.yaml</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#B392F0">---</span></span>
-<span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">cluster.x-k8s.io/v1alpha2</span></span>
-<span class="line"><span style="color:#85E89D">kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">Cluster</span></span>
-<span class="line"><span style="color:#85E89D">metadata</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#85E89D">  name</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">${CLUSTER_NAME}</span></span>
-<span class="line"><span style="color:#85E89D">spec</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#85E89D">  clusterNetwork</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#85E89D">    pods</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#85E89D">      cidrBlocks</span><span style="color:#E1E4E8">: [</span><span style="color:#9ECBFF">"192.168.0.0/16"</span><span style="color:#E1E4E8">]</span></span>
-<span class="line"><span style="color:#85E89D">  infrastructureRef</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#85E89D">    apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">infrastructure.cluster.x-k8s.io/v1alpha2</span></span>
-<span class="line"><span style="color:#85E89D">    kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">AWSCluster</span></span>
-<span class="line"><span style="color:#85E89D">    name</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">${CLUSTER_NAME}</span></span>
-<span class="line"><span style="color:#B392F0">---</span></span>
-<span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">infrastructure.cluster.x-k8s.io/v1alpha2</span></span>
-<span class="line"><span style="color:#85E89D">kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">AWSCluster</span></span>
-<span class="line"><span style="color:#85E89D">metadata</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#85E89D">  name</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">${CLUSTER_NAME}</span></span>
-<span class="line"><span style="color:#85E89D">spec</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#85E89D">  region</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">${AWS_REGION}</span></span>
-<span class="line"><span style="color:#85E89D">  sshKeyName</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">${SSH_KEY_NAME}</span></span></code></pre>
-<p>在执行完 <code>kubectl apply -f cluster.yaml</code> 后， aws cluster 控制器会等待 cluster-api 控制器将 <code>AWSCluster</code> 与 <code>Cluster</code> 资源进行关联后进行下一步操作，这样最终能够达到 <code>Cluster</code> 资源是所有资源的 owner，也可以获得到所有资源的具体的 Spec 和 Status 信息。</p>
-<p>（等版本 release 之后好好了解下其中的关系。</p>
-<h2 id="boostrapkubeadm">Boostrap(kubeadm)</h2>
-<p>相比 cluster-api 的复杂，目前 Bootstrap 的唯一实现 <a href="https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm">CABPK</a> 是一个分拆出来的独立项目，这个项目的主要目的是通过 <code>Cluster</code> 和 <code>Machine</code> 及对应的 Infrastructure <code>Cluster</code> 和 <code>Machine</code> 信息，来生成 cloud-init 配置（Userdata）。</p>
-<p>目前 v1alpha2 统一部署 k8s 集群的方式为 cloud-init ，通过 CABPK 项目生成对应 Machine 的 cloud-init 配置，在部署虚拟机的时候传递 Userdata，达到自动配置的效果。也就是说如果你的 Hypervisor 不支持 cloud-init，就没办法使用 cluster-api v1alpha2 进行部署，只能通过 v1alpha1 的方式，在 Infrastructure 控制器做所有事情。</p>
-<p>需要注意的是，在 Infrastructure 控制器工作前，需要保证 Bootstrap 控制器正常工作，生成用于最终创建虚拟机的 cloud-init 配置。</p>
-<h2 id="infrastructure">Infrastructure</h2>
-<p>前面说的两个控制器都是社区官方维护的，下面来说下各个厂家（provider）维护的 Infrastructure 控制器（最近几天都在搞这个）。</p>
-<p>v1alpha2 版本要求各个 provider 实现一个标准且完整的 Operator。包含对应的 <code>Cluster</code>,<code>Machine</code>。以下还是使用 cluster-api-provider-vsphere 具体，截止到 20190823 ，<a href="https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/pulls">对应 PR</a> 还处于未完成状态。</p>
-<h3 id="api-1">API</h3>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"></span>
-<span class="line"><span style="color:#6A737D">// VSphereClusterSpec defines the desired state of VSphereCluster</span></span>
-<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> VSphereClusterSpec</span><span style="color:#F97583"> struct</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">	Server </span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"server,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Username </span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"username,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Password </span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"password,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Insecure </span><span style="color:#F97583">*bool</span><span style="color:#9ECBFF"> `json:"insecure,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	SSHAuthorizedKeys []</span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"sshAuthorizedKeys,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	CloudProviderConfiguration </span><span style="color:#B392F0">cloud</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Config</span><span style="color:#9ECBFF"> `json:"cloudProviderConfiguration,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">// VSphereClusterStatus defines the observed state of VSphereClusterSpec</span></span>
-<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> VSphereClusterStatus</span><span style="color:#F97583"> struct</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">	Ready </span><span style="color:#F97583">bool</span><span style="color:#9ECBFF"> `json:"ready"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	APIEndpoints []</span><span style="color:#B392F0">APIEndpoint</span><span style="color:#9ECBFF"> `json:"apiEndpoints,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span>
-<span class="line"></span></code></pre>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#6A737D">// VSphereMachineSpec defines the desired state of VSphereMachine</span></span>
-<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> VSphereMachineSpec</span><span style="color:#F97583"> struct</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">	MachineRef </span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"machineRef,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Template </span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"template"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Datacenter </span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"datacenter"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Network </span><span style="color:#B392F0">NetworkSpec</span><span style="color:#9ECBFF"> `json:"network"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	NumCPUs </span><span style="color:#F97583">int32</span><span style="color:#9ECBFF"> `json:"numCPUs,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	NumCoresPerSocket </span><span style="color:#F97583">int32</span><span style="color:#9ECBFF"> `json:"numCoresPerSocket,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	MemoryMiB </span><span style="color:#F97583">int64</span><span style="color:#9ECBFF"> `json:"memoryMiB,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	DiskGiB </span><span style="color:#F97583">int32</span><span style="color:#9ECBFF"> `json:"diskGiB,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	TrustedCerts [][]</span><span style="color:#F97583">byte</span><span style="color:#9ECBFF"> `json:"trustedCerts,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	NTPServers []</span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"ntpServers,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">// VSphereMachineStatus defines the observed state of VSphereMachine</span></span>
-<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> VSphereMachineStatus</span><span style="color:#F97583"> struct</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">	Ready </span><span style="color:#F97583">bool</span><span style="color:#9ECBFF"> `json:"ready"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Addresses []</span><span style="color:#B392F0">v1</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">NodeAddress</span><span style="color:#9ECBFF"> `json:"addresses,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	TaskRef </span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"taskRef,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	Network []</span><span style="color:#B392F0">NetworkStatus</span><span style="color:#9ECBFF"> `json:"networkStatus,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	ErrorReason </span><span style="color:#F97583">*</span><span style="color:#B392F0">errors</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">MachineStatusError</span><span style="color:#9ECBFF"> `json:"errorReason,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">	ErrorMessage </span><span style="color:#F97583">*</span><span style="color:#F97583">string</span><span style="color:#9ECBFF"> `json:"errorMessage,omitempty"`</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
-<p>定义 VSphereCluster 与 VSphereMachine CRD，这里根据自己需要定义相关参数就好，比如如果不想支持自定义目标虚拟机配置，那么就不用提供 CPU、Memory 等配置。</p>
-<h3 id="controller-1">Controller</h3>
-<p>来分别看看 cluster controller 与 machine controller 做了啥。</p>
-<h4 id="cluster-controller">Cluster Controller</h4>
-<p>在 <code>Reconcile</code> 的实现中，先获取 VSphereCluster 信息：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#E1E4E8">	vsphereCluster </span><span style="color:#F97583">:=</span><span style="color:#F97583"> &#x26;</span><span style="color:#B392F0">infrav1</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">VSphereCluster</span><span style="color:#E1E4E8">{}</span></span>
-<span class="line"><span style="color:#E1E4E8">	err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> r.</span><span style="color:#B392F0">Get</span><span style="color:#E1E4E8">(parentContext, req.NamespacedName, vsphereCluster)</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#F97583">		if</span><span style="color:#E1E4E8"> apierrors.</span><span style="color:#B392F0">IsNotFound</span><span style="color:#E1E4E8">(err) {</span></span>
-<span class="line"><span style="color:#F97583">			return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">		}</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, err</span></span>
-<span class="line"><span style="color:#E1E4E8">    }</span></span></code></pre>
-<p>然后获取 VSphereCluster 关联的 Cluster 信息：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#6A737D">	// util 由 cluster-api 提供</span></span>
-<span class="line"><span style="color:#E1E4E8">	cluster, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> util.</span><span style="color:#B392F0">GetOwnerCluster</span><span style="color:#E1E4E8">(parentContext, r.Client, vsphereCluster.ObjectMeta)</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, err</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> cluster </span><span style="color:#F97583">==</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">		logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Waiting for Cluster Controller to set OwnerRef on VSphereCluster"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{RequeueAfter: </span><span style="color:#79B8FF">10</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">    }</span></span></code></pre>
-<p>在获取了足够的信息之后，针对这些信息，创建了 context（这里 aws 是叫 scope，是一个东西），判断是否包含 <code>DeletionTimestamp</code> 来决定进行什么调度，是 <code>reconcileDelete</code> 还是 <code>reconcileNormal</code> 。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> reconcileDelete</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">ctx</span><span style="color:#F97583"> *</span><span style="color:#B392F0">context</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">ClusterContext</span><span style="color:#E1E4E8">) (</span><span style="color:#B392F0">reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
-<span class="line"><span style="color:#E1E4E8">	ctx.Logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Reconciling VSphereCluster delete"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// Cluster is deleted so remove the finalizer.</span></span>
-<span class="line"><span style="color:#E1E4E8">	ctx.VSphereCluster.Finalizers </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> util.</span><span style="color:#B392F0">Filter</span><span style="color:#E1E4E8">(ctx.VSphereCluster.Finalizers, infrav1.ClusterFinalizer)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#F97583">	return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
-<p>在所有的 provider 中，都对相应资源进行了 Finalizer 配置，方便后续在资源删除前进行一些额外的操作，这里 vsphere 还没有具体的实现。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> reconcileNormal</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">ctx</span><span style="color:#F97583"> *</span><span style="color:#B392F0">context</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">ClusterContext</span><span style="color:#E1E4E8">) (</span><span style="color:#B392F0">reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
-<span class="line"><span style="color:#E1E4E8">	ctx.Logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Reconciling VSphereCluster"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#E1E4E8">	vsphereCluster </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> ctx.VSphereCluster</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// If the VSphereCluster doesn't have our finalizer, add it.</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#F97583"> !</span><span style="color:#E1E4E8">util.</span><span style="color:#B392F0">Contains</span><span style="color:#E1E4E8">(vsphereCluster.Finalizers, infrav1.ClusterFinalizer) {</span></span>
-<span class="line"><span style="color:#E1E4E8">		vsphereCluster.Finalizers </span><span style="color:#F97583">=</span><span style="color:#B392F0"> append</span><span style="color:#E1E4E8">(vsphereCluster.Finalizers, infrav1.ClusterFinalizer)</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// Set APIEndpoints so the Cluster API Cluster Controller can pull them</span></span>
-<span class="line"><span style="color:#E1E4E8">	vsphereCluster.Status.APIEndpoints </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> []</span><span style="color:#B392F0">infrav1</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">APIEndpoint</span><span style="color:#E1E4E8">{</span></span>
-<span class="line"><span style="color:#E1E4E8">		{</span></span>
-<span class="line"><span style="color:#E1E4E8">			Host: </span><span style="color:#9ECBFF">""</span><span style="color:#E1E4E8">, </span><span style="color:#6A737D">// vsphereCluster.Status.Network.APIServerELB.DNSName,</span></span>
-<span class="line"><span style="color:#E1E4E8">			Port: </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">,</span></span>
-<span class="line"><span style="color:#E1E4E8">		},</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// No errors, so mark us ready so the Cluster API Cluster Controller can pull it</span></span>
-<span class="line"><span style="color:#E1E4E8">	vsphereCluster.Status.Ready </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#F97583">	return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
-<p>在 <code>reconcileNormal</code> 中对集群进行 Finalizer 判断，然后这里直接更新了 <code>vsphereCluster.Status</code> 具体字段，应该是还没实现完成。</p>
-<h4 id="machine-controller">Machine Controller</h4>
-<p>与 Cluster 相比，Machine 包含了具体的虚拟机创建动作，相应需要的信息也会多一些，除了通过 <code>VSphereMachine</code>获取关联 <code>Machine</code> 以外，还通过 <code>Machine</code> 获取了 <code>Cluster</code> 信息：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#6A737D">// Fetch the Machine.</span></span>
-<span class="line"><span style="color:#E1E4E8">	machine, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> util.</span><span style="color:#B392F0">GetOwnerMachine</span><span style="color:#E1E4E8">(parentContext, r.Client, vsphereMachine.ObjectMeta)</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, err</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> machine </span><span style="color:#F97583">==</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">		logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Waiting for Machine Controller to set OwnerRef on VSphereMachine"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{RequeueAfter: </span><span style="color:#79B8FF">10</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#E1E4E8">	logger </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> logger.</span><span style="color:#B392F0">WithName</span><span style="color:#E1E4E8">(fmt.</span><span style="color:#B392F0">Sprintf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"machine=</span><span style="color:#79B8FF">%s</span><span style="color:#9ECBFF">"</span><span style="color:#E1E4E8">, machine.Name))</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// Fetch the Cluster.</span></span>
-<span class="line"><span style="color:#E1E4E8">	cluster, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> util.</span><span style="color:#B392F0">GetClusterFromMetadata</span><span style="color:#E1E4E8">(parentContext, r.Client, machine.ObjectMeta)</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">		logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Machine is missing cluster label or cluster does not exist"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">    }</span></span></code></pre>
-<p>与 Cluster 一样，也会进行 <code>DeletionTimestamp</code> 判断，来看下 <code>reconcileNormal</code> 的实现：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">r </span><span style="color:#F97583">*</span><span style="color:#B392F0">VSphereMachineReconciler</span><span style="color:#E1E4E8">) </span><span style="color:#B392F0">reconcileNormal</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">ctx</span><span style="color:#F97583"> *</span><span style="color:#B392F0">context</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">MachineContext</span><span style="color:#E1E4E8">) (</span><span style="color:#B392F0">reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
-<span class="line"><span style="color:#6A737D">	// 如果 VSphereMachine 的状态一场，则直接返回</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> ctx.VSphereMachine.Status.ErrorReason </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#F97583"> ||</span><span style="color:#E1E4E8"> ctx.VSphereMachine.Status.ErrorMessage </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">		ctx.Logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Error state detected, skipping reconciliation"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// 如果 VSphereMachine 没有 Finalizer，则添加</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#F97583"> !</span><span style="color:#E1E4E8">util.</span><span style="color:#B392F0">Contains</span><span style="color:#E1E4E8">(ctx.VSphereMachine.Finalizers, infrav1.MachineFinalizer) {</span></span>
-<span class="line"><span style="color:#E1E4E8">		ctx.VSphereMachine.Finalizers </span><span style="color:#F97583">=</span><span style="color:#B392F0"> append</span><span style="color:#E1E4E8">(ctx.VSphereMachine.Finalizers, infrav1.MachineFinalizer)</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#F97583"> !</span><span style="color:#E1E4E8">ctx.Cluster.Status.InfrastructureReady {</span></span>
-<span class="line"><span style="color:#E1E4E8">		ctx.Logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Cluster infrastructure is not ready yet, requeuing machine"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{RequeueAfter: waitForClusterInfrastructureReadyDuration}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">	// 在真正创建虚拟机之前，需要确保 cloud-init 配置已经生成</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> ctx.Machine.Spec.Bootstrap.Data </span><span style="color:#F97583">==</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">		ctx.Logger.</span><span style="color:#B392F0">Info</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Waiting for bootstrap data to be available"</span><span style="color:#E1E4E8">)</span></span>
-<span class="line"><span style="color:#F97583">		return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{RequeueAfter: </span><span style="color:#79B8FF">10</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#6A737D">    // 这里缺少真正创建虚拟机的实现</span></span>
-<span class="line"><span style="color:#F97583">	return</span><span style="color:#B392F0"> reconcile</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Result</span><span style="color:#E1E4E8">{}, </span><span style="color:#79B8FF">nil</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
-<p>vsphere 所有关于虚拟机的操作都在<a href="https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/tree/master/pkg/cloud/vsphere/services/govmomi">这里</a>，感兴趣的可以看看。</p>
-<h3 id="maingo">main.go</h3>
-<p>看完了具体实现逻辑，那么去看下控制器入口： main.go</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> init</span><span style="color:#E1E4E8">() {</span></span>
-<span class="line"><span style="color:#E1E4E8">	_ </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> clientgoscheme.</span><span style="color:#B392F0">AddToScheme</span><span style="color:#E1E4E8">(scheme)</span></span>
-<span class="line"><span style="color:#E1E4E8">	_ </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> infrav1.</span><span style="color:#B392F0">AddToScheme</span><span style="color:#E1E4E8">(scheme)</span></span>
-<span class="line"><span style="color:#6A737D">	// +kubebuilder:scaffold:scheme</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> v, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> time.</span><span style="color:#B392F0">ParseDuration</span><span style="color:#E1E4E8">(os.</span><span style="color:#B392F0">Getenv</span><span style="color:#E1E4E8">(syncPeriodEnvVar)); err </span><span style="color:#F97583">==</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">		defaultSyncPeriod </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> v</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> v, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> time.</span><span style="color:#B392F0">ParseDuration</span><span style="color:#E1E4E8">(os.</span><span style="color:#B392F0">Getenv</span><span style="color:#E1E4E8">(requeuePeriodEnvVar)); err </span><span style="color:#F97583">==</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#E1E4E8">		defaultRequeuePeriod </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> v</span></span>
-<span class="line"><span style="color:#E1E4E8">	}</span></span>
-<span class="line"><span style="color:#E1E4E8">}</span></span>
-<span class="line"></span></code></pre>
-<p>需要注意的是 init 函数，这里应该加上 <code>_ = clusterv1.AddToScheme(scheme)</code> ，否则在真正创建对应资源的时候，会报 <code>no kind is registered for the type</code> 的错误。（对 Operator 还不太熟，这里具体原因未了解）</p>
-<h2 id="总结">总结</h2>
-<p>相对来说 v1alpha2 版本改动范围较大，但是真香。各个逻辑部分比之前容易理解的多，且provider 实现也比之前简单许多（虽然还是比较麻烦）。</p>
-<p>但是恰恰因为是 alpha 版本，再次吐槽，改动真的是太频繁了，按照项目中 Milestone 规划，在 20190831 就要 release v1alpha2 了，但是目前完成度还只有 <a href="https://github.com/kubernetes-sigs/cluster-api/milestone/6">58%</a> 。而且目前看到除了 aws 和 vmware 对这个项目参与的比较积极，其他项目都处于假死状态，不知道后续是否会有其他厂家参与进来共同完善。</p>
-<h2 id="ps">P.S.</h2>
-<ul>
-<li>cluster-api 相关项目使用 kubebuilder 辅助构建的，随着 kubebuilder v2 正式发布，相关代码结构改动较大，最好花费些时间了解下 kubebuilder v2。</li>
-<li>目前 provider 中 aws 完善度是最高的，但是 aws 中的概念是真的复杂，<strong>概念劝退</strong>。</li>
-</ul>  </div> <aside class="toc-sidebar" data-astro-cid-gjtny2mx> <nav class="toc" aria-label="目录" data-astro-cid-xvrfupwn><h2 class="toc-title" data-astro-cid-xvrfupwn>目录</h2><ul class="toc-list" data-astro-cid-xvrfupwn><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#背景" class="toc-link" data-astro-cid-xvrfupwn>背景</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#cluster-api-v1alpha2" class="toc-link" data-astro-cid-xvrfupwn>Cluster-API v1alpha2</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#corecluster-api" class="toc-link" data-astro-cid-xvrfupwn>Core(cluster-api)</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#clusterctl" class="toc-link" data-astro-cid-xvrfupwn>clusterctl</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#api" class="toc-link" data-astro-cid-xvrfupwn>API</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#controller" class="toc-link" data-astro-cid-xvrfupwn>Controller</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#boostrapkubeadm" class="toc-link" data-astro-cid-xvrfupwn>Boostrap(kubeadm)</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#infrastructure" class="toc-link" data-astro-cid-xvrfupwn>Infrastructure</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#api-1" class="toc-link" data-astro-cid-xvrfupwn>API</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#controller-1" class="toc-link" data-astro-cid-xvrfupwn>Controller</a></li><li class="toc-item toc-item-3" data-astro-cid-xvrfupwn><a href="#maingo" class="toc-link" data-astro-cid-xvrfupwn>main.go</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#总结" class="toc-link" data-astro-cid-xvrfupwn>总结</a></li><li class="toc-item toc-item-2" data-astro-cid-xvrfupwn><a href="#ps" class="toc-link" data-astro-cid-xvrfupwn>P.S.</a></li></ul></nav><script type="module">const s={root:null,rootMargin:"-20% 0px -80% 0px",threshold:0},i=new IntersectionObserver(e=>{e.forEach(o=>{if(o.isIntersecting){const r=o.target.id;document.querySelectorAll(".toc-link").forEach(c=>{c.classList.remove("active")});const t=document.querySelector(`.toc-link[href="#${r}"]`);t&&t.classList.add("active")}})},s);document.querySelectorAll("h2[id], h3[id]").forEach(e=>{i.observe(e)});</script> </aside> </div>  <div id="disqus_thread" data-astro-cid-r2x3s5wt></div> <script>(function(){const url = "https://zdyxry.github.io/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/";
-const identifier = "2019/08/23/Kubernetes-实战-Cluster-API-v1alpha2";
-const title = "Kubernetes 实战-Cluster API v1alpha2";
-
-  var disqus_config = function () {
-    this.page.url = url;
-    this.page.identifier = identifier;
-    this.page.title = title;
-  };
+<!doctype html><html lang=zh-cn><head><title>Kubernetes 实战-Cluster API v1alpha2 · Yiran's Blog</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Yiran Zhou"><meta name=description content="
+  背景
   
-  (function() {
-    var d = document, s = d.createElement('script');
-    s.src = 'https://zdyxry.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-  })();
-})();</script> <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" data-astro-cid-r2x3s5wt>comments powered by Disqus.</a></noscript>  </article>  </main> <footer data-astro-cid-sz7xmlte> <div class="footer-content" data-astro-cid-sz7xmlte> <div class="social-links" data-astro-cid-sz7xmlte> <a href="https://github.com/zdyxry" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" data-astro-cid-sz7xmlte></path> </svg>    </a><a href="https://twitter.com/zdyxry" target="_blank" rel="noopener" aria-label="Twitter" data-astro-cid-sz7xmlte>  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" data-astro-cid-sz7xmlte></path> </svg>   </a><a href="https://neodb.social/users/zdyxry/" target="_blank" rel="noopener" aria-label="NeoDB" data-astro-cid-sz7xmlte>   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" data-astro-cid-sz7xmlte></path> <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" data-astro-cid-sz7xmlte></path> </svg>  </a><a href="/atom.xml" aria-label="RSS" data-astro-cid-sz7xmlte>    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-sz7xmlte> <path d="M4 11a9 9 0 0 1 9 9" data-astro-cid-sz7xmlte></path> <path d="M4 4a16 16 0 0 1 16 16" data-astro-cid-sz7xmlte></path> <circle cx="5" cy="19" r="1" data-astro-cid-sz7xmlte></circle> </svg> </a> </div> <p class="copyright" data-astro-cid-sz7xmlte>&copy; 2026 Yiran's Blog · Powered by <a href="https://astro.build" target="_blank" rel="noopener" data-astro-cid-sz7xmlte>Astro</a></p> </div> </footer>  </body></html> 
+    
+    链接到标题
+  
+
+今天继续来聊一聊 cluster-api，在上周看 cluster-api-provider-vsphere 代码的时候吐槽过，cluster-api 最近因为 v1alpha2 版本的开发，变化太快，几乎每天都在变，那么我们就来看看 v1alpha2 具体做了什么。
+
+  Cluster-API v1alpha2
+  
+    
+    链接到标题
+  
+
+虽然目前 v1alpha2 还没有正式的 release，但是已经趋于稳定，且两个主要的 provider：aws 和 vsphere 都在进行 v1alpha2 版本的适配（最近每天都有 pr 更新）。我们先来了解下为啥要进行 v1alpha2 改动，改动的目的是啥。
+在 v1alpha1 版本中，cluster-api 要求 provider 实现从节点置备到 k8s 部署的全套流程，cluster-api 自身只负责具体的 API 定义及相关控制，在 provider 实现上也不是一个标准的 Operator，（至少）我从概念的理解上比较吃力，每个 provider 需要实现对应 cluster  与 machine 的 actuator ，开发起来要求对 cluster-api 项目本身很熟悉。
+其次，每个 provider 都包含了 k8s 集群部署的流程，虽然大部分实现最终都是使用 kubeadm 工具，但是使用方式千差万别，有 cloud-init、有 ssh 配合密钥、有 ssh 配合密码等等。这部分 provider 中的代码完全都是重复的，可以复用的。"><meta name=keywords content="blog,developer,personal"><meta name=twitter:card content="summary"><meta name=twitter:title content="Kubernetes 实战-Cluster API v1alpha2"><meta name=twitter:description content="背景 链接到标题 今天继续来聊一聊 cluster-api，在上周看 cluster-api-provider-vsphere 代码的时候吐槽过，cluster-api 最近因为 v1alpha2 版本的开发，变化太快，几乎每天都在变，那么我们就来看看 v1alpha2 具体做了什么。
+Cluster-API v1alpha2 链接到标题 虽然目前 v1alpha2 还没有正式的 release，但是已经趋于稳定，且两个主要的 provider：aws 和 vsphere 都在进行 v1alpha2 版本的适配（最近每天都有 pr 更新）。我们先来了解下为啥要进行 v1alpha2 改动，改动的目的是啥。
+在 v1alpha1 版本中，cluster-api 要求 provider 实现从节点置备到 k8s 部署的全套流程，cluster-api 自身只负责具体的 API 定义及相关控制，在 provider 实现上也不是一个标准的 Operator，（至少）我从概念的理解上比较吃力，每个 provider 需要实现对应 cluster 与 machine 的 actuator ，开发起来要求对 cluster-api 项目本身很熟悉。
+其次，每个 provider 都包含了 k8s 集群部署的流程，虽然大部分实现最终都是使用 kubeadm 工具，但是使用方式千差万别，有 cloud-init、有 ssh 配合密钥、有 ssh 配合密码等等。这部分 provider 中的代码完全都是重复的，可以复用的。"><meta property="og:url" content="https://zdyxry.github.io/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/"><meta property="og:site_name" content="Yiran's Blog"><meta property="og:title" content="Kubernetes 实战-Cluster API v1alpha2"><meta property="og:description" content="背景 链接到标题 今天继续来聊一聊 cluster-api，在上周看 cluster-api-provider-vsphere 代码的时候吐槽过，cluster-api 最近因为 v1alpha2 版本的开发，变化太快，几乎每天都在变，那么我们就来看看 v1alpha2 具体做了什么。
+Cluster-API v1alpha2 链接到标题 虽然目前 v1alpha2 还没有正式的 release，但是已经趋于稳定，且两个主要的 provider：aws 和 vsphere 都在进行 v1alpha2 版本的适配（最近每天都有 pr 更新）。我们先来了解下为啥要进行 v1alpha2 改动，改动的目的是啥。
+在 v1alpha1 版本中，cluster-api 要求 provider 实现从节点置备到 k8s 部署的全套流程，cluster-api 自身只负责具体的 API 定义及相关控制，在 provider 实现上也不是一个标准的 Operator，（至少）我从概念的理解上比较吃力，每个 provider 需要实现对应 cluster 与 machine 的 actuator ，开发起来要求对 cluster-api 项目本身很熟悉。
+其次，每个 provider 都包含了 k8s 集群部署的流程，虽然大部分实现最终都是使用 kubeadm 工具，但是使用方式千差万别，有 cloud-init、有 ssh 配合密钥、有 ssh 配合密码等等。这部分 provider 中的代码完全都是重复的，可以复用的。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-08-23T20:13:50+00:00"><meta property="article:modified_time" content="2019-08-23T20:13:50+00:00"><meta property="article:tag" content="Kubernetes"><link rel=canonical href=https://zdyxry.github.io/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/><link rel=preload href=/fonts/fa-brands-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-regular-400.woff2 as=font type=font/woff2 crossorigin><link rel=preload href=/fonts/fa-solid-900.woff2 as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.640169b0b3e4a7ff838f20af6fb06b691f38d1aaee51a06288af05702fce84b0.css integrity="sha256-ZAFpsLPkp/+DjyCvb7BraR840aruUaBiiK8FcC/OhLA=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/custom.min.598b4dc0d87e9f8cf3ee27da13bf2d146bdef9d6b52584abc07e060846593bb2.css integrity="sha256-WYtNwNh+n4zz7ifaE78tFGve+da1JYSrwH4GCEZZO7I=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/yiran.png sizes=32x32><link rel=icon type=image/png href=/images/yiran.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-auto"><div class=float-container><a id=dark-mode-toggle class=colorscheme-toggle><i class="fa-solid fa-adjust fa-fw" aria-hidden=true></i></a></div><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=https://zdyxry.github.io/>Yiran's Blog
+</a><input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa-solid fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/posts/>Blog</a></li><li class=navigation-item><a class=navigation-link href=/tags/>Tags</a></li><li class=navigation-item><a class=navigation-link href=/friends/>Friends</a></li><li class=navigation-item><a class=navigation-link href=/running/>Running</a></li><li class=navigation-item><a class=navigation-link href=/about/>About</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://zdyxry.github.io/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/>Kubernetes 实战-Cluster API v1alpha2</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa-solid fa-calendar" aria-hidden=true></i>
+<time datetime=2019-08-23T20:13:50Z>August 23, 2019
+</time></span><span class=reading-time><i class="fa-solid fa-clock" aria-hidden=true></i>
+阅读时间：5 分钟</span></div><div class=tags><i class="fa-solid fa-tag" aria-hidden=true></i>
+<span class=tag><a href=/tags/Kubernetes/>Kubernetes</a></span></div></div></header><nav id=TableOfContents><ul><li><a href=#背景>背景</a></li><li><a href=#cluster-api-v1alpha2>Cluster-API v1alpha2</a></li><li><a href=#corecluster-api>Core(cluster-api)</a><ul><li><a href=#clusterctl>clusterctl</a></li><li><a href=#api>API</a></li><li><a href=#controller>Controller</a></li></ul></li><li><a href=#boostrapkubeadm>Boostrap(kubeadm)</a></li><li><a href=#infrastructure>Infrastructure</a><ul><li><a href=#api-1>API</a></li><li><a href=#controller-1>Controller</a></li><li><a href=#maingo>main.go</a></li></ul></li><li><a href=#总结>总结</a></li><li><a href=#ps>P.S.</a></li></ul></nav><div class=post-content><h2 id=背景>背景
+<a class=heading-link href=#%e8%83%8c%e6%99%af><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>今天继续来聊一聊 cluster-api，在上周看 cluster-api-provider-vsphere 代码的时候吐槽过，cluster-api 最近因为 v1alpha2 版本的开发，变化太快，几乎每天都在变，那么我们就来看看 v1alpha2 具体做了什么。</p><h2 id=cluster-api-v1alpha2>Cluster-API v1alpha2
+<a class=heading-link href=#cluster-api-v1alpha2><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>虽然目前 v1alpha2 还没有正式的 release，但是已经趋于稳定，且两个主要的 provider：aws 和 vsphere 都在进行 v1alpha2 版本的适配（最近每天都有 pr 更新）。我们先来了解下为啥要进行 v1alpha2 改动，改动的目的是啥。</p><p>在 v1alpha1 版本中，cluster-api 要求 provider 实现从节点置备到 k8s 部署的全套流程，cluster-api 自身只负责具体的 API 定义及相关控制，在 provider 实现上也不是一个标准的 Operator，（至少）我从概念的理解上比较吃力，每个 provider 需要实现对应 cluster 与 machine 的 actuator ，开发起来要求对 cluster-api 项目本身很熟悉。</p><p>其次，每个 provider 都包含了 k8s 集群部署的流程，虽然大部分实现最终都是使用 kubeadm 工具，但是使用方式千差万别，有 cloud-init、有 ssh 配合密钥、有 ssh 配合密码等等。这部分 provider 中的代码完全都是重复的，可以复用的。</p><p>上面提到的一些缺点，在 v1alpha2 版本中进行了改进，对各个组件进行了拆分，现在使用 cluster-api 需要 3 个控制器：</p><ol><li>Core(cluster-api)</li><li>Bootstrap(kubeadm)</li><li>Infrastructure(aws, gcp, azure, vsphere, etc)</li></ol><p><img src=/2019/08/23/Kubernetes-%E5%AE%9E%E6%88%98-Cluster-API-v1alpha2/v1alpha2.png alt></p><p>下面来说说各个控制器负责什么。</p><h2 id=corecluster-api>Core(cluster-api)
+<a class=heading-link href=#corecluster-api><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>核心控制器，也就是 cluster-api 项目自身，相比于 v1alpha1 版本 v1alpha2 各个方面简直可爱，来看看具体的改动：</p><h3 id=clusterctl>clusterctl
+<a class=heading-link href=#clusterctl><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>在 v1alpha1 中，clusterctl 因为耦合了最终的 provider 项目，命令行是由对应的 provider 提供，在 v1alpha2 中完全由 cluster-api 维护。具体代码在 <a href=https://github.com/kubernetes-sigs/cluster-api/blob/master/cmd/clusterctl/README.md class=external-link target=_blank rel=noopener>cmd/clusterctl</a> 下，整体结构感觉跟 kubeadm 很像。</p><h3 id=api>API
+<a class=heading-link href=#api><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>仍然包含两个主要的 CRD：cluster 和 machine，针对两个资源进行了阶段定义，根据注释就很好 cluster 和 machine 会处于哪些状态：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>const</span> (
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhasePending is the first state a Machine is assigned by</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// Cluster API Machine controller after being created.</span>
+</span></span><span style=display:flex><span>	MachinePhasePending = MachinePhase(<span style=font-style:italic>&#34;pending&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhaseProvisioning is the state when the</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// Machine infrastructure is being created.</span>
+</span></span><span style=display:flex><span>	MachinePhaseProvisioning = MachinePhase(<span style=font-style:italic>&#34;provisioning&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhaseProvisioned is the state when its</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// infrastructure has been created and configured.</span>
+</span></span><span style=display:flex><span>	MachinePhaseProvisioned = MachinePhase(<span style=font-style:italic>&#34;provisioned&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhaseRunning is the Machine state when it has</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// become a Kubernetes Node in a Ready state.</span>
+</span></span><span style=display:flex><span>	MachinePhaseRunning = MachinePhase(<span style=font-style:italic>&#34;running&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhaseDeleting is the Machine state when a delete</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// request has been sent to the API Server,</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// but its infrastructure has not yet been fully deleted.</span>
+</span></span><span style=display:flex><span>	MachinePhaseDeleting = MachinePhase(<span style=font-style:italic>&#34;deleting&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhaseDeleted is the Machine state when the object</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// and the related infrastructure is deleted and</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// ready to be garbage collected by the API Server.</span>
+</span></span><span style=display:flex><span>	MachinePhaseDeleted = MachinePhase(<span style=font-style:italic>&#34;deleted&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhaseFailed is the Machine state when the system</span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// might require user intervention.</span>
+</span></span><span style=display:flex><span>	MachinePhaseFailed = MachinePhase(<span style=font-style:italic>&#34;failed&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// MachinePhaseUnknown is returned if the Machine state cannot be determined.</span>
+</span></span><span style=display:flex><span>	MachinePhaseUnknown = MachinePhase(<span style=font-style:italic>&#34;&#34;</span>)
+</span></span><span style=display:flex><span>)
+</span></span></code></pre></div><h3 id=controller>Controller
+<a class=heading-link href=#controller><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>cluster-api 不再负责具体的 API 所有资源的定义，而是通过设置资源的 owner 来达到最终 cluster 包含 machine 的效果。</p><p>用 AWS 官方示例展示：</p><p>cluster.yaml</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=font-weight:700>---</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>apiVersion</span>: cluster.x-k8s.io/v1alpha2
+</span></span><span style=display:flex><span><span style=font-weight:700>kind</span>: Cluster
+</span></span><span style=display:flex><span><span style=font-weight:700>metadata</span>:
+</span></span><span style=display:flex><span>  <span style=font-weight:700>name</span>: ${CLUSTER_NAME}
+</span></span><span style=display:flex><span><span style=font-weight:700>spec</span>:
+</span></span><span style=display:flex><span>  <span style=font-weight:700>clusterNetwork</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>pods</span>:
+</span></span><span style=display:flex><span>      <span style=font-weight:700>cidrBlocks</span>: [<span style=font-style:italic>&#34;192.168.0.0/16&#34;</span>]
+</span></span><span style=display:flex><span>  <span style=font-weight:700>infrastructureRef</span>:
+</span></span><span style=display:flex><span>    <span style=font-weight:700>apiVersion</span>: infrastructure.cluster.x-k8s.io/v1alpha2
+</span></span><span style=display:flex><span>    <span style=font-weight:700>kind</span>: AWSCluster
+</span></span><span style=display:flex><span>    <span style=font-weight:700>name</span>: ${CLUSTER_NAME}
+</span></span><span style=display:flex><span><span style=font-weight:700>---</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>apiVersion</span>: infrastructure.cluster.x-k8s.io/v1alpha2
+</span></span><span style=display:flex><span><span style=font-weight:700>kind</span>: AWSCluster
+</span></span><span style=display:flex><span><span style=font-weight:700>metadata</span>:
+</span></span><span style=display:flex><span>  <span style=font-weight:700>name</span>: ${CLUSTER_NAME}
+</span></span><span style=display:flex><span><span style=font-weight:700>spec</span>:
+</span></span><span style=display:flex><span>  <span style=font-weight:700>region</span>: ${AWS_REGION}
+</span></span><span style=display:flex><span>  <span style=font-weight:700>sshKeyName</span>: ${SSH_KEY_NAME}
+</span></span></code></pre></div><p>在执行完 <code>kubectl apply -f cluster.yaml</code> 后， aws cluster 控制器会等待 cluster-api 控制器将 <code>AWSCluster</code> 与 <code>Cluster</code> 资源进行关联后进行下一步操作，这样最终能够达到 <code>Cluster</code> 资源是所有资源的 owner，也可以获得到所有资源的具体的 Spec 和 Status 信息。</p><p>（等版本 release 之后好好了解下其中的关系。</p><h2 id=boostrapkubeadm>Boostrap(kubeadm)
+<a class=heading-link href=#boostrapkubeadm><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>相比 cluster-api 的复杂，目前 Bootstrap 的唯一实现 <a href=https://github.com/kubernetes-sigs/cluster-api-bootstrap-provider-kubeadm class=external-link target=_blank rel=noopener>CABPK</a> 是一个分拆出来的独立项目，这个项目的主要目的是通过 <code>Cluster</code> 和 <code>Machine</code> 及对应的 Infrastructure <code>Cluster</code> 和 <code>Machine</code> 信息，来生成 cloud-init 配置（Userdata）。</p><p>目前 v1alpha2 统一部署 k8s 集群的方式为 cloud-init ，通过 CABPK 项目生成对应 Machine 的 cloud-init 配置，在部署虚拟机的时候传递 Userdata，达到自动配置的效果。也就是说如果你的 Hypervisor 不支持 cloud-init，就没办法使用 cluster-api v1alpha2 进行部署，只能通过 v1alpha1 的方式，在 Infrastructure 控制器做所有事情。</p><p>需要注意的是，在 Infrastructure 控制器工作前，需要保证 Bootstrap 控制器正常工作，生成用于最终创建虚拟机的 cloud-init 配置。</p><h2 id=infrastructure>Infrastructure
+<a class=heading-link href=#infrastructure><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>前面说的两个控制器都是社区官方维护的，下面来说下各个厂家（provider）维护的 Infrastructure 控制器（最近几天都在搞这个）。</p><p>v1alpha2 版本要求各个 provider 实现一个标准且完整的 Operator。包含对应的 <code>Cluster</code>,<code>Machine</code>。以下还是使用 cluster-api-provider-vsphere 具体，截止到 20190823 ，<a href=https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/pulls class=external-link target=_blank rel=noopener>对应 PR</a> 还处于未完成状态。</p><h3 id=api-1>API
+<a class=heading-link href=#api-1><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic>// VSphereClusterSpec defines the desired state of VSphereCluster</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>type</span> VSphereClusterSpec <span style=font-weight:700>struct</span> {
+</span></span><span style=display:flex><span>	Server <span>string</span> <span style=font-style:italic>`json:&#34;server,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	Username <span>string</span> <span style=font-style:italic>`json:&#34;username,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	Password <span>string</span> <span style=font-style:italic>`json:&#34;password,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	Insecure *<span>bool</span> <span style=font-style:italic>`json:&#34;insecure,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	SSHAuthorizedKeys []<span>string</span> <span style=font-style:italic>`json:&#34;sshAuthorizedKeys,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	CloudProviderConfiguration cloud.Config <span style=font-style:italic>`json:&#34;cloudProviderConfiguration,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic>// VSphereClusterStatus defines the observed state of VSphereClusterSpec</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>type</span> VSphereClusterStatus <span style=font-weight:700>struct</span> {
+</span></span><span style=display:flex><span>	Ready <span>bool</span> <span style=font-style:italic>`json:&#34;ready&#34;`</span>
+</span></span><span style=display:flex><span>	APIEndpoints []APIEndpoint <span style=font-style:italic>`json:&#34;apiEndpoints,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-style:italic>// VSphereMachineSpec defines the desired state of VSphereMachine</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>type</span> VSphereMachineSpec <span style=font-weight:700>struct</span> {
+</span></span><span style=display:flex><span>	MachineRef <span>string</span> <span style=font-style:italic>`json:&#34;machineRef,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	Template <span>string</span> <span style=font-style:italic>`json:&#34;template&#34;`</span>
+</span></span><span style=display:flex><span>	Datacenter <span>string</span> <span style=font-style:italic>`json:&#34;datacenter&#34;`</span>
+</span></span><span style=display:flex><span>	Network NetworkSpec <span style=font-style:italic>`json:&#34;network&#34;`</span>
+</span></span><span style=display:flex><span>	NumCPUs <span>int32</span> <span style=font-style:italic>`json:&#34;numCPUs,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	NumCoresPerSocket <span>int32</span> <span style=font-style:italic>`json:&#34;numCoresPerSocket,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	MemoryMiB <span>int64</span> <span style=font-style:italic>`json:&#34;memoryMiB,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	DiskGiB <span>int32</span> <span style=font-style:italic>`json:&#34;diskGiB,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	TrustedCerts [][]<span>byte</span> <span style=font-style:italic>`json:&#34;trustedCerts,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	NTPServers []<span>string</span> <span style=font-style:italic>`json:&#34;ntpServers,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=font-style:italic>// VSphereMachineStatus defines the observed state of VSphereMachine</span>
+</span></span><span style=display:flex><span><span style=font-weight:700>type</span> VSphereMachineStatus <span style=font-weight:700>struct</span> {
+</span></span><span style=display:flex><span>	Ready <span>bool</span> <span style=font-style:italic>`json:&#34;ready&#34;`</span>
+</span></span><span style=display:flex><span>	Addresses []v1.NodeAddress <span style=font-style:italic>`json:&#34;addresses,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	TaskRef <span>string</span> <span style=font-style:italic>`json:&#34;taskRef,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	Network []NetworkStatus <span style=font-style:italic>`json:&#34;networkStatus,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	ErrorReason *errors.MachineStatusError <span style=font-style:italic>`json:&#34;errorReason,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>	ErrorMessage *<span>string</span> <span style=font-style:italic>`json:&#34;errorMessage,omitempty&#34;`</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>定义 VSphereCluster 与 VSphereMachine CRD，这里根据自己需要定义相关参数就好，比如如果不想支持自定义目标虚拟机配置，那么就不用提供 CPU、Memory 等配置。</p><h3 id=controller-1>Controller
+<a class=heading-link href=#controller-1><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>来分别看看 cluster controller 与 machine controller 做了啥。</p><h4 id=cluster-controller>Cluster Controller
+<a class=heading-link href=#cluster-controller><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h4><p>在 <code>Reconcile</code> 的实现中，先获取 VSphereCluster 信息：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>	vsphereCluster := &amp;infrav1.VSphereCluster{}
+</span></span><span style=display:flex><span>	err := r.Get(parentContext, req.NamespacedName, vsphereCluster)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>if</span> apierrors.IsNotFound(err) {
+</span></span><span style=display:flex><span>			<span style=font-weight:700>return</span> reconcile.Result{}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{}, err
+</span></span><span style=display:flex><span>    }
+</span></span></code></pre></div><p>然后获取 VSphereCluster 关联的 Cluster 信息：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>	<span style=font-style:italic>// util 由 cluster-api 提供</span>
+</span></span><span style=display:flex><span>	cluster, err := util.GetOwnerCluster(parentContext, r.Client, vsphereCluster.ObjectMeta)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{}, err
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> cluster == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		logger.Info(<span style=font-style:italic>&#34;Waiting for Cluster Controller to set OwnerRef on VSphereCluster&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{RequeueAfter: 10 * time.Second}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>    }
+</span></span></code></pre></div><p>在获取了足够的信息之后，针对这些信息，创建了 context（这里 aws 是叫 scope，是一个东西），判断是否包含 <code>DeletionTimestamp</code> 来决定进行什么调度，是 <code>reconcileDelete</code> 还是 <code>reconcileNormal</code> 。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> reconcileDelete(ctx *context.ClusterContext) (reconcile.Result, <span>error</span>) {
+</span></span><span style=display:flex><span>	ctx.Logger.Info(<span style=font-style:italic>&#34;Reconciling VSphereCluster delete&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// Cluster is deleted so remove the finalizer.</span>
+</span></span><span style=display:flex><span>	ctx.VSphereCluster.Finalizers = util.Filter(ctx.VSphereCluster.Finalizers, infrav1.ClusterFinalizer)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> reconcile.Result{}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>在所有的 provider 中，都对相应资源进行了 Finalizer 配置，方便后续在资源删除前进行一些额外的操作，这里 vsphere 还没有具体的实现。</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> reconcileNormal(ctx *context.ClusterContext) (reconcile.Result, <span>error</span>) {
+</span></span><span style=display:flex><span>	ctx.Logger.Info(<span style=font-style:italic>&#34;Reconciling VSphereCluster&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	vsphereCluster := ctx.VSphereCluster
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// If the VSphereCluster doesn&#39;t have our finalizer, add it.</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> !util.Contains(vsphereCluster.Finalizers, infrav1.ClusterFinalizer) {
+</span></span><span style=display:flex><span>		vsphereCluster.Finalizers = append(vsphereCluster.Finalizers, infrav1.ClusterFinalizer)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// Set APIEndpoints so the Cluster API Cluster Controller can pull them</span>
+</span></span><span style=display:flex><span>	vsphereCluster.Status.APIEndpoints = []infrav1.APIEndpoint{
+</span></span><span style=display:flex><span>		{
+</span></span><span style=display:flex><span>			Host: <span style=font-style:italic>&#34;&#34;</span>, <span style=font-style:italic>// vsphereCluster.Status.Network.APIServerELB.DNSName,</span>
+</span></span><span style=display:flex><span>			Port: 0,
+</span></span><span style=display:flex><span>		},
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// No errors, so mark us ready so the Cluster API Cluster Controller can pull it</span>
+</span></span><span style=display:flex><span>	vsphereCluster.Status.Ready = <span style=font-weight:700>true</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> reconcile.Result{}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>在 <code>reconcileNormal</code> 中对集群进行 Finalizer 判断，然后这里直接更新了 <code>vsphereCluster.Status</code> 具体字段，应该是还没实现完成。</p><h4 id=machine-controller>Machine Controller
+<a class=heading-link href=#machine-controller><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h4><p>与 Cluster 相比，Machine 包含了具体的虚拟机创建动作，相应需要的信息也会多一些，除了通过 <code>VSphereMachine</code>获取关联 <code>Machine</code> 以外，还通过 <code>Machine</code> 获取了 <code>Cluster</code> 信息：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-style:italic>// Fetch the Machine.</span>
+</span></span><span style=display:flex><span>	machine, err := util.GetOwnerMachine(parentContext, r.Client, vsphereMachine.ObjectMeta)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{}, err
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> machine == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		logger.Info(<span style=font-style:italic>&#34;Waiting for Machine Controller to set OwnerRef on VSphereMachine&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{RequeueAfter: 10 * time.Second}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	logger = logger.WithName(fmt.Sprintf(<span style=font-style:italic>&#34;machine=%s&#34;</span>, machine.Name))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// Fetch the Cluster.</span>
+</span></span><span style=display:flex><span>	cluster, err := util.GetClusterFromMetadata(parentContext, r.Client, machine.ObjectMeta)
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> err != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		logger.Info(<span style=font-style:italic>&#34;Machine is missing cluster label or cluster does not exist&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>    }
+</span></span></code></pre></div><p>与 Cluster 一样，也会进行 <code>DeletionTimestamp</code> 判断，来看下 <code>reconcileNormal</code> 的实现：</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> (r *VSphereMachineReconciler) reconcileNormal(ctx *context.MachineContext) (reconcile.Result, <span>error</span>) {
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// 如果 VSphereMachine 的状态一场，则直接返回</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> ctx.VSphereMachine.Status.ErrorReason != <span style=font-weight:700>nil</span> || ctx.VSphereMachine.Status.ErrorMessage != <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		ctx.Logger.Info(<span style=font-style:italic>&#34;Error state detected, skipping reconciliation&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// 如果 VSphereMachine 没有 Finalizer，则添加</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> !util.Contains(ctx.VSphereMachine.Finalizers, infrav1.MachineFinalizer) {
+</span></span><span style=display:flex><span>		ctx.VSphereMachine.Finalizers = append(ctx.VSphereMachine.Finalizers, infrav1.MachineFinalizer)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> !ctx.Cluster.Status.InfrastructureReady {
+</span></span><span style=display:flex><span>		ctx.Logger.Info(<span style=font-style:italic>&#34;Cluster infrastructure is not ready yet, requeuing machine&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{RequeueAfter: waitForClusterInfrastructureReadyDuration}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// 在真正创建虚拟机之前，需要确保 cloud-init 配置已经生成</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> ctx.Machine.Spec.Bootstrap.Data == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		ctx.Logger.Info(<span style=font-style:italic>&#34;Waiting for bootstrap data to be available&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=font-weight:700>return</span> reconcile.Result{RequeueAfter: 10 * time.Second}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=font-style:italic>// 这里缺少真正创建虚拟机的实现</span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>return</span> reconcile.Result{}, <span style=font-weight:700>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>vsphere 所有关于虚拟机的操作都在<a href=https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/tree/master/pkg/cloud/vsphere/services/govmomi class=external-link target=_blank rel=noopener>这里</a>，感兴趣的可以看看。</p><h3 id=maingo>main.go
+<a class=heading-link href=#maingo><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h3><p>看完了具体实现逻辑，那么去看下控制器入口： main.go</p><div class=highlight><pre tabindex=0 style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=font-weight:700>func</span> init() {
+</span></span><span style=display:flex><span>	_ = clientgoscheme.AddToScheme(scheme)
+</span></span><span style=display:flex><span>	_ = infrav1.AddToScheme(scheme)
+</span></span><span style=display:flex><span>	<span style=font-style:italic>// +kubebuilder:scaffold:scheme</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> v, err := time.ParseDuration(os.Getenv(syncPeriodEnvVar)); err == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		defaultSyncPeriod = v
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=font-weight:700>if</span> v, err := time.ParseDuration(os.Getenv(requeuePeriodEnvVar)); err == <span style=font-weight:700>nil</span> {
+</span></span><span style=display:flex><span>		defaultRequeuePeriod = v
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>需要注意的是 init 函数，这里应该加上 <code>_ = clusterv1.AddToScheme(scheme)</code> ，否则在真正创建对应资源的时候，会报 <code>no kind is registered for the type</code> 的错误。（对 Operator 还不太熟，这里具体原因未了解）</p><h2 id=总结>总结
+<a class=heading-link href=#%e6%80%bb%e7%bb%93><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><p>相对来说 v1alpha2 版本改动范围较大，但是真香。各个逻辑部分比之前容易理解的多，且provider 实现也比之前简单许多（虽然还是比较麻烦）。</p><p>但是恰恰因为是 alpha 版本，再次吐槽，改动真的是太频繁了，按照项目中 Milestone 规划，在 20190831 就要 release v1alpha2 了，但是目前完成度还只有 <a href=https://github.com/kubernetes-sigs/cluster-api/milestone/6 class=external-link target=_blank rel=noopener>58%</a> 。而且目前看到除了 aws 和 vmware 对这个项目参与的比较积极，其他项目都处于假死状态，不知道后续是否会有其他厂家参与进来共同完善。</p><h2 id=ps>P.S.
+<a class=heading-link href=#ps><i class="fa-solid fa-link" aria-hidden=true title=链接到标题></i>
+<span class=sr-only>链接到标题</span></a></h2><ul><li>cluster-api 相关项目使用 kubebuilder 辅助构建的，随着 kubebuilder v2 正式发布，相关代码结构改动较大，最好花费些时间了解下 kubebuilder v2。</li><li>目前 provider 中 aws 完善度是最高的，但是 aws 中的概念是真的复杂，<strong>概念劝退</strong>。</li></ul></div><footer><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//zdyxry.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}(),document.addEventListener("themeChanged",function(){document.readyState=="complete"&&DISQUS.reset({reload:!0,config:disqus_config})})</script></footer></article></section></div><footer class=footer><section class=container>©
+2016 -
+2026
+Yiran Zhou
+·
+技术支持 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script><script src=/js/custom.min.2c6f0c2e544b26a69e4bce070d3eab8647caf5c92770e2596c14cd28e1aa3f05.js integrity="sha256-LG8MLlRLJqaeS84HDT6rhkfK9ckncOJZbBTNKOGqPwU="></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-G0433XDZ3V"></script><script>var doNotTrack=!1,dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes";if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-G0433XDZ3V")}</script><script defer src=https://static.cloudflareinsights.com/beacon.min.js data-cf-beacon='{"token": "e3ef83c53de44e8ba2d047cae42e2b4a"}'></script></body></html>

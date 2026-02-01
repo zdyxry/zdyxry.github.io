@@ -1,6 +1,18 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: Network - My Blog</title><description>标签 &quot;Network&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>邻居发现协议（NDP）简易实现</title><link>https://zdyxry.github.io/2019/12/11/%E9%82%BB%E5%B1%85%E5%8F%91%E7%8E%B0%E5%8D%8F%E8%AE%AENDP%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/12/11/%E9%82%BB%E5%B1%85%E5%8F%91%E7%8E%B0%E5%8D%8F%E8%AE%AENDP%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</guid><pubDate>Wed, 11 Dec 2019 13:29:59 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Network on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Network/</link><description>Recent content in Network on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 11 Dec 2019 21:29:59 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Network/atom.xml" rel="self" type="application/rss+xml"/><item><title>邻居发现协议（NDP）简易实现</title><link>https://zdyxry.github.io/2019/12/11/%E9%82%BB%E5%B1%85%E5%8F%91%E7%8E%B0%E5%8D%8F%E8%AE%AENDP%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</link><pubDate>Wed, 11 Dec 2019 21:29:59 +0000</pubDate><guid>https://zdyxry.github.io/2019/12/11/%E9%82%BB%E5%B1%85%E5%8F%91%E7%8E%B0%E5%8D%8F%E8%AE%AENDP%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;在做节点管理时，经常面临节点自动扫描，自动关联等功能，这时候需要 NDP 来帮助我们来完成，关于 NDP 的实现有几种方式，今天来聊一下这个。&lt;/p&gt;
-&lt;h2 id=&quot;邻居发现协议ndp&quot;&gt;邻居发现协议（NDP）&lt;/h2&gt;
+&lt;h2 id="邻居发现协议ndp"&gt;
+邻居发现协议（NDP）
+&lt;a class="heading-link" href="#%e9%82%bb%e5%b1%85%e5%8f%91%e7%8e%b0%e5%8d%8f%e8%ae%aendp"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;引用维基百科的介绍：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;The Neighbor Discovery Protocol (NDP, ND)[1] is a protocol in the Internet protocol suite used with Internet Protocol Version 6 (IPv6). It operates at the link layer of the Internet model (RFC 1122), and is responsible for gathering various information required for internet communication, including the configuration of local connections and the domain name servers and gateways used to communicate with more distant systems.[2]&lt;/p&gt;
@@ -10,240 +22,330 @@
 &lt;li&gt;与 IPv6 一起使用&lt;/li&gt;
 &lt;li&gt;工作在数据链路层（link layer）&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h3 id=&quot;ipv6-地址&quot;&gt;IPv6 地址&lt;/h3&gt;
+&lt;h3 id="ipv6-地址"&gt;
+IPv6 地址
+&lt;a class="heading-link" href="#ipv6-%e5%9c%b0%e5%9d%80"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;在 IPv6 中，无论我们的网络环境是否存在 DHCP Server，我们只要配置网卡启动 IPv6 选项，将网卡置为 active 状态，就能获取到对应的 IPv6 地址，这是因为 IPv6中支持 IP 自动配置，大概流程如下：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;根据 MAC 地址产生链路本地地址（link-local address）&lt;/li&gt;
 &lt;li&gt;发出邻居发现请求，进行重复地址检测，如果重复，则停止配置&lt;/li&gt;
 &lt;li&gt;链路本地地址生效，发送路由请求报文（RS）&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h4 id=&quot;单播地址&quot;&gt;单播地址&lt;/h4&gt;
+&lt;h4 id="单播地址"&gt;
+单播地址
+&lt;a class="heading-link" href="#%e5%8d%95%e6%92%ad%e5%9c%b0%e5%9d%80"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
 &lt;p&gt;单播地址中又分为三类：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;可聚合的全局单播地址，相当于公网 IPv4 地址&lt;/li&gt;
 &lt;li&gt;链路本地地址，相当于IPv4里面的169.254.0.0/16地址，一般自动生成&lt;/li&gt;
 &lt;li&gt;独特本地单播地址&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h4 id=&quot;组播地址&quot;&gt;组播地址&lt;/h4&gt;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;IPv6 常用组播地址&lt;/th&gt;&lt;th&gt;IPv4 常用组播地址&lt;/th&gt;&lt;th&gt;组播组&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;节点-本地范围&lt;/td&gt;&lt;td&gt;节点-本地范围&lt;/td&gt;&lt;td&gt;节点-本地范围&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FF01::1&lt;/td&gt;&lt;td&gt;224.0.0.1&lt;/td&gt;&lt;td&gt;所有-节点地址&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FF01::2&lt;/td&gt;&lt;td&gt;224.0.0.2&lt;/td&gt;&lt;td&gt;所有-路由器地址&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;链路-本地范围&lt;/td&gt;&lt;td&gt;链路-本地范围&lt;/td&gt;&lt;td&gt;链路-本地范围&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FF02::1&lt;/td&gt;&lt;td&gt;224.0.0.1&lt;/td&gt;&lt;td&gt;所有-节点地址&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FF02::2&lt;/td&gt;&lt;td&gt;224.0.0.2&lt;/td&gt;&lt;td&gt;所有-路由器地址&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FF02::5&lt;/td&gt;&lt;td&gt;224.0.0.5&lt;/td&gt;&lt;td&gt;OSPF IGP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;FF02::6&lt;/td&gt;&lt;td&gt;224.0.0.6&lt;/td&gt;&lt;td&gt;OSPF IGP DR&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
-&lt;h4 id=&quot;任播地址&quot;&gt;任播地址&lt;/h4&gt;
+&lt;h4 id="组播地址"&gt;
+组播地址
+&lt;a class="heading-link" href="#%e7%bb%84%e6%92%ad%e5%9c%b0%e5%9d%80"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;IPv6 常用组播地址&lt;/th&gt;
+&lt;th&gt;IPv4 常用组播地址&lt;/th&gt;
+&lt;th&gt;组播组&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;节点-本地范围&lt;/td&gt;
+&lt;td&gt;节点-本地范围&lt;/td&gt;
+&lt;td&gt;节点-本地范围&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FF01::1&lt;/td&gt;
+&lt;td&gt;224.0.0.1&lt;/td&gt;
+&lt;td&gt;所有-节点地址&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FF01::2&lt;/td&gt;
+&lt;td&gt;224.0.0.2&lt;/td&gt;
+&lt;td&gt;所有-路由器地址&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;链路-本地范围&lt;/td&gt;
+&lt;td&gt;链路-本地范围&lt;/td&gt;
+&lt;td&gt;链路-本地范围&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FF02::1&lt;/td&gt;
+&lt;td&gt;224.0.0.1&lt;/td&gt;
+&lt;td&gt;所有-节点地址&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FF02::2&lt;/td&gt;
+&lt;td&gt;224.0.0.2&lt;/td&gt;
+&lt;td&gt;所有-路由器地址&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FF02::5&lt;/td&gt;
+&lt;td&gt;224.0.0.5&lt;/td&gt;
+&lt;td&gt;OSPF IGP&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FF02::6&lt;/td&gt;
+&lt;td&gt;224.0.0.6&lt;/td&gt;
+&lt;td&gt;OSPF IGP DR&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h4 id="任播地址"&gt;
+任播地址
+&lt;a class="heading-link" href="#%e4%bb%bb%e6%92%ad%e5%9c%b0%e5%9d%80"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
 &lt;p&gt;在 IPv6 中，没有广播的概念，而是使用任播代替。在任播中，网络地址与网络节点之前存在一对多的关系：每一个地址对应一群接收节点，但是在任何给定时间，只有其中之一可以接收到传送端发来的信息。&lt;/p&gt;
 &lt;p&gt;邻居发现协议 NDP 是 IPv6 协议体系中一个重要的基础协议，替代了IPv4的 ARP 和 ICMP 路由器发现，定义了使用 ICMPv6 报文实现地址解析、跟踪邻居状态、重复地址检测、路由器发现以及重定向等功能。&lt;/p&gt;
-&lt;h2 id=&quot;ipv6-地址发现&quot;&gt;IPv6 地址发现&lt;/h2&gt;
+&lt;h2 id="ipv6-地址发现"&gt;
+IPv6 地址发现
+&lt;a class="heading-link" href="#ipv6-%e5%9c%b0%e5%9d%80%e5%8f%91%e7%8e%b0"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;因为我本人也没有完整阅读过相应 RFC 文档，在这里也不详细描述每个报文的具体格式及每个字段是什么意思了，直接看看怎么实现。&lt;/p&gt;
-&lt;h3 id=&quot;ping6--组播&quot;&gt;ping6 &amp;#x26; 组播&lt;/h3&gt;
+&lt;h3 id="ping6--组播"&gt;
+ping6 &amp;amp; 组播
+&lt;a class="heading-link" href="#ping6--%e7%bb%84%e6%92%ad"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;如果我们知道了一个主机的 IPv6 地址，我们可以通过 &lt;code&gt;ping6&lt;/code&gt; 来检测是否联通：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;shell&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@localhost:/tmp/nnn&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ping6&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::5054:ff:fe80:95d9%eth0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;PING&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::5054:ff:fe80:95d9%eth0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::5054:ff:fe80:95d9%eth0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;56&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; data&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; bytes&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;64&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; bytes&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; from&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::5054:ff:fe80:95d9%eth0:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; icmp_seq=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ttl=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;64&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; time=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0.045&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;64&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; bytes&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; from&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::5054:ff:fe80:95d9%eth0:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; icmp_seq=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ttl=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;64&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; time=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0.055&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;^C&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::5054:ff:fe80:95d9%eth0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ping&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; statistics&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; ---&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; packets&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; transmitted,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; received,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0%&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; packet&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; loss,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; time&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 999ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;rtt&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; min/avg/max/mdev&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0.045/0.050/0.055/0.005&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ms&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;那么有了这个 &lt;code&gt;ping6&lt;/code&gt; 命令和上面提到的组播地址，我们就可以通过 &lt;code&gt;ping6&lt;/code&gt; 直接 ping 组播地址就能知道那些地址可以联通了，那么应该选择哪个？应该选择 &lt;code&gt;FF01::1&lt;/code&gt; ，因为我们想要实现的是获取 IPv6 地址：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;shell&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@localhost:/tmp/nnn&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ping6&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -c1&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -I&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;ff02::1%eth0&apos;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;PING&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ff02::1%eth0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ff02::1%eth0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;from&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::5054:ff:fe80:95d9%eth0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 56&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; data&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; bytes&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;64&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; bytes&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; from&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::5054:ff:fe80:95d9%eth0:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; icmp_seq=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ttl=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;64&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; time=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0.045&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ff02::1%eth0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ping&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; statistics&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; ---&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; packets&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; transmitted,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; received,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0%&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; packet&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; loss,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; time&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;rtt&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; min/avg/max/mdev&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0.045/0.045/0.045/0.000&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ms&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;因为我的实验环境里节点太多，这里使用 &lt;code&gt;-c&lt;/code&gt; 参数限制发送 ECHO_REQUEST 包的数量为 1。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@localhost:/tmp/nnn
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ ping6 fe80::5054:ff:fe80:95d9%eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PING fe80::5054:ff:fe80:95d9%eth0(fe80::5054:ff:fe80:95d9%eth0) 56 data bytes
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=2 ttl=64 time=0.055 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;^C
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;--- fe80::5054:ff:fe80:95d9%eth0 ping statistics ---
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;2 packets transmitted, 2 received, 0% packet loss, time 999ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;rtt min/avg/max/mdev = 0.045/0.050/0.055/0.005 ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;那么有了这个 &lt;code&gt;ping6&lt;/code&gt; 命令和上面提到的组播地址，我们就可以通过 &lt;code&gt;ping6&lt;/code&gt; 直接 ping 组播地址就能知道那些地址可以联通了，那么应该选择哪个？应该选择 &lt;code&gt;FF01::1&lt;/code&gt; ，因为我们想要实现的是获取 IPv6 地址：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@localhost:/tmp/nnn
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ ping6 -c1 -I eth0 &lt;span style="font-style:italic"&gt;&amp;#39;ff02::1%eth0&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PING ff02::1%eth0(ff02::1%eth0) from fe80::5054:ff:fe80:95d9%eth0 eth0: 56 data bytes
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;64 bytes from fe80::5054:ff:fe80:95d9%eth0: icmp_seq=1 ttl=64 time=0.045 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;--- ff02::1%eth0 ping statistics ---
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;1 packets transmitted, 1 received, 0% packet loss, time 0ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;rtt min/avg/max/mdev = 0.045/0.045/0.045/0.000 ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;因为我的实验环境里节点太多，这里使用 &lt;code&gt;-c&lt;/code&gt; 参数限制发送 ECHO_REQUEST 包的数量为 1。&lt;/p&gt;
 &lt;p&gt;在发送组播之后，如果能够联通，那么系统会记录对应的 ARP 信息，我们可以通过 &lt;code&gt;ip&lt;/code&gt; 命令直接获取：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;shell&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@localhost:/tmp/nnn&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ip&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -6&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; neighbor&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; show&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; dev&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; head&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -n&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 5&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::8c6e:a0ff:fe19:f146&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; lladdr&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 8e:6e:a0:19:f1:46&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; DELAY&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::8010:f1ff:fe02:af40&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; lladdr&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 82:10:f1:02:af:40&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; DELAY&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::baca:3aff:feec:fdac&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; lladdr&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; b8:ca:3a:ec:fd:ac&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; DELAY&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::f11c:e35a:912:dbc9&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; lladdr&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 52:54:00:0a:b3:fc&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; DELAY&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::570d:aa51:dc3b:1f02&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; lladdr&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:50:56:9b:f6:6c&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; DELAY&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;这样就拿到了自己节点在二层联通的所有 IPv6 地址了。&lt;/p&gt;
-&lt;h4 id=&quot;nmap&quot;&gt;Nmap&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@localhost:/tmp/nnn
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ ip -6 neighbor show dev eth0 | head -n 5
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fe80::8c6e:a0ff:fe19:f146 lladdr 8e:6e:a0:19:f1:46 DELAY
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fe80::8010:f1ff:fe02:af40 lladdr 82:10:f1:02:af:40 DELAY
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fe80::baca:3aff:feec:fdac lladdr b8:ca:3a:ec:fd:ac DELAY
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fe80::f11c:e35a:912:dbc9 lladdr 52:54:00:0a:b3:fc DELAY
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fe80::570d:aa51:dc3b:1f02 lladdr 00:50:56:9b:f6:6c DELAY
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这样就拿到了自己节点在二层联通的所有 IPv6 地址了。&lt;/p&gt;
+&lt;h4 id="nmap"&gt;
+Nmap
+&lt;a class="heading-link" href="#nmap"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
 &lt;p&gt;既然已经使用了 &lt;code&gt;ping6&lt;/code&gt;，那么可以使用一些更高级的工具，比如 Nmap，Nmap可以检测目标主机是否在线、端口开放情况、侦测运行的服务类型及版本信息、侦测操作系统与设备类型等信息。 它通常用来评估网络系统安全。&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;shell&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@localhost:/tmp/nnn&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; nmap&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -6&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;--script=targets-ipv6-multicast-*&quot;&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; head&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -n&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 10&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Starting&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Nmap&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 6.40&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; ( &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;http://nmap.org&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; ) at 2019-12-12 07:22 CST&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Pre-scan&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; script&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; results:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; targets-ipv6-multicast-echo:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   IP:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::e4a5:4fff:fea7:79af&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  MAC:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; e6:a5:4f:a7:79:af&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  IFACE:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   IP:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::250:56ff:fe85:647e&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   MAC:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:50:56:85:64:7e&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  IFACE:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   IP:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::250:56ff:fe9e:2473&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   MAC:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:50:56:9e:24:73&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  IFACE:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   IP:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::ae53:a418:ca0:83e8&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   MAC:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:50:56:9f:43:ca&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  IFACE:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   IP:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::250:56ff:fe9e:bcb6&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   MAC:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:50:56:9e:bc:b6&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  IFACE:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;   IP:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::250:56ff:fe9f:6153&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;   MAC:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:50:56:9f:61:53&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  IFACE:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;WARNING:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; No&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; targets&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; were&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; specified,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; so&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; hosts&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; scanned.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;更进一步&quot;&gt;更进一步&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@localhost:/tmp/nnn
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ nmap -6 &lt;span style="font-style:italic"&gt;&amp;#34;--script=targets-ipv6-multicast-*&amp;#34;&lt;/span&gt; | head -n 10
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Starting Nmap 6.40 ( http://nmap.org ) at 2019-12-12 07:22 CST
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Pre-scan script results:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| targets-ipv6-multicast-echo:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| IP: fe80::e4a5:4fff:fea7:79af MAC: e6:a5:4f:a7:79:af IFACE: eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| IP: fe80::250:56ff:fe85:647e MAC: 00:50:56:85:64:7e IFACE: eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| IP: fe80::250:56ff:fe9e:2473 MAC: 00:50:56:9e:24:73 IFACE: eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| IP: fe80::ae53:a418:ca0:83e8 MAC: 00:50:56:9f:43:ca IFACE: eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| IP: fe80::250:56ff:fe9e:bcb6 MAC: 00:50:56:9e:bc:b6 IFACE: eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| IP: fe80::250:56ff:fe9f:6153 MAC: 00:50:56:9f:61:53 IFACE: eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;WARNING: No targets were specified, so 0 hosts scanned.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="更进一步"&gt;
+更进一步
+&lt;a class="heading-link" href="#%e6%9b%b4%e8%bf%9b%e4%b8%80%e6%ad%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;往往我们的需求不只是获取到 IP 这么简单，我们现在更进一步，我们要求扫描的结果中与我们预期的版本相同，那么此时就需要与对应节点进行通信了。&lt;/p&gt;
-&lt;h3 id=&quot;http&quot;&gt;HTTP&lt;/h3&gt;
+&lt;h3 id="http"&gt;
+HTTP
+&lt;a class="heading-link" href="#http"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;一个比较简单的实现，就是在目标节点开机的时候自动启动一个 API server，提供一个 Entrypoint，比如：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#!/usr/bin/python&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;from&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; flask &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; jsonify&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;from&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; flask &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; Flask&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;app &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; Flask(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;__name__&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;@app.route&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;/api/v1/version&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; version&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;():&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    return&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; jsonify({&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;version&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;v1.0.0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;})&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;if&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; __name__&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; ==&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;__main__&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    app.run(&lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;host&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;::&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;port&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;5000&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;debug&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;True&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 要兼容 IPv6&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;然后我们可以在得到 IPv6 地址后，通过 curl 或者 Python urllib2 来发送对应的请求：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;shell&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@localhost:/tmp/nnn&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; curl&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -g&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -6&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version&apos;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;{&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  &quot;version&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;v1.0.0&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}#&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; urllib2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; res &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; urllib2.urlopen(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;http://fe80::5054:ff:fe80:95d9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%e&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;th0:5000/api/v1/version&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; res.read()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;{&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;\n&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  &quot;version&quot;: &quot;v1.0.0&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;\n&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;}&apos;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;这样虽然可以达到我们想要的效果，但是效率太低了，要先后进行2次操作，一次是扫描对应的 IPv6 地址，一次是得到地址后进行 HTTP 请求。&lt;/p&gt;
-&lt;h3 id=&quot;socket&quot;&gt;Socket&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;#!/usr/bin/python&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;from&lt;/span&gt; &lt;span style="font-weight:bold"&gt;flask&lt;/span&gt; &lt;span style="font-weight:bold"&gt;import&lt;/span&gt; jsonify
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;from&lt;/span&gt; &lt;span style="font-weight:bold"&gt;flask&lt;/span&gt; &lt;span style="font-weight:bold"&gt;import&lt;/span&gt; Flask
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;app = Flask(__name__)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;@app.route(&lt;span style="font-style:italic"&gt;&amp;#39;/api/v1/version&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; version():
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;return&lt;/span&gt; jsonify({&lt;span style="font-style:italic"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;:&lt;span style="font-style:italic"&gt;&amp;#34;v1.0.0&amp;#34;&lt;/span&gt;})
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;if&lt;/span&gt; __name__ == &lt;span style="font-style:italic"&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; app.run(host=&lt;span style="font-style:italic"&gt;&amp;#39;::&amp;#39;&lt;/span&gt;, port=5000, debug=&lt;span style="font-weight:bold"&gt;True&lt;/span&gt;) &lt;span style="font-style:italic"&gt;# 要兼容 IPv6&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;然后我们可以在得到 IPv6 地址后，通过 curl 或者 Python urllib2 来发送对应的请求：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@localhost:/tmp/nnn
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ curl -g -6 &lt;span style="font-style:italic"&gt;&amp;#39;http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;v1.0.0&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}&lt;span style="font-style:italic"&gt;#&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&amp;gt;&amp;gt;&amp;gt; &lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;urllib2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&amp;gt;&amp;gt;&amp;gt; res = urllib2.urlopen(&lt;span style="font-style:italic"&gt;&amp;#34;http://fe80::5054:ff:fe80:95d9&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%e&lt;/span&gt;&lt;span style="font-style:italic"&gt;th0:5000/api/v1/version&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&amp;gt;&amp;gt;&amp;gt; res.read()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;{&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;\n&lt;/span&gt;&lt;span style="font-style:italic"&gt; &amp;#34;version&amp;#34;: &amp;#34;v1.0.0&amp;#34;&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;\n&lt;/span&gt;&lt;span style="font-style:italic"&gt;}&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这样虽然可以达到我们想要的效果，但是效率太低了，要先后进行2次操作，一次是扫描对应的 IPv6 地址，一次是得到地址后进行 HTTP 请求。&lt;/p&gt;
+&lt;h3 id="socket"&gt;
+Socket
+&lt;a class="heading-link" href="#socket"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;我们可以通过 socket 通信来达到类似的效果，与 HTTP 不同的是，我们可以直接使用 socket 发送组播，来进行消息传递，这样上面的两步就可以通过一步来解决了，这里给出对应的 server 和 client 代码示例：&lt;/p&gt;
-&lt;h4 id=&quot;server&quot;&gt;Server&lt;/h4&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; select&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; json&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; server&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;():&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.socket(socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;AF_INET6&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOCK_DGRAM&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s.setsockopt(socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOL_SOCKET&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SO_REUSEADDR&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s.bind((&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;30000&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;))&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s.setblocking(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;False&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        while&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; True&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            rlist, _, _ &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; select.select([s], [], [s], &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; rlist:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                string, address &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; s.recvfrom(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;20000&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                print&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; string, address&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                    data &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; json.loads(string)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                except&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; Exception&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                    pass&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                owner &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; data.get(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;owner&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; owner &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;==&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;yiran&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                    info &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;version&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;v1.0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;                            &quot;owner&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;yiran&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;                            &quot;nic&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: address[&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;].split(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;%&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)[&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                    s.sendto(json.dumps(info), address)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    except&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; Exception&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        pass&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;if&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; __name__&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; ==&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;__main__&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    server()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h4 id=&quot;client&quot;&gt;Client&lt;/h4&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; json&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; select&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;from&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; pprint &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; pprint&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; client&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;():&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    s&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.socket(socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;AF_INET6&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOCK_DGRAM&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    s.setsockopt(socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOL_SOCKET&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SO_RCVBUF&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;5000000&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    nics &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.getaddrinfo(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s%%%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; %&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;ff02::1&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;eth0&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;), &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;30000&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;AF_INET6&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOCK_DGRAM&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    data &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;owner&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;yiran&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    string &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; json.dumps(data)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    results &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    for&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; i &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;in&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; range&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;10&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        for&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; nic &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;in&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; nics:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            _, _, _, _, address &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; nic&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                s.sendto(string, address)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            except&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; Exception&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                pass&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        rlist, _, _ &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; select.select([s], [], [s], &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; rlist:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            json_string, address &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; s.recvfrom(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;10000&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            results[address] &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; json_string&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    s.close()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    ips &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; []&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    for&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; address, json_test &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;in&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; results.iteritems():&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            data &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; json.loads(json_test)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; data.get(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;version&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;None&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;==&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;v1.0&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                info &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                info[&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;ipv6_address&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;] &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; address[&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                info[&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;test&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;] &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; data&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                ips.append(info)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        except&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; Exception&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            pass&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    return&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; ips&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;if&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; __name__&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; ==&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;__main__&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    pprint(client())&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
+&lt;h4 id="server"&gt;
+Server
+&lt;a class="heading-link" href="#server"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;socket&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;select&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;json&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; server():
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.bind((&lt;span style="font-style:italic"&gt;&amp;#39;&amp;#39;&lt;/span&gt;, 30000))
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.setblocking(&lt;span style="font-weight:bold"&gt;False&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;while&lt;/span&gt; &lt;span style="font-weight:bold"&gt;True&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; rlist, _, _ = select.select([s], [], [s], 1)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; rlist:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; string, address = s.recvfrom(20000)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; print string, address
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; data = json.loads(string)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;except&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Exception&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;pass&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; owner = data.get(&lt;span style="font-style:italic"&gt;&amp;#34;owner&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; owner == &lt;span style="font-style:italic"&gt;&amp;#34;yiran&amp;#34;&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; info = {&lt;span style="font-style:italic"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;v1.0&amp;#34;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;owner&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;yiran&amp;#34;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;nic&amp;#34;&lt;/span&gt;: address[0].split(&lt;span style="font-style:italic"&gt;&amp;#34;%&amp;#34;&lt;/span&gt;, 1)[1]}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.sendto(json.dumps(info), address)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;except&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Exception&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;pass&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;if&lt;/span&gt; __name__ == &lt;span style="font-style:italic"&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; server()
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id="client"&gt;
+Client
+&lt;a class="heading-link" href="#client"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;json&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;select&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;socket&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;from&lt;/span&gt; &lt;span style="font-weight:bold"&gt;pprint&lt;/span&gt; &lt;span style="font-weight:bold"&gt;import&lt;/span&gt; pprint
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;def&lt;/span&gt; client():
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s= socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5000000)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; nics = socket.getaddrinfo(&lt;span style="font-style:italic"&gt;&amp;#34;&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;%s%%%s&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#34;&lt;/span&gt; % (&lt;span style="font-style:italic"&gt;&amp;#39;ff02::1&amp;#39;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#39;eth0&amp;#39;&lt;/span&gt;), 30000, socket.AF_INET6, socket.SOCK_DGRAM)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; data = {&lt;span style="font-style:italic"&gt;&amp;#34;owner&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;yiran&amp;#34;&lt;/span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; string = json.dumps(data)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; results = {}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; i &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; range(10):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; nic &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; nics:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; _, _, _, _, address = nic
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.sendto(string, address)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;except&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Exception&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;pass&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; rlist, _, _ = select.select([s], [], [s], 1)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; rlist:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; json_string, address = s.recvfrom(10000)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; results[address] = json_string
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.close()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ips = []
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; address, json_test &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; results.iteritems():
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; data = json.loads(json_test)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; data.get(&lt;span style="font-style:italic"&gt;&amp;#34;version&amp;#34;&lt;/span&gt;, &lt;span style="font-weight:bold"&gt;None&lt;/span&gt;) == &lt;span style="font-style:italic"&gt;&amp;#34;v1.0&amp;#34;&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; info = {}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; info[&lt;span style="font-style:italic"&gt;&amp;#39;ipv6_address&amp;#39;&lt;/span&gt;] = address[0]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; info[&lt;span style="font-style:italic"&gt;&amp;#39;test&amp;#39;&lt;/span&gt;] = data
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ips.append(info)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;except&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Exception&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;pass&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;return&lt;/span&gt; ips
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;if&lt;/span&gt; __name__ == &lt;span style="font-style:italic"&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; pprint(client())
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="参考链接"&gt;
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&quot;http://www.ruijie.com.cn/fa/xw-hlw/83116/&quot;&gt;http://www.ruijie.com.cn/fa/xw-hlw/83116/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://tools.ietf.org/html/rfc4861&quot;&gt;https://tools.ietf.org/html/rfc4861&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses&quot;&gt;https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content:encoded><category>Linux</category><category>Network</category></item><item><title>路由器 vs 交换机</title><link>https://zdyxry.github.io/2019/11/09/%E8%B7%AF%E7%94%B1%E5%99%A8-vs-%E4%BA%A4%E6%8D%A2%E6%9C%BA/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/11/09/%E8%B7%AF%E7%94%B1%E5%99%A8-vs-%E4%BA%A4%E6%8D%A2%E6%9C%BA/</guid><pubDate>Sat, 09 Nov 2019 01:59:07 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;li&gt;&lt;a href="http://www.ruijie.com.cn/fa/xw-hlw/83116/" class="external-link" target="_blank" rel="noopener"&gt;http://www.ruijie.com.cn/fa/xw-hlw/83116/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://tools.ietf.org/html/rfc4861" class="external-link" target="_blank" rel="noopener"&gt;https://tools.ietf.org/html/rfc4861&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses" class="external-link" target="_blank" rel="noopener"&gt;https://security.stackexchange.com/questions/12826/which-tool-apart-from-nmap-can-i-use-to-scan-a-range-of-ipv6-addresses&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>路由器 vs 交换机</title><link>https://zdyxry.github.io/2019/11/09/%E8%B7%AF%E7%94%B1%E5%99%A8-vs-%E4%BA%A4%E6%8D%A2%E6%9C%BA/</link><pubDate>Sat, 09 Nov 2019 09:59:07 +0000</pubDate><guid>https://zdyxry.github.io/2019/11/09/%E8%B7%AF%E7%94%B1%E5%99%A8-vs-%E4%BA%A4%E6%8D%A2%E6%9C%BA/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;交换机和路由器大家应该都听说过，大部分也用过，但是它俩有啥联系，又有啥区别？&lt;/p&gt;
 &lt;p&gt;P.S. 最近看《OSTEP》看的脑子有点短路，趁着周末看点网络的东西。&lt;/p&gt;
-&lt;h2 id=&quot;路由器&quot;&gt;路由器&lt;/h2&gt;
+&lt;h2 id="路由器"&gt;
+路由器
+&lt;a class="heading-link" href="#%e8%b7%af%e7%94%b1%e5%99%a8"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;blockquote&gt;
 &lt;p&gt;路由器（英语：Router，又称路径器）是一种电讯网络设备，提供路由与转送两种重要机制，可以决定封包从来源端到目的端所经过的路由路径（host 到 host 之间的传输路径），这个过程称为路由；将路由器输入端的封包移送至适当的路由器输出端（在路由器内部进行），这称为转送。路由工作在OSI模型的第三层——即网络层，例如网际协议（IP）。&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -254,98 +356,128 @@
 &lt;/ul&gt;
 &lt;p&gt;在执行以上这两种职能中，路由器连接两个网络，将信息从一个网络传送至另一个网络。在某些情况下，还执行两个网络间的多种协议的翻译职能。此外它还确保网络之间通信路由的相互独立，预防其中一个网络上的多余流量溢出到另一个网络上。该过程称为路由选择。&lt;/p&gt;
 &lt;p&gt;路由选择是 OSI 模型第三层（网络层的）一个功能。路由器通过网络层协议头如 IP 头（包含源地址和目的地址）和路由表，选择转发数据包的最佳路径。为选择任意两个主机间的最佳路由，实现路由器间的通信，通常需要应用如 ICMP 这样的路由选择协议。&lt;/p&gt;
-&lt;h2 id=&quot;交换机&quot;&gt;交换机&lt;/h2&gt;
+&lt;h2 id="交换机"&gt;
+交换机
+&lt;a class="heading-link" href="#%e4%ba%a4%e6%8d%a2%e6%9c%ba"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;blockquote&gt;
 &lt;p&gt;网络交换机（Network switch）是一种网络数据转发设备，能够对数据包进行高速的“交换”。二层交换机工作于OSI参考模型的第二层，即数据链路层。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;交换机内部的CPU会在每个端口成功连接时，通过将MAC地址和端口对应，形成一张 MAC 表。在今后的通讯中，发往该MAC地址的数据包将仅送往其对应的端口，而不是所有的端口。交换机对数据包的转发是建立在MAC (Media Access Control) 地址—物理地址基础之上的，对于IP 网络协议来说，它是透明的，即交换机在转发数据包时，不知道也无须知道信源机和信宿机的IP 地址，只需知其物理地址即MAC 地址。&lt;/p&gt;
+&lt;p&gt;交换机内部的CPU会在每个端口成功连接时，通过将MAC地址和端口对应，形成一张 MAC 表。在今后的通讯中，发往该MAC地址的数据包将仅送往其对应的端口，而不是所有的端口。交换机对数据包的转发是建立在MAC (Media Access Control) 地址&amp;ndash;物理地址基础之上的，对于IP 网络协议来说，它是透明的，即交换机在转发数据包时，不知道也无须知道信源机和信宿机的IP 地址，只需知其物理地址即MAC 地址。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;blockquote&gt;
 &lt;p&gt;交换机在操作过程当中会不断的收集资料去建立它本身的一个地址表，这个表相当简单，它说明了某个MAC 地址是在哪个端口上被发现的，所以当交换机收到一个TCP/IP 封包时，它便会看一下该数据包的目的 MAC 地址，核对一下自己的地址表以确认应该从哪个端口把数据包发出去。由于这个过程比较简单，加上这功能由一崭新硬件进行——ASIC (Application Specific Integrated Circuit) ，因此速度相当快，一般只需几十微秒，交换机便可决定一个IP 封包该往那里送。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;值得一提的是：万一交换机收到一个不认识的封包，就是说如果目的地MAC 地址不能在地址表中找到时，交换机会把IP 封包”扩散”出去，即把它从每一个端口中送出去，就如交换机在处理一个收到的广播封包时一样。&lt;/p&gt;
+&lt;p&gt;值得一提的是：万一交换机收到一个不认识的封包，就是说如果目的地MAC 地址不能在地址表中找到时，交换机会把IP 封包&amp;quot;扩散&amp;quot;出去，即把它从每一个端口中送出去，就如交换机在处理一个收到的广播封包时一样。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;blockquote&gt;
 &lt;p&gt;二层交换机的弱点正是它处理广播封包的手法不太有效，比方说，当一个交换机收到一个从TCP/IP 工作站上发出来的广播封包时，他便会把该封包传到所有其他端口去，哪怕有些端口上连的是IPX 或DECnet 工作站。这样一来，非TCP/IP 节点的带宽便会受到负面的影响，就算同样的TCP/IP 节点，如果他们的子网跟发送那个广播封包的工作站的子网相同，那么他们也会无原无故地收到一些与他们毫不相干的网络广播，整个网络的效率因此会大打折扣。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h2 id=&quot;区别&quot;&gt;区别&lt;/h2&gt;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;路由器&lt;/th&gt;&lt;th&gt;交换机&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;OSI&lt;/td&gt;&lt;td&gt;网络层&lt;/td&gt;&lt;td&gt;数据链路层&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;数据传输地址&lt;/td&gt;&lt;td&gt;IP 地址&lt;/td&gt;&lt;td&gt;MAC 地址&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;使用范围&lt;/td&gt;&lt;td&gt;局域网/广域网&lt;/td&gt;&lt;td&gt;局域网&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;存储信息&lt;/td&gt;&lt;td&gt;路由表&lt;/td&gt;&lt;td&gt;MAC 地址与端口映射表&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;传输方式&lt;/td&gt;&lt;td&gt;全双工&lt;/td&gt;&lt;td&gt;全双工&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;隔离方式&lt;/td&gt;&lt;td&gt;划分子网&lt;/td&gt;&lt;td&gt;划分 VLAN&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;具体用途&lt;/td&gt;&lt;td&gt;连接多个网络&lt;/td&gt;&lt;td&gt;连接一个网络内的多个设备&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
+&lt;h2 id="区别"&gt;
+区别
+&lt;a class="heading-link" href="#%e5%8c%ba%e5%88%ab"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;路由器&lt;/th&gt;
+&lt;th&gt;交换机&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;OSI&lt;/td&gt;
+&lt;td&gt;网络层&lt;/td&gt;
+&lt;td&gt;数据链路层&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;数据传输地址&lt;/td&gt;
+&lt;td&gt;IP 地址&lt;/td&gt;
+&lt;td&gt;MAC 地址&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;使用范围&lt;/td&gt;
+&lt;td&gt;局域网/广域网&lt;/td&gt;
+&lt;td&gt;局域网&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;存储信息&lt;/td&gt;
+&lt;td&gt;路由表&lt;/td&gt;
+&lt;td&gt;MAC 地址与端口映射表&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;传输方式&lt;/td&gt;
+&lt;td&gt;全双工&lt;/td&gt;
+&lt;td&gt;全双工&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;隔离方式&lt;/td&gt;
+&lt;td&gt;划分子网&lt;/td&gt;
+&lt;td&gt;划分 VLAN&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;具体用途&lt;/td&gt;
+&lt;td&gt;连接多个网络&lt;/td&gt;
+&lt;td&gt;连接一个网络内的多个设备&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 &lt;p&gt;那么路由器和交换机可以互相替换么？&lt;/p&gt;
 &lt;p&gt;路由器通常带有 WAN 口和多个 LAN 口，其中多个 LAN 口可以看作一个小型的交换机，只是端口数量较少。二层交换机无法替换路由器，因为不具有路由转发的功能。但是现在存在三层交换机，可以实现路由器中的路由转发功能，甚至看到部分三层交换机已经支持了 NAT 功能，那么当不同 VLAN 之间的网络设备想要进行通信，就可以直接通过三层交换机找到对应路由，交换机学习到了 MAC 地址与 IP 地址的对应关系后，后续直接通过二层联通，不需要经过查找路由这一步了。&lt;/p&gt;
-&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
+&lt;h2 id="参考链接"&gt;
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&quot;https://pc.net/helpcenter/answers/difference_between_switch_and_router&quot;&gt;https://pc.net/helpcenter/answers/difference_between_switch_and_router&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.diffen.com/difference/Router_vs_Switch&quot;&gt;https://www.diffen.com/difference/Router_vs_Switch&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8&quot;&gt;https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content:encoded><category>Network</category></item><item><title>Traceroute 简易实现</title><link>https://zdyxry.github.io/2018/11/18/Traceroute-%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/11/18/Traceroute-%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</guid><pubDate>Sun, 18 Nov 2018 04:33:35 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;li&gt;&lt;a href="https://pc.net/helpcenter/answers/difference_between_switch_and_router" class="external-link" target="_blank" rel="noopener"&gt;https://pc.net/helpcenter/answers/difference_between_switch_and_router&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.diffen.com/difference/Router_vs_Switch" class="external-link" target="_blank" rel="noopener"&gt;https://www.diffen.com/difference/Router_vs_Switch&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8" class="external-link" target="_blank" rel="noopener"&gt;https://zh.wikipedia.org/zh-hans/%E7%B6%B2%E8%B7%AF%E4%BA%A4%E6%8F%9B%E5%99%A8&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>Traceroute 简易实现</title><link>https://zdyxry.github.io/2018/11/18/Traceroute-%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</link><pubDate>Sun, 18 Nov 2018 12:33:35 +0000</pubDate><guid>https://zdyxry.github.io/2018/11/18/Traceroute-%E7%AE%80%E6%98%93%E5%AE%9E%E7%8E%B0/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;在平时遇到网络问题时，我们通常会使用 &lt;code&gt;ping&lt;/code&gt;,&lt;code&gt;route&lt;/code&gt;,&lt;code&gt;ip&lt;/code&gt; 等命令去 debug，当我们确定我们本机的网络配置及服务没有问题后，我通常会使用 &lt;code&gt;traceroute&lt;/code&gt; 来判断网络走向。&lt;/p&gt;
 &lt;p&gt;最近公司搬家之后，整体网络架构进行了改进，随着配置的复杂化，稳定性相较于原来有了很大的下降，导致最近频繁使用 &lt;code&gt;traceroute&lt;/code&gt;，一直使用它却不知道是怎么工作的，研究了一下，作为总结。&lt;/p&gt;
-&lt;h2 id=&quot;traceroute&quot;&gt;Traceroute&lt;/h2&gt;
+&lt;h2 id="traceroute"&gt;
+Traceroute
+&lt;a class="heading-link" href="#traceroute"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;先上维基百科的解释：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;traceroute，现代Linux系统称为tracepath，Windows系统称为tracert，是一种计算机网络工具。它可显示数据包在IP网络经过的路由器的IP地址。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;我们通常使用无需特殊配置，直接用 traceroute 加上我们的目标地址即可，如：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-workstation:~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; traceroute&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 192.168.16.1&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;traceroute&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 192.168.16.1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.16.1), 30 hops max, 60 byte packets&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  gateway&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.8.1)  19.469 ms  19.089 ms  18.911 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  192.168.1.201&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.1.201)  11.539 ms  11.423 ms  11.307 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 3&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  192.168.16.1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.16.1)  18.289 ms  18.184 ms  18.064 ms&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;当我们想设置 TTL 数值时，我们可以使用 &lt;code&gt;-m&lt;/code&gt; 参数:&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-workstation:~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; traceroute&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 192.168.16.1&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -m&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;traceroute&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 192.168.16.1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.16.1), 2 hops max, 60 byte packets&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  gateway&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.8.1)  20.914 ms  20.700 ms  20.616 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  192.168.1.201&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.1.201)  20.497 ms  20.465 ms  20.383 ms&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;实现原理：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@yiran-workstation:~
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ traceroute 192.168.16.1
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;traceroute to 192.168.16.1 (192.168.16.1), 30 hops max, 60 byte packets
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 1 gateway (192.168.8.1) 19.469 ms 19.089 ms 18.911 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 2 192.168.1.201 (192.168.1.201) 11.539 ms 11.423 ms 11.307 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 3 192.168.16.1 (192.168.16.1) 18.289 ms 18.184 ms 18.064 ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;当我们想设置 TTL 数值时，我们可以使用 &lt;code&gt;-m&lt;/code&gt; 参数:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@yiran-workstation:~
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ traceroute 192.168.16.1 -m 2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;traceroute to 192.168.16.1 (192.168.16.1), 2 hops max, 60 byte packets
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 1 gateway (192.168.8.1) 20.914 ms 20.700 ms 20.616 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 2 192.168.1.201 (192.168.1.201) 20.497 ms 20.465 ms 20.383 ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;实现原理：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;主叫方首先发出 TTL=1 的数据包，第一个路由器将 TTL 减1得0后就不再继续转发此数据包，而是返回一个 ICMP 逾时报文，主叫方从逾时报文中即可提取出数据包所经过的第一个网关地址。然后又发出一个 TTL=2 的 ICMP 数据包，可获得第二个网关地址，依次递增 TTL 便获取了沿途所有网关地址。&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -353,194 +485,211 @@
 &lt;p&gt;需要注意的是，并不是所有网关都会如实返回 ICMP 超时报文。出于安全性考虑，大多数防火墙以及启用了防火墙功能的路由器缺省配置为不返回各种 ICMP 报文，其余路由器或交换机也可被管理员主动修改配置变为不返回 ICMP 报文。因此 Traceroute 程序不一定能拿全所有的沿途网关地址。所以，当某个 TTL 值的数据包得不到响应时，并不能停止这一追踪过程，程序仍然会把 TTL 递增而发出下一个数据包。一直达到默认或用参数指定的追踪限制（maximum_hops）才结束追踪。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;这里要说明一下，加入我们去 traceroute 最常用的 baidu.com，就会看到这个现象，traceroute 命令的结果中包含 &lt;code&gt;* * *&lt;/code&gt; ，我也没有找到一个较为明确的解释，猜测这个节点禁止了 ping 或其他配置，无法返回 ICMP 超时报文，导致 traceroute 无法正常解析。&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;master&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✗&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;traceroute&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  baidu.com&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -m&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 20&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;traceroute&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; baidu.com&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (220.181.57.216), 20 hops max, 60 byte packets&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  gateway&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (192.168.8.1)  18.535 ms  18.456 ms  29.185 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  10.1.1.1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (10.1.1.1)  6.599 ms  6.533 ms  6.378 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 3&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  106.38.14.1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (106.38.14.1)  28.707 ms  28.606 ms  28.514 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 4&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  5.0.142.219.broad.bj.bj.dynamic.163data.com.cn&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (219.142.0.5)  28.384 ms  28.305 ms  28.205 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 5&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 6&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  36.110.244.46&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (36.110.244.46)  37.131 ms  31.660 ms  31.489 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 7&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 8&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  220.181.17.94&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (220.181.17.94)  10.700 ms 220.181.17.146 (&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;220.181.17.146&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)  10.511 ms 220.181.17.150 (&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;220.181.17.150&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)  10.336 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 9&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;10&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;11&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;12&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;13&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;14&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;15&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;16&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;17&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;18&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;19&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;20&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; *&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;blockquote&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;master ✗ $ traceroute baidu.com -m 20
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;traceroute to baidu.com (220.181.57.216), 20 hops max, 60 byte packets
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 1 gateway (192.168.8.1) 18.535 ms 18.456 ms 29.185 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 2 10.1.1.1 (10.1.1.1) 6.599 ms 6.533 ms 6.378 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 3 106.38.14.1 (106.38.14.1) 28.707 ms 28.606 ms 28.514 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 4 5.0.142.219.broad.bj.bj.dynamic.163data.com.cn (219.142.0.5) 28.384 ms 28.305 ms 28.205 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 5 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 6 36.110.244.46 (36.110.244.46) 37.131 ms 31.660 ms 31.489 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 7 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 8 220.181.17.94 (220.181.17.94) 10.700 ms 220.181.17.146 (220.181.17.146) 10.511 ms 220.181.17.150 (220.181.17.150) 10.336 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 9 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;10 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;11 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;12 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;13 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;14 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;15 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;16 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;17 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;18 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;19 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;20 * * *
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;blockquote&gt;
 &lt;p&gt;依据上述原理，利用了 UDP 数据包的 Traceroute 程序在数据包到达真正的目的主机时，就可能因为该主机没有提供 UDP 服务而简单将数据包抛弃，并不返回任何信息。为了解决这个问题，Traceroute 故意使用了一个大于 30000 的端口号，因 UDP 协议规定端口号必须小于 30000 ，所以目标主机收到数据包后唯一能做的事就是返回一个“端口不可达”的 ICMP 报文，于是主叫方就将端口不可达报文当作跟踪结束的标志。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h2 id=&quot;简易实现&quot;&gt;简易实现&lt;/h2&gt;
-&lt;p&gt;源地址： &lt;a href=&quot;https://github.com/dnaeon/pytraceroute&quot;&gt;https://github.com/dnaeon/pytraceroute&lt;/a&gt;
+&lt;h2 id="简易实现"&gt;
+简易实现
+&lt;a class="heading-link" href="#%e7%ae%80%e6%98%93%e5%ae%9e%e7%8e%b0"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;源地址： &lt;a href="https://github.com/dnaeon/pytraceroute" class="external-link" target="_blank" rel="noopener"&gt;https://github.com/dnaeon/pytraceroute&lt;/a&gt;
 对整个实现中最重要的部分做下注释：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# Copyright (c) 2015 Marin Atanasov Nikolov &amp;#x3C;dnaeon@gmail.com&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# All rights reserved.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# Redistribution and use in source and binary forms, with or without&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# modification, are permitted provided that the following conditions&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# are met:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 1. Redistributions of source code must retain the above copyright&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#    notice, this list of conditions and the following disclaimer&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#    in this position and unchanged.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 2. Redistributions in binary form must reproduce the above copyright&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#    notice, this list of conditions and the following disclaimer in the&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#    documentation and/or other materials provided with the distribution.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS&apos;&apos; AND ANY EXPRESS OR&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;Core module&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; random&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; struct&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; time&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;__all__&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Tracer&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;class&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; Tracer&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;object&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    def&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; __init__&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(self, dst, hops&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;30&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Initializes a new tracer object&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Args:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;            dst  (str): Destination host to probe&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;            hops (int): Max number of hops to probe&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.dst &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; dst &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 目标地址：域名或 IPv4 地址&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.hops &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; hops &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.ttl &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;        # Pick up a random port in the range 33434-33534&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;        # 对应上述解释，随机选择一个 &gt; 30000 的端口用于连接&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.port &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; random.choice(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;range&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;33434&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;33535&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;))&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; run&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(self):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Run the tracer&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Raises:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;            IOError&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            dst_ip &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.gethostbyname(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.dst) &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 解析域名&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        except&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.error &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;as&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; e:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            raise&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; IOError&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Unable to resolve &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.dst, e)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        text &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;traceroute to &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; (&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;), &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; hops max&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.format(&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.dst,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            dst_ip,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.hops&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        )&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        print&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(text)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        while&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; True&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            startTimer &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; time.time()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            receiver &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.create_receiver() &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 创建接收 socket 实例&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            sender &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.create_sender() &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 创建发送 socket 实例&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            sender.sendto(&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;b&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, (&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.dst, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.port)) &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 向目标地址指定端口发送报文&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            addr &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; None&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                data, addr &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; receiver.recvfrom(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1024&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 获取发送 ICMP 超时报文，并解析地址&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                entTimer &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; time.time()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            except&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.error:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                pass&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;                # raise IOError(&apos;Socket error: {}&apos;.format(e))&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            finally&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                receiver.close()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                sender.close()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; addr: &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 如果获取到地址，则打印相应信息及用时&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                timeCost &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; round&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;((entTimer &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; startTimer) &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;*&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1000&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                print&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:&amp;#x3C;4&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;}&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; {}&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; {}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ms&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.format(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.ttl, addr[&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]), timeCost)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; addr[&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;] &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;==&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; dst_ip:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                    break&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            else&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                print&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;:&amp;#x3C;4&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; *&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.format(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.ttl))&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.ttl &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;+=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1&lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt; # 增加 TTL，获取下一跳地址&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            if&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.ttl &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.hops:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;                break&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; create_receiver&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(self):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Creates a receiver socket&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Returns:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;            A socket instance&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Raises:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;            IOError&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.socket(&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;            family&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;AF_INET&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 指定 proto family 为 IPv4&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;            type&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOCK_RAW&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 指定接收 socket 类型为 raw，这里是因为普通的 socket 类型无法处理 ICMP 报文&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;            proto&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;IPPROTO_ICMP&lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt; # 指定 socket 协议为 ICMP 协议，type 与 proto 需要特定的组合，不允许任意配置&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        )&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        timeout &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; struct.pack(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;ll&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;5&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s.setsockopt(socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOL_SOCKET&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SO_RCVTIMEO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, timeout)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;            s.bind((&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.port))&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        except&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.error &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;as&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; e:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;            raise&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; IOError&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Unable to bind receiver socket: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;{}&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.format(e))&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        return&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; s&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; create_sender&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(self):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Creates a sender socket&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        Returns:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;            A socket instance&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        &quot;&quot;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; socket.socket(&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;            family&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;AF_INET&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 指定 proto family 为 IPv4&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;            type&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOCK_DGRAM&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# 指定发送的类型为 UDP，即发送广播消息&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;            proto&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;IPPROTO_UDP&lt;/span&gt;&lt;span style=&quot;color:#6A737D&quot;&gt; # 指定协议为 IP UDP &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        )&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        s.setsockopt(socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;SOL_IP&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, socket.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;IP_TTL&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.ttl)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        return&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; s&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# Copyright (c) 2015 Marin Atanasov Nikolov &amp;lt;dnaeon@gmail.com&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# All rights reserved.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;#&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# Redistribution and use in source and binary forms, with or without&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# modification, are permitted provided that the following conditions&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# are met:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# 1. Redistributions of source code must retain the above copyright&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# notice, this list of conditions and the following disclaimer&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# in this position and unchanged.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# 2. Redistributions in binary form must reproduce the above copyright&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# notice, this list of conditions and the following disclaimer in the&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# documentation and/or other materials provided with the distribution.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;#&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS&amp;#39;&amp;#39; AND ANY EXPRESS OR&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;Core module
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;socket&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;random&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;struct&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;import&lt;/span&gt; &lt;span style="font-weight:bold"&gt;time&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;__all__ = [&lt;span style="font-style:italic"&gt;&amp;#39;Tracer&amp;#39;&lt;/span&gt;]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;class&lt;/span&gt; &lt;span style="font-weight:bold"&gt;Tracer&lt;/span&gt;(object):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;def&lt;/span&gt; __init__(self, dst, hops=30):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Initializes a new tracer object
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Args:
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; dst (str): Destination host to probe
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; hops (int): Max number of hops to probe
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.dst = dst &lt;span style="font-style:italic"&gt;# 目标地址：域名或 IPv4 地址&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.hops = hops
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.ttl = 1
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;# Pick up a random port in the range 33434-33534&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;# 对应上述解释，随机选择一个 &amp;gt; 30000 的端口用于连接&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.port = random.choice(range(33434, 33535))
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;def&lt;/span&gt; run(self):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Run the tracer
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Raises:
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; IOError
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; dst_ip = socket.gethostbyname(self.dst) &lt;span style="font-style:italic"&gt;# 解析域名&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;except&lt;/span&gt; socket.error &lt;span style="font-weight:bold"&gt;as&lt;/span&gt; e:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;raise&lt;/span&gt; &lt;span style="font-weight:bold"&gt;IOError&lt;/span&gt;(&lt;span style="font-style:italic"&gt;&amp;#39;Unable to resolve &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt;: &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;, self.dst, e)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; text = &lt;span style="font-style:italic"&gt;&amp;#39;traceroute to &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt; (&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt;), &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt; hops max&amp;#39;&lt;/span&gt;.format(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.dst,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; dst_ip,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.hops
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; print(text)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;while&lt;/span&gt; &lt;span style="font-weight:bold"&gt;True&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; startTimer = time.time()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; receiver = self.create_receiver() &lt;span style="font-style:italic"&gt;# 创建接收 socket 实例&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sender = self.create_sender() &lt;span style="font-style:italic"&gt;# 创建发送 socket 实例&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sender.sendto(&lt;span style="font-style:italic"&gt;b&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&amp;#39;&lt;/span&gt;, (self.dst, self.port)) &lt;span style="font-style:italic"&gt;# 向目标地址指定端口发送报文&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; addr = &lt;span style="font-weight:bold"&gt;None&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; data, addr = receiver.recvfrom(1024) &lt;span style="font-style:italic"&gt;# 获取发送 ICMP 超时报文，并解析地址&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; entTimer = time.time()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;except&lt;/span&gt; socket.error:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;pass&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;# raise IOError(&amp;#39;Socket error: {}&amp;#39;.format(e))&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;finally&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; receiver.close()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sender.close()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; addr: &lt;span style="font-style:italic"&gt;# 如果获取到地址，则打印相应信息及用时&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; timeCost = round((entTimer - startTimer) * 1000, 2)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; print(&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{:&amp;lt;4}&lt;/span&gt;&lt;span style="font-style:italic"&gt; &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt; &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt; ms&amp;#39;&lt;/span&gt;.format(self.ttl, addr[0]), timeCost)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; addr[0] == dst_ip:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;break&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;else&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; print(&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{:&amp;lt;4}&lt;/span&gt;&lt;span style="font-style:italic"&gt; *&amp;#39;&lt;/span&gt;.format(self.ttl))
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.ttl += 1 &lt;span style="font-style:italic"&gt;# 增加 TTL，获取下一跳地址&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; self.ttl &amp;gt; self.hops:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;break&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;def&lt;/span&gt; create_receiver(self):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Creates a receiver socket
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Returns:
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; A socket instance
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Raises:
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; IOError
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s = socket.socket(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; family=socket.AF_INET, &lt;span style="font-style:italic"&gt;# 指定 proto family 为 IPv4&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; type=socket.SOCK_RAW, &lt;span style="font-style:italic"&gt;# 指定接收 socket 类型为 raw，这里是因为普通的 socket 类型无法处理 ICMP 报文&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; proto=socket.IPPROTO_ICMP &lt;span style="font-style:italic"&gt;# 指定 socket 协议为 ICMP 协议，type 与 proto 需要特定的组合，不允许任意配置&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; timeout = struct.pack(&lt;span style="font-style:italic"&gt;&amp;#34;ll&amp;#34;&lt;/span&gt;, 5, 0)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, timeout)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;try&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.bind((&lt;span style="font-style:italic"&gt;&amp;#39;&amp;#39;&lt;/span&gt;, self.port))
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;except&lt;/span&gt; socket.error &lt;span style="font-weight:bold"&gt;as&lt;/span&gt; e:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;raise&lt;/span&gt; &lt;span style="font-weight:bold"&gt;IOError&lt;/span&gt;(&lt;span style="font-style:italic"&gt;&amp;#39;Unable to bind receiver socket: &lt;/span&gt;&lt;span style="font-weight:bold;font-style:italic"&gt;{}&lt;/span&gt;&lt;span style="font-style:italic"&gt;&amp;#39;&lt;/span&gt;.format(e))
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;return&lt;/span&gt; s
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;def&lt;/span&gt; create_sender(self):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Creates a sender socket
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; Returns:
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; A socket instance
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt; &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s = socket.socket(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; family=socket.AF_INET, &lt;span style="font-style:italic"&gt;# 指定 proto family 为 IPv4&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; type=socket.SOCK_DGRAM, &lt;span style="font-style:italic"&gt;# 指定发送的类型为 UDP，即发送广播消息&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; proto=socket.IPPROTO_UDP &lt;span style="font-style:italic"&gt;# 指定协议为 IP UDP &lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; s.setsockopt(socket.SOL_IP, socket.IP_TTL, self.ttl)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;return&lt;/span&gt; s
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;了解了实现原理之后，希望之后排查网络问题应该也会得心应手一些吧。
 也希望自己能更多的关注于 Why，而不是 How。&lt;/p&gt;
-&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
+&lt;h2 id="参考链接"&gt;
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&quot;http://dnaeon.github.io/traceroute-in-python/&quot;&gt;http://dnaeon.github.io/traceroute-in-python/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/&quot;&gt;https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required&quot;&gt;https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://blog.csdn.net/newnewman80/article/details/8000404&quot;&gt;https://blog.csdn.net/newnewman80/article/details/8000404&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;http://www.zmonster.me/notes/tcp-ip-socket-in-c.html&quot;&gt;http://www.zmonster.me/notes/tcp-ip-socket-in-c.html&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf&quot;&gt;http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content:encoded><category>Linux</category><category>Network</category></item></channel></rss>
+&lt;li&gt;&lt;a href="http://dnaeon.github.io/traceroute-in-python/" class="external-link" target="_blank" rel="noopener"&gt;http://dnaeon.github.io/traceroute-in-python/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/" class="external-link" target="_blank" rel="noopener"&gt;https://www.nljb.net/default/SOCK_STREAM%E4%B8%8ESOCK_DGRAM%E7%9A%84%E5%8C%BA%E5%88%AB/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required" class="external-link" target="_blank" rel="noopener"&gt;https://stackoverflow.com/questions/1955198/when-is-ipproto-udp-required&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://blog.csdn.net/newnewman80/article/details/8000404" class="external-link" target="_blank" rel="noopener"&gt;https://blog.csdn.net/newnewman80/article/details/8000404&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.zmonster.me/notes/tcp-ip-socket-in-c.html" class="external-link" target="_blank" rel="noopener"&gt;http://www.zmonster.me/notes/tcp-ip-socket-in-c.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf" class="external-link" target="_blank" rel="noopener"&gt;http://courses.cs.vt.edu/cs4254/fall04/slides/raw_6.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

@@ -1,4 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: Container - My Blog</title><description>标签 &quot;Container&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>使用 init 进程运行 Container</title><link>https://zdyxry.github.io/2022/03/05/%E4%BD%BF%E7%94%A8-init-%E8%BF%9B%E7%A8%8B%E8%BF%90%E8%A1%8C-Container/</link><guid isPermaLink="true">https://zdyxry.github.io/2022/03/05/%E4%BD%BF%E7%94%A8-init-%E8%BF%9B%E7%A8%8B%E8%BF%90%E8%A1%8C-Container/</guid><pubDate>Sat, 05 Mar 2022 07:10:39 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Container on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Container/</link><description>Recent content in Container on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sat, 05 Mar 2022 15:10:39 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Container/atom.xml" rel="self" type="application/rss+xml"/><item><title>使用 init 进程运行 Container</title><link>https://zdyxry.github.io/2022/03/05/%E4%BD%BF%E7%94%A8-init-%E8%BF%9B%E7%A8%8B%E8%BF%90%E8%A1%8C-Container/</link><pubDate>Sat, 05 Mar 2022 15:10:39 +0000</pubDate><guid>https://zdyxry.github.io/2022/03/05/%E4%BD%BF%E7%94%A8-init-%E8%BF%9B%E7%A8%8B%E8%BF%90%E8%A1%8C-Container/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;关注过 Bare Metal 相关项目的同学应该都了解过系统的启动流程、如何快速的置备一台物理服务器等之类的实现方式，通常都需要运行一个 LiveOS 来实现某些动作。
 在 Tinkerbell 项目中，使用 Linuxkit 来作为 LiveOS，Plunder 项目中使用 BOOTy 来作为 LiveOS。前几天 @thebsdbox 将 BOOTy 中的一部分抽离了出来，作为 ginit 展示主要的实现方式，可以更好的让我们理解安装环节中的具体细节。 今天来看一下这个项目。&lt;/p&gt;
 &lt;p&gt;如果安装一个 CentOS，那么通常是会通过 kernel + initramfs.img 启动，initramfs.img 中会包含 systemd 、anaconda、dracut 等一些列组件，然后通过 systemd 指定不同的 Target 所属/依赖/顺序来完成最终 Anaconda 调用。Anaconda 通过解析 &lt;code&gt;/proc/cmdline&lt;/code&gt; 中的 KickStart 参数来决定自己的安装方式。&lt;/p&gt;
@@ -9,299 +15,371 @@
 &lt;li&gt;通过 QEMU 使用 RAW image 和 Linux Kernel 来运行一个虚拟机&lt;/li&gt;
 &lt;li&gt;ginit 自动运行 Container 中 entrypoint 指令&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&quot;流程演示&quot;&gt;流程演示&lt;/h2&gt;
-&lt;h3 id=&quot;通过-container-image-制作一个-raw-image&quot;&gt;通过 Container image 制作一个 RAW image&lt;/h3&gt;
+&lt;h2 id="流程演示"&gt;
+流程演示
+&lt;a class="heading-link" href="#%e6%b5%81%e7%a8%8b%e6%bc%94%e7%a4%ba"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;h3 id="通过-container-image-制作一个-raw-image"&gt;
+通过 Container image 制作一个 RAW image
+&lt;a class="heading-link" href="#%e9%80%9a%e8%bf%87-container-image-%e5%88%b6%e4%bd%9c%e4%b8%80%e4%b8%aa-raw-image"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;RAW image 中最终不会包含 Kernel 部分，以 Nginx Container 为例。提取 nginx:latest image 中的 &lt;code&gt;Entrypoint&lt;/code&gt; ，通过 &lt;code&gt;dd&lt;/code&gt; 置备一个 RAW image，并格式化为 ext4 ，raw image 作为 loop 设备挂载到本地，通过 &lt;code&gt;docker export&lt;/code&gt; 将 Nginx Image 拷贝到挂载点下，卸载挂载点，最终 RAW image 包含了 Nginx Container 的所有内容。这里的 RAW image 因为不包含 kernel，所以无法直接启动，只是作为后续动作的依赖。&lt;/p&gt;
 &lt;p&gt;Nginx Container 默认的 &lt;code&gt;Entrypoint&lt;/code&gt; 是 &lt;code&gt;docker-entrypoint.sh&lt;/code&gt; ，通过这个脚本来做一些参数检查动作。&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;#!/bin/bash&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;echo &quot;Lets build you a disk image!&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;docker pull $1&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ENTRYPOINT=$(docker inspect -f &apos;{{.Config.Entrypoint}}&apos; $1 | sed &apos;s/[][]//g&apos;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;echo &quot;Creating a 200MB Disk&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;dd if=/dev/zero of=disk.img bs=1024k count=200&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;mkfs.ext4 -F disk.img&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;mkdir -p /tmp/disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;mount -t ext4 -o loop disk.img /tmp/disk/&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;echo &quot;Converting $1 to disk image&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;docker create --name exporter $1 null&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;docker export exporter | tar xv -C /tmp/disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;docker rm exporter&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;umount /tmp/disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;echo The command $ENTRYPOINT will start this container&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&quot;使用-ginit-制作-initramfsimg&quot;&gt;使用 ginit 制作 initramfs.img&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style=""&gt;#!/bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo &lt;span style="font-style:italic"&gt;&amp;#34;Lets build you a disk image!&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;docker pull $1
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ENTRYPOINT=&lt;span style="font-weight:bold"&gt;$(&lt;/span&gt;docker inspect -f &lt;span style="font-style:italic"&gt;&amp;#39;{{.Config.Entrypoint}}&amp;#39;&lt;/span&gt; $1 | sed &lt;span style="font-style:italic"&gt;&amp;#39;s/[][]//g&amp;#39;&lt;/span&gt;&lt;span style="font-weight:bold"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo &lt;span style="font-style:italic"&gt;&amp;#34;Creating a 200MB Disk&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;dd &lt;span style="font-weight:bold"&gt;if&lt;/span&gt;=/dev/zero of=disk.img bs=1024k count=200
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;mkfs.ext4 -F disk.img
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;mkdir -p /tmp/disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;mount -t ext4 -o loop disk.img /tmp/disk/
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo &lt;span style="font-style:italic"&gt;&amp;#34;Converting &lt;/span&gt;$1&lt;span style="font-style:italic"&gt; to disk image&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;docker create --name exporter $1 null
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;docker export exporter | tar xv -C /tmp/disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;docker rm exporter
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;umount /tmp/disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo The command $ENTRYPOINT will start this container
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="使用-ginit-制作-initramfsimg"&gt;
+使用 ginit 制作 initramfs.img
+&lt;a class="heading-link" href="#%e4%bd%bf%e7%94%a8-ginit-%e5%88%b6%e4%bd%9c-initramfsimg"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;静态编译 ginit；下载并编译 busybox ，将 ginit 编译结果 init 放置到 &lt;code&gt;/&lt;/code&gt; 路径下，通过 cpio 将 busybox 归档，使用 gzip 进行压缩。所有流程完成后，将最终得到的 initramfs.cpio.gz 拷贝到项目路径下。 initramfs 最终包含的是 busybox + ginit 。&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# syntax=docker/dockerfile:experimental&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# Build ginit as an init&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;FROM golang:1.17-alpine as dev&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN apk add --no-cache git ca-certificates gcc linux-headers musl-dev&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;COPY . /go/src/github.com/thebsdbox/ginit/&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;WORKDIR /go/src/github.com/thebsdbox/ginit&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ENV GO111MODULE=on&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN --mount=type=cache,sharing=locked,id=gomod,target=/go/pkg/mod/cache \&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    --mount=type=cache,sharing=locked,id=goroot,target=/root/.cache/go-build \&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    CGO_ENABLED=1 GOOS=linux go build -a -ldflags &quot;-linkmode external -extldflags &apos;-static&apos; -s -w&quot; -o init&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# Build Busybox&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;FROM gcc:10.1.0 as Busybox&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN apt-get update; apt-get install -y cpio&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN curl -O https://busybox.net/downloads/busybox-1.31.1.tar.bz2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN tar -xf busybox*bz2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;WORKDIR busybox-1.31.1&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN make defconfig; make LDFLAGS=-static CONFIG_PREFIX=./initramfs install&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;WORKDIR initramfs &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;COPY --from=dev /go/src/github.com/thebsdbox/ginit/init .&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# Package initramfs&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN find . -print0 | cpio --null -ov --format=newc &gt; ../initramfs.cpio &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN gzip ../initramfs.cpio&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;RUN mv ../initramfs.cpio.gz /&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;FROM scratch&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;COPY --from=Busybox /initramfs.cpio.gz .&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&quot;通过-qemu-运行-container-中的-entrypoint-指令&quot;&gt;通过 QEMU 运行 Container 中的 EntryPoint 指令&lt;/h3&gt;
-&lt;p&gt;到目前状态，我们得到了 initramfs.img ，得到了 raw image，但是还缺少 Linux Kernel 。可以直接从 Ubuntu 提供的 &lt;a href=&quot;http://archive.ubuntu.com/ubuntu/dists/focal-updates/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/&quot;&gt;netboot&lt;/a&gt; 下载 &lt;code&gt;boot executable bzImage&lt;/code&gt; 文件。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# syntax=docker/dockerfile:experimental&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# Build ginit as an init&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;FROM golang:1.17-alpine as dev
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN apk add --no-cache git ca-certificates gcc linux-headers musl-dev
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;COPY . /go/src/github.com/thebsdbox/ginit/
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;WORKDIR /go/src/github.com/thebsdbox/ginit
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ENV GO111MODULE=on
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN --mount=type=cache,sharing=locked,id=gomod,target=/go/pkg/mod/cache \
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; --mount=type=cache,sharing=locked,id=goroot,target=/root/.cache/go-build \
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; CGO_ENABLED=1 GOOS=linux go build -a -ldflags &lt;span style="font-style:italic"&gt;&amp;#34;-linkmode external -extldflags &amp;#39;-static&amp;#39; -s -w&amp;#34;&lt;/span&gt; -o init
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# Build Busybox&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;FROM gcc:10.1.0 as Busybox
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN apt-get update; apt-get install -y cpio
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN curl -O https://busybox.net/downloads/busybox-1.31.1.tar.bz2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN tar -xf busybox*bz2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;WORKDIR busybox-1.31.1
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN make defconfig; make LDFLAGS=-&lt;span style="font-weight:bold"&gt;static&lt;/span&gt; CONFIG_PREFIX=./initramfs install
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;WORKDIR initramfs
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;COPY --from=dev /go/src/github.com/thebsdbox/ginit/init .
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# Package initramfs&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN find . -print0 | cpio --null -ov --format=newc &amp;gt; ../initramfs.cpio
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN gzip ../initramfs.cpio
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;RUN mv ../initramfs.cpio.gz /
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;FROM scratch
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;COPY --from=Busybox /initramfs.cpio.gz .
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="通过-qemu-运行-container-中的-entrypoint-指令"&gt;
+通过 QEMU 运行 Container 中的 EntryPoint 指令
+&lt;a class="heading-link" href="#%e9%80%9a%e8%bf%87-qemu-%e8%bf%90%e8%a1%8c-container-%e4%b8%ad%e7%9a%84-entrypoint-%e6%8c%87%e4%bb%a4"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
+&lt;p&gt;到目前状态，我们得到了 initramfs.img ，得到了 raw image，但是还缺少 Linux Kernel 。可以直接从 Ubuntu 提供的 &lt;a href="http://archive.ubuntu.com/ubuntu/dists/focal-updates/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/" class="external-link" target="_blank" rel="noopener"&gt;netboot&lt;/a&gt; 下载 &lt;code&gt;boot executable bzImage&lt;/code&gt; 文件。&lt;/p&gt;
 &lt;p&gt;现在所有的准备工作都进行完成了，我们可以直接通过 QEMU 来运行虚拟机，其中 Nginx 所需运行环境在 RAW Image 中，ginit 所需运行环境在 initramfs 中。&lt;/p&gt;
 &lt;p&gt;前面有提到，Nginx Container 默认的 &lt;code&gt;Entrypoint&lt;/code&gt; 是 &lt;code&gt;docker-entrypoint.sh&lt;/code&gt;，用来做一些参数包装，所以这里我将参数改为了 &lt;code&gt;/usr/sbin/nginx&lt;/code&gt; ：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;qemu-system-x86_64 -nographic \&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  -kernel ./linux \&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  -append &quot;entrypoint=/usr/sbin/nginx root=/dev/sda console=ttyS0&quot; \&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  -initrd ./initramfs.cpio.gz \&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  -hda ./disk.img \&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  -m 1G&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;虚拟机 console 是 &lt;code&gt;ttyS0&lt;/code&gt; ，通过终端运行可以直接查看启动日志：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;...&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.469920] rtc_cmos 00:00: setting system clock to 2022-03-05T06:36:19 UTC (1646462179)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.525397] ata1.00: ATA-7: QEMU HARDDISK, 2.5+, max UDMA/100&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.525579] ata1.00: 409600 sectors, multi 16: LBA48 &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.532980] ata2.00: ATAPI: QEMU DVD-ROM, 2.5+, max UDMA/100&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.540741] scsi 0:0:0:0: Direct-Access     ATA      QEMU HARDDISK    2.5+ PQ: 0 ANSI: 5&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.545673] sd 0:0:0:0: [sda] 409600 512-byte logical blocks: (210 MB/200 MiB)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.547063] sd 0:0:0:0: [sda] Write Protect is off&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.547515] sd 0:0:0:0: Attached scsi generic sg0 type 0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.548188] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn&apos;t support DPO or FUA&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.550227] scsi 1:0:0:0: CD-ROM            QEMU     QEMU DVD-ROM     2.5+ PQ: 0 ANSI: 5&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.568178] sd 0:0:0:0: [sda] Attached SCSI disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.578345] sr 1:0:0:0: [sr0] scsi3-mmc drive: 4x/4x cd/rw xa/form2 tray&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.578736] cdrom: Uniform CD-ROM driver Revision: 3.20&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.582611] sr 1:0:0:0: Attached scsi generic sg1 type 5&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.595655] Freeing unused decrypted memory: 2040K&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.666044] Freeing unused kernel image memory: 2712K&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.666482] Write protecting the kernel read-only data: 22528k&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.669246] Freeing unused kernel image memory: 2008K&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.670507] Freeing unused kernel image memory: 1192K&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.742691] x86/mm: Checked W+X mappings: passed, no W+X pages found.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    1.743002] Run /init as init process&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [dev] -&gt; [/dev]          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [proc] -&gt; [/proc]        &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [sys] -&gt; [/sys]          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [tmp] -&gt; [/tmp]          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [dev] -&gt; [/dev]                 &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [proc] -&gt; [/proc]               &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [sys] -&gt; [/sys]                 &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [tmp] -&gt; [/tmp]                 &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Starting DHCP client                    &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Starting ginit                          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ERRO[0000] Error finding adapter [Link not found]  &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    2.209227] tsc: Refined TSC clocksource calibration: 2893.182 MHz&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    2.209573] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x29b41aa25d4, max_idle_ns: 440795325238 ns&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    2.209984] clocksource: Switched to clocksource tsc&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Beginning provisioning process          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ERRO[0002] route ip+net: no such network interface &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Folder created [root] -&gt; [/mnt]         &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.902861] random: fast init done&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.912319] EXT4-fs (sda): recovery complete&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.913757] EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.914463] ext4 filesystem being mounted at /mnt supports timestamps until 2038 (0x7fffffff)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Mounted [root] -&gt; [/mnt]                &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Mounted [dev] -&gt; [/mnt/dev]             &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Mounted [proc] -&gt; [/mnt/proc]           &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Starting Shell                          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Waiting for command to finish...        &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/ # &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;其中 &lt;code&gt;[    1.743002] Run /init as init process&lt;/code&gt; 中的 &lt;code&gt;/init&lt;/code&gt; 已经是我们上面编译的 &lt;code&gt;ginit&lt;/code&gt; ，&lt;code&gt;ginit&lt;/code&gt; 运行的日志输出为：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [dev] -&gt; [/dev]          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [proc] -&gt; [/proc]        &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [sys] -&gt; [/sys]          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Folder created [tmp] -&gt; [/tmp]          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [dev] -&gt; [/dev]                 &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [proc] -&gt; [/proc]               &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [sys] -&gt; [/sys]                 &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Mounted [tmp] -&gt; [/tmp]                 &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Starting DHCP client                    &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0000] Starting ginit                          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ERRO[0000] Error finding adapter [Link not found]  &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    2.209227] tsc: Refined TSC clocksource calibration: 2893.182 MHz&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    2.209573] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x29b41aa25d4, max_idle_ns: 440795325238 ns&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    2.209984] clocksource: Switched to clocksource tsc&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Beginning provisioning process          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ERRO[0002] route ip+net: no such network interface &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Folder created [root] -&gt; [/mnt]         &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.902861] random: fast init done&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.912319] EXT4-fs (sda): recovery complete&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.913757] EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[    3.914463] ext4 filesystem being mounted at /mnt supports timestamps until 2038 (0x7fffffff)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Mounted [root] -&gt; [/mnt]                &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Mounted [dev] -&gt; [/mnt/dev]             &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Mounted [proc] -&gt; [/mnt/proc]           &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Starting Shell                          &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;INFO[0002] Waiting for command to finish...        &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;主要做了几件事情：创建必要的路径，创建对应的设备，启动一个 DHCP Client 来获取 IP 地址，挂载 RAW Image 到 /mnt 下，通过 &lt;code&gt;chroot&lt;/code&gt; 运行 &lt;code&gt;entrypoint&lt;/code&gt; 参数中指定的程序，在这里是 &lt;code&gt;/usr/sbin/nginx&lt;/code&gt; ，最终提供一个 Shell 环境给用户。我们可以通过 &lt;code&gt;ps&lt;/code&gt; 命令查看当前所运行的进程：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/ # ps -ef |grep -v &apos;\[&apos;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;PID   USER     TIME  COMMAND&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    1 0         0:01 /init&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  178 0         0:00 nginx: master process /usr/sbin/nginx&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  179 0         0:00 /bin/sh&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  180 101       0:00 nginx: worker process&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  193 0         0:00 ps -ef&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/ # df &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Filesystem           1K-blocks      Used Available Use% Mounted on&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;devtmpfs                497020         4    497016   0% /dev&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;tmpfs                   502392         0    502392   0% /tmp&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/dev/sda                181984    150940     16708  90% /mnt&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;devtmpfs                497020         4    497016   0% /mnt/dev&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/ # ls /mnt/docker-entrypoint.sh &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/mnt/docker-entrypoint.sh&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/ # ls /mnt/usr/sbin/nginx&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/mnt/usr/sbin/nginx&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;/ # ls -hl /init&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;-rwxr-xr-x    1 0        0           3.4M Mar  5 04:20 /init&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;现在我们已经将一个 Container Image 中要运行的指令，通过 Linux kernel 配合 initramfs 来运行了起来，在 Bare Metal 场景下，我们可以将 Nginx 内置到 initramfs 中，将 Nginx 替换为 Docker 或者 Container 然后暴露出去，物理服务器作为 Docker Server，置备服务器作为 Docker Client 连接物理服务器进行指定容器的运行，最终完成物理服务器 OS 的安装，这也是目前 TinkerBell 的实现方式。&lt;/p&gt;
-&lt;h2 id=&quot;ginit-具体实现&quot;&gt;ginit 具体实现&lt;/h2&gt;
-&lt;h3 id=&quot;创建系统设备并挂载&quot;&gt;创建系统设备并挂载&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;qemu-system-x86_64 -nographic \
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; -kernel ./linux \
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; -append &amp;#34;entrypoint=/usr/sbin/nginx root=/dev/sda console=ttyS0&amp;#34; \
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; -initrd ./initramfs.cpio.gz \
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; -hda ./disk.img \
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; -m 1G
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;虚拟机 console 是 &lt;code&gt;ttyS0&lt;/code&gt; ，通过终端运行可以直接查看启动日志：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.469920] rtc_cmos 00:00: setting system clock to 2022-03-05T06:36:19 UTC (1646462179)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.525397] ata1.00: ATA-7: QEMU HARDDISK, 2.5+, max UDMA/100
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.525579] ata1.00: 409600 sectors, multi 16: LBA48
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.532980] ata2.00: ATAPI: QEMU DVD-ROM, 2.5+, max UDMA/100
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.540741] scsi 0:0:0:0: Direct-Access ATA QEMU HARDDISK 2.5+ PQ: 0 ANSI: 5
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.545673] sd 0:0:0:0: [sda] 409600 512-byte logical blocks: (210 MB/200 MiB)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.547063] sd 0:0:0:0: [sda] Write Protect is off
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.547515] sd 0:0:0:0: Attached scsi generic sg0 type 0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.548188] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn&amp;#39;t support DPO or FUA
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.550227] scsi 1:0:0:0: CD-ROM QEMU QEMU DVD-ROM 2.5+ PQ: 0 ANSI: 5
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.568178] sd 0:0:0:0: [sda] Attached SCSI disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.578345] sr 1:0:0:0: [sr0] scsi3-mmc drive: 4x/4x cd/rw xa/form2 tray
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.578736] cdrom: Uniform CD-ROM driver Revision: 3.20
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.582611] sr 1:0:0:0: Attached scsi generic sg1 type 5
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.595655] Freeing unused decrypted memory: 2040K
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.666044] Freeing unused kernel image memory: 2712K
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.666482] Write protecting the kernel read-only data: 22528k
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.669246] Freeing unused kernel image memory: 2008K
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.670507] Freeing unused kernel image memory: 1192K
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.742691] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 1.743002] Run /init as init process
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [dev] -&amp;gt; [/dev]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [proc] -&amp;gt; [/proc]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [sys] -&amp;gt; [/sys]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [tmp] -&amp;gt; [/tmp]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [dev] -&amp;gt; [/dev]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [proc] -&amp;gt; [/proc]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [sys] -&amp;gt; [/sys]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [tmp] -&amp;gt; [/tmp]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Starting DHCP client
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Starting ginit
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ERRO[0000] Error finding adapter [Link not found]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 2.209227] tsc: Refined TSC clocksource calibration: 2893.182 MHz
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 2.209573] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x29b41aa25d4, max_idle_ns: 440795325238 ns
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 2.209984] clocksource: Switched to clocksource tsc
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Beginning provisioning process
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ERRO[0002] route ip+net: no such network interface
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Folder created [root] -&amp;gt; [/mnt]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.902861] random: fast init done
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.912319] EXT4-fs (sda): recovery complete
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.913757] EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.914463] ext4 filesystem being mounted at /mnt supports timestamps until 2038 (0x7fffffff)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Mounted [root] -&amp;gt; [/mnt]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Mounted [dev] -&amp;gt; [/mnt/dev]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Mounted [proc] -&amp;gt; [/mnt/proc]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Starting Shell
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Waiting for command to finish...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/ #
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;其中 &lt;code&gt;[ 1.743002] Run /init as init process&lt;/code&gt; 中的 &lt;code&gt;/init&lt;/code&gt; 已经是我们上面编译的 &lt;code&gt;ginit&lt;/code&gt; ，&lt;code&gt;ginit&lt;/code&gt; 运行的日志输出为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [dev] -&amp;gt; [/dev]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [proc] -&amp;gt; [/proc]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [sys] -&amp;gt; [/sys]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Folder created [tmp] -&amp;gt; [/tmp]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [dev] -&amp;gt; [/dev]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [proc] -&amp;gt; [/proc]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [sys] -&amp;gt; [/sys]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Mounted [tmp] -&amp;gt; [/tmp]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Starting DHCP client
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0000] Starting ginit
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ERRO[0000] Error finding adapter [Link not found]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 2.209227] tsc: Refined TSC clocksource calibration: 2893.182 MHz
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 2.209573] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x29b41aa25d4, max_idle_ns: 440795325238 ns
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 2.209984] clocksource: Switched to clocksource tsc
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Beginning provisioning process
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ERRO[0002] route ip+net: no such network interface
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Folder created [root] -&amp;gt; [/mnt]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.902861] random: fast init done
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.912319] EXT4-fs (sda): recovery complete
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.913757] EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[ 3.914463] ext4 filesystem being mounted at /mnt supports timestamps until 2038 (0x7fffffff)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Mounted [root] -&amp;gt; [/mnt]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Mounted [dev] -&amp;gt; [/mnt/dev]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Mounted [proc] -&amp;gt; [/mnt/proc]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Starting Shell
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;INFO[0002] Waiting for command to finish...
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;主要做了几件事情：创建必要的路径，创建对应的设备，启动一个 DHCP Client 来获取 IP 地址，挂载 RAW Image 到 /mnt 下，通过 &lt;code&gt;chroot&lt;/code&gt; 运行 &lt;code&gt;entrypoint&lt;/code&gt; 参数中指定的程序，在这里是 &lt;code&gt;/usr/sbin/nginx&lt;/code&gt; ，最终提供一个 Shell 环境给用户。我们可以通过 &lt;code&gt;ps&lt;/code&gt; 命令查看当前所运行的进程：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/ # ps -ef |grep -v &amp;#39;\[&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PID USER TIME COMMAND
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 1 0 0:01 /init
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 178 0 0:00 nginx: master process /usr/sbin/nginx
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 179 0 0:00 /bin/sh
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 180 101 0:00 nginx: worker process
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 193 0 0:00 ps -ef
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/ # df
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Filesystem 1K-blocks Used Available Use% Mounted on
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;devtmpfs 497020 4 497016 0% /dev
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;tmpfs 502392 0 502392 0% /tmp
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/dev/sda 181984 150940 16708 90% /mnt
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;devtmpfs 497020 4 497016 0% /mnt/dev
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/ # ls /mnt/docker-entrypoint.sh
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/mnt/docker-entrypoint.sh
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/ # ls /mnt/usr/sbin/nginx
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/mnt/usr/sbin/nginx
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;/ # ls -hl /init
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;-rwxr-xr-x 1 0 0 3.4M Mar 5 04:20 /init
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;现在我们已经将一个 Container Image 中要运行的指令，通过 Linux kernel 配合 initramfs 来运行了起来，在 Bare Metal 场景下，我们可以将 Nginx 内置到 initramfs 中，将 Nginx 替换为 Docker 或者 Container 然后暴露出去，物理服务器作为 Docker Server，置备服务器作为 Docker Client 连接物理服务器进行指定容器的运行，最终完成物理服务器 OS 的安装，这也是目前 TinkerBell 的实现方式。&lt;/p&gt;
+&lt;h2 id="ginit-具体实现"&gt;
+ginit 具体实现
+&lt;a class="heading-link" href="#ginit-%e5%85%b7%e4%bd%93%e5%ae%9e%e7%8e%b0"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;h3 id="创建系统设备并挂载"&gt;
+创建系统设备并挂载
+&lt;a class="heading-link" href="#%e5%88%9b%e5%bb%ba%e7%b3%bb%e7%bb%9f%e8%ae%be%e5%a4%87%e5%b9%b6%e6%8c%82%e8%bd%bd"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;在 &lt;code&gt;DefaultMounts&lt;/code&gt; 和 &lt;code&gt;DefaultDevices&lt;/code&gt; 中定义了一些必须的设备如 &lt;code&gt;/dev/null&lt;/code&gt;, &lt;code&gt;/dev/random&lt;/code&gt;, &lt;code&gt;/dev/urandom&lt;/code&gt; ，和挂载点，如 &lt;code&gt;/dev&lt;/code&gt;,&lt;code&gt;/proc&lt;/code&gt;, &lt;code&gt;/tmp&lt;/code&gt;, &lt;code&gt;/sys&lt;/code&gt; 。&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;urandom := Device{&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		CreateDevice: false,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Name:  &quot;urandom&quot;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Path:  &quot;/dev/urandom&quot;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Mode:  syscall.S_IFCHR,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Major: 1,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Minor: 9,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;dev := Mount{&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		CreateMount: false,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		EnableMount: false,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Name:        &quot;dev&quot;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Source:      &quot;devtmpfs&quot;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Path:        &quot;/dev&quot;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		FSType:      &quot;devtmpfs&quot;,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Flags:       syscall.MS_MGC_VAL,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		Mode:        0777,&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	m.Mount = append(m.Mount, dev)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	//cmd.Execute()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	m := realm.DefaultMounts()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	d := realm.DefaultDevices()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	dev := m.GetMount(&quot;dev&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	dev.CreateMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	dev.EnableMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	proc := m.GetMount(&quot;proc&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	proc.CreateMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	proc.EnableMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	tmp := m.GetMount(&quot;tmp&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	tmp.CreateMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	tmp.EnableMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	sys := m.GetMount(&quot;sys&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	sys.CreateMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	sys.EnableMount = true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	// Create all folders&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	m.CreateFolder()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	// Ensure that /dev is mounted (first)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	m.MountNamed(&quot;dev&quot;, true)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	// Create all devices&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	d.CreateDevice()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	// Mount any additional mounts&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	m.MountAll()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;在基本环境准备完成后，启动 DHCP Client，获取 IP 地址：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;log.Println(&quot;Starting DHCP client&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	go realm.DHCPClient()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	// HERE IS WHERE THE MAIN CODE GOES&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	log.Infoln(&quot;Starting ginit&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	time.Sleep(time.Second * 2)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	log.Infoln(&quot;Beginning provisioning process&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	mac, err := realm.GetMAC()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	if err != nil {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		log.Errorln(err)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		//realm.Shell()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	fmt.Print(mac)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;现在系统环境准备好了，网络也准备好了，那么可以运行具体的指令了，获取指令的方式是通过解析 &lt;code&gt;/proc/cmdline&lt;/code&gt; ，&lt;code&gt;/proc/cmdline&lt;/code&gt; 是通过我们在创建 VM 的时候通过 &lt;code&gt;--append&lt;/code&gt; 传递的：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;urandom := Device{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; CreateDevice: false,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Name: &amp;#34;urandom&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Path: &amp;#34;/dev/urandom&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Mode: syscall.S_IFCHR,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Major: 1,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Minor: 9,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;dev := Mount{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; CreateMount: false,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; EnableMount: false,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Name: &amp;#34;dev&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Source: &amp;#34;devtmpfs&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Path: &amp;#34;/dev&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; FSType: &amp;#34;devtmpfs&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Flags: syscall.MS_MGC_VAL,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Mode: 0777,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; m.Mount = append(m.Mount, dev)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; //cmd.Execute()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; m := realm.DefaultMounts()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; d := realm.DefaultDevices()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; dev := m.GetMount(&amp;#34;dev&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; dev.CreateMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; dev.EnableMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; proc := m.GetMount(&amp;#34;proc&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; proc.CreateMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; proc.EnableMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tmp := m.GetMount(&amp;#34;tmp&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tmp.CreateMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tmp.EnableMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sys := m.GetMount(&amp;#34;sys&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sys.CreateMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sys.EnableMount = true
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; // Create all folders
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; m.CreateFolder()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; // Ensure that /dev is mounted (first)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; m.MountNamed(&amp;#34;dev&amp;#34;, true)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; // Create all devices
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; d.CreateDevice()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; // Mount any additional mounts
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; m.MountAll()
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;在基本环境准备完成后，启动 DHCP Client，获取 IP 地址：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;log.Println(&amp;#34;Starting DHCP client&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; go realm.DHCPClient()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; // HERE IS WHERE THE MAIN CODE GOES
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Infoln(&amp;#34;Starting ginit&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; time.Sleep(time.Second * 2)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Infoln(&amp;#34;Beginning provisioning process&amp;#34;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; mac, err := realm.GetMAC()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if err != nil {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Errorln(err)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; //realm.Shell()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; fmt.Print(mac)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;现在系统环境准备好了，网络也准备好了，那么可以运行具体的指令了，获取指令的方式是通过解析 &lt;code&gt;/proc/cmdline&lt;/code&gt; ，&lt;code&gt;/proc/cmdline&lt;/code&gt; 是通过我们在创建 VM 的时候通过 &lt;code&gt;--append&lt;/code&gt; 传递的：&lt;/p&gt;
 &lt;p&gt;在解析到 &lt;code&gt;root&lt;/code&gt; 和 &lt;code&gt;entrypoint&lt;/code&gt; 参数值后，通过 &lt;code&gt;Mount&lt;/code&gt; 将 &lt;code&gt;root&lt;/code&gt; 挂载到对应的挂载点，通过 &lt;code&gt;chroot&lt;/code&gt; 运行 &lt;code&gt;entrypoint&lt;/code&gt;。&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    stuffs, err := ParseCmdLine(CmdlinePath)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	if err != nil {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		log.Errorln(err)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	_, err = realm.MountRootVolume(stuffs[&quot;root&quot;])&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	if err != nil {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		log.Errorf(&quot;Disk Error: [%v]&quot;, err)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	cmd := exec.Command(&quot;/usr/sbin/chroot&quot;, []string{&quot;/mnt&quot;, stuffs[&quot;entrypoint&quot;]}...)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	err = cmd.Start()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	if err != nil {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		log.Errorf(&quot;command error [%v]&quot;, err)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	err = cmd.Wait()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	if err != nil {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		log.Errorf(&quot;error [%v]&quot;, err)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	realm.Shell()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;所有程序运行完成后，提供一个Shell 环境给用户：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;// Shell will Start a userland shell&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;func Shell() {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	// Shell stuff&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	log.Println(&quot;Starting Shell&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	// TTY hack to support ctrl+c&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	cmd := exec.Command(&quot;/usr/bin/setsid&quot;, &quot;cttyhack&quot;, &quot;/bin/sh&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	err := cmd.Start()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	if err != nil {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		log.Errorf(&quot;Shell error [%v]&quot;, err)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	log.Printf(&quot;Waiting for command to finish...&quot;)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	err = cmd.Wait()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	if err != nil {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;		log.Errorf(&quot;Shell error [%v]&quot;, err)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;ginit 作为一个最小实现方便我们快速了解 init 具体做了什么，将 ginit 替换为 systemd 同理，但是直接看 systemd bootup 容易迷失在成堆的 Target 依赖中。在查找资料的过程中还看到了 &lt;a href=&quot;https://github.com/QuentinPerez/busygox&quot;&gt;https://github.com/QuentinPerez/busygox&lt;/a&gt; 做了类似的事情，可以作为参考。&lt;/p&gt;
-&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; stuffs, err := ParseCmdLine(CmdlinePath)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if err != nil {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Errorln(err)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; _, err = realm.MountRootVolume(stuffs[&amp;#34;root&amp;#34;])
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if err != nil {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Errorf(&amp;#34;Disk Error: [%v]&amp;#34;, err)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cmd := exec.Command(&amp;#34;/usr/sbin/chroot&amp;#34;, []string{&amp;#34;/mnt&amp;#34;, stuffs[&amp;#34;entrypoint&amp;#34;]}...)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; err = cmd.Start()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if err != nil {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Errorf(&amp;#34;command error [%v]&amp;#34;, err)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; err = cmd.Wait()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if err != nil {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Errorf(&amp;#34;error [%v]&amp;#34;, err)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; realm.Shell()
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;所有程序运行完成后，提供一个Shell 环境给用户：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;// Shell will Start a userland shell
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;func&lt;/span&gt; Shell() {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; // Shell stuff
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Println(&lt;span style="font-style:italic"&gt;&amp;#34;Starting Shell&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; // TTY hack to support ctrl+c
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cmd := exec.Command(&lt;span style="font-style:italic"&gt;&amp;#34;/usr/bin/setsid&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;cttyhack&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;/bin/sh&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; err := cmd.Start()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; err != nil {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Errorf(&lt;span style="font-style:italic"&gt;&amp;#34;Shell error [%v]&amp;#34;&lt;/span&gt;, err)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Printf(&lt;span style="font-style:italic"&gt;&amp;#34;Waiting for command to finish...&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; err = cmd.Wait()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; err != nil {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; log.Errorf(&lt;span style="font-style:italic"&gt;&amp;#34;Shell error [%v]&amp;#34;&lt;/span&gt;, err)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;ginit 作为一个最小实现方便我们快速了解 init 具体做了什么，将 ginit 替换为 systemd 同理，但是直接看 systemd bootup 容易迷失在成堆的 Target 依赖中。在查找资料的过程中还看到了 &lt;a href="https://github.com/QuentinPerez/busygox" class="external-link" target="_blank" rel="noopener"&gt;https://github.com/QuentinPerez/busygox&lt;/a&gt; 做了类似的事情，可以作为参考。&lt;/p&gt;
+&lt;h2 id="参考链接"&gt;
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&quot;https://github.com/thebsdbox/ginit&quot;&gt;https://github.com/thebsdbox/ginit&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://unix.stackexchange.com/questions/146284/minimal-linux-with-kernel-and-busybox-etc-inittab-is-ignored-only-init-is-ex/147688#147688&quot;&gt;https://unix.stackexchange.com/questions/146284/minimal-linux-with-kernel-and-busybox-etc-inittab-is-ignored-only-init-is-ex/147688#147688&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://github.com/QuentinPerez/busygox&quot;&gt;https://github.com/QuentinPerez/busygox&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content:encoded><category>Linux</category><category>Container</category></item><item><title>Container Optimized OS(COS) 简单对比</title><link>https://zdyxry.github.io/2021/07/30/Container-Optimized-OSCOS-%E7%AE%80%E5%8D%95%E5%AF%B9%E6%AF%94/</link><guid isPermaLink="true">https://zdyxry.github.io/2021/07/30/Container-Optimized-OSCOS-%E7%AE%80%E5%8D%95%E5%AF%B9%E6%AF%94/</guid><pubDate>Fri, 30 Jul 2021 13:39:04 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;li&gt;&lt;a href="https://github.com/thebsdbox/ginit" class="external-link" target="_blank" rel="noopener"&gt;https://github.com/thebsdbox/ginit&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://unix.stackexchange.com/questions/146284/minimal-linux-with-kernel-and-busybox-etc-inittab-is-ignored-only-init-is-ex/147688#147688" class="external-link" target="_blank" rel="noopener"&gt;https://unix.stackexchange.com/questions/146284/minimal-linux-with-kernel-and-busybox-etc-inittab-is-ignored-only-init-is-ex/147688#147688&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/QuentinPerez/busygox" class="external-link" target="_blank" rel="noopener"&gt;https://github.com/QuentinPerez/busygox&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>Container Optimized OS(COS) 简单对比</title><link>https://zdyxry.github.io/2021/07/30/Container-Optimized-OSCOS-%E7%AE%80%E5%8D%95%E5%AF%B9%E6%AF%94/</link><pubDate>Fri, 30 Jul 2021 21:39:04 +0000</pubDate><guid>https://zdyxry.github.io/2021/07/30/Container-Optimized-OSCOS-%E7%AE%80%E5%8D%95%E5%AF%B9%E6%AF%94/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;之前简单调研过一些 Container Optimized OS，进行了一些简单的对比，最近又被同事问到了，整理一下发出来。&lt;/p&gt;
-&lt;h2 id=&quot;cos&quot;&gt;COS&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;/images/cos-1769851789383.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
-&lt;h2 id=&quot;结论&quot;&gt;结论&lt;/h2&gt;
+&lt;h2 id="cos"&gt;
+COS
+&lt;a class="heading-link" href="#cos"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;&lt;img src="https://zdyxry.github.io/2021/07/30/Container-Optimized-OSCOS-%E7%AE%80%E5%8D%95%E5%AF%B9%E6%AF%94/cos.png" alt=""&gt;&lt;/p&gt;
+&lt;h2 id="结论"&gt;
+结论
+&lt;a class="heading-link" href="#%e7%bb%93%e8%ae%ba"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;如果让我来选择一个 COS 作为 BaseOS 来进行定制，那我会根据以下几个条件来进行选择：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;是否支持 OSTree&lt;/li&gt;
 &lt;li&gt;是否有明星公司做背后支持，如 RedHat、VMware&lt;/li&gt;
 &lt;li&gt;社区活跃度&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;根据以上几个条件，如果是我自己使用的话，我会选择 Fedora CoreOS，或者 VMware Photo（OSTree） 。&lt;/p&gt;</content:encoded><category>Container</category></item><item><title>Podman(Docker) Compose 学习记录</title><link>https://zdyxry.github.io/2021/01/09/PodmanDocker-Compose-%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/</link><guid isPermaLink="true">https://zdyxry.github.io/2021/01/09/PodmanDocker-Compose-%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/</guid><pubDate>Sat, 09 Jan 2021 10:56:30 GMT</pubDate><content:encoded>&lt;h2 id=&quot;compose&quot;&gt;Compose&lt;/h2&gt;
+&lt;p&gt;根据以上几个条件，如果是我自己使用的话，我会选择 Fedora CoreOS，或者 VMware Photo（OSTree） 。&lt;/p&gt;</description></item><item><title>Podman(Docker) Compose 学习记录</title><link>https://zdyxry.github.io/2021/01/09/PodmanDocker-Compose-%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/</link><pubDate>Sat, 09 Jan 2021 18:56:30 +0000</pubDate><guid>https://zdyxry.github.io/2021/01/09/PodmanDocker-Compose-%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/</guid><description>&lt;h2 id="compose"&gt;
+Compose
+&lt;a class="heading-link" href="#compose"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;最近因为一些需求可能需要用到 Compose，看了看 Podman Compose 和 Docker Compose，记录一下。&lt;/p&gt;
 &lt;p&gt;Compose 主要功能：&lt;/p&gt;
 &lt;ul&gt;
@@ -309,135 +387,202 @@
 &lt;li&gt;一组服务的起停控制&lt;/li&gt;
 &lt;li&gt;服务之间的依赖管理&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&quot;podman-compose&quot;&gt;Podman compose&lt;/h2&gt;
-&lt;p&gt;项目地址：&lt;a href=&quot;https://github.com/containers/podman-compose&quot;&gt;https://github.com/containers/podman-compose&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id="podman-compose"&gt;
+Podman compose
+&lt;a class="heading-link" href="#podman-compose"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;项目地址：https://github.com/containers/podman-compose&lt;/p&gt;
 &lt;p&gt;用爱发电的项目，所有的实现都在 &lt;code&gt;podman_compose.py&lt;/code&gt; 中，由于 Podman 没有一个好用的 client ，所以 compose 中所有的 Podman 相关的交互都是通过命令行来完成的，目前处于一个非常早期的状态，最基本的服务依赖都没有实现，不建议使用。&lt;/p&gt;
-&lt;h2 id=&quot;docker-compose&quot;&gt;Docker compose&lt;/h2&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;cli/            # 命令行解析&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;config/         # 配置文件格式、校验方式、辅助函数&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;const.py        # constants&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;container.py    # 使用 docker client 对 container 命令及属性进行封装&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;errors.py       # error code&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;network.py      # 网络相关配置&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;parallel.py     # 并发操作封装&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;progress_stream.py # stream 相关&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;project.py      # project，project 与 service 是一对多的关系&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;service.py      # service，service 与 container 是一对一或一对多的关系&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;timeparse.py    # 时间转换&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;utils.py        # utils function&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;volume.py       # volume 相关封装&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Docker 官方提供，所有的 container 都通过 docker python client 进行。service 之间的依赖管理通过拓扑排序实现：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;def sort_service_dicts(services):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    # Topological sort (Cormen/Tarjan algorithm).&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    unmarked = services[:]&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    temporary_marked = set()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    sorted_services = []&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    def visit(n):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        if n[&apos;name&apos;] in temporary_marked:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            if n[&apos;name&apos;] in get_service_names(n.get(&apos;links&apos;, [])):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;                raise DependencyError(&apos;A service can not link to itself: %s&apos; % n[&apos;name&apos;])&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            if n[&apos;name&apos;] in n.get(&apos;volumes_from&apos;, []):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;                raise DependencyError(&apos;A service can not mount itself as volume: %s&apos; % n[&apos;name&apos;])&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            if n[&apos;name&apos;] in n.get(&apos;depends_on&apos;, []):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;                raise DependencyError(&apos;A service can not depend on itself: %s&apos; % n[&apos;name&apos;])&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            raise DependencyError(&apos;Circular dependency between %s&apos; % &apos; and &apos;.join(temporary_marked))&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        if n in unmarked:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            temporary_marked.add(n[&apos;name&apos;])&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            for m in get_service_dependents(n, services):&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;                visit(m)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            temporary_marked.remove(n[&apos;name&apos;])&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            unmarked.remove(n)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            sorted_services.insert(0, n)&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    while unmarked:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        visit(unmarked[-1])&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    return sorted_services&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;执行 &lt;code&gt;docker-compose up&lt;/code&gt; 流程：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;self.project.up()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    project:initialize()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        self.networks.initialize()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        self.volumes.initialize()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    self.get_services_without_duplicate()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    svc.ensure_image_exists()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    self._get_convergence_plans()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    parallel.parallel_execute()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        service.execute_convergence_plan()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        self._execute_convergence_create()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;            parallel_execute()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;                create_and_start()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;                    service.create_container()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;                    self.start_container()&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;log_printer.run()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;</content:encoded><category>Container</category></item><item><title>runc nsenter 源码阅读</title><link>https://zdyxry.github.io/2020/04/12/runc-nsenter-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</link><guid isPermaLink="true">https://zdyxry.github.io/2020/04/12/runc-nsenter-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</guid><pubDate>Sun, 12 Apr 2020 06:57:29 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;h2 id="docker-compose"&gt;
+Docker compose
+&lt;a class="heading-link" href="#docker-compose"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;cli/ &lt;span style="font-style:italic"&gt;# 命令行解析&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;config/ &lt;span style="font-style:italic"&gt;# 配置文件格式、校验方式、辅助函数&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;const&lt;/span&gt;.py &lt;span style="font-style:italic"&gt;# constants&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;container.py &lt;span style="font-style:italic"&gt;# 使用 docker client 对 container 命令及属性进行封装&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;errors.py &lt;span style="font-style:italic"&gt;# error code&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;network.py &lt;span style="font-style:italic"&gt;# 网络相关配置&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;parallel.py &lt;span style="font-style:italic"&gt;# 并发操作封装&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;progress_stream.py &lt;span style="font-style:italic"&gt;# stream 相关&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;project.py &lt;span style="font-style:italic"&gt;# project，project 与 service 是一对多的关系&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;service.py &lt;span style="font-style:italic"&gt;# service，service 与 container 是一对一或一对多的关系&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;timeparse.py &lt;span style="font-style:italic"&gt;# 时间转换&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;utils.py &lt;span style="font-style:italic"&gt;# utils function&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;volume.py &lt;span style="font-style:italic"&gt;# volume 相关封装&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Docker 官方提供，所有的 container 都通过 docker python client 进行。service 之间的依赖管理通过拓扑排序实现：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;def sort_service_dicts(services):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; # Topological sort (Cormen/Tarjan algorithm).
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; unmarked = services[:]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; temporary_marked = set()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sorted_services = []
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; def visit(n):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if n[&amp;#39;name&amp;#39;] in temporary_marked:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if n[&amp;#39;name&amp;#39;] in get_service_names(n.get(&amp;#39;links&amp;#39;, [])):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raise DependencyError(&amp;#39;A service can not link to itself: %s&amp;#39; % n[&amp;#39;name&amp;#39;])
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if n[&amp;#39;name&amp;#39;] in n.get(&amp;#39;volumes_from&amp;#39;, []):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raise DependencyError(&amp;#39;A service can not mount itself as volume: %s&amp;#39; % n[&amp;#39;name&amp;#39;])
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if n[&amp;#39;name&amp;#39;] in n.get(&amp;#39;depends_on&amp;#39;, []):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raise DependencyError(&amp;#39;A service can not depend on itself: %s&amp;#39; % n[&amp;#39;name&amp;#39;])
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raise DependencyError(&amp;#39;Circular dependency between %s&amp;#39; % &amp;#39; and &amp;#39;.join(temporary_marked))
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; if n in unmarked:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; temporary_marked.add(n[&amp;#39;name&amp;#39;])
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; for m in get_service_dependents(n, services):
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; visit(m)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; temporary_marked.remove(n[&amp;#39;name&amp;#39;])
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; unmarked.remove(n)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sorted_services.insert(0, n)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; while unmarked:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; visit(unmarked[-1])
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; return sorted_services
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;执行 &lt;code&gt;docker-compose up&lt;/code&gt; 流程：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;self.project.up()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; project:initialize()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.networks.initialize()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.volumes.initialize()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.get_services_without_duplicate()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; svc.ensure_image_exists()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self._get_convergence_plans()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; parallel.parallel_execute()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; service.execute_convergence_plan()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self._execute_convergence_create()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; parallel_execute()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; create_and_start()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; service.create_container()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; self.start_container()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;log_printer.run()
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description></item><item><title>runc nsenter 源码阅读</title><link>https://zdyxry.github.io/2020/04/12/runc-nsenter-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</link><pubDate>Sun, 12 Apr 2020 14:57:29 +0000</pubDate><guid>https://zdyxry.github.io/2020/04/12/runc-nsenter-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;最近在阅读 runc 的实现，发现在 runc 中比较重要的一个逻辑是在设置 namespace 过程中的 nsenter 模块，其中逻辑有些绕，也发现了一段很长很有意思的注释，分享一下。&lt;/p&gt;
-&lt;h2 id=&quot;what&quot;&gt;What&lt;/h2&gt;
+&lt;h2 id="what"&gt;
+What
+&lt;a class="heading-link" href="#what"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;什么是 nsenter，nsenter 是 runc 中的一个 package，它包含了一个特殊的构造函数，用来在 Go runtime 启动之前做一些事情，比如 setns()。nsenter 会引入 &lt;code&gt;C&lt;/code&gt; 并使用 cgo 实现相关逻辑。在cgo中，如果在 &lt;code&gt;C&lt;/code&gt; 的 import 后紧跟注释，则在编译程序包的 C 语言实现部分时，该注释将用作 header。因此，每次 import nsenter 时，nsexec()都会调用 C 函数。&lt;/p&gt;
 &lt;p&gt;在 runc 中只有 init.go import 了 nsenter。&lt;/p&gt;
-&lt;h2 id=&quot;why&quot;&gt;Why&lt;/h2&gt;
+&lt;h2 id="why"&gt;
+Why
+&lt;a class="heading-link" href="#why"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;容器技术最关键的就是 namespace 和 cgroup，其中 namespace 是通过 setns() 函数来实现的，但是 setns() 有一个问题： &lt;code&gt;A multithreaded process may not change user namespace with setns().&lt;/code&gt; 。而 go runtime 是多线程的，所以需要在 go runtime 启动前执行 setns() 设置好 namespace，然后再走 go 相关实现流程。&lt;/p&gt;
-&lt;h2 id=&quot;how&quot;&gt;How&lt;/h2&gt;
+&lt;h2 id="how"&gt;
+How
+&lt;a class="heading-link" href="#how"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;在实际的 nsenter 实现中，存在 3 个进程，分别为 parent, child, grandchild。在注释中可以看到 nsenter 实现过程中的考虑：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	/*&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * Okay, so this is quite annoying.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * In order for this unsharing code to be more extensible we need to split&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * up unshare(CLONE_NEWUSER) and clone() in various ways. The ideal case&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * would be if we did clone(CLONE_NEWUSER) and the other namespaces&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * separately, but because of SELinux issues we cannot really do that. But&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * we cannot just dump the namespace flags into clone(...) because several&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * usecases (such as rootless containers) require more granularity around&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * the namespace setup. In addition, some older kernels had issues where&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * CLONE_NEWUSER wasn&apos;t handled before other namespaces (but we cannot&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * handle this while also dealing with SELinux so we choose SELinux support&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * over broken kernel support).&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * However, if we unshare(2) the user namespace *before* we clone(2), then&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * all hell breaks loose.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * The parent no longer has permissions to do many things (unshare(2) drops&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * all capabilities in your old namespace), and the container cannot be set&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * up to have more than one {uid,gid} mapping. This is obviously less than&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * ideal. In order to fix this, we have to first clone(2) and then unshare.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * Unfortunately, it&apos;s not as simple as that. We have to fork to enter the&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * PID namespace (the PID namespace only applies to children). Since we&apos;ll&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * have to double-fork, this clone_parent() call won&apos;t be able to get the&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * PID of the _actual_ init process (without doing more synchronisation than&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * I can deal with at the moment). So we&apos;ll just get the parent to send it&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * for us, the only job of this process is to update&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * /proc/pid/{setgroups,uid_map,gid_map}.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * And as a result of the above, we also need to setns(2) in the first child&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * because if we join a PID namespace in the topmost parent then our child&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * will be in that namespace (and it will not be able to give us a PID value&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * that makes sense without resorting to sending things with cmsg).&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * This also deals with an older issue caused by dumping cloneflags into&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * clone(2): On old kernels, CLONE_PARENT didn&apos;t work with CLONE_NEWPID, so&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * we have to unshare(2) before clone(2) in order to do this. This was fixed&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * in upstream commit 1f7f4dde5c945f41a7abc2285be43d918029ecc5, and was&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * introduced by 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e. As far as we&apos;re&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * aware, the last mainline kernel which had this bug was Linux 3.12.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * However, we cannot comment on which kernels the broken patch was&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * backported to.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 *&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 * -- Aleksa &quot;what has my life come to?&quot; Sarai&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;	 */&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;来看下 parent，child，grandchild 分别做了哪些事情：&lt;/p&gt;
-&lt;h3 id=&quot;parent&quot;&gt;parent&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; /*
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * Okay, so this is quite annoying.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * In order &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; this unsharing code to be more extensible we need to split
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * up unshare(CLONE_NEWUSER) &lt;span style="font-weight:bold"&gt;and&lt;/span&gt; clone() &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; various ways. The ideal &lt;span style="font-weight:bold"&gt;case&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * would be &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; we did clone(CLONE_NEWUSER) &lt;span style="font-weight:bold"&gt;and&lt;/span&gt; the other namespaces
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * separately, but because of SELinux issues we cannot really &lt;span style="font-weight:bold"&gt;do&lt;/span&gt; that. But
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * we cannot just dump the namespace flags into clone(...) because several
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * usecases (such as rootless containers) require more granularity around
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * the namespace setup. In addition, some older kernels had issues where
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * CLONE_NEWUSER wasn&lt;span style="font-style:italic"&gt;&amp;#39;t handled before other namespaces (but we cannot&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * handle this &lt;span style="font-weight:bold"&gt;while&lt;/span&gt; also dealing with SELinux so we choose SELinux support
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * over broken kernel support).
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * However, &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; we unshare(2) the user namespace *before* we clone(2), then
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * all hell breaks loose.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * The parent no longer has permissions to &lt;span style="font-weight:bold"&gt;do&lt;/span&gt; many things (unshare(2) drops
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * all capabilities &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; your old namespace), &lt;span style="font-weight:bold"&gt;and&lt;/span&gt; the container cannot be set
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * up to have more than one {uid,gid} mapping. This is obviously less than
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * ideal. In order to fix this, we have to first clone(2) &lt;span style="font-weight:bold"&gt;and&lt;/span&gt; then unshare.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * Unfortunately, it&lt;span style="font-style:italic"&gt;&amp;#39;s not as simple as that. We have to fork to enter the&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * PID namespace (the PID namespace only applies to children). Since we&lt;span style="font-style:italic"&gt;&amp;#39;ll&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * have to double-fork, this clone_parent() call won&lt;span style="font-style:italic"&gt;&amp;#39;t be able to get the&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * PID of the _actual_ init process (without doing more synchronisation than
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * I can deal with at the moment). So we&lt;span style="font-style:italic"&gt;&amp;#39;ll just get the parent to send it&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * &lt;span style="font-weight:bold"&gt;for&lt;/span&gt; us, the only job of this process is to update
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * /proc/pid/{setgroups,uid_map,gid_map}.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * And as a result of the above, we also need to setns(2) &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; the first child
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * because &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; we join a PID namespace &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; the topmost parent then our child
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * will be &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; that namespace (&lt;span style="font-weight:bold"&gt;and&lt;/span&gt; it will &lt;span style="font-weight:bold"&gt;not&lt;/span&gt; be able to give us a PID value
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * that makes sense without resorting to sending things with cmsg).
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * This also deals with an older issue caused by dumping cloneflags into
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * clone(2): On old kernels, CLONE_PARENT didn&lt;span style="font-style:italic"&gt;&amp;#39;t work with CLONE_NEWPID, so&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * we have to unshare(2) before clone(2) &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; order to &lt;span style="font-weight:bold"&gt;do&lt;/span&gt; this. This was fixed
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * &lt;span style="font-weight:bold"&gt;in&lt;/span&gt; upstream commit 1f7f4dde5c945f41a7abc2285be43d918029ecc5, &lt;span style="font-weight:bold"&gt;and&lt;/span&gt; was
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * introduced by 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e. As far as we&lt;span style="font-style:italic"&gt;&amp;#39;re&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * aware, the last mainline kernel which had this bug was Linux 3.12.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * However, we cannot comment on which kernels the broken patch was
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * backported to.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; *
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; * -- Aleksa &lt;span style="font-style:italic"&gt;&amp;#34;what has my life come to?&amp;#34;&lt;/span&gt; Sarai
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; */
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;来看下 parent，child，grandchild 分别做了哪些事情：&lt;/p&gt;
+&lt;h3 id="parent"&gt;
+parent
+&lt;a class="heading-link" href="#parent"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;parent 进程通过环境变量 &lt;code&gt;_LIBCONTAINER_INITPIPE&lt;/code&gt; 获取相关配置信息，然后 clone 出 child 进程，当 child 进程 ready 之后设置 user map，从 child 进程中接受 grandchild 进程 pid，然后通过管道传递给外层的 runc 进程。parent 进程退出条件为 child 进程和 grandchild 都处于 ready 状态后，parent 进程退出。&lt;/p&gt;
 &lt;p&gt;之所以要 clone child 进程，是因为如果创建了 user namespace，那么 user map 只能由原有的 user namespace 设置，所以需要 clone child 进程，然后在 parent 进程中设置 user map。&lt;/p&gt;
-&lt;h3 id=&quot;child&quot;&gt;child&lt;/h3&gt;
+&lt;h3 id="child"&gt;
+child
+&lt;a class="heading-link" href="#child"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;child 进程先执行 setns()，在一些老版本的kernel 中，&lt;code&gt;CLONE_PARENT&lt;/code&gt; flag 与 &lt;code&gt;CLONE_NEWPID&lt;/code&gt; 有冲突，所以使用 unshare 创建 user namespace， user namespace 需要先于其他 namespace 创建，创建 user namespace 并设置 user map，才有能力创建其他的 namespace。等待 parent 进程设置 user map 后，设置 child 当前进程的 uid 为 root(0) ，使用 unshare 创建其他 namespace，然后 clone grandchild 进程，并将 grandchild 进程 pid 传递给 parent，然后退出。&lt;/p&gt;
 &lt;p&gt;之所以要 clone grandchild 进程，是因为在 child 进程中设置 namespace 并不会在 child 进程中生效，所以需要 clone 出一个新的进程，继承 namespace 配置。&lt;/p&gt;
-&lt;h3 id=&quot;grandchild&quot;&gt;grandchild&lt;/h3&gt;
+&lt;h3 id="grandchild"&gt;
+grandchild
+&lt;a class="heading-link" href="#grandchild"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;grandchild 进程就是容器真正的进程，在确保 parent 和 child 进程都处于 ready 之后，设置 uid,gid，从管道中读取相应配置信息，然后 unshare 创建 cgroup namespace，然后将状态发送给 parent 后 返回。grandchild 进程返回后继续执行 go 代码流程。&lt;/p&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;runc 作为 OCI 的标准实现，自身代码量并不大，但是逻辑比较扰，其中 namespace 更是博大精深，尤其是要考虑到一些老版本kernel 以及 rootless 场景下，复杂程度翻倍，有很多细节值得去思考。&lt;/p&gt;
-&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
+&lt;h2 id="参考链接"&gt;
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&quot;https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/README.md&quot;&gt;https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/README.md&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/nsexec.c&quot;&gt;https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/nsexec.c&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content:encoded><category>Container</category></item></channel></rss>
+&lt;li&gt;&lt;a href="https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/README.md" class="external-link" target="_blank" rel="noopener"&gt;https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/README.md&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/nsexec.c" class="external-link" target="_blank" rel="noopener"&gt;https://github.com/opencontainers/runc/blob/master/libcontainer/nsenter/nsexec.c&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

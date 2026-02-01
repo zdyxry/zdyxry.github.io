@@ -1,26 +1,50 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: Ansible - My Blog</title><description>标签 &quot;Ansible&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>使用 Ansible 传输文件的几种方式</title><link>https://zdyxry.github.io/2019/11/22/%E4%BD%BF%E7%94%A8-Ansible-%E4%BC%A0%E8%BE%93%E6%96%87%E4%BB%B6%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/11/22/%E4%BD%BF%E7%94%A8-Ansible-%E4%BC%A0%E8%BE%93%E6%96%87%E4%BB%B6%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F/</guid><pubDate>Fri, 22 Nov 2019 12:15:17 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Ansible on Yiran's Blog</title><link>https://zdyxry.github.io/tags/Ansible/</link><description>Recent content in Ansible on Yiran's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Fri, 22 Nov 2019 20:15:17 +0000</lastBuildDate><atom:link href="https://zdyxry.github.io/tags/Ansible/atom.xml" rel="self" type="application/rss+xml"/><item><title>使用 Ansible 传输文件的几种方式</title><link>https://zdyxry.github.io/2019/11/22/%E4%BD%BF%E7%94%A8-Ansible-%E4%BC%A0%E8%BE%93%E6%96%87%E4%BB%B6%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F/</link><pubDate>Fri, 22 Nov 2019 20:15:17 +0000</pubDate><guid>https://zdyxry.github.io/2019/11/22/%E4%BD%BF%E7%94%A8-Ansible-%E4%BC%A0%E8%BE%93%E6%96%87%E4%BB%B6%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;Ansible 作为一款配置管理和应用部署的软件，日常使用的场景很多，我自己也是重度用户。最近在使用 Ansible 进行文件传输的时候踩了个坑，借此机会整理下 Ansible 传输文件的几种方式。&lt;/p&gt;
 &lt;p&gt;实验环境：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]# ansible --version&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ansible&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2.7.12&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  config&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; file&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; None&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  configured&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; module&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; search&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; path&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [u&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;/root/.ansible/plugins/modules&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;u&apos;/usr/share/ansible/plugins/modules&apos;]&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  ansible&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; python&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; module&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; location&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /usr/lib/python2.7/site-packages/ansible&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  executable&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; location&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /usr/bin/ansible&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  python&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; version&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2.7.5&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (default, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;Aug&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  7&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 2019,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:51:29&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) [GCC &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;4.8.5&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 20150623&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (Red Hat &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;4&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;8&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;5&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;39&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)]&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;template&quot;&gt;Template&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/template_module.html&lt;/a&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@yiran ~]&lt;span style="font-style:italic"&gt;# ansible --version&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ansible 2.7.12
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; config file = None
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; configured module search path = [u&lt;span style="font-style:italic"&gt;&amp;#39;/root/.ansible/plugins/modules&amp;#39;&lt;/span&gt;, u&lt;span style="font-style:italic"&gt;&amp;#39;/usr/share/ansible/plugins/modules&amp;#39;&lt;/span&gt;]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ansible python module location = /usr/lib/python2.7/site-packages/ansible
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; executable location = /usr/bin/ansible
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; python version = 2.7.5 (default, Aug 7 2019, 00:51:29) [GCC 4.8.5 20150623 (Red Hat 4.8.5-39)]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="template"&gt;
+Template
+&lt;a class="heading-link" href="#template"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;&lt;a href="https://docs.ansible.com/ansible/latest/modules/template_module.html" class="external-link" target="_blank" rel="noopener"&gt;https://docs.ansible.com/ansible/latest/modules/template_module.html&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;Ansible 一个常用的功能就是配置管理，通过 Ansible 批量分发配置文件，达到统一版本管理的效果，如果我们想要进行少量的文件传输，从控制节点传输到被管理节点，那么可以采用这种方式来完成。&lt;/p&gt;
-&lt;p&gt;具体的使用&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;官方文档&lt;/a&gt; 已经讲的很详细了，这里不再啰嗦。&lt;/p&gt;
+&lt;p&gt;具体的使用&lt;a href="https://docs.ansible.com/ansible/latest/modules/template_module.html" class="external-link" target="_blank" rel="noopener"&gt;官方文档&lt;/a&gt; 已经讲的很详细了，这里不再啰嗦。&lt;/p&gt;
 &lt;p&gt;因为版本是通过 Jinja2 模板传输，支持模板渲染
 虽然我们可以在模版中不制定任何参数，直接将其拷贝，但是相比 Copy/Fetch 模块还是需要有模版渲染的一步，速度要慢一些&lt;/p&gt;
-&lt;h2 id=&quot;copyfetch-模块&quot;&gt;Copy/Fetch 模块&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/copy_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/copy_module.html&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/fetch_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/fetch_module.html&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id="copyfetch-模块"&gt;
+Copy/Fetch 模块
+&lt;a class="heading-link" href="#copyfetch-%e6%a8%a1%e5%9d%97"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;&lt;a href="https://docs.ansible.com/ansible/latest/modules/copy_module.html" class="external-link" target="_blank" rel="noopener"&gt;https://docs.ansible.com/ansible/latest/modules/copy_module.html&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://docs.ansible.com/ansible/latest/modules/fetch_module.html" class="external-link" target="_blank" rel="noopener"&gt;https://docs.ansible.com/ansible/latest/modules/fetch_module.html&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;如果说我们通过模板来传输文件优点歪门邪道，那么通过 Copy/Fetch 就是 Ansible 官方提供的两个正统模块。&lt;/p&gt;
 &lt;p&gt;Copy 用于把文件（或文件夹）从控制节点（或远程节点）分发到被管理节点，Copy 在拷贝过程中不会修改文件中的内容或编码，仅仅做传输工作。&lt;/p&gt;
 &lt;p&gt;Fetch 用于从被管理节点传输文件到控制节点。需要注意的是 Fetch 只能拉取文件，而 Copy 是可以传输文件或者文件夹的。&lt;/p&gt;
-&lt;h3 id=&quot;不算坑的坑&quot;&gt;不算坑的坑&lt;/h3&gt;
+&lt;h3 id="不算坑的坑"&gt;
+不算坑的坑
+&lt;a class="heading-link" href="#%e4%b8%8d%e7%ae%97%e5%9d%91%e7%9a%84%e5%9d%91"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;在使用 Copy/Fetch 时，总体感受是比较好的，但是有一点需要注意，如果你拷贝的文件过多，或者单个文件大小过大，那么最好不要使用 Copy/Fetch。&lt;/p&gt;
 &lt;p&gt;Ansible 默认配置中，使用 SFTP 作为文件传输协议：&lt;/p&gt;
 &lt;blockquote&gt;
@@ -29,243 +53,291 @@
 &lt;p&gt;SFTP 是基于 SSH 协议的，与 FTP 没啥关系。SFTP 并不以性能渐长，甚至可以说性能很差，至少与 FTP、Rsync 没办法相比。&lt;/p&gt;
 &lt;p&gt;关于 SFTP 为什么速度这么慢，StackOverFlow 有个回答写的很详细，这里引用一段：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;I’m the author of HPN-SSH and I was asked by a commenter here to weigh in. I’d like to start with a couple of background items. First off, it’s important to keep in mind that SSHv2 is a multiplexed protocol - multiple channels over a single TCP connection. As such, the SSH channels are essentially unaware of the underlying flow control algorithm used by TCP. This means that SSHv2 has to implement its own flow control algorithm. The most common implementation basically reimplements sliding windows. The means that you have the SSH sliding window riding on top of the TCP sliding window. The end results is that the effective size of the receive buffer is the minimum of the receive buffers of the two sliding windows.&lt;/p&gt;
+&lt;p&gt;I&amp;rsquo;m the author of HPN-SSH and I was asked by a commenter here to weigh in. I&amp;rsquo;d like to start with a couple of background items. First off, it&amp;rsquo;s important to keep in mind that SSHv2 is a multiplexed protocol - multiple channels over a single TCP connection. As such, the SSH channels are essentially unaware of the underlying flow control algorithm used by TCP. This means that SSHv2 has to implement its own flow control algorithm. The most common implementation basically reimplements sliding windows. The means that you have the SSH sliding window riding on top of the TCP sliding window. The end results is that the effective size of the receive buffer is the minimum of the receive buffers of the two sliding windows.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h2 id=&quot;synchronize&quot;&gt;Synchronize&lt;/h2&gt;
+&lt;h2 id="synchronize"&gt;
+Synchronize
+&lt;a class="heading-link" href="#synchronize"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;上面提到的两个模块性能都不好，总会有个性能好的来解决这个问题，就是 Synchronize。Synchronize 是通过 rsync 来达到文件传输的目的，是 rsync 的封装。&lt;/p&gt;
 &lt;p&gt;在使用上因为是调用的 rsync，所以控制节点需要安装 rsync ，Synchronize 模块的并不会完全实现 rsync 所有功能，只是通过 rsync 来达到我们想要的快速同步的功能。&lt;/p&gt;
-&lt;h3 id=&quot;坑&quot;&gt;坑&lt;/h3&gt;
+&lt;h3 id="坑"&gt;
+坑
+&lt;a class="heading-link" href="#%e5%9d%91"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;在使用 Ansible 过程中，通常会使用普通用户配合密钥的形式来进行用户验证，如果需要 root 权限那么通过 become 关键字来提权。&lt;/p&gt;
 &lt;p&gt;在 sudo 的早期版本中， &lt;code&gt;/etc/sudoers&lt;/code&gt; 中有这么一条配置，高版本取消了 tty 的限制：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# Disable &quot;ssh hostname sudo &amp;#x3C;cmd&gt;&quot;, because it will show the password in clear.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;#         You have to run &quot;ssh -t hostname sudo &amp;#x3C;cmd&gt;&quot;.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Defaults    requiretty&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;这个配置会导致 Ansible 调用 rsync 执行时失败，可以通过修改 &lt;code&gt;/etc/sudoers&lt;/code&gt; 或者升级 sudo 软件包来解决。&lt;/p&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;#
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;# Disable &amp;#34;ssh hostname sudo &amp;lt;cmd&amp;gt;&amp;#34;, because it will show the password in clear.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;# You have to run &amp;#34;ssh -t hostname sudo &amp;lt;cmd&amp;gt;&amp;#34;.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;#
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Defaults requiretty
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这个配置会导致 Ansible 调用 rsync 执行时失败，可以通过修改 &lt;code&gt;/etc/sudoers&lt;/code&gt; 或者升级 sudo 软件包来解决。&lt;/p&gt;
+&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;那么说了以上这三种方式，就需要来一个总结对比，看看什么场景下使用什么模块更方便：&lt;/p&gt;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;模块&lt;/th&gt;&lt;th&gt;传输文件&lt;/th&gt;&lt;th&gt;传输文件夹&lt;/th&gt;&lt;th&gt;文件修改&lt;/th&gt;&lt;th&gt;文件编码&lt;/th&gt;&lt;th&gt;速度&lt;/th&gt;&lt;th&gt;文件源&lt;/th&gt;&lt;th&gt;权限配置&lt;/th&gt;&lt;th&gt;文件验证&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;Template&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;慢&lt;/td&gt;&lt;td&gt;控制节点&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Copy/Fetch&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y/N&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;慢&lt;/td&gt;&lt;td&gt;控制节点/远程节点&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Synchronize&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;快&lt;/td&gt;&lt;td&gt;控制节点&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;模块&lt;/th&gt;
+&lt;th&gt;传输文件&lt;/th&gt;
+&lt;th&gt;传输文件夹&lt;/th&gt;
+&lt;th&gt;文件修改&lt;/th&gt;
+&lt;th&gt;文件编码&lt;/th&gt;
+&lt;th&gt;速度&lt;/th&gt;
+&lt;th&gt;文件源&lt;/th&gt;
+&lt;th&gt;权限配置&lt;/th&gt;
+&lt;th&gt;文件验证&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Template&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;N&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;慢&lt;/td&gt;
+&lt;td&gt;控制节点&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Copy/Fetch&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;Y/N&lt;/td&gt;
+&lt;td&gt;N&lt;/td&gt;
+&lt;td&gt;N&lt;/td&gt;
+&lt;td&gt;慢&lt;/td&gt;
+&lt;td&gt;控制节点/远程节点&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Synchronize&lt;/td&gt;
+&lt;td&gt;N&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;N&lt;/td&gt;
+&lt;td&gt;N&lt;/td&gt;
+&lt;td&gt;快&lt;/td&gt;
+&lt;td&gt;控制节点&lt;/td&gt;
+&lt;td&gt;Y&lt;/td&gt;
+&lt;td&gt;N&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 &lt;p&gt;各个模块没有具体的好坏，全看个人需求来使用合适的模块就好。&lt;/p&gt;
-&lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
+&lt;h2 id="参考链接"&gt;
+参考链接
+&lt;a class="heading-link" href="#%e5%8f%82%e8%80%83%e9%93%be%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/template_module.html&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/&quot;&gt;https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp&quot;&gt;https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content:encoded><category>Linux</category><category>Ansible</category></item><item><title>关于Ansible的一点经验</title><link>https://zdyxry.github.io/2019/07/05/%E5%85%B3%E4%BA%8EAnsible%E7%9A%84%E4%B8%80%E7%82%B9%E7%BB%8F%E9%AA%8C/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/07/05/%E5%85%B3%E4%BA%8EAnsible%E7%9A%84%E4%B8%80%E7%82%B9%E7%BB%8F%E9%AA%8C/</guid><pubDate>Fri, 05 Jul 2019 12:55:19 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;li&gt;&lt;a href="https://docs.ansible.com/ansible/latest/modules/template_module.html" class="external-link" target="_blank" rel="noopener"&gt;https://docs.ansible.com/ansible/latest/modules/template_module.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/" class="external-link" target="_blank" rel="noopener"&gt;https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp" class="external-link" target="_blank" rel="noopener"&gt;https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>关于Ansible的一点经验</title><link>https://zdyxry.github.io/2019/07/05/%E5%85%B3%E4%BA%8EAnsible%E7%9A%84%E4%B8%80%E7%82%B9%E7%BB%8F%E9%AA%8C/</link><pubDate>Fri, 05 Jul 2019 20:55:19 +0000</pubDate><guid>https://zdyxry.github.io/2019/07/05/%E5%85%B3%E4%BA%8EAnsible%E7%9A%84%E4%B8%80%E7%82%B9%E7%BB%8F%E9%AA%8C/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;先介绍下 Kubespray，Kubespray 是 K8S SIG 下的项目，目标是帮助用户创建 &lt;code&gt;生产环境级别&lt;/code&gt; 的 k8s 集群。&lt;/p&gt;
 &lt;p&gt;是通过 Ansible Playbook 实现的，是的，这又是一个 Ansible 项目，其中 YAML 文件就有 15k 行，名副其实的大项目。&lt;/p&gt;
 &lt;p&gt;花费了几天时间陆陆续续看完了整个项目，大概了解了其中的工作流程，具体内容不提，感觉 Ansible 90% 的使用例子都可以在这个项目中找到，是一个值得阅读的项目。&lt;/p&gt;
 &lt;p&gt;之前写过一篇当时理解的最佳实践，今天趁此机会再总结下最近使用 Ansible 的一些经验。&lt;/p&gt;
-&lt;h2 id=&quot;tag&quot;&gt;Tag&lt;/h2&gt;
+&lt;h2 id="tag"&gt;
+Tag
+&lt;a class="heading-link" href="#tag"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;使用 tag 对 ansible task 进行划分，比如在重启某些服务的时候，我们只希望在初次安装的时候重启，在后续升级的时候不进行重启，那么我们就可以对这个重启服务的 task 进行tag 区分。&lt;/p&gt;
 &lt;p&gt;tag 使用示例如下：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:35:56 ansible]$tree &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible.cfg&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; inventory&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; src.j2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;└──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; test.yaml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; directory,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 4&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:35:58 ansible]$cat test.yaml &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; hosts:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cluster&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  gather_facts:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; no&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  become:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yes&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  become_user:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  become_method:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; sudo&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  tasks:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yum:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;      name:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;{{ item }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;      state:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; present&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    loop:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; httpd&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; memcached&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    tags:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; packages&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;  &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; template:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;      src:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates/src.j2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;      dest:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /etc/foo.conf&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    tags:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; configuration&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:36:01 ansible]$ansible-playbook -i inventory  test.yaml --tags configuration -v&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Using&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /root/ansible/ansible.cfg&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; as&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; config&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; file&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;PLAY&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [cluster] &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;******************************************************************************************************************************************************************************************************************************************************&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;TASK&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [template] &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;*****************************************************************************************************************************************************************************************************************************************************&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.111] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;&quot;changed&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; false&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;checksum&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;7b4cbb07f7e174316e4d892321682317e43a206c&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;dest&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;/etc/foo.conf&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;gid&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;group&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;root&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;mode&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0644&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;owner&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;root&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;path&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;/etc/foo.conf&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;size&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 14,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;state&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;file&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;uid&quot;:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.112] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;&quot;changed&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; false&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;checksum&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;7b4cbb07f7e174316e4d892321682317e43a206c&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;dest&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;/etc/foo.conf&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;gid&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;group&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;root&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;mode&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0644&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;owner&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;root&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;path&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;/etc/foo.conf&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;size&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 14,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;state&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;file&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;uid&quot;:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.113] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;&quot;changed&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; false&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;checksum&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;7b4cbb07f7e174316e4d892321682317e43a206c&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;dest&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;/etc/foo.conf&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;gid&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;group&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;root&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;mode&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;0644&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;owner&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;root&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;path&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;/etc/foo.conf&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;size&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 14,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;state&quot;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;file&quot;,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;uid&quot;:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;PLAY&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; RECAP&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; **********************************************************************************************************************************************************************************************************************************************************&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.111&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.112&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.113&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;rolesmeta-管理依赖&quot;&gt;roles/meta 管理依赖&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:35:56 ansible]$tree .
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── ansible.cfg
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── inventory
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── templates
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── src.j2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;└── test.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;1 directory, 4 files
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:35:58 ansible]$cat test.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;- hosts: cluster
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; gather_facts: no
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; become: yes
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; become_user: root
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; become_method: sudo
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tasks:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - yum:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; name: &lt;span style="font-style:italic"&gt;&amp;#34;{{ item }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; state: present
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; loop:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - httpd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - memcached
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tags:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - packages
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - template:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; src: templates/src.j2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; dest: /etc/foo.conf
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tags:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - configuration
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:36:01 ansible]$ansible-playbook -i inventory test.yaml --tags configuration -v
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Using /root/ansible/ansible.cfg as config file
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PLAY [cluster] ******************************************************************************************************************************************************************************************************************************************************
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;TASK [template] *****************************************************************************************************************************************************************************************************************************************************
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.111] =&amp;gt; {&lt;span style="font-style:italic"&gt;&amp;#34;changed&amp;#34;&lt;/span&gt;: false, &lt;span style="font-style:italic"&gt;&amp;#34;checksum&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;7b4cbb07f7e174316e4d892321682317e43a206c&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;dest&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;/etc/foo.conf&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;gid&amp;#34;&lt;/span&gt;: 0, &lt;span style="font-style:italic"&gt;&amp;#34;group&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;root&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;mode&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;0644&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;owner&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;root&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;path&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;/etc/foo.conf&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;size&amp;#34;&lt;/span&gt;: 14, &lt;span style="font-style:italic"&gt;&amp;#34;state&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;file&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;uid&amp;#34;&lt;/span&gt;: 0}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.112] =&amp;gt; {&lt;span style="font-style:italic"&gt;&amp;#34;changed&amp;#34;&lt;/span&gt;: false, &lt;span style="font-style:italic"&gt;&amp;#34;checksum&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;7b4cbb07f7e174316e4d892321682317e43a206c&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;dest&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;/etc/foo.conf&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;gid&amp;#34;&lt;/span&gt;: 0, &lt;span style="font-style:italic"&gt;&amp;#34;group&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;root&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;mode&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;0644&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;owner&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;root&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;path&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;/etc/foo.conf&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;size&amp;#34;&lt;/span&gt;: 14, &lt;span style="font-style:italic"&gt;&amp;#34;state&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;file&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;uid&amp;#34;&lt;/span&gt;: 0}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.113] =&amp;gt; {&lt;span style="font-style:italic"&gt;&amp;#34;changed&amp;#34;&lt;/span&gt;: false, &lt;span style="font-style:italic"&gt;&amp;#34;checksum&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;7b4cbb07f7e174316e4d892321682317e43a206c&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;dest&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;/etc/foo.conf&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;gid&amp;#34;&lt;/span&gt;: 0, &lt;span style="font-style:italic"&gt;&amp;#34;group&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;root&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;mode&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;0644&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;owner&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;root&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;path&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;/etc/foo.conf&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;size&amp;#34;&lt;/span&gt;: 14, &lt;span style="font-style:italic"&gt;&amp;#34;state&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;file&amp;#34;&lt;/span&gt;, &lt;span style="font-style:italic"&gt;&amp;#34;uid&amp;#34;&lt;/span&gt;: 0}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PLAY RECAP **********************************************************************************************************************************************************************************************************************************************************
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;172.16.30.111 : ok=1 changed=0 unreachable=0 failed=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;172.16.30.112 : ok=1 changed=0 unreachable=0 failed=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;172.16.30.113 : ok=1 changed=0 unreachable=0 failed=0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="rolesmeta-管理依赖"&gt;
+roles/meta 管理依赖
+&lt;a class="heading-link" href="#rolesmeta-%e7%ae%a1%e7%90%86%e4%be%9d%e8%b5%96"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;在 playbook 中存在多个 roles，且其中有相互依赖关系时，合理使用 meta 配置，填写其所依赖的 roles。注意，被依赖的 roles 会优先执行，示例如下：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:49:12 ansible]$tree &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible.cfg&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; inventory&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; roles&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; a&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; defaults&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; handlers&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; meta&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; main.yaml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tasks&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; main.yaml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; vars&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; b&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; defaults&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; handlers&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; meta&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tasks&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; main.yaml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;     └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; vars&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; src.j2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;└──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; test.yaml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;18&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; directories,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 7&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:49:18 ansible]$cat roles/a/tasks/main.yaml &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; name:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; a&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  debug:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    msg:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;a&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:49:25 ansible]$cat roles/a/meta/main.yaml &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;dependencies:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; role:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; b&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; }&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:49:33 ansible]$cat roles/b/tasks/main.yaml &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; name:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; b&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  debug:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    msg:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;b&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:49:40 ansible]$ansible-playbook -i inventory  test.yaml -v&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Using&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /root/ansible/ansible.cfg&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; as&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; config&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; file&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;PLAY&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [cluster] &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;******************************************************************************************************************************************************************************************************************************************************&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;TASK&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [b &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; b]&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; ********************************************************************************************************************************************************************************************************************************************************&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.111] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    &quot;msg&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;b&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.112] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    &quot;msg&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;b&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.113] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    &quot;msg&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;b&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;TASK&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [a &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; a]&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; ********************************************************************************************************************************************************************************************************************************************************&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.111] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    &quot;msg&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;a&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.112] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    &quot;msg&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;a&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ok:&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; [172.16.30.113] =&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; {&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    &quot;msg&quot;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;a&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;PLAY&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; RECAP&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; **********************************************************************************************************************************************************************************************************************************************************&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.111&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.112&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.113&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;You&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; have&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; new&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; mail&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; in&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /var/spool/mail/root&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:50:05 ansible]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;参数声明&quot;&gt;参数声明&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:49:12 ansible]$tree .
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── ansible.cfg
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── inventory
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── roles
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── a
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── defaults
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── files
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── handlers
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── meta
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   │   └── main.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   │   └── main.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── templates
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   └── vars
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── b
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── defaults
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── files
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── handlers
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── meta
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   └── main.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── templates
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── vars
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── templates
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── src.j2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;└── test.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;18 directories, 7 files
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:49:18 ansible]$cat roles/a/tasks/main.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;---
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;- name: a
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; debug:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; msg: &lt;span style="font-style:italic"&gt;&amp;#34;a&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:49:25 ansible]$cat roles/a/meta/main.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;---
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;dependencies:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - { role: b }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:49:33 ansible]$cat roles/b/tasks/main.yaml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;---
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;- name: b
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; debug:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; msg: &lt;span style="font-style:italic"&gt;&amp;#34;b&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:49:40 ansible]$ansible-playbook -i inventory test.yaml -v
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Using /root/ansible/ansible.cfg as config file
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PLAY [cluster] ******************************************************************************************************************************************************************************************************************************************************
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;TASK [b : b] ********************************************************************************************************************************************************************************************************************************************************
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.111] =&amp;gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;msg&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;b&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.112] =&amp;gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;msg&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;b&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.113] =&amp;gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;msg&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;b&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;TASK [a : a] ********************************************************************************************************************************************************************************************************************************************************
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.111] =&amp;gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;msg&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;a&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.112] =&amp;gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;msg&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;a&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ok: [172.16.30.113] =&amp;gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;&amp;#34;msg&amp;#34;&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;a&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PLAY RECAP **********************************************************************************************************************************************************************************************************************************************************
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;172.16.30.111 : ok=2 changed=0 unreachable=0 failed=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;172.16.30.112 : ok=2 changed=0 unreachable=0 failed=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;172.16.30.113 : ok=2 changed=0 unreachable=0 failed=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;You have new mail in /var/spool/mail/root
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 16:50:05 ansible]$
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="参数声明"&gt;
+参数声明
+&lt;a class="heading-link" href="#%e5%8f%82%e6%95%b0%e5%a3%b0%e6%98%8e"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;在一个大型项目中，我们无论是服务的数量还是各个服务对应的参数数量都是极其惊人的，那么我们就要合理的管理相应参数，这里 kubespray 项目给出了一个很好的示例，先来看下 kubespray 的组织结构（简化版）：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;inventory/&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; local&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; group_vars&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ../sample/group_vars&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;└──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; sample&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; group_vars&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; all&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; k8s-cluster&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;roles&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; container-engine&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; containerd&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; defaults&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; handlers&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tasks&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; docker&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; defaults&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; handlers&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; meta&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tasks&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; │  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; vars&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; meta&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; kubespray-defaults&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; defaults&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; meta&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tasks&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;在 kubespray 中，参数定义有三个位置：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;inventory/
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── local
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── group_vars -&amp;gt; ../sample/group_vars
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;└── sample
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; └── group_vars
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ├── all
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; └── k8s-cluster
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;roles
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── container-engine
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── containerd
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── defaults
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── handlers
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   └── templates
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── docker
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── defaults
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── files
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── handlers
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── meta
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   ├── templates
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   │   └── vars
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── meta
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── kubespray-defaults
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── defaults
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── meta
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── tasks
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;在 kubespray 中，参数定义有三个位置：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;inventory/sample/group_vars&lt;/li&gt;
 &lt;li&gt;roles/kubespray-defaults/defaults&lt;/li&gt;
-&lt;li&gt;roles/&lt;common&gt;/defaults&lt;/common&gt;&lt;/li&gt;
+&lt;li&gt;roles/&lt;!-- raw HTML omitted --&gt;/defaults&lt;/li&gt;
 &lt;li&gt;使用 &lt;code&gt;set_fact&lt;/code&gt; 关键字声明&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;上述三个位置是按照参数粒度划分，参数粒度越细，越靠后。&lt;/p&gt;
@@ -274,44 +346,80 @@
 &lt;li&gt;&lt;code&gt;bin_dir&lt;/code&gt; 这个参数，是一个全局参数，管理下载的二进制文件路径，它在 &lt;code&gt;inventory/samle/group_vars&lt;/code&gt; 中定义；&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;etcd_kubeadm_enabled&lt;/code&gt; 参数，决定是否通过 kubeadm 来创建 etcd 集群，是集群粒度的，在 &lt;code&gt;roles/kubesray-defaults/defaults&lt;/code&gt; 中定义；&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;docker_fedora_repo_base_url&lt;/code&gt; 是 docker 在下载镜像时指定的 repo，是一个容器运行时粒度的参数，那么它就在 &lt;code&gt;roles/container-ngine/docker/defaults&lt;/code&gt; 中定义&lt;/li&gt;
-&lt;li&gt;执行某些命令后，我们希望对命令结果进行过滤或判断，那么我们通常会使用 regster，但是 register 的声明周期仅限于该 playbook，而且他们的优先级也是不同的，具体可以看下&lt;a href=&quot;https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#ansible-variable-precedence&quot;&gt;官方文档&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;执行某些命令后，我们希望对命令结果进行过滤或判断，那么我们通常会使用 regster，但是 register 的声明周期仅限于该 playbook，而且他们的优先级也是不同的，具体可以看下&lt;a href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#ansible-variable-precedence" class="external-link" target="_blank" rel="noopener"&gt;官方文档&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;可能跟大多数项目不同，kubespray 中涉及的参数数量很多，不知道是否是这个原因，专门使用了 &lt;code&gt;roles/kubespray-defaults&lt;/code&gt; 这个 role 来声明参数。不过它的这种参数划分方式是我们值得学习的。&lt;/p&gt;
-&lt;h2 id=&quot;handler-触发&quot;&gt;Handler 触发&lt;/h2&gt;
+&lt;h2 id="handler-触发"&gt;
+Handler 触发
+&lt;a class="heading-link" href="#handler-%e8%a7%a6%e5%8f%91"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;当我们更新了配置文件之后，我们想要重启相应服务，这时候可以使用 notify 配合 handlers 来完成相应操作，而且 handler
 的方式也可以保证我们代码最大程度的重用。&lt;/p&gt;
-&lt;h2 id=&quot;loop_control&quot;&gt;loop_control&lt;/h2&gt;
+&lt;h2 id="loop_control"&gt;
+loop_control
+&lt;a class="heading-link" href="#loop_control"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;当我们在 playbook 中定义了某个变量为 list 类型，我们想要遍历变量，并且针对每个变量的操作都进行错误处理，我们可以采用 loop_control 关键字配合 include 来实现，比如：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;- include_tasks: docker_plugin.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  loop: &quot;{{ docker_plugins }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  loop_control:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    loop_var: docker_plugin&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;循环 &lt;code&gt;device_plugins&lt;/code&gt; ，每个变量为 &lt;code&gt;docker_plugin&lt;/code&gt; ，将 &lt;code&gt;docker_plugin&lt;/code&gt; 传递到 &lt;code&gt;docker_plugin.yml&lt;/code&gt; 。&lt;/p&gt;
-&lt;h2 id=&quot;不建议的操作&quot;&gt;不建议的操作&lt;/h2&gt;
-&lt;h3 id=&quot;在-ansible-中使用复杂的语法规则&quot;&gt;在 ansible 中使用复杂的语法规则&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;- include_tasks: docker_plugin.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; loop: &lt;span style="font-style:italic"&gt;&amp;#34;{{ docker_plugins }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; loop_control:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; loop_var: docker_plugin
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;循环 &lt;code&gt;device_plugins&lt;/code&gt; ，每个变量为 &lt;code&gt;docker_plugin&lt;/code&gt; ，将 &lt;code&gt;docker_plugin&lt;/code&gt; 传递到 &lt;code&gt;docker_plugin.yml&lt;/code&gt; 。&lt;/p&gt;
+&lt;h2 id="不建议的操作"&gt;
+不建议的操作
+&lt;a class="heading-link" href="#%e4%b8%8d%e5%bb%ba%e8%ae%ae%e7%9a%84%e6%93%8d%e4%bd%9c"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;h3 id="在-ansible-中使用复杂的语法规则"&gt;
+在 ansible 中使用复杂的语法规则
+&lt;a class="heading-link" href="#%e5%9c%a8-ansible-%e4%b8%ad%e4%bd%bf%e7%94%a8%e5%a4%8d%e6%9d%82%e7%9a%84%e8%af%ad%e6%b3%95%e8%a7%84%e5%88%99"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;在 kubespray 中，随处可见一些很复杂的语法夹杂在 playbook 中，看到一个比较头疼的：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;yaml&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   279&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;	&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   280	dashboard_image_repo&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;gcr.io/google_containers/kubernetes-dashboard-{{ image_arch }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   281	dashboard_image_tag&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;v1.10.1&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   282&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;	&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   283	image_pull_command&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ docker_bin_dir }}/docker pull&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   284	image_info_command&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ docker_bin_dir }}/docker images -q | xargs {{ docker_bin_dir }}/docker inspect -f &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;\&quot;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;{{ &apos;{{&apos; }} if .RepoTags {{ &apos;}}&apos; }}{{ &apos;{{&apos; }} (index .RepoTags 0) {{ &apos;}}&apos; }}{{ &apos;{{&apos; }} end {{ &apos;}}&apos; }}{{ &apos;{{&apos; }} if .RepoDigests {{ &apos;}}&apos; }},{{ &apos;{{&apos; }} (index .RepoDigests 0) {{ &apos;}}&apos; }}{{ &apos;{{&apos; }} end {{ &apos;}}&apos; }}&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;\&quot;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; | tr &apos;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;\n&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos; &apos;,&apos;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   285&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;	&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   286	downloads&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   287	  netcheck_server&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   288	    enabled&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ deploy_netchecker }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   289	    container&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;true&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   290	    repo&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ netcheck_server_image_repo }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   291	    tag&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ netcheck_server_image_tag }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   292	    sha256&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ netcheck_server_digest_checksum|default(None) }}&quot;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;284 行获取 &lt;code&gt;image_info_command&lt;/code&gt; ，这里真的是一点可维护性都没有，初步看很难看出这里到底是 ansible 语法，还是 shell 语法，还是 go template 语法，如果我们要通过这么复杂的方式来获取一个参数，为什么不干脆写一个脚本来完成这个事情呢？ 搞不懂。&lt;/p&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;看完 kubespray 了解了 k8s 集群部署的步骤之外，Ansible 的一些高级用法或者说经验是之后需要改善的，收获多多。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>PingCAP tidb-ansible 源码阅读</title><link>https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</guid><pubDate>Sat, 20 Apr 2019 03:50:41 GMT</pubDate><content:encoded>&lt;p&gt;了解我的同学应该知道，我目前负责公司产品的运维工具开发相关的工作，作为一款 2B 的产品，在产品运维过程中，总是有一些不愉快（又不能让客户知道）的繁琐操作：这些操作可能是为了防止过程中出现错误，而不断添加的检测条件；也有可能是历史问题，随着产品发布迭代而一直遗留至今。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-yaml" data-lang="yaml"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 279
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;280 dashboard_image_repo&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;gcr.io/google_containers/kubernetes-dashboard-{{ image_arch }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;281 dashboard_image_tag&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;v1.10.1&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 282
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;283 image_pull_command&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;{{ docker_bin_dir }}/docker pull&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;284 image_info_command&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;{{ docker_bin_dir }}/docker images -q | xargs {{ docker_bin_dir }}/docker inspect -f \&amp;#34;{{ &amp;#39;{{&amp;#39; }} if .RepoTags {{ &amp;#39;}}&amp;#39; }}{{ &amp;#39;{{&amp;#39; }} (index .RepoTags 0) {{ &amp;#39;}}&amp;#39; }}{{ &amp;#39;{{&amp;#39; }} end {{ &amp;#39;}}&amp;#39; }}{{ &amp;#39;{{&amp;#39; }} if .RepoDigests {{ &amp;#39;}}&amp;#39; }},{{ &amp;#39;{{&amp;#39; }} (index .RepoDigests 0) {{ &amp;#39;}}&amp;#39; }}{{ &amp;#39;{{&amp;#39; }} end {{ &amp;#39;}}&amp;#39; }}\&amp;#34; | tr &amp;#39;\n&amp;#39; &amp;#39;,&amp;#39;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 285
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;286 downloads&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;287 netcheck_server&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;288 enabled&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;{{ deploy_netchecker }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;289 container&lt;/span&gt;: &lt;span style="font-weight:bold"&gt;true&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;290 repo&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;{{ netcheck_server_image_repo }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;291 tag&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;{{ netcheck_server_image_tag }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;292 sha256&lt;/span&gt;: &lt;span style="font-style:italic"&gt;&amp;#34;{{ netcheck_server_digest_checksum|default(None) }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;284 行获取 &lt;code&gt;image_info_command&lt;/code&gt; ，这里真的是一点可维护性都没有，初步看很难看出这里到底是 ansible 语法，还是 shell 语法，还是 go template 语法，如果我们要通过这么复杂的方式来获取一个参数，为什么不干脆写一个脚本来完成这个事情呢？ 搞不懂。&lt;/p&gt;
+&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;看完 kubespray 了解了 k8s 集群部署的步骤之外，Ansible 的一些高级用法或者说经验是之后需要改善的，收获多多。&lt;/p&gt;</description></item><item><title>PingCAP tidb-ansible 源码阅读</title><link>https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</link><pubDate>Sat, 20 Apr 2019 11:50:41 +0000</pubDate><guid>https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</guid><description>&lt;p&gt;了解我的同学应该知道，我目前负责公司产品的运维工具开发相关的工作，作为一款 2B 的产品，在产品运维过程中，总是有一些不愉快（又不能让客户知道）的繁琐操作：这些操作可能是为了防止过程中出现错误，而不断添加的检测条件；也有可能是历史问题，随着产品发布迭代而一直遗留至今。&lt;/p&gt;
 &lt;p&gt;所以我平时也在关注一些开源的 2B 产品的配套运维工具，比如 ZStack、PingCAP 之类的公司。&lt;/p&gt;
 &lt;p&gt;但是 ZStack 的开源生态不是很好，感觉只是在保持代码更新（不知道哪个分支）的状态。相比之下 PingCAP 就好很多了，可以很直接的从文档中看到差别，而且社区很活跃。&lt;/p&gt;
-&lt;p&gt;最近看到 PingCAP 的一个关于部署维护的 &lt;a href=&quot;https://university.pingcap.com/views/common/audition.html?courseId=240255&amp;#x26;courseWareId=330983&amp;#x26;designId=270990&quot;&gt;视频讲解&lt;/a&gt; ，可能时间有限，并没有很深入的讲解细节，有兴趣的同学可以看下。&lt;/p&gt;
-&lt;p&gt;在讲解过程中，一个比较核心的工具就是 Ansible，通过 Ansible Playbook 来定义各个步骤，我最近也在使用 Ansible 来进行二次开发，特此学习下 PingCAP 的 &lt;a href=&quot;https://github.com/pingcap/tidb-ansible&quot;&gt;tidb-ansible&lt;/a&gt; 。&lt;/p&gt;
-&lt;h2 id=&quot;安装方式&quot;&gt;安装方式&lt;/h2&gt;
+&lt;p&gt;最近看到 PingCAP 的一个关于部署维护的 &lt;a href="https://university.pingcap.com/views/common/audition.html?courseId=240255&amp;amp;courseWareId=330983&amp;amp;designId=270990" class="external-link" target="_blank" rel="noopener"&gt;视频讲解&lt;/a&gt; ，可能时间有限，并没有很深入的讲解细节，有兴趣的同学可以看下。&lt;/p&gt;
+&lt;p&gt;在讲解过程中，一个比较核心的工具就是 Ansible，通过 Ansible Playbook 来定义各个步骤，我最近也在使用 Ansible 来进行二次开发，特此学习下 PingCAP 的 &lt;a href="https://github.com/pingcap/tidb-ansible" class="external-link" target="_blank" rel="noopener"&gt;tidb-ansible&lt;/a&gt; 。&lt;/p&gt;
+&lt;h2 id="安装方式"&gt;
+安装方式
+&lt;a class="heading-link" href="#%e5%ae%89%e8%a3%85%e6%96%b9%e5%bc%8f"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;TiDB 目前支持 4 种安装方式：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;Ansible Online&lt;/li&gt;
@@ -321,57 +429,69 @@
 &lt;/ol&gt;
 &lt;p&gt;其中最佳实践应该是 Ansible Online 方式，通过控制机联网下载所需依赖及 TiDB binary 文件。当然如果所在环境无法访问互联网，那么只能采用 Offline 方式了。后两种部署方式，感觉只是用于开发测试或者给用户“看看”的情况。&lt;/p&gt;
 &lt;p&gt;如果要学习的话肯定要学习最佳实践了，那么我们来看看 Ansible Online 方式。&lt;/p&gt;
-&lt;h2 id=&quot;环境准备&quot;&gt;环境准备&lt;/h2&gt;
+&lt;h2 id="环境准备"&gt;
+环境准备
+&lt;a class="heading-link" href="#%e7%8e%af%e5%a2%83%e5%87%86%e5%a4%87"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;TiDB 作为一个 &lt;strong&gt;开源分布式关系型数据库&lt;/strong&gt; ，所需要的物理环境是很比较苛刻的，官方最佳实践的需求如下：&lt;/p&gt;
 &lt;hr&gt;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;组件&lt;/th&gt;&lt;th&gt;CPU&lt;/th&gt;&lt;th&gt;内存&lt;/th&gt;&lt;th&gt;硬盘类型&lt;/th&gt;&lt;th&gt;网络&lt;/th&gt;&lt;th&gt;数量(最低要求)&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;TiDB&lt;/td&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;32GB&lt;/td&gt;&lt;td&gt;SAS&lt;/td&gt;&lt;td&gt;10GbE * 2&lt;/td&gt;&lt;td&gt;2&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;PD&lt;/td&gt;&lt;td&gt;4&lt;/td&gt;&lt;td&gt;8GB&lt;/td&gt;&lt;td&gt;SSD&lt;/td&gt;&lt;td&gt;10 GbE * 2&lt;/td&gt;&lt;td&gt;3&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;TiKV&lt;/td&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;32GB&lt;/td&gt;&lt;td&gt;SSD&lt;/td&gt;&lt;td&gt;10 GbE * 2&lt;/td&gt;&lt;td&gt;3&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;监控&lt;/td&gt;&lt;td&gt;8&lt;/td&gt;&lt;td&gt;16GB&lt;/td&gt;&lt;td&gt;SAS&lt;/td&gt;&lt;td&gt;1GbE * 1&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;组件&lt;/th&gt;
+&lt;th&gt;CPU&lt;/th&gt;
+&lt;th&gt;内存&lt;/th&gt;
+&lt;th&gt;硬盘类型&lt;/th&gt;
+&lt;th&gt;网络&lt;/th&gt;
+&lt;th&gt;数量(最低要求)&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;TiDB&lt;/td&gt;
+&lt;td&gt;16&lt;/td&gt;
+&lt;td&gt;32GB&lt;/td&gt;
+&lt;td&gt;SAS&lt;/td&gt;
+&lt;td&gt;10GbE * 2&lt;/td&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;PD&lt;/td&gt;
+&lt;td&gt;4&lt;/td&gt;
+&lt;td&gt;8GB&lt;/td&gt;
+&lt;td&gt;SSD&lt;/td&gt;
+&lt;td&gt;10 GbE * 2&lt;/td&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;TiKV&lt;/td&gt;
+&lt;td&gt;16&lt;/td&gt;
+&lt;td&gt;32GB&lt;/td&gt;
+&lt;td&gt;SSD&lt;/td&gt;
+&lt;td&gt;10 GbE * 2&lt;/td&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;监控&lt;/td&gt;
+&lt;td&gt;8&lt;/td&gt;
+&lt;td&gt;16GB&lt;/td&gt;
+&lt;td&gt;SAS&lt;/td&gt;
+&lt;td&gt;1GbE * 1&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 &lt;p&gt;对于 CPU、内存和磁盘的要求我们暂时忽略，这里注意网卡数量都是推荐的 2 块网卡，应该是会做 bonding，到时候看下代码中是否处理。&lt;/p&gt;
-&lt;h2 id=&quot;安装部署流程&quot;&gt;安装部署流程&lt;/h2&gt;
+&lt;h2 id="安装部署流程"&gt;
+安装部署流程
+&lt;a class="heading-link" href="#%e5%ae%89%e8%a3%85%e9%83%a8%e7%bd%b2%e6%b5%81%e7%a8%8b"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;控制节点安装依赖&lt;/li&gt;
 &lt;li&gt;配置普通用户（tidb）
@@ -379,7 +499,7 @@
 &lt;li&gt;密码&lt;/li&gt;
 &lt;li&gt;sudu 权限&lt;/li&gt;
 &lt;li&gt;ssh key&lt;/li&gt;
-&lt;li&gt;…&lt;/li&gt;
+&lt;li&gt;&amp;hellip;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;配置控制节点到被安装节点 SSH 免密登录
@@ -403,7 +523,7 @@
 &lt;li&gt;挂载参数：nodelalloc 和 noatime&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;ansible inventory &amp;#x26; TiDB 配置修改
+&lt;li&gt;ansible inventory &amp;amp; TiDB 配置修改
 &lt;ul&gt;
 &lt;li&gt;inventory&lt;/li&gt;
 &lt;li&gt;tidb-ansible/conf/*&lt;/li&gt;
@@ -418,99 +538,153 @@
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&quot;具体步骤&quot;&gt;具体步骤&lt;/h2&gt;
-&lt;h3 id=&quot;软件依赖&quot;&gt;软件依赖&lt;/h3&gt;
+&lt;h2 id="具体步骤"&gt;
+具体步骤
+&lt;a class="heading-link" href="#%e5%85%b7%e4%bd%93%e6%ad%a5%e9%aa%a4"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;h3 id="软件依赖"&gt;
+软件依赖
+&lt;a class="heading-link" href="#%e8%bd%af%e4%bb%b6%e4%be%9d%e8%b5%96"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;这里 TiDB 依赖的第三方组件不多，安装方式猜测之所以直接用 pip 是因为要支持不同的发型版本，python 通用些。
 其中如果部署 pump 并开启 binlog 的话，是需要安装 Kafka 集群的，这里在安装部署文档中没有见到更多的说明。&lt;/p&gt;
-&lt;h3 id=&quot;普通用户&quot;&gt;普通用户&lt;/h3&gt;
+&lt;h3 id="普通用户"&gt;
+普通用户
+&lt;a class="heading-link" href="#%e6%99%ae%e9%80%9a%e7%94%a8%e6%88%b7"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;这点很重要，一款软件的运行环境很重要，无须 root 权限的坚决不能给与 root 权限，否则之后的权限控制很难做。&lt;/p&gt;
-&lt;h3 id=&quot;时钟同步&quot;&gt;时钟同步&lt;/h3&gt;
-&lt;p&gt;这里采用的是 ntpd 同步，不知道为什么没有采用 chronyd，在 RHEL7 之后推荐采用 chronyd 来进行时钟同步，根据这篇&lt;a href=&quot;https://www.thegeekdiary.com/centos-rhel-7-chrony-vs-ntp-differences-between-ntpd-and-chronyd/&quot;&gt;博客&lt;/a&gt;中提到的，chronyd 应该占有绝对&lt;a href=&quot;https://chrony.tuxfamily.org/comparison.html&quot;&gt;优势&lt;/a&gt;的，不知道这里是出于什么考虑。&lt;/p&gt;
-&lt;h3 id=&quot;cpu-调节器模式&quot;&gt;CPU 调节器模式&lt;/h3&gt;
+&lt;h3 id="时钟同步"&gt;
+时钟同步
+&lt;a class="heading-link" href="#%e6%97%b6%e9%92%9f%e5%90%8c%e6%ad%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
+&lt;p&gt;这里采用的是 ntpd 同步，不知道为什么没有采用 chronyd，在 RHEL7 之后推荐采用 chronyd 来进行时钟同步，根据这篇&lt;a href="https://www.thegeekdiary.com/centos-rhel-7-chrony-vs-ntp-differences-between-ntpd-and-chronyd/" class="external-link" target="_blank" rel="noopener"&gt;博客&lt;/a&gt;中提到的，chronyd 应该占有绝对&lt;a href="https://chrony.tuxfamily.org/comparison.html" class="external-link" target="_blank" rel="noopener"&gt;优势&lt;/a&gt;的，不知道这里是出于什么考虑。&lt;/p&gt;
+&lt;h3 id="cpu-调节器模式"&gt;
+CPU 调节器模式
+&lt;a class="heading-link" href="#cpu-%e8%b0%83%e8%8a%82%e5%99%a8%e6%a8%a1%e5%bc%8f"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;这里 TiDB 推荐采用 performance 模式，但是如果你的 2B 产品卖点中有提到 &lt;strong&gt;节省能耗&lt;/strong&gt; 相关字眼的，觉得还是要综合考虑才好。&lt;/p&gt;
-&lt;h3 id=&quot;格式化磁盘&quot;&gt;格式化磁盘&lt;/h3&gt;
+&lt;h3 id="格式化磁盘"&gt;
+格式化磁盘
+&lt;a class="heading-link" href="#%e6%a0%bc%e5%bc%8f%e5%8c%96%e7%a3%81%e7%9b%98"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;推荐采用 ext4，在 RHEL7 之后默认的系统分区均为 xfs，这里出于什么考虑也没有透露。&lt;/p&gt;
 &lt;p&gt;在我个人使用过程中，xfs 在处理服务器掉电之后的处理很麻烦，经常是需要手动 xfs_repair 去修复磁盘分区。&lt;/p&gt;
 &lt;p&gt;TiDB 挂载参数强制要求 &lt;strong&gt;nodelalloc&lt;/strong&gt; ，我们看下这个参数的意义：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;when the data is copied from userspace to the page cache, either via the write(2) system call or when an mmap&apos;ed page which was previously unallocated is written for the first time.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&quot;tidb-参数&quot;&gt;TiDB 参数&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;when the data is copied from userspace to the page cache, either via the write(2) system call or when an mmap&amp;#39;ed page which was previously unallocated is written for the first time.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="tidb-参数"&gt;
+TiDB 参数
+&lt;a class="heading-link" href="#tidb-%e5%8f%82%e6%95%b0"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;因为对 TiDB 无更多了解，此节忽略。&lt;/p&gt;
-&lt;h3 id=&quot;部署&quot;&gt;部署&lt;/h3&gt;
+&lt;h3 id="部署"&gt;
+部署
+&lt;a class="heading-link" href="#%e9%83%a8%e7%bd%b2"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;终于到了我最想了解的地方了：ansible playbook。我们先看下代码结构：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/tidb-ansible&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;master&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✔&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;tree&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -L&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; .&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; LICENSE&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; README.md&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible.cfg&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; bootstrap.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; clean_log_cron.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cloud&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; aws-ansible&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; collect_diagnosis.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; common_tasks&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; add_evict_leader_scheduler.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   ...&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; transfer_pd_leader.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; conf&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; alertmanager.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   ...&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tikv.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; create_users.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; deploy.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; deploy_drainer.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; deploy_ntp.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; excessive_rolling_update.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; filter_plugins&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tags.py&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; graceful_stop.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; group_vars&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; alertmanager_servers.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; all.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   ...&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tidb_servers.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tikv_servers.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; hosts.ini&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; inventory.ini&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; library&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; coreos_facts&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; docker_facts&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; wait_for_pid.py&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; local_prepare.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; log&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; migrate_monitor.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; requirements.txt&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; roles&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; alertmanager&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; blackbox_exporter&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; bootstrap&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   ...&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tikv&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tikv_importer&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tispark&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; rolling_update.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; rolling_update_monitor.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; scripts&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ...&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; check&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; clsrun.sh&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; disk_performance.json&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; grafana-config-copy.py&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   ...&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tikv_trouble_shooting.json&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; start.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; start_drainer.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; start_spark.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; stop.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; stop_drainer.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; stop_spark.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; templates&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; grafana.dest.json.j2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; unsafe_cleanup.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; unsafe_cleanup_container.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;└──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; unsafe_cleanup_data.yml&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;一个标准的 Ansible Playbook 结构：在最外层暴露我们需要执行的 YAML 配置，所有具体的操作和配置文件都放到 roles 和 conf 中，下面我们来一点点看具体做了什么，哪些地方是我们需要注意的。&lt;/p&gt;
-&lt;h4 id=&quot;local_prepareyml&quot;&gt;local_prepare.yml&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/tidb-ansible
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;master ✔ $ tree -L 2 .
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── LICENSE
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── README.md
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── ansible.cfg
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── bootstrap.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── clean_log_cron.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── cloud
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── aws-ansible
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── collect_diagnosis.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── common_tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── add_evict_leader_scheduler.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── transfer_pd_leader.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── conf
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── alertmanager.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── tikv.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── create_users.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── deploy.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── deploy_drainer.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── deploy_ntp.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── excessive_rolling_update.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── filter_plugins
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── tags.py
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── graceful_stop.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── group_vars
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── alertmanager_servers.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── all.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── tidb_servers.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── tikv_servers.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── hosts.ini
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── inventory.ini
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── library
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── coreos_facts
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── docker_facts
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── wait_for_pid.py
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── local_prepare.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── log
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── migrate_monitor.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── requirements.txt
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── roles
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── alertmanager
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── blackbox_exporter
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── bootstrap
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── tikv
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── tikv_importer
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── tispark
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── rolling_update.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── rolling_update_monitor.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── scripts
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── check
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── clsrun.sh
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── disk_performance.json
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   ├── grafana-config-copy.py
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;| ...
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── tikv_trouble_shooting.json
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── start.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── start_drainer.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── start_spark.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── stop.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── stop_drainer.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── stop_spark.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── templates
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;│   └── grafana.dest.json.j2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── unsafe_cleanup.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;├── unsafe_cleanup_container.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;└── unsafe_cleanup_data.yml
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;一个标准的 Ansible Playbook 结构：在最外层暴露我们需要执行的 YAML 配置，所有具体的操作和配置文件都放到 roles 和 conf 中，下面我们来一点点看具体做了什么，哪些地方是我们需要注意的。&lt;/p&gt;
+&lt;h4 id="local_prepareyml"&gt;
+local_prepare.yml
+&lt;a class="heading-link" href="#local_prepareyml"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
 &lt;p&gt;在这里一共做了以下这么几件事情：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;准备 binary 下载地址配置&lt;/li&gt;
@@ -527,9 +701,15 @@
 &lt;li&gt;shell （果然没人会去用 command 的&lt;/li&gt;
 &lt;li&gt;template&lt;/li&gt;
 &lt;li&gt;get_url&lt;/li&gt;
-&lt;li&gt;…&lt;/li&gt;
+&lt;li&gt;&amp;hellip;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h4 id=&quot;bootstrapyml&quot;&gt;bootstrap.yml&lt;/h4&gt;
+&lt;h4 id="bootstrapyml"&gt;
+bootstrap.yml
+&lt;a class="heading-link" href="#bootstrapyml"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
 &lt;ul&gt;
 &lt;li&gt;基本环境配置参数检查（机器数、配置、OS发行版）&lt;/li&gt;
 &lt;li&gt;python 环境准备，NTP 软件包安装&lt;/li&gt;
@@ -537,9 +717,9 @@
 &lt;li&gt;检查系统配置（cpu 调节器配置如果不是performance， 非开发模式下会强制退出）&lt;/li&gt;
 &lt;li&gt;fio 检测
 &lt;ul&gt;
-&lt;li&gt;psync ,bs=32k,iodepth=4,numjobs=4  randread iops不小于 40k&lt;/li&gt;
-&lt;li&gt;psync, bs=32k,iodepth=4,numjobs=4  randrw(100%r,0%w) iops均不低于 10k&lt;/li&gt;
-&lt;li&gt;psync, bs=32k, iodepth=1,numjobs=1  randrw(100%r,0%w) lat randread 不高于 0.25ms，write 不高于 30us&lt;/li&gt;
+&lt;li&gt;psync ,bs=32k,iodepth=4,numjobs=4 randread iops不小于 40k&lt;/li&gt;
+&lt;li&gt;psync, bs=32k,iodepth=4,numjobs=4 randrw(100%r,0%w) iops均不低于 10k&lt;/li&gt;
+&lt;li&gt;psync, bs=32k, iodepth=1,numjobs=1 randrw(100%r,0%w) lat randread 不高于 0.25ms，write 不高于 30us&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -553,11 +733,29 @@
 &lt;li&gt;irqbalance ONESHOT=yes # irqbalance 不以守护进程方式运行&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;关于 fio 检测，嗯，我还是太天真了，这个级别的磁盘延迟要求，估计只有 PCIe SSD 可以满足了吧。&lt;/p&gt;
-&lt;h4 id=&quot;deployyml&quot;&gt;deploy.yml&lt;/h4&gt;
+&lt;h4 id="deployyml"&gt;
+deploy.yml
+&lt;a class="heading-link" href="#deployyml"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
 &lt;p&gt;这部分通用的东西比较少，都是内部的一些配置文件和服务。&lt;/p&gt;
-&lt;h4 id=&quot;startyml&quot;&gt;start.yml&lt;/h4&gt;
+&lt;h4 id="startyml"&gt;
+start.yml
+&lt;a class="heading-link" href="#startyml"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h4&gt;
 &lt;p&gt;貌似 TiDB 服务的启动是有严格的依赖关系的，不知道这里如果启动顺序调整，是否会自动重试直到相应依赖服务启动完成。&lt;/p&gt;
-&lt;h2 id=&quot;滚动升级&quot;&gt;滚动升级&lt;/h2&gt;
+&lt;h2 id="滚动升级"&gt;
+滚动升级
+&lt;a class="heading-link" href="#%e6%bb%9a%e5%8a%a8%e5%8d%87%e7%ba%a7"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;在视频讲解中，提到 TiDB 支持滚动升级，这一点在一个 2B 产品功能中很重要，随着产品的开发迭代，能够无痛的给客户进行升级是很重要的。&lt;/p&gt;
 &lt;p&gt;在官方文档中，看到了两个升级文档，分别为 1.0 升级到 2.0 和 2.0 升级到 2.1。使用的滚动升级 YAML 文件为：rolling_update.yml
 升级过程为滚动升级，步骤为：&lt;/p&gt;
@@ -575,150 +773,198 @@
 &lt;li&gt;tidb&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;这里比较遗憾没有找到升级失败的处理方式，升级 PD 过程中检查健康状态连续 1分钟都未恢复正常，此时 Ansible 退出，PD 处于高版本状态，其他组件 tikv，tidb 还处于低版本状态，不知道这时如何处理，也许是产品上保证了兼容性？&lt;/p&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;了解了 TiDB 的安装和升级，着重学习下 Ansible Playbook 的组织形式，在 tidb-ansible 中，所有的功能都拆分的很细，能采用 ansible 的都用 ansible 实现了，但是难免需要一些脚本配合（fio），这里的选择需要根据实际情况来进行相应修改。&lt;/p&gt;
-&lt;h2 id=&quot;吐槽&quot;&gt;吐槽&lt;/h2&gt;
-&lt;p&gt;不知道为什么在代码中 scripts 下放置了许多json 配置文件。。。。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>Ansible最佳实践</title><link>https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</guid><pubDate>Sat, 24 Nov 2018 13:18:28 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;h2 id="吐槽"&gt;
+吐槽
+&lt;a class="heading-link" href="#%e5%90%90%e6%a7%bd"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;不知道为什么在代码中 scripts 下放置了许多json 配置文件。。。。&lt;/p&gt;</description></item><item><title>Ansible最佳实践</title><link>https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</link><pubDate>Sat, 24 Nov 2018 21:18:28 +0000</pubDate><guid>https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;说起来我真正负责过大批量服务器线上管理的时间，还是在16年负责运维的时候，那时候还都是通过 Shell 脚本来完成一些自动化的工作，当时觉得还不错，至少我觉得可定制化上还是很好的。&lt;/p&gt;
 &lt;p&gt;目前负责公司产品中一部分功能目前是通过 Shell 来完成的，但是 Shell 脚本在使用中存在一些弊端，最近在用 Ansible 来重写这部分功能，在重写过程中感受负责，又爱又恨，也有一些疑惑，特此记录。&lt;/p&gt;
-&lt;h2 id=&quot;ansible&quot;&gt;Ansible&lt;/h2&gt;
+&lt;h2 id="ansible"&gt;
+Ansible
+&lt;a class="heading-link" href="#ansible"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;相信大家都或多或少听过 Ansible,Puppet,SaltStack 等等自动管理工具，它们的功能都很强大，但使用起来又不简单，Ansible 可以说是这里面上手最快的一个。&lt;/p&gt;
 &lt;p&gt;这里我不讲述 Ansible 具体的使用规则，大家看文档就好，我讲下我常用的几个场景：&lt;/p&gt;
-&lt;h3 id=&quot;批量查看操作拷贝&quot;&gt;批量查看、操作、拷贝&lt;/h3&gt;
+&lt;h3 id="批量查看操作拷贝"&gt;
+批量查看、操作、拷贝
+&lt;a class="heading-link" href="#%e6%89%b9%e9%87%8f%e6%9f%a5%e7%9c%8b%e6%93%8d%e4%bd%9c%e6%8b%b7%e8%b4%9d"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;无论是作为一名开发，还是测试、运维，应该都碰到过需要管理多台服务器的情况，比如我们想要查看一个集群中所有节点的负责情况，那么我们可以执行：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt; $ ansible yiran-cluster -m raw -a &apos;uptime&apos;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;192.168.67.39 | SUCCESS | rc=0 &gt;&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt; 20:23:24 up 3 days,  7:32,  4 users,  load average: 14.97, 13.81, 12.55&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Shared connection to 192.168.67.39 closed.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;192.168.67.40 | SUCCESS | rc=0 &gt;&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt; 20:23:24 up 3 days,  7:32,  1 user,  load average: 11.79, 14.15, 14.81&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Shared connection to 192.168.67.40 closed.&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;192.168.67.41 | SUCCESS | rc=0 &gt;&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt; 20:23:24 up 6 days, 22:36,  1 user,  load average: 19.89, 20.10, 19.79&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Shared connection to 192.168.67.41 closed.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;如果我们想要拷贝自己的测试代码到所有的服务器上，我们可以执行：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ansible yiran-cluster -m synchronize -a &apos;src=zbs_rest dest=/usr/lib/python2.7/site-packages/&apos;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&quot;重复性操作&quot;&gt;重复性操作&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ ansible yiran-cluster -m raw -a &lt;span style="font-style:italic"&gt;&amp;#39;uptime&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;192.168.67.39 | SUCCESS | rc=0 &amp;gt;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 20:23:24 up 3 days, 7:32, 4 users, load average: 14.97, 13.81, 12.55
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Shared connection to 192.168.67.39 closed.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;192.168.67.40 | SUCCESS | rc=0 &amp;gt;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 20:23:24 up 3 days, 7:32, 1 user, load average: 11.79, 14.15, 14.81
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Shared connection to 192.168.67.40 closed.
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;192.168.67.41 | SUCCESS | rc=0 &amp;gt;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 20:23:24 up 6 days, 22:36, 1 user, load average: 19.89, 20.10, 19.79
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Shared connection to 192.168.67.41 closed.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;如果我们想要拷贝自己的测试代码到所有的服务器上，我们可以执行：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ansible yiran-cluster -m synchronize -a &lt;span style="font-style:italic"&gt;&amp;#39;src=zbs_rest dest=/usr/lib/python2.7/site-packages/&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id="重复性操作"&gt;
+重复性操作
+&lt;a class="heading-link" href="#%e9%87%8d%e5%a4%8d%e6%80%a7%e6%93%8d%e4%bd%9c"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h3&gt;
 &lt;p&gt;如果我们经常要查看某些集群（无监控）情况下的性能，我们可以编写一个 playbook，这个 playbook 专门用来收集集群的状态：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt; $ cat cluster_status.yml&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;#!/usr/bin/env ansible-playbook&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;---&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;- name: cluster status&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  hosts: yiran-cluster&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  max_fail_percentage: 0&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  gather_facts: false&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  tasks:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;     - name: uptime&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       raw: uptime&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       register: out&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;     - debug: var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;     - name: check services status&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       shell: /usr/share/tuna/script/control_all_services.sh --action=status --group=role&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       register: out&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       async: 300&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       poll: 2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;     - debug: var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;     - name: memory status&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       raw: free -h&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;       register: out&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;     - debug: var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;shell-script-vs-ansible&quot;&gt;Shell Script vs Ansible&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $ cat cluster_status.yml
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;#!/usr/bin/env ansible-playbook&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;---
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;- name: cluster status
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; hosts: yiran-cluster
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; max_fail_percentage: 0
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; gather_facts: false
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tasks:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: uptime
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raw: uptime
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; register: out
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - debug: var=out.stdout_lines
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: check services status
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; shell: /usr/share/tuna/script/control_all_services.sh --action=status --group=role
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; register: out
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; async: 300
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; poll: 2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - debug: var=out.stdout_lines
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: memory status
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raw: free -h
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; register: out
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - debug: var=out.stdout_lines
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="shell-script-vs-ansible"&gt;
+Shell Script vs Ansible
+&lt;a class="heading-link" href="#shell-script-vs-ansible"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;通过上述的简单示例，可以体会到 Ansible 的强大，但是 Ansible 真的有那么好么？&lt;/p&gt;
-&lt;p&gt;明明几行  Shell 就可以搞定的事情，为什么一定要使用 Ansible 来做呢？&lt;br&gt;
+&lt;p&gt;明明几行 Shell 就可以搞定的事情，为什么一定要使用 Ansible 来做呢？&lt;br&gt;
 明明一个 Shell 脚本就可以完成的环境监察，为什么一定要使用 Ansible Playbook 来做呢？要知道 Playbook 编写语法虽然是 YAML，但是使用起来并不简单，有很多特殊的语法需要去注意，完全没有必要花费精力去学习一个新的工具去完成。&lt;/p&gt;
-&lt;p&gt;前两天看到 &lt;a href=&quot;https://www.kawabangga.com/&quot;&gt;卡瓦邦噶&lt;/a&gt; 介绍 Ansible的一篇博客中，提到了一篇 &lt;a href=&quot;https://hvops.com/articles/ansible-vs-shell-scripts/&quot;&gt;Shell Script vs Ansible: Fight&lt;/a&gt; 的文章（远古版真香），其中有一段总结，用来描述 Ansible 的优势，我加上了 Shell Script 的对比如下：&lt;/p&gt;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Ansible&lt;/th&gt;&lt;th&gt;Shell Script&lt;/th&gt;&lt;th&gt;优胜者&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;可以进行源码管理&lt;/td&gt;&lt;td&gt;Shell 也可以&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;幂等性&lt;/td&gt;&lt;td&gt;Shell 中需要额外做条件判断&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;同时在多台服务器运行&lt;/td&gt;&lt;td&gt;Shell 可以通过 sshpass 编写脚本同时在多台运行&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;验证服务器正确性&lt;/td&gt;&lt;td&gt;Shell 需要编写脚本收集更多信息&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;定位部分服务器组&lt;/td&gt;&lt;td&gt;Shell 需要编写脚本对配置文件进行过滤筛选&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;支持模板&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;技术栈支持&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
+&lt;p&gt;前两天看到 &lt;a href="https://www.kawabangga.com/" class="external-link" target="_blank" rel="noopener"&gt;卡瓦邦噶&lt;/a&gt; 介绍 Ansible的一篇博客中，提到了一篇 &lt;a href="https://hvops.com/articles/ansible-vs-shell-scripts/" class="external-link" target="_blank" rel="noopener"&gt;Shell Script vs Ansible: Fight&lt;/a&gt; 的文章（远古版真香），其中有一段总结，用来描述 Ansible 的优势，我加上了 Shell Script 的对比如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Ansible&lt;/th&gt;
+&lt;th&gt;Shell Script&lt;/th&gt;
+&lt;th&gt;优胜者&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;可以进行源码管理&lt;/td&gt;
+&lt;td&gt;Shell 也可以&lt;/td&gt;
+&lt;td&gt;-&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;幂等性&lt;/td&gt;
+&lt;td&gt;Shell 中需要额外做条件判断&lt;/td&gt;
+&lt;td&gt;Ansible&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;同时在多台服务器运行&lt;/td&gt;
+&lt;td&gt;Shell 可以通过 sshpass 编写脚本同时在多台运行&lt;/td&gt;
+&lt;td&gt;Ansible&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;验证服务器正确性&lt;/td&gt;
+&lt;td&gt;Shell 需要编写脚本收集更多信息&lt;/td&gt;
+&lt;td&gt;Ansible&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;定位部分服务器组&lt;/td&gt;
+&lt;td&gt;Shell 需要编写脚本对配置文件进行过滤筛选&lt;/td&gt;
+&lt;td&gt;Ansible&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;支持模板&lt;/td&gt;
+&lt;td&gt;-&lt;/td&gt;
+&lt;td&gt;Ansible&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;技术栈支持&lt;/td&gt;
+&lt;td&gt;-&lt;/td&gt;
+&lt;td&gt;Ansible&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 &lt;p&gt;综合看上去，感觉 Ansible 太好了，上述情况下如果可以选择的话，我们都应该选择 Ansible 来做管理，事实上真的是这样么？&lt;/p&gt;
 &lt;p&gt;我也以为是这样，直到我通过 Ansible 重写 Shell 脚本。&lt;/p&gt;
-&lt;h2 id=&quot;噩梦开始&quot;&gt;噩梦开始&lt;/h2&gt;
+&lt;h2 id="噩梦开始"&gt;
+噩梦开始
+&lt;a class="heading-link" href="#%e5%99%a9%e6%a2%a6%e5%bc%80%e5%a7%8b"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;由于产品功能需要处理多平台的、多场景的情况，该功能的 Shell 脚本大概有 4800 行左右。&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;--------------------------------------------------------------------------------&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Language                      files          blank        comment           code&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;--------------------------------------------------------------------------------&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Bourne Shell                     57            990            154           4847&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Python                            2             48              0            201&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Bourne Again Shell                1              4              5             28&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;我们找一个简单的脚本来看下：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;master ✔ $ cat stage_mount_extent_disks.sh&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;#!/usr/bin/env bash&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;cur=`dirname $0`&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;. $cur/zbs_util.sh&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;if [&quot;$#&quot; -lt 1](/mentions/lt-1); then&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    echo &quot;Usage: $0 &amp;#x3C;disk1&gt; &amp;#x3C;disk2&gt;&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    exit 1&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;fi&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;disks=$*&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;echo &quot;waiting service start .....&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;for ((i = 0; i &amp;#x3C; 30; i++)); do&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    if pidof service; then&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        break&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    else&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        sleep 2&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    fi&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;done&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;echo &quot;service started&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;# mount partition&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;for disk in ${disks[@]}; do&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    echo &quot;mount $disk&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;    $cur/mount_extent_disk.sh &quot;/dev/$disk&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;done&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;这是一个很简单的脚本，首先我们判断了下输入参数，需要输入两块磁盘盘符，接下来等待服务启动后，我们调用另一个脚本进行磁盘的挂载，如果我们想要执行这个脚本，那么我们可以执行执行：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;./stage_mount_extent_disks.sh sda sdb&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;然后等待脚本执行结束就可以了，这里的 sda 和 sdb 是存在一个 json 文件中，我们使用 &lt;code&gt;jq&lt;/code&gt; 命令可以很容易的获取到 json 文件中的执行磁盘。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;--------------------------------------------------------------------------------
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Language files blank comment code
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;--------------------------------------------------------------------------------
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Bourne Shell 57 990 154 4847
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Python 2 48 0 201
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Bourne Again Shell 1 4 5 28
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;我们找一个简单的脚本来看下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;master ✔ $ cat stage_mount_extent_disks.sh
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;#!/usr/bin/env bash&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;cur=&lt;span style="font-style:italic"&gt;`&lt;/span&gt;dirname $0&lt;span style="font-style:italic"&gt;`&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;. $cur/zbs_util.sh
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;if&lt;/span&gt; [[ &lt;span style="font-style:italic"&gt;&amp;#34;&lt;/span&gt;$#&lt;span style="font-style:italic"&gt;&amp;#34;&lt;/span&gt; -lt 1 ]]; &lt;span style="font-weight:bold"&gt;then&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; echo &lt;span style="font-style:italic"&gt;&amp;#34;Usage: &lt;/span&gt;$0&lt;span style="font-style:italic"&gt; &amp;lt;disk1&amp;gt; &amp;lt;disk2&amp;gt;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; exit 1
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;fi&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;disks=$*
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo &lt;span style="font-style:italic"&gt;&amp;#34;waiting service start .....&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;for&lt;/span&gt; ((i = 0; i &amp;lt; 30; i++)); &lt;span style="font-weight:bold"&gt;do&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;if&lt;/span&gt; pidof service; &lt;span style="font-weight:bold"&gt;then&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; break
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;else&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; sleep 2
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-weight:bold"&gt;fi&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;done&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;echo &lt;span style="font-style:italic"&gt;&amp;#34;service started&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-style:italic"&gt;# mount partition&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;for&lt;/span&gt; disk in &lt;span style="font-weight:bold;font-style:italic"&gt;${&lt;/span&gt;disks[@]&lt;span style="font-weight:bold;font-style:italic"&gt;}&lt;/span&gt;; &lt;span style="font-weight:bold"&gt;do&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; echo &lt;span style="font-style:italic"&gt;&amp;#34;mount &lt;/span&gt;$disk&lt;span style="font-style:italic"&gt;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; $cur/mount_extent_disk.sh &lt;span style="font-style:italic"&gt;&amp;#34;/dev/&lt;/span&gt;$disk&lt;span style="font-style:italic"&gt;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="font-weight:bold"&gt;done&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这是一个很简单的脚本，首先我们判断了下输入参数，需要输入两块磁盘盘符，接下来等待服务启动后，我们调用另一个脚本进行磁盘的挂载，如果我们想要执行这个脚本，那么我们可以执行执行：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;./stage_mount_extent_disks.sh sda sdb
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;然后等待脚本执行结束就可以了，这里的 sda 和 sdb 是存在一个 json 文件中，我们使用 &lt;code&gt;jq&lt;/code&gt; 命令可以很容易的获取到 json 文件中的执行磁盘。&lt;/p&gt;
 &lt;p&gt;那么我们在 Ansible Playbook 我们要怎么做？&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;读取配置文件，并将读取结果设置为参数 &lt;code&gt;myvar&lt;/code&gt;&lt;/li&gt;
@@ -728,100 +974,135 @@
 &lt;li&gt;如果平台不是 xen7，且是 halo 的话，执行 halo 脚本&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;具体 Playbook 如下：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;- name: mount extent disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  gather_facts: false&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  hosts: master:storage&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  tasks:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - shell: cat /path/config.json&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        register: result&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - set_fact:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;          myvar: &quot;{{ result.stdout | from_json }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - name: get all extent disk list&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        set_fact:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;          extent_disk_list: &quot;{{ myvar | json_query(&apos;disks[?function==`extent`][].drive&apos;) | list }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - name: get all extent disk string&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        set_fact:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;          extent_disk_string: &quot;{{ extent_disk_list | join(&apos; &apos;) }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - name: mount xen7 extent disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        raw: /usr/share/tuna/script/xen70/stage_mount_extent_disks.sh &quot;{{ extent_disk_string }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        when: myvar.xen7 == True&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        register: out&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - debug: var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - name: mount halo extent disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        raw: /usr/share/tuna/script/halo/stage_mount_extent_disks.sh &quot;{{ extent_disk_string }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        when: myvar.xen7 == False and myvar.halo == True&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        register: out&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - debug: var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;相信大家通过这个简单的示例发现一些问题，我总结了下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;- name: mount extent disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; gather_facts: false
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; hosts: master:storage
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tasks:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - shell: cat /path/config.json
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; register: result
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - set_fact:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; myvar: &lt;span style="font-style:italic"&gt;&amp;#34;{{ result.stdout | from_json }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: get all extent disk list
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; set_fact:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; extent_disk_list: &lt;span style="font-style:italic"&gt;&amp;#34;{{ myvar | json_query(&amp;#39;disks[?function==`extent`][].drive&amp;#39;) | list }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: get all extent disk string
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; set_fact:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; extent_disk_string: &lt;span style="font-style:italic"&gt;&amp;#34;{{ extent_disk_list | join(&amp;#39; &amp;#39;) }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: mount xen7 extent disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raw: /usr/share/tuna/script/xen70/stage_mount_extent_disks.sh &lt;span style="font-style:italic"&gt;&amp;#34;{{ extent_disk_string }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; when: myvar.xen7 == True
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; register: out
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - debug: var=out.stdout_lines
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: mount halo extent disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raw: /usr/share/tuna/script/halo/stage_mount_extent_disks.sh &lt;span style="font-style:italic"&gt;&amp;#34;{{ extent_disk_string }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; when: myvar.xen7 == False and myvar.halo == True
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; register: out
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - debug: var=out.stdout_lines
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;相信大家通过这个简单的示例发现一些问题，我总结了下：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;如果脚本中存在较多判断，不宜使用 Playbook 实现逻辑&lt;/li&gt;
 &lt;li&gt;如果脚本中存在部分参数解析功能，不宜使用 Playbook 实现逻辑&lt;/li&gt;
 &lt;li&gt;不要过度拆分 task，保证每个 task 完整性&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;其实上面的 Playbook 我们完全可以写成这样：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;- name: mount extent disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  gather_facts: false&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  hosts: master:storage&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;  tasks:&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - name: mount  extent disk&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      # 所有逻辑判断均在 stage_mount_extent_disks.sh 中完成&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        raw: /usr/share/tuna/script/stage_mount_extent_disks.sh &quot;{{ extent_disk_string }}&quot;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;        register: out&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;      - debug: var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Ansible 只作操作分发，减轻 Playbook 复杂性，虽然这会损失一部分幂等性，但是可以最简化的满足要求，同时执行，获取执行结果。&lt;/p&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;- name: mount extent disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; gather_facts: false
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; hosts: master:storage
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; tasks:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - name: mount extent disk
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="font-style:italic"&gt;# 所有逻辑判断均在 stage_mount_extent_disks.sh 中完成&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; raw: /usr/share/tuna/script/stage_mount_extent_disks.sh &lt;span style="font-style:italic"&gt;&amp;#34;{{ extent_disk_string }}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; register: out
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; - debug: var=out.stdout_lines
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Ansible 只作操作分发，减轻 Playbook 复杂性，虽然这会损失一部分幂等性，但是可以最简化的满足要求，同时执行，获取执行结果。&lt;/p&gt;
+&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;从个人使用上来说，Ansible 还是很好用的，至少它无需 Agent，SSH 连接等特性，使用起来很友好。&lt;br&gt;
 但是我们也不应该过分使用 Playbook，编写 Playbook 解析 json 花费了不少的时间，远不如直接在被执行脚本中完成的成本低。&lt;/p&gt;
 &lt;p&gt;Ansible 还有一些未能合理解决的问题，比如如何知道一个 Playbook 执行的总体进度？
 如何获取执行的实时结果输出等。&lt;/p&gt;
 &lt;p&gt;如果我们只是普通的操作一些节点执行命令，获取信息，那么完全可以通过 sshpass，mmh 等命令完成，相对来说更方便。&lt;/p&gt;
-&lt;p&gt;希望随着自己的使用，能够更好的掌握使用 Ansible 的度。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>Ansible 配置 IPv6 连接</title><link>https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</guid><pubDate>Fri, 17 Aug 2018 05:43:40 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;p&gt;希望随着自己的使用，能够更好的掌握使用 Ansible 的度。&lt;/p&gt;</description></item><item><title>Ansible 配置 IPv6 连接</title><link>https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</link><pubDate>Fri, 17 Aug 2018 13:43:40 +0000</pubDate><guid>https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</guid><description>&lt;h2 id="背景"&gt;
+背景
+&lt;a class="heading-link" href="#%e8%83%8c%e6%99%af"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;平时工作中因为通常需要远程操作较多 Linux 环境，引入了 Ansible，但是大都是通过 Ansible 远程命令的方式执行，少数的封装为 Playbook 也是很简单的配置。
 最早的时候用过简单的 SaltStack，但是要安装 Agent，觉得不好用，在 16年早期的时候使用 Ansible，简单快捷（当然我对性能没有要求）。
-最近需要把之前由 Shell &amp;#x26; Python 拼装的一个服务统一用 Ansible 进行重写，又花了些时间看了看相关文档。发现大家操作远程机器无论是通过秘钥还是通过密码，都是基于 IPv4 的地址链接的，而有些机器是没有 IPv4 地址的，于是花费了些时间验证 Ansible IPv6 配置方式。&lt;/p&gt;
-&lt;h2 id=&quot;ipv6&quot;&gt;IPv6&lt;/h2&gt;
+最近需要把之前由 Shell &amp;amp; Python 拼装的一个服务统一用 Ansible 进行重写，又花了些时间看了看相关文档。发现大家操作远程机器无论是通过秘钥还是通过密码，都是基于 IPv4 的地址链接的，而有些机器是没有 IPv4 地址的，于是花费了些时间验证 Ansible IPv6 配置方式。&lt;/p&gt;
+&lt;h2 id="ipv6"&gt;
+IPv6
+&lt;a class="heading-link" href="#ipv6"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;IPv6 维基百科的解释是：网际协议第6版（英文：Internet Protocol version 6，缩写：IPv6）是网际协议（IP）的最新版本，用作互联网的网络层协议，用它来取代IPv4主要是为了解决IPv4地址枯竭问题，不过它也在其他很多方面对IPv4有所改进。我们目前日常中使用的地址都是 IPv4 的地址（比如：192.168.1.1）。
 使用 IPv6 有一个好处是，可以通过 NDP（Neighbor Discovery Protocol）扫描二层网络内的所有的 IPv6 地址，方便我们使用，那么我们如何判断 IPv6 是否可以连通呢？
 可以通过 ping6 的方式判断，比如：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node111 14:00:44 ~]$ping6 fe80::2487:93ff:fe9a:c546%port-mgt&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;PING fe80::2487:93ff:fe9a:c546%port-mgt(fe80::2487:93ff:fe9a:c546%port-mgt) 56 data bytes&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;64 bytes from fe80::2487:93ff:fe9a:c546%port-mgt: icmp_seq=1 ttl=64 time=0.443 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;64 bytes from fe80::2487:93ff:fe9a:c546%port-mgt: icmp_seq=2 ttl=64 time=0.488 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;^C&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;--- fe80::2487:93ff:fe9a:c546%port-mgt ping statistics ---&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;2 packets transmitted, 2 received, 0% packet loss, time 1000ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;rtt min/avg/max/mdev = 0.443/0.465/0.488/0.031 ms&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;注意这里的 IPv6 的格式，前面是 IPv6 地址，后面是本地网络接口名称，如果是物理网卡则接物理网卡名称，如果是 OVS Port，则接 Port 名称。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 14:00:44 ~]$ping6 fe80::2487:93ff:fe9a:c546%port-mgt
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;PING fe80::2487:93ff:fe9a:c546%port-mgt(fe80::2487:93ff:fe9a:c546%port-mgt) 56 data bytes
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;64 bytes from fe80::2487:93ff:fe9a:c546%port-mgt: icmp_seq=1 ttl=64 time=0.443 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;64 bytes from fe80::2487:93ff:fe9a:c546%port-mgt: icmp_seq=2 ttl=64 time=0.488 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;^C
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;--- fe80::2487:93ff:fe9a:c546%port-mgt ping statistics ---
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;2 packets transmitted, 2 received, 0% packet loss, time 1000ms
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;rtt min/avg/max/mdev = 0.443/0.465/0.488/0.031 ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;注意这里的 IPv6 的格式，前面是 IPv6 地址，后面是本地网络接口名称，如果是物理网卡则接物理网卡名称，如果是 OVS Port，则接 Port 名称。&lt;/p&gt;
 &lt;p&gt;既然地址可以连通，那么我们思考如何进行远程控制。&lt;/p&gt;
-&lt;h2 id=&quot;ssh-远程连接&quot;&gt;SSH 远程连接&lt;/h2&gt;
+&lt;h2 id="ssh-远程连接"&gt;
+SSH 远程连接
+&lt;a class="heading-link" href="#ssh-%e8%bf%9c%e7%a8%8b%e8%bf%9e%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
 &lt;p&gt;通常我们通过 IPv4 地址链接远程 Linux，通过如下方式：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node111 14:01:23 ~]$ssh 192.168.30.112&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;root@192.168.30.112&apos;s password: &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Last login: Fri Aug 17 12:15:52 2018 from 192.168.16.1&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node112 14:03:46 ~]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;我们尝试将上面的 IPv4 地址替换为 IPv6 地址试试看：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node111 14:04:55 ~]$ssh fe80::2487:93ff:fe9a:c546&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;ssh: connect to host fe80::2487:93ff:fe9a:c546 port 22: Invalid argument&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node111 14:05:10 ~]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;直接指定 IPv6 地址是无法识别的，那么我们按照 ping6 规则，加上网络接口名称试试看：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node111 14:05:10 ~]$ssh fe80::2487:93ff:fe9a:c546%port-mgt&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;root@fe80::2487:93ff:fe9a:c546%port-mgt&apos;s password: &lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Last login: Fri Aug 17 14:04:56 2018 from fe80::d4b7:acff:fe2f:604e%ovsbr-mgt&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node112 14:03:46 ~]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;一切顺利，我们成功的登录到了远程的机器上，我们知道 Ansible 是通过 SSH 的方式远程控制的，具体是调用 Python 的 (paramiko)[&lt;a href=&quot;https://github.com/paramiko/paramiko/&quot;&gt;https://github.com/paramiko/paramiko/&lt;/a&gt;] ，我们接下来配置 Ansible。&lt;/p&gt;
-&lt;h2 id=&quot;ansible-远程连接&quot;&gt;Ansible 远程连接&lt;/h2&gt;
-&lt;p&gt;Ansible Inventory 标准格式是：&lt;code&gt;IP  options&lt;/code&gt; ，比如：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[cluster]&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;fe80::58d3:16ff:fe43:ce77%port-mgt ansible_ssh_user=root ansible_ssh_pass=abc123&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;验证 Ansible 远程控制：&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;[root@node111 14:11:14 ~]$ansible cluster -m raw -a &apos;uptime&apos;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;fe80::58d3:16ff:fe43:ce77%port-mgt | SUCCESS | rc=0 &gt;&gt;&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt; 14:11:22 up 7 days, 23:15,  2 users,  load average: 1.55, 1.39, 1.23&lt;/span&gt;&lt;/span&gt;
-&lt;span class=&quot;line&quot;&gt;&lt;span&gt;Shared connection to fe80::58d3:16ff:fe43:ce77%port-mgt closed.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;只要注意在 IPv6 地址后加上本地网络接口名称就可以正确配置 IPv6 远程控制了。&lt;/p&gt;</content:encoded><category>Ansible</category></item></channel></rss>
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 14:01:23 ~]$ssh 192.168.30.112
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@192.168.30.112&lt;span style=""&gt;&amp;#39;&lt;/span&gt;s password:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Last login: Fri Aug 17 12:15:52 2018 from 192.168.16.1
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node112 14:03:46 ~]$
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;我们尝试将上面的 IPv4 地址替换为 IPv6 地址试试看：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 14:04:55 ~]$ssh fe80::2487:93ff:fe9a:c546
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;ssh: connect to host fe80::2487:93ff:fe9a:c546 port 22: Invalid argument
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 14:05:10 ~]$
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;直接指定 IPv6 地址是无法识别的，那么我们按照 ping6 规则，加上网络接口名称试试看：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 14:05:10 ~]$ssh fe80::2487:93ff:fe9a:c546%port-mgt
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;root@fe80::2487:93ff:fe9a:c546%port-mgt&lt;span style=""&gt;&amp;#39;&lt;/span&gt;s password:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Last login: Fri Aug 17 14:04:56 2018 from fe80::d4b7:acff:fe2f:604e%ovsbr-mgt
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node112 14:03:46 ~]$
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;一切顺利，我们成功的登录到了远程的机器上，我们知道 Ansible 是通过 SSH 的方式远程控制的，具体是调用 Python 的 (paramiko)[https://github.com/paramiko/paramiko/] ，我们接下来配置 Ansible。&lt;/p&gt;
+&lt;h2 id="ansible-远程连接"&gt;
+Ansible 远程连接
+&lt;a class="heading-link" href="#ansible-%e8%bf%9c%e7%a8%8b%e8%bf%9e%e6%8e%a5"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;Ansible Inventory 标准格式是：&lt;code&gt;IP options&lt;/code&gt; ，比如：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[cluster]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fe80::58d3:16ff:fe43:ce77%port-mgt ansible_ssh_user=root ansible_ssh_pass=abc123
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;验证 Ansible 远程控制：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"&gt;&lt;code class="language-Bash" data-lang="Bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;[root@node111 14:11:14 ~]$ansible cluster -m raw -a &lt;span style="font-style:italic"&gt;&amp;#39;uptime&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;fe80::58d3:16ff:fe43:ce77%port-mgt | SUCCESS | rc=0 &amp;gt;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; 14:11:22 up 7 days, 23:15, 2 users, load average: 1.55, 1.39, 1.23
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;Shared connection to fe80::58d3:16ff:fe43:ce77%port-mgt closed.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="总结"&gt;
+总结
+&lt;a class="heading-link" href="#%e6%80%bb%e7%bb%93"&gt;
+&lt;i class="fa-solid fa-link" aria-hidden="true" title="链接到标题"&gt;&lt;/i&gt;
+&lt;span class="sr-only"&gt;链接到标题&lt;/span&gt;
+&lt;/a&gt;
+&lt;/h2&gt;
+&lt;p&gt;只要注意在 IPv6 地址后加上本地网络接口名称就可以正确配置 IPv6 远程控制了。&lt;/p&gt;</description></item></channel></rss>
