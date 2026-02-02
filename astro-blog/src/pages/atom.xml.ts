@@ -42,7 +42,7 @@ export async function GET(context: APIContext) {
   );
 
   return rss({
-    title: 'My Blog',
+    title: "Yiran's Blog",
     description: '记录生活，分享技术，探索世界',
     site: context.site?.toString() || 'https://zdyxry.github.io',
     items,

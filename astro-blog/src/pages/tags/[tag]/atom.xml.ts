@@ -58,7 +58,7 @@ export async function GET(context: APIContext) {
   );
 
   return rss({
-    title: `标签: ${tag} - My Blog`,
+    title: `标签: ${tag} - Yiran's Blog`,
     description: `标签 "${tag}" 的最新文章`,
     site: context.site?.toString() || 'https://zdyxry.github.io',
     items,
