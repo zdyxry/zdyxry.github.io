@@ -107,7 +107,7 @@ remove_array_dups() {
     declare -A tmp_array
 
     for i in "$@"; do
-        ["$i"](/mentions/i) && IFS=" " tmp_array["${i:- }"]=1
+        [["$i"]] && IFS=" " tmp_array["${i:- }"]=1
     done
 
     printf '%s\n' "${!tmp_array[@]}"

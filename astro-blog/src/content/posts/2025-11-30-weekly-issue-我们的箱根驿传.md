@@ -16,7 +16,7 @@ description:
 > Overall, I find these results quite good for the Loongson processor.
 >  Chips and Cheese concluded “Engineers at Loongson have a lot to be proud of”: I agree.
 
-Daniel Lemire 给 [龙芯](/posts/龙芯) 3A6000进行了基础测试。
+Daniel Lemire 给 [[龙芯]] 3A6000进行了基础测试。
 
 ---
 
@@ -40,9 +40,9 @@ Daniel Lemire 给 [龙芯](/posts/龙芯) 3A6000进行了基础测试。
 
 [Migrating from GitHub to Codeberg ⚡ Zig Programming Language](https://ziglang.org/news/migrating-from-github-to-codeberg/)
 
-[Ziglang](/mentions/ziglang) 从 [github](/mentions/github) 迁移到了 [Codeberg](/mentions/codeberg)。我上一次用 [Codeberg](/mentions/codeberg) 是因为 [ipmitool](/mentions/ipmitool), [ipmitool](/mentions/ipmitool) 主要维护者是俄罗斯人，被 Github 禁掉了，当前只能在 [Codeberg](/mentions/codeberg) 维护了。
+[[Ziglang]] 从 [[github]] 迁移到了 [[Codeberg]]。我上一次用 [[Codeberg]] 是因为 [[ipmitool]], [[ipmitool]] 主要维护者是俄罗斯人，被 Github 禁掉了，当前只能在 [[Codeberg]] 维护了。
 
-原来 [Codeberg](/mentions/codeberg) 是使用 [Forgejo](/mentions/forgejo) 来提供服务的： [#259 - Clustered Forgejo for Codeberg - Our journey and your knowledge - forgejo/discussions - Codeberg.org](https://codeberg.org/forgejo/discussions/issues/259) 。
+原来 [[Codeberg]] 是使用 [[Forgejo]] 来提供服务的： [#259 - Clustered Forgejo for Codeberg - Our journey and your knowledge - forgejo/discussions - Codeberg.org](https://codeberg.org/forgejo/discussions/issues/259) 。
 
 ---
 
@@ -57,7 +57,7 @@ Daniel Lemire 给 [龙芯](/posts/龙芯) 3A6000进行了基础测试。
 
 > If you only care about humans I strongly advise you to block every cloudhost subnet you can find, pretty easy given the effort they put into finding you. Most of the worst actors out there are living comfortably on Azure, GCP, Yandex and sometimes Huawei’s servers.
 
-初看很认同，大部分来自于 Cloud 的请求都是垃圾，但转念一想，我大部分请求都是经过 [VPN](/mentions/vpn) 的，我也会被屏蔽……
+初看很认同，大部分来自于 Cloud 的请求都是垃圾，但转念一想，我大部分请求都是经过 [[VPN]] 的，我也会被屏蔽……
 
 ---
 
@@ -114,7 +114,7 @@ Pyshewhart 这个 Python 库不错，感觉会用得上。
 ---
 [爱达·魔都号邮轮攻略指北 | So!azy](https://blog.solazy.me/cruiseshiptips/)
 
-[游轮](/posts/游轮)攻略，介绍的很清晰。
+[[游轮]]攻略，介绍的很清晰。
 
 ---
 

@@ -37,7 +37,7 @@ description:
 
 [Railway raises $100M Series B to unburden the builders](https://blog.railway.com/p/series-b)
 
-[Railway](/mentions/railway) B 轮融了 $100M，不知道他们提到的“first intelligent cloud provider“是什么，视频中的“Ship Software Peacefully”这个 Slogan 挺好的，想到设计同事之前自己 Vibe 的产品在部署的时候选择了 [Zeabur](/mentions/zeabur)，因为不会被墙。
+[[Railway]] B 轮融了 $100M，不知道他们提到的“first intelligent cloud provider“是什么，视频中的“Ship Software Peacefully”这个 Slogan 挺好的，想到设计同事之前自己 Vibe 的产品在部署的时候选择了 [[Zeabur]]，因为不会被墙。
 
 他们在文章中有这样一段话，印象中好像不常见与融资公告中：“We aspire to live in a world of rich tastes, colors, and experiences. We think it’s very difficult to do this drudging through the monotony of poor tooling, tied to your monitor, consuming the same greyscale slop as everybody else.”
 
@@ -58,7 +58,7 @@ description:
 ---
 [Hi, I'm the founder of Docker. I started it in 2008 (under the name Dotcloud) an... | Hacker News](https://news.ycombinator.com/item?id=46733849)
 
-[docker](/mentions/docker) 创始人在 [hacker news](/mentions/hacker-news) 上的 AMA，还提到了“远离 RedHat“。
+[[docker]] 创始人在 [[hacker news]] 上的 AMA，还提到了“远离 RedHat“。
 
 >Q: What would you have done differently in retrospect?    
 > A: What I would tell my younger self: Only listen to your users and customers, ignore everyone else.
@@ -99,7 +99,7 @@ description:
 
 > 7 月 25 日，我和一个全国知名的神内专家吃饭，他高度赞扬了我写日记的习惯，说这是一种主动型健脑运动，可以在一定程度上延缓阿尔兹海默症的发作。
 
-语音[输入法](/posts/输入法)越来越强大，记录日常几乎没什么成本，多记录总是好的。
+语音[[输入法]]越来越强大，记录日常几乎没什么成本，多记录总是好的。
 
 ---
 

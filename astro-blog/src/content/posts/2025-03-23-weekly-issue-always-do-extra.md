@@ -13,7 +13,7 @@ description:
 
 [Spegel 镜像分发介绍 | 卡瓦邦噶！](https://www.kawabangga.com/posts/6889)
 
-Dragonfly 采用透明代理方式工作，会通过 [P2P](/mentions/p2p) 查找资源，如果找到，则通过 [P2P](/mentions/p2p) 进行下载，同时保存一份缓存，给其他节点请求提供文件。弊端：如果要对目标 IDC 服务进行扩容，同时扩容 100 个服务，100 个服务对应不同的镜像，就会全部请求到 Image Registry。此时要么事先同步所有 Image 到目标 IDC（浪费带宽），要么每次跨 IDC 拉取 Image（因为节点故障时，其他节点的缓存已经被删除）。
+Dragonfly 采用透明代理方式工作，会通过 [[P2P]] 查找资源，如果找到，则通过 [[P2P]] 进行下载，同时保存一份缓存，给其他节点请求提供文件。弊端：如果要对目标 IDC 服务进行扩容，同时扩容 100 个服务，100 个服务对应不同的镜像，就会全部请求到 Image Registry。此时要么事先同步所有 Image 到目标 IDC（浪费带宽），要么每次跨 IDC 拉取 Image（因为节点故障时，其他节点的缓存已经被删除）。
 
 Nydus，把 image 进行文件级别的索引和分析，启动的时候只下载必要文件，其他的文件等 access 的时候再通过 P2P 网络下载。
 
@@ -43,7 +43,7 @@ Spegel 做了三件事：
 [Introducing Starlite: A New Python Asynchronous API Framework | HackerNoon](https://hackernoon.com/introducing-starlite-a-new-python-asynchronous-api-framework)  
 [Rise of the Pydantic Stack. What is the pydantic stack? | by Na'aman Hirschfeld | Python in Plain English](https://python.plainenglish.io/an-introduction-to-the-pydantic-stack-9e490d606c8d)  
 
-[Starlite](/mentions/starlite) 的介绍，感觉后面如果有需求可以尝试一下。同时作者的另一篇关于 [Pydantic](/mentions/pydantic) 的文章，感觉现在这些框架的重点都是对 [Pydantic](/mentions/pydantic) 的支持。
+[[Starlite]] 的介绍，感觉后面如果有需求可以尝试一下。同时作者的另一篇关于 [[Pydantic]] 的文章，感觉现在这些框架的重点都是对 [[Pydantic]] 的支持。
 
 ---
 
@@ -62,7 +62,7 @@ Spegel 做了三件事：
 
 [Temporal for AI | Temporal](https://temporal.io/solutions/ai)
 
-喜欢 [Temporal](/mentions/temporal) 的这句话：AI applications are inherently unreliable。
+喜欢 [[Temporal]] 的这句话：AI applications are inherently unreliable。
 
 ---
 
@@ -104,7 +104,7 @@ Spegel 做了三件事：
 
 > Apple 董事会成员的平均年龄为 68 岁！近一半的人超过 70 岁，最年轻的 63 岁。高管团队的情况也好不到哪里去，平均年龄徘徊在 60 岁左右。
 
-有趣。用 [Gemini](/mentions/gemini) 的 Deep Research 功能搜索了下其他科技公司的董事会的平均年龄：
+有趣。用 [[Gemini]] 的 Deep Research 功能搜索了下其他科技公司的董事会的平均年龄：
 - 苹果公司，67.38
 - 英伟达公司，67.08
 - 微软公司，61.17

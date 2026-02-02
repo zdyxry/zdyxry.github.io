@@ -15,7 +15,7 @@ description:
 
 > 这个过程中发现了很多我之前的知识盲区。一个是这里面有的项目是通过截图去记录屏幕信息，但是会通过视频的形式进行存储，原因是视频的压缩率会更高一些。我尝试了一下 5s 的频率截取了 120 张图片，用 zip 普通压缩一下还是有将近 400M，而用 FFmpeg 转成 1FPS 的视频后只需要 3.4M。
 
-细想很有道理，[ffmpeg](/mentions/ffmpeg) 真是好东西。
+细想很有道理，[[ffmpeg]] 真是好东西。
 
 ---
 
@@ -33,7 +33,7 @@ description:
 
 [Pricing changes for GitHub Actions - GitHub Resources](https://resources.github.com/actions/2026-pricing-changes-for-github-actions/)
 
-[github](/mentions/github) [Actions](/mentions/actions) self-hosted runner 将要收费，$0.002 每分钟，public repo 不受影响。如果在自己的 private repo 中跑一些定时任务的构建，需要考虑一下是否需要迁移。
+[[github]] [[Actions]] self-hosted runner 将要收费，$0.002 每分钟，public repo 不受影响。如果在自己的 private repo 中跑一些定时任务的构建，需要考虑一下是否需要迁移。
 
 Github 搞了一个 pricing calc 来帮助用户计算自己的成本，这个界面交互是我用过所有 cloud pricing calc 中最糟糕的了： [Pricing Calculator · GitHub](https://github.com/pricing/calculator) 
 
@@ -41,7 +41,7 @@ Github 搞了一个 pricing calc 来帮助用户计算自己的成本，这个�
 
 [Updates to GitHub Actions pricing · community · Discussion #182186 · GitHub](https://github.com/orgs/community/discussions/182186)
 
-[github](/mentions/github) 针对 self-hosted runner 的价格调整影响范围超过了他们的预期，现在推迟了计划，重新评估相关的计费方案。真的很好奇这里的背后的定价决策是怎么形成的，不是好奇收费的原因，是好奇这个数字是怎么确定的： **$0.002 per-minute**。
+[[github]] 针对 self-hosted runner 的价格调整影响范围超过了他们的预期，现在推迟了计划，重新评估相关的计费方案。真的很好奇这里的背后的定价决策是怎么形成的，不是好奇收费的原因，是好奇这个数字是怎么确定的： **$0.002 per-minute**。
 
 开发者永远是价格非常敏感的用户。
 
@@ -78,7 +78,7 @@ Github 搞了一个 pricing calc 来帮助用户计算自己的成本，这个�
 
 [救命！ | 释怀万物](https://newptcai.gitlab.io/zh/blog/how-not-to-die/)
 
-关于[植物性饮食](/posts/植物性饮食)的分享。美国主要的死亡原因是心脏病，中国第二大死亡原因是心脏病（第一是脑血管疾病），动脉粥样硬化主要由于高水平的低密度胆固醇导致，包括：反式脂肪、饱和脂肪、膳食胆固醇。
+关于[[植物性饮食]]的分享。美国主要的死亡原因是心脏病，中国第二大死亡原因是心脏病（第一是脑血管疾病），动脉粥样硬化主要由于高水平的低密度胆固醇导致，包括：反式脂肪、饱和脂肪、膳食胆固醇。
 
 PPT 的最后一页是一只兔子做瓦肯举手礼：愿你通过多吃蔬菜拥有生生不息与繁荣昌盛。
 

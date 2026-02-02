@@ -13,7 +13,7 @@ description:
 
 [Announcing the Stainless SDK generator](https://www.stainlessapi.com/blog/announcing-the-stainless-sdk-generator)
 
-Stainless 公司提供通过 [openapi](/mentions/openapi) 生成 SDK 的产品及服务，收费很贵，与之前的 [fern](/mentions/fern) 类似。目前的客户有 OpenAI、Cloudflare、Lithic。
+Stainless 公司提供通过 [[openapi]] 生成 SDK 的产品及服务，收费很贵，与之前的 [[fern]] 类似。目前的客户有 OpenAI、Cloudflare、Lithic。
 
 作者 2017 年在 Stripe 负责 API 及 SDK 生成，当时评估市面上没有符合需求的工具，所以 Stripe 决定自己开发。在离开 Stripe 后的 2022 年，创立了 Stainless，同时 Lithic 成为了第一个客户，所以 Stainless 成立的第一天就是盈利的状态。
 
@@ -28,7 +28,7 @@ Cloudflare 将自己的 API 及 SDK 从手动维护转变为 Stainless 之后，
 
 [Scaling vCenter Server Connections for Improved Resiliency - VMware Cloud Foundation (VCF) Blog](https://blogs.vmware.com/cloud-foundation/2024/09/26/scaling-vcenter-server-connections-for-improved-resiliency/)
 
-[vcenter](/mentions/vcenter) 在 `8.0u3` 版本针对请求连接进行了优化。vCenter 使用 Envoy 作为代理服务器，监听 443 和 80 请求，在 Envoy 做了连接数限制，但是存在一些问题：
+[[vcenter]] 在 `8.0u3` 版本针对请求连接进行了优化。vCenter 使用 Envoy 作为代理服务器，监听 443 和 80 请求，在 Envoy 做了连接数限制，但是存在一些问题：
 - 按照连接类型分别限制了连接数，2048 个外部 HTTP 连接，2048 个外部 HTTPS 连接等等；
 	- 如果所有 HTTPS 连接都在使用，但是有可用的 HTTP 连接，此时新的 HTTPS 请求会失败；
 - 超过连接数限制时没有错误信息，只能通过 SSH 到 vCenter 中查看 envoy 日志
@@ -54,7 +54,7 @@ Cloudflare 将自己的 API 及 SDK 从手动维护转变为 Stainless 之后，
 
 [Advancing Our Chef Infrastructure - Slack Engineering](https://slack.engineering/advancing-our-chef-infrastructure/)
 
-Slack 的 Chef 治理，2024 年看到公司没有使用 [kubernetes](/mentions/kubernetes) 来进行基础设施管理，很难得了。
+Slack 的 Chef 治理，2024 年看到公司没有使用 [[kubernetes]] 来进行基础设施管理，很难得了。
 
 因为从来没用过 Chef，所以对于其中的一些痛点理解不深。
 
@@ -71,7 +71,7 @@ maintainer 为了更好的维护项目，更好的迭代，Kubernetes Leader 要
 
 [x.com](https://x.com/solomonstre/status/1842316197020443018)
 
-为什么 [docker](/mentions/docker) 使用 [Golang](/mentions/golang) 编写？
+为什么 [[docker]] 使用 [[Golang]] 编写？
 - 编译后的 binary 不需要安装运行时
 - 创始人是 Python/C 背景，Golang 均衡了两者
 - 主流语法，没有小众或激进的概念，有助于建立大型的贡献者社区
@@ -81,7 +81,7 @@ maintainer 为了更好的维护项目，更好的迭代，Kubernetes Leader 要
 
 [Leveraging Kubernetes virtual machines at Cloudflare with KubeVirt](https://blog.cloudflare.com/leveraging-kubernetes-virtual-machines-with-kubevirt/)
 
-[CloudFlare](/mentions/cloudflare) 内部是如何使用 [KubeVirt](/mentions/kubevirt) 的，主要用于：Kubernetes 扩展性测试、开发环境、内核和 iPXE 测试、软件构建（Cloudflare 大部分软件构建都是在 KubeVirt 的虚拟机中完成的）。
+[[CloudFlare]] 内部是如何使用 [[KubeVirt]] 的，主要用于：Kubernetes 扩展性测试、开发环境、内核和 iPXE 测试、软件构建（Cloudflare 大部分软件构建都是在 KubeVirt 的虚拟机中完成的）。
 
 目前 KubeVirt 的主要用户已经非常多了，ARM、Bytedance、Apple、EQUINIX、RedHat、SUSE 以及 Cloudflare。
 
@@ -97,7 +97,7 @@ maintainer 为了更好的维护项目，更好的迭代，Kubernetes Leader 要
 
 [AWS's Valkey Play: When a Fork Becomes a Price Cut - Last Week in AWS Blog](https://www.lastweekinaws.com/blog/aws-valkey-play-when-a-fork-becomes-a-price-cut/)
 
-[AWS](/mentions/aws) 将基于 [Valkey](/mentions/valkey) 的价格比基于 [redis](/mentions/redis) 的价格便宜，在 AWS 庞大的用户基数下，是否会导致用户更多的倾向于 Valkey，从而带动 Valkey 生态的发展？
+[[AWS]] 将基于 [[Valkey]] 的价格比基于 [[redis]] 的价格便宜，在 AWS 庞大的用户基数下，是否会导致用户更多的倾向于 Valkey，从而带动 Valkey 生态的发展？
 
 ---
 
@@ -135,7 +135,7 @@ RSS 不受大公司欢迎完全可以理解。
 
 [Tag: 马尔代夫 • Usubeni Fantasy](https://ssshooter.com/tag/%E9%A9%AC%E5%B0%94%E4%BB%A3%E5%A4%AB/)
 
-[马尔代夫](/posts/马尔代夫) [游记](/posts/游记)，在 Maafushivaru 岛上度假加求婚，看着很浪漫很幸福。
+[[马尔代夫]] [[游记]]，在 Maafushivaru 岛上度假加求婚，看着很浪漫很幸福。
 
 ---
 
@@ -147,7 +147,7 @@ RSS 不受大公司欢迎完全可以理解。
 
 [从北京的秋天到澳洲的春天-邂逅30岁的生日月](https://blog.sailfishc.com/Australia)
 
-[澳洲](/posts/澳洲) [自驾游](/posts/自驾游)游记。
+[[澳洲]] [[自驾游]]游记。
 
 >有时候我也会将旅行和其他的东西比较，这次花了1W元就会想1W块钱能买一个Mac了，我想这个对比想法应该是很多人也会考虑的，今年我其实也去了很多地方
 
@@ -160,7 +160,7 @@ RSS 不受大公司欢迎完全可以理解。
 
 [x.com](https://x.com/notengoprisa/status/1842550658102079556)
 
-[Google](/mentions/google) 搜索显示的所有“孔雀宝宝”都是 AI 生成的，但是这是 [Google](/mentions/google) 的问题么？这不是，这是滥用 AI 的必然结果，有人推荐使用 [Kagi](/mentions/kagi) 来代替 Google，但是我就觉得这是搜索引擎的工作模式导致的，AI 生成的内容是爆炸式的，人们越使用 AI 越相信 AI，就会有越来越多 AI 生成的内容，悲观的认为是无解的。
+[[Google]] 搜索显示的所有“孔雀宝宝”都是 AI 生成的，但是这是 [[Google]] 的问题么？这不是，这是滥用 AI 的必然结果，有人推荐使用 [[Kagi]] 来代替 Google，但是我就觉得这是搜索引擎的工作模式导致的，AI 生成的内容是爆炸式的，人们越使用 AI 越相信 AI，就会有越来越多 AI 生成的内容，悲观的认为是无解的。
 
 ---
 

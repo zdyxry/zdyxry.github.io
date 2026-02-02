@@ -50,7 +50,7 @@ description:
 
 [Deprecate X · Issue #893 · cncf/foundation](https://github.com/cncf/foundation/issues/893)
 
-这个 [CNCF](/mentions/cncf) Issue 中的评论很有趣，`I believe the community consensus is now clear that we should terminate all activity on X (formerly Twitter)` ，`consensus` 是什么？ 为什么就 `should terminate` 了，Issue 中完全没看到。有人提到 Twitter `more closed and opaque`，我不认为现在发 `there’re only 2 genders` 就会被 block 的平台会比 Twitter 好到哪里去。
+这个 [[CNCF]] Issue 中的评论很有趣，`I believe the community consensus is now clear that we should terminate all activity on X (formerly Twitter)` ，`consensus` 是什么？ 为什么就 `should terminate` 了，Issue 中完全没看到。有人提到 Twitter `more closed and opaque`，我不认为现在发 `there’re only 2 genders` 就会被 block 的平台会比 Twitter 好到哪里去。
 
 看完感受就是，屁股决定脑袋。
 
@@ -93,7 +93,7 @@ description:
 
 [2024.10 长穿毕光雾山极致秋色之旅](https://sides-hang-nca.craft.me/zEWy8lq5XINXhG/b/D1DA8E94-780C-41C5-93F3-4665811A01DC/Day5-%E6%8A%B5%E8%BE%BE%E6%B1%89%E4%B8%AD)
 
-Bowen 同学的[光雾山](/posts/光雾山) [游记](/posts/游记)，这篇游记因为有 zirui 的加入，精彩许多。之前只是知道陕西地理位置连接着很多省份，这次游记中提到从成都去汉中然后在四川省内游玩，加深了印象。
+Bowen 同学的[[光雾山]] [[游记]]，这篇游记因为有 zirui 的加入，精彩许多。之前只是知道陕西地理位置连接着很多省份，这次游记中提到从成都去汉中然后在四川省内游玩，加深了印象。
 
 游记中的秋景很美，自从我来了上海之后，我好像对秋天就没什么感受，2 年前去了一次四明山看秋景，今年额外的想看，但是上海这边还不行，要等一等，大概率没等到树叶变黄就落了。
 

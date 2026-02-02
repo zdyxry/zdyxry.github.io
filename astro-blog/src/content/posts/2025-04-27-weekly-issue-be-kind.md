@@ -12,7 +12,7 @@ description:
 ### 技术
 [A Trip Down Memory Lane: How We Resolved a Memory Leak When pprof Failed Us - WarpStream](https://www.warpstream.com/blog/a-trip-down-memory-lane-how-we-resolved-a-memory-leak-when-pprof-failed-us)
 
-[goroutine](/mentions/goroutine) 泄露调查，使用 `gcore` 生成 coredump，使用 viewcore 获取所有的 objects 信息及引用信息。
+[[goroutine]] 泄露调查，使用 `gcore` 生成 coredump，使用 viewcore 获取所有的 objects 信息及引用信息。
 
 可以考虑使用 [GitHub - cloudwego/goref: Go heap object reference analysis tool](https://github.com/cloudwego/goref/tree/main) 来解决？
 
@@ -20,9 +20,9 @@ description:
 
 [Ansible: pure (only in its) pragmatism - Andrej's blog](https://andrejradovic.com/blog/ansible/)
 
-虽然 [Ansible](/mentions/ansible) 自己有很多的问题，如果深度使用大概率需要自己写些插件，但是在庞大的用户社区面前，在大多数场景下还是比 [shell](/mentions/shell) + [SSH](/mentions/ssh) 作为更好的选择。
+虽然 [[Ansible]] 自己有很多的问题，如果深度使用大概率需要自己写些插件，但是在庞大的用户社区面前，在大多数场景下还是比 [[shell]] + [[SSH]] 作为更好的选择。
 
-[Ansible](/mentions/ansible) 最佳实践文档：[Good Practices for Ansible - GPA](https://redhat-cop.github.io/automation-good-practices/#_naming_parameters)
+[[Ansible]] 最佳实践文档：[Good Practices for Ansible - GPA](https://redhat-cop.github.io/automation-good-practices/#_naming_parameters)
 
 ---
 
@@ -30,7 +30,7 @@ description:
 [Tip of the week #2: Compress your Protos!](https://webflow.buf.build/blog/totw-2-compress-protos)  
 [Tip of the week #3: Enum names need prefixes](https://webflow.buf.build/blog/totw-3-enum-names-need-prefixes)  
 
-[protobuf](/mentions/protobuf) 的一些 tips：不要 rename 、Enum 加前缀。
+[[protobuf]] 的一些 tips：不要 rename 、Enum 加前缀。
 
 ---
 
@@ -41,28 +41,28 @@ description:
 > 早期可能还是一个优秀的方案，但由于 OpenShift 专属导致不开放，随着社区的发展，原先优势的方案反而变成了阻碍前进的障碍。  
 > 在很多细分领域 OpenShift 已经并不是最先进的解决方案了，尤其是在那些由 OpenShift 专属组件提供服务的领域。
 
-文章中对 [OpenShift](/mentions/openshift) 的评价是：“现在的 OpenShift 在我看来就是一个覆盖面积很广，但平庸且无趣的平台”，在我的理解里，如果代入用户视角，这几个词都是褒义词。
+文章中对 [[OpenShift]] 的评价是：“现在的 OpenShift 在我看来就是一个覆盖面积很广，但平庸且无趣的平台”，在我的理解里，如果代入用户视角，这几个词都是褒义词。
 
 ---
 [请求为什么超时了？ | 卡瓦邦噶！](https://www.kawabangga.com/posts/6965)   
 [请求为什么超时了？答案和解析 | 卡瓦邦噶！](https://www.kawabangga.com/posts/6969)
 
-[TCP](/mentions/tcp) 连接因为较长时间没有传输内容被中间的网络设备丢弃，可通过 Keepalive 避免。
+[[TCP]] 连接因为较长时间没有传输内容被中间的网络设备丢弃，可通过 Keepalive 避免。
 
 ---
 
 [IronCore · GitHub](https://github.com/ironcore-dev)
 
-有趣，看着是 [SAP](/mentions/sap) 基于 [kubernetes](/mentions/kubernetes) 来管理 [BareMetal](/mentions/baremetal) 项目，看上去是完整的实现，该有的都有了，不过感觉组装起来不那么容易，一堆的 controller。
+有趣，看着是 [[SAP]] 基于 [[kubernetes]] 来管理 [[BareMetal]] 项目，看上去是完整的实现，该有的都有了，不过感觉组装起来不那么容易，一堆的 controller。
 
-其中 [BMC](/mentions/bmc) 控制是基于 [GitHub - stmcginnis/gofish: Gofish is a Golang client library for DMTF Redfish and SNIA Swordfish interaction.](https://github.com/stmcginnis/gofish) 。
+其中 [[BMC]] 控制是基于 [GitHub - stmcginnis/gofish: Gofish is a Golang client library for DMTF Redfish and SNIA Swordfish interaction.](https://github.com/stmcginnis/gofish) 。
 
 ---
 
 [Protecting NATS and the integrity of open source: CNCF’s commitment to the community | CNCF](https://www.cncf.io/blog/2025/04/24/protecting-nats-and-the-integrity-of-open-source-cncfs-commitment-to-the-community/)   
 [Looking Ahead with Clarity and Purpose for NATS.io | Synadia](https://www.synadia.com/blog/synadia-response-to-cncf)
 
-[NATS](/mentions/nats) 想要退出 [CNCF](/mentions/cncf)，并计划修改开源协议，不知道故事后续会如何发展。
+[[NATS]] 想要退出 [[CNCF]]，并计划修改开源协议，不知道故事后续会如何发展。
 
 如果想不清楚自己如何赚钱，还是不开源的好。
 
@@ -72,7 +72,7 @@ description:
 
 [致全体外卖骑手兄弟们的公开信](https://archive.is/XhmOv)
 
-[京东](/posts/京东)的这个声明，我的第一想法是：可以省一大笔广告费。
+[[京东]]的这个声明，我的第一想法是：可以省一大笔广告费。
 
 ---
 

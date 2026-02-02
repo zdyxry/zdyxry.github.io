@@ -15,7 +15,7 @@ description:
 
 作者自造词，安全跑步机：在安全方面，你需要不断的努力只是为了停留在原地，最终没有取得真正的进展。
 
-故事背景是其他团队为了阻止人们使用免费的 GPU 资源来挖矿，所以提出在 [kubernetes](/mentions/kubernetes) 集群中部署 [Falco](/mentions/falco)（Falco is a cloud native security tool that provides runtime security across hosts, containers, Kubernetes, and cloud environments. It is designed to detect and alert on abnormal behavior and potential security threats in real-time.），作者认为这个修复方式的复杂度先不谈，修复的方法/策略上是否可以改进？现在通过 [Falco](/mentions/falco) 来检查，后面如果矿工用了 [VPN](/mentions/vpn)、[proxy](/mentions/proxy)，需要部队的更新规则才能维持现在的安全状态。是否可以从其他的方式解决，比如：
+故事背景是其他团队为了阻止人们使用免费的 GPU 资源来挖矿，所以提出在 [[kubernetes]] 集群中部署 [[Falco]]（Falco is a cloud native security tool that provides runtime security across hosts, containers, Kubernetes, and cloud environments. It is designed to detect and alert on abnormal behavior and potential security threats in real-time.），作者认为这个修复方式的复杂度先不谈，修复的方法/策略上是否可以改进？现在通过 [[Falco]] 来检查，后面如果矿工用了 [[VPN]]、[[proxy]]，需要部队的更新规则才能维持现在的安全状态。是否可以从其他的方式解决，比如：
 - 收取 GPU 使用费用
 - 限制网络访问，白名单形式开放
 - 沙盒化运行，限制对文件系统的访问
@@ -27,13 +27,13 @@ description:
 
 [It's five grand a day to miss our S3 exit](https://world.hey.com/dhh/it-s-five-grand-a-day-to-miss-our-s3-exit-b8293563)
 
-[DHH](/mentions/dhh) 分享公司即将迁移完成所有的 [S3](/mentions/s3)，预计 5 年内可以节省 500 w 美元。当前每年要在 [S3](/mentions/s3) 上花费 150w 美元。购买了 18PB 的 [Pure Storage](/mentions/pure-storage) 产品，硬件费用是 150w 美元，五年的维保费用是 100w 美元，这里没有提到 [Pure Storage](/mentions/pure-storage) 的软件费用？如果算上副本/EC，不知道这个价格是什么级别。国内和海外的硬件价格差别太大了。
+[[DHH]] 分享公司即将迁移完成所有的 [[S3]]，预计 5 年内可以节省 500 w 美元。当前每年要在 [[S3]] 上花费 150w 美元。购买了 18PB 的 [[Pure Storage]] 产品，硬件费用是 150w 美元，五年的维保费用是 100w 美元，这里没有提到 [[Pure Storage]] 的软件费用？如果算上副本/EC，不知道这个价格是什么级别。国内和海外的硬件价格差别太大了。
 
 ---
 
 [2025.03 云原生相关信息简报](https://quaily.com/cloud-native-ralated/p/2025-03-cloud-native-information-briefing)
 
-同事在工作学习过程中整理的 [kubernetes](/mentions/kubernetes) 相关信息简报，目前的更新频率是每月更新。
+同事在工作学习过程中整理的 [[kubernetes]] 相关信息简报，目前的更新频率是每月更新。
 
 ---
 
@@ -66,7 +66,7 @@ description:
 
 [Self Hosting Like Its 2025 ::](https://kiranet.org/posts/self-hosting-like-its-2025/)
 
-如果想要脱离 [CloudFlare](/mentions/cloudflare) 的话，[GitHub - fosrl/pangolin: Tunneled Mesh Reverse Proxy Server with Identity and Access Control and Dashboard UI](https://github.com/fosrl/pangolin) 也许是一个可能的选择。
+如果想要脱离 [[CloudFlare]] 的话，[GitHub - fosrl/pangolin: Tunneled Mesh Reverse Proxy Server with Identity and Access Control and Dashboard UI](https://github.com/fosrl/pangolin) 也许是一个可能的选择。
 
 ---
 
@@ -78,7 +78,7 @@ Terminal 的 Grid 能力，看着很有用啊。 "Why don’t other terminals ha
 
 [Our Best Customers Are Now Robots · The Fly Blog](https://fly.io/blog/fuckin-robots/)
 
-我比较好奇的是 [Fly.io](/mentions/flyio) 如何识别自己的客户应用场景是机器人的？
+我比较好奇的是 [[Fly.io]] 如何识别自己的客户应用场景是机器人的？
 
 ---
 
@@ -104,7 +104,7 @@ Reviews are more important than ever.
 
 [CPU throttling for containerized Go applications explained - Kanishk Singh](https://kanishk.io/posts/cpu-throttling-in-containerized-go-apps/)
 
-[VictoriaMetrics](/mentions/victoriametrics) 关于 CPU Request、Limit、Weight 的介绍，相较于之前的一些讲述这个话题的博客，提到了 [kubernetes](/mentions/kubernetes) 设置 Pod 的具体行为、 `cgroupv2` 的差异、以及 CPU time 的计算方式。
+[[VictoriaMetrics]] 关于 CPU Request、Limit、Weight 的介绍，相较于之前的一些讲述这个话题的博客，提到了 [[kubernetes]] 设置 Pod 的具体行为、 `cgroupv2` 的差异、以及 CPU time 的计算方式。
 
 ---
 

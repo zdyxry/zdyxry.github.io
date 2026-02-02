@@ -21,9 +21,9 @@ description:
 
 [Ultra-small Ubuntu-based distroless containers - chiselled Ubuntu | Ubuntu](https://ubuntu.com/containers/chiselled)
 
-[ubuntu](/mentions/ubuntu) 提供了一个类似于 [Distroless](/mentions/distroless) 的 container image，基于 [Debian](/mentions/debian) 包直接进行裁剪，通过 `chisel` 来构建（裁剪） image ，`chisel` 相当于是一个包管理器，只是这个包管理器的操作粒度是到文件级别。按照官方的介绍，最终 image 大小缩减的效果很好。
+[[ubuntu]] 提供了一个类似于 [[Distroless]] 的 container image，基于 [[Debian]] 包直接进行裁剪，通过 `chisel` 来构建（裁剪） image ，`chisel` 相当于是一个包管理器，只是这个包管理器的操作粒度是到文件级别。按照官方的介绍，最终 image 大小缩减的效果很好。
 
-[Canonical](/mentions/canonical) 提供 Chiselled Ubuntu 的 5 年免费支持和 10 年的付费支持。
+[[Canonical]] 提供 Chiselled Ubuntu 的 5 年免费支持和 10 年的付费支持。
 
 ---
 
@@ -42,9 +42,9 @@ description:
 > A rule of thumb for GPU clusters using the newest hardware: expect about 3% of machines to break every week.
 
 
-[Imbue](/mentions/imbue) 介绍自己如何维护 511 台节点组成的训练集群，这套集群仅 GPU 价格就超过了 1 亿美元，大规模的 GPU 集群故障率有点太高了。
+[[Imbue]] 介绍自己如何维护 511 台节点组成的训练集群，这套集群仅 GPU 价格就超过了 1 亿美元，大规模的 GPU 集群故障率有点太高了。
 
-他们使用 [MAAS](/mentions/maas) 来置备服务器，但是 MAAS 与 BMC 的集成不可靠，所以提前通过 iDrac API 获取了没太服务器的 MAC 地址。
+他们使用 [[MAAS]] 来置备服务器，但是 MAAS 与 BMC 的集成不可靠，所以提前通过 iDrac API 获取了没太服务器的 MAC 地址。
 
 ---
 
@@ -63,7 +63,7 @@ description:
 
 [For the Love of God, Stop Using CPU Limits on Kubernetes (Updated) | Robusta](https://home.robusta.dev/blog/stop-using-cpu-limits)
 
-[kubernetes](/mentions/kubernetes) 如何设置 Pod 的 request 和 limit：
+[[kubernetes]] 如何设置 Pod 的 request 和 limit：
 - CPU
 	- 始终设置 CPU requests
 	- 确保 CPU requests 正确性
@@ -82,7 +82,7 @@ description:
 ---
 [Aeon: openSUSE for lazy developers [LWN.net]](https://lwn.net/Articles/977987/)
 
-[openSUSE](/mentions/opensuse) 的 [Aeon](/mentions/aeon)（以前叫 MicroOS）近期更新了，Aeon 的目标是使用只读文件系统，进行原子化更新，来减轻维护负担。Aeon 使用 Cypper 和 Btrfs subvolume 来实现的。
+[[openSUSE]] 的 [[Aeon]]（以前叫 MicroOS）近期更新了，Aeon 的目标是使用只读文件系统，进行原子化更新，来减轻维护负担。Aeon 使用 Cypper 和 Btrfs subvolume 来实现的。
 
 对于这种将操作系统级别的动作依赖于 Btrfs 能力，如果用户想要在 Btrfs 上做更多的事情，是否会产生冲突？
 

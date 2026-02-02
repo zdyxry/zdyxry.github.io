@@ -15,7 +15,7 @@ description:
 
 > 但是 Go 在 1.18 之后的 runtime 里其实默认就带了 VCS 的相关信息，只需要使用 `go version -m xxx` 就可以从二进制文件里直接获取构建信息了
 
- `runtime/debug` 的 `ReadBuildInfo` 函数携带的，想到之前用过的一个项目，可以找到系统中所有用 [Golang](/mentions/golang) 编写的进程信息，并且可以显示编译版本，有用到： [gops/goprocess/goprocess\_1.18.go at master · google/gops · GitHub](https://github.com/google/gops/blob/master/goprocess/goprocess_1.18.go#L13)
+ `runtime/debug` 的 `ReadBuildInfo` 函数携带的，想到之前用过的一个项目，可以找到系统中所有用 [[Golang]] 编写的进程信息，并且可以显示编译版本，有用到： [gops/goprocess/goprocess\_1.18.go at master · google/gops · GitHub](https://github.com/google/gops/blob/master/goprocess/goprocess_1.18.go#L13)
 
 ---
 
@@ -27,14 +27,14 @@ description:
 
 [Open-Weight Models Are Getting Serious: GLM 4.7 vs MiniMax M2.1](https://blog.kilo.ai/p/open-weight-models-are-getting-serious)
 
-[Kilo](/mentions/kilo) 对 GLM  4.7 和 MiniMax 2.1 进行了比较，让他们实现同一个功能，从最终结论上来看，都实现了需求目标，只是实现期望上 GLM 倾向于模块化且有完整的说明文档，MiniMax 扁平，但 MiniMax 便宜了一半。
+[[Kilo]] 对 GLM  4.7 和 MiniMax 2.1 进行了比较，让他们实现同一个功能，从最终结论上来看，都实现了需求目标，只是实现期望上 GLM 倾向于模块化且有完整的说明文档，MiniMax 扁平，但 MiniMax 便宜了一半。
 
 ---
 
 
 [Alternatives to MinIO for single-node local S3](https://rmoff.net/2026/01/14/alternatives-to-minio-for-single-node-local-s3/)
 
-作者在寻找 [Minio](/mentions/minio) 的替代品，比较的维度不是性能、稳定性，而是从易用性的角度来对比，解决的是如果想要快速起一个 Demo，应该选择什么，从易用性这个角度，也能看出一些项目的状态了。
+作者在寻找 [[Minio]] 的替代品，比较的维度不是性能、稳定性，而是从易用性的角度来对比，解决的是如果想要快速起一个 Demo，应该选择什么，从易用性这个角度，也能看出一些项目的状态了。
 
 结论：首选 SeaweedFS。
 
@@ -55,7 +55,7 @@ description:
 
 [Genie: Uber’s Gen AI On-Call Copilot | Uber Blog](https://www.uber.com/en-HK/blog/genie-ubers-gen-ai-on-call-copilot/)
 
-[Uber](/mentions/uber) 内部的 Copilot 系统，用于回复 Slack 中的用户问题，成果是：回答超7万个问题，帮助率48.9%，估计节省了1.3万工程小时。48.9% 这个数字初看可能觉得，还不到一半，但是即使不到 50%，那节省的时间也是巨大的。
+[[Uber]] 内部的 Copilot 系统，用于回复 Slack 中的用户问题，成果是：回答超7万个问题，帮助率48.9%，估计节省了1.3万工程小时。48.9% 这个数字初看可能觉得，还不到一半，但是即使不到 50%，那节省的时间也是巨大的。
 
 ---
 

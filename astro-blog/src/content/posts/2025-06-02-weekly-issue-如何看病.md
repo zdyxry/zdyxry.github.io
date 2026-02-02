@@ -13,7 +13,7 @@ description:
 
 [Implemented AGPL MinIO Object Browser simplified Console by bexsoft · Pull Request #3509 · minio/object-browser · GitHub](https://github.com/minio/object-browser/pull/3509)
 
-有趣，[Minio](/mentions/minio) 删除了社区版本中的管理界面。官方说法是这些代码没在维护，且容易有安全问题，所以删除了。印象中之前 [Lens](/mentions/lens) 也有过类似的操作。
+有趣，[[Minio]] 删除了社区版本中的管理界面。官方说法是这些代码没在维护，且容易有安全问题，所以删除了。印象中之前 [[Lens]] 也有过类似的操作。
 
 ---
 
@@ -21,7 +21,7 @@ description:
 
 [vGPU 是伪命题？NVIDIA 官方为什么不自己出细粒度共享呢？](https://archive.is/IFd78)
 
-5 月份的 [k8s](/mentions/k8s) 简报。[HAMi](/mentions/hami) 的这篇文章很真诚，截取部分记录。关于产品的核心竞争力，选准赛道很关键，当前国内用户对国产化设备的支持几乎是必选项，我觉得这就是核心竞争力，这也能解释为什么国内用户采用的很多而海外很少，文中提到的“信任”更多的是核心竞争力的附属品。
+5 月份的 [[k8s]] 简报。[[HAMi]] 的这篇文章很真诚，截取部分记录。关于产品的核心竞争力，选准赛道很关键，当前国内用户对国产化设备的支持几乎是必选项，我觉得这就是核心竞争力，这也能解释为什么国内用户采用的很多而海外很少，文中提到的“信任”更多的是核心竞争力的附属品。
 
 > **NVIDIA 为何“不为”？是技术不能，还是商业不愿？**   
 >  对 NVIDIA 而言，“不为”并非力有不逮，而是为了守护高端硬件溢价、vGPU 许可收入，以及既有关键生态伙伴关系的综合商业选择 —— 这正给了 HAMi 在容器原生、细粒度共享上的机会空间。   
@@ -45,7 +45,7 @@ description:
 
 [Secure Self-Hosted Password Manager: Deploying Vaultwarden with Tailscale and Docker | by kevincxy | May, 2025 | Dev Genius](https://blog.devgenius.io/secure-self-hosted-password-manager-deploying-vaultwarden-with-tailscale-and-docker-b650fe104ff3)
 
-使用 [TailScale](/mentions/tailscale) 自托管 [VaultWarden](/mentions/vaultwarden)，使用 TSNET 配置之后，1 个 domain 对应的应该是 1 个 device，[TailScale](/mentions/tailscale) 个人免费最多 100 个 device。
+使用 [[TailScale]] 自托管 [[VaultWarden]]，使用 TSNET 配置之后，1 个 domain 对应的应该是 1 个 device，[[TailScale]] 个人免费最多 100 个 device。
 
 ---
 

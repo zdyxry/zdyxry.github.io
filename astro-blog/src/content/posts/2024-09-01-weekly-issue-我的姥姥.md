@@ -20,7 +20,7 @@ description:
 
 [Sentiment analysis using ML models | Garrit's Notes](https://garrit.xyz/posts/2024-08-31-sentiment-analysis-using-ml-models)
 
-作者使用 `cardiffnlp/twitter-roberta-base-sentiment-latest` 模型，来过滤  [hacker news](/mentions/hacker-news) 的信息，只保留积极的部分，最终通过 Github Action 每天自动运行，使用 RSS 提供过滤结果。
+作者使用 `cardiffnlp/twitter-roberta-base-sentiment-latest` 模型，来过滤  [[hacker news]] 的信息，只保留积极的部分，最终通过 Github Action 每天自动运行，使用 RSS 提供过滤结果。
 
 虽然阅读一些负面信息会对情绪产生影响，但是完全过滤掉，不会让自己生活在另一个世界么。
 

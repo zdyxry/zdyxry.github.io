@@ -13,7 +13,7 @@ description:
 
 [searchcode.com’s SQLite database is probably 6 terabytes bigger than yours | Ben E. C. Boyter](https://boyter.org/posts/searchcode-bigger-sqlite-than-you/)
 
-6.4 TB 的 [SQlite](/mentions/sqlite) 实例，应该是听说过的最大的了。
+6.4 TB 的 [[SQlite]] 实例，应该是听说过的最大的了。
 
 ---
 
@@ -25,7 +25,7 @@ description:
 
 [告别生硬翻译腔：构建 AI 驱动的多轮评审润色流程 - Gino Notes](https://www.ginonotes.com/posts/ai-driven-multi-round-review-translation-workflow)
 
-使用 [Dify](/mentions/dify) 将文章进行多轮翻译改写。
+使用 [[Dify]] 将文章进行多轮翻译改写。
 
 ---
 

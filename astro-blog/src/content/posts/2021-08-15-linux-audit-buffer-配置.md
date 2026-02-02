@@ -94,7 +94,7 @@ Linux kernel 在 2.6 引入 audit，为了能够更好的记录系统中的各�
 		  loginuid_immutable 0 unlocked
 		  ```
 ### 坑
-- auditd 禁止 restart 操作（RefuseManualStop = yes），所以无法使用 [systemctl](/mentions/systemctl) 控制服务启停，可以使用 `service` 代替
+- auditd 禁止 restart 操作（RefuseManualStop = yes），所以无法使用 [[systemctl]] 控制服务启停，可以使用 `service` 代替
 	- `service auditd restart`
 
 

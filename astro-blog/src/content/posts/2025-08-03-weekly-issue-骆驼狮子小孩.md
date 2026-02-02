@@ -13,7 +13,7 @@ description:
 
 [Summary of Heroku June 10 Outage | Heroku](https://www.heroku.com/blog/summary-of-june-10-outage/)
 
-[Heroku](/mentions/heroku) [事故分析](/posts/事故分析)，这个故障造成一些客户长达 24h 的停机，属于重大事故了。
+[[Heroku]] [[事故分析]]，这个故障造成一些客户长达 24h 的停机，属于重大事故了。
 
 > A lack of sufficient immutability controls allowed an automated process to make unplanned changes to our production environment.
 
@@ -28,7 +28,7 @@ description:
 
 [Choosing Between Count and For-Each | Ned In The Cloud](https://nedinthecloud.com/2022/01/27/choosing-between-count-and-for-each/)
 
-[terraform](/mentions/terraform) 的 `count` 和 `for_each` 差异。`count` 生成的是一个有序列表，通过整数索引来访问，`for_each` 生成一个 map，通过唯一键来访问。当列表顺序发生变化， `count`  会先删除原有资源然后重新创建，`for_each` 不会。推荐默认使用 `for_each`。
+[[terraform]] 的 `count` 和 `for_each` 差异。`count` 生成的是一个有序列表，通过整数索引来访问，`for_each` 生成一个 map，通过唯一键来访问。当列表顺序发生变化， `count`  会先删除原有资源然后重新创建，`for_each` 不会。推荐默认使用 `for_each`。
 
 ---
 
@@ -37,7 +37,7 @@ description:
 
 [How Go 1.24's Swiss Tables saved us hundreds of gigabytes | Datadog](https://www.datadoghq.com/blog/engineering/go-swiss-tables/)
 
-[DataDog](/mentions/datadog) 在将 [Golang](/mentions/golang) 升级到 1.24 之后的经历。
+[[DataDog]] 在将 [[Golang]] 升级到 1.24 之后的经历。
 - RSS 显著增加，但是 Go Runtime 的内存统计数据没有变化
 	- 通过检查 `/proc/$pid/smaps` 对比，发现 Go Heap 增加了，最终 Golang 团队定位是 1.24 在进行 mallocgc 重构时移除了一个优化：在分配包含指针的大对象时，Golang 会无条件的重新清零这些内存。
 - 1.24 的 Swiss Tables 哈希表实现带来了内存效率的明显提升。
@@ -46,7 +46,7 @@ description:
 
 [Our $100M Series B / Oxide](https://oxide.computer/blog/our-100m-series-b)
 
-[Oxide](/mentions/oxide) B 轮融资了 $100 M，还是那个问题，什么客户会购买他们的产品呢？
+[[Oxide]] B 轮融资了 $100 M，还是那个问题，什么客户会购买他们的产品呢？
 
 ---
 
@@ -65,12 +65,12 @@ description:
 
 [PDF 电子书重排和裁剪 | 卡瓦邦噶！](https://www.kawabangga.com/posts/7048)
 
-[Willus.com's K2pdfopt](https://www.willus.com/k2pdfopt/) 可以对 [PDF](/mentions/pdf) 进行裁剪，比如去掉边框空白部分。
+[Willus.com's K2pdfopt](https://www.willus.com/k2pdfopt/) 可以对 [[PDF]] 进行裁剪，比如去掉边框空白部分。
 
 ---
 [AWS deleted my 10-year account and all data without warning](https://www.seuros.com/blog/aws-deleted-my-10-year-account-without-warning/)
 
-作者在 [AWS](/mentions/aws) 的所有服务都因为 [AWS](/mentions/aws) 内部错误丢失了，[AWS](/mentions/aws) 推脱说是因为作者没有及时的完成身份验证，所有数据都被删除了。作者是在住院期间收到的邮件，在确认要住院前，还特意把所有的数据都备份到 [AWS](/mentions/aws) 上。
+作者在 [[AWS]] 的所有服务都因为 [[AWS]] 内部错误丢失了，[[AWS]] 推脱说是因为作者没有及时的完成身份验证，所有数据都被删除了。作者是在住院期间收到的邮件，在确认要住院前，还特意把所有的数据都备份到 [[AWS]] 上。
 
 难以想象该有多绝望（想了一下我自己的数据，如果 Google 突然删除了我的账号，我的很多关联事项就会瘫痪。。
 

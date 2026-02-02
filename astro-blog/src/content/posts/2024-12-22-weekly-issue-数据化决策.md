@@ -20,7 +20,7 @@ description:
 
 [Tale of a Kubernetes node-feature-discovery incident](https://ahmet.im/blog/nfd-incident/)
 
-[kubernetes](/mentions/kubernetes) NFD 功能异常导致的大规模集群故障。“This was partially because NFD reports a ton of kernel settings by default that we didn’t use.”，NFD 默认上报包含了很多没有被使用的 kernel 配置，一个节点的 NodeFeature 占用 140KB，大规模场景下（4000 +节点）对 etcd 和 apiserver 造成了很大的压力，导致 NFD 控制器无法从 apiserver 获取 NodeFeatures（请求超时），且由于 NFD 控制器没有处理 apiserver 异常场景，导致删除了集群中所有节点的 labels。作者集群依赖于 node label 来进行 Pod 调度配置。问题调查中发现 NFD 的实现上有不止一个场景可能会导致 node label 被删除。最终决定不依赖于 NFD，而是直接将 node label 以静态配置方式管理。
+[[kubernetes]] NFD 功能异常导致的大规模集群故障。“This was partially because NFD reports a ton of kernel settings by default that we didn’t use.”，NFD 默认上报包含了很多没有被使用的 kernel 配置，一个节点的 NodeFeature 占用 140KB，大规模场景下（4000 +节点）对 etcd 和 apiserver 造成了很大的压力，导致 NFD 控制器无法从 apiserver 获取 NodeFeatures（请求超时），且由于 NFD 控制器没有处理 apiserver 异常场景，导致删除了集群中所有节点的 labels。作者集群依赖于 node label 来进行 Pod 调度配置。问题调查中发现 NFD 的实现上有不止一个场景可能会导致 node label 被删除。最终决定不依赖于 NFD，而是直接将 node label 以静态配置方式管理。
 
 ---
 
@@ -37,7 +37,7 @@ description:
 > 因此，我认为合理的解释是DNS缓存只是故障的其中一个因素，真正的根本原因可能是架构设计上存在缺陷，dns只是一个替罪羊。
 
 
-[OpenAI](/mentions/openai) 官方的 [事故分析](/posts/事故分析)，以及关注的一些其他工程师针对事故分析给出自己的想法。对于 [OpenAI](/mentions/openai) 的代码变更部署速度有些担心（2:23PM 代码合并，2:52 PM 代码变更在所有生产集群开始生效，这个“效率”太高了）。给出的改善方式有：引入 APF (API Priority and Fairness)、拆分独立的 etcd 集群、将 DNS 组件运行在非控制平面节点上。
+[[OpenAI]] 官方的 [[事故分析]]，以及关注的一些其他工程师针对事故分析给出自己的想法。对于 [[OpenAI]] 的代码变更部署速度有些担心（2:23PM 代码合并，2:52 PM 代码变更在所有生产集群开始生效，这个“效率”太高了）。给出的改善方式有：引入 APF (API Priority and Fairness)、拆分独立的 etcd 集群、将 DNS 组件运行在非控制平面节点上。
 
 ---
 

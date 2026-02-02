@@ -13,7 +13,7 @@ description:
 
 [Red Hat Ansible and HashiCorp Terraform Will Be Coming Together - The New Stack](https://thenewstack.io/red-hat-ansible-and-hashicorp-terraform-will-be-coming-together/)
 
-[Ansible](/mentions/ansible) 和 [Terraform](/mentions/terraform) 要有更多生态上的集成， Terrible 要来了么？
+[[Ansible]] 和 [[Terraform]] 要有更多生态上的集成， Terrible 要来了么？
 
 ---
 [Start Sidecar First: How To Avoid Snags | Kubernetes](https://kubernetes.io/blog/2025/06/03/start-sidecar-first/)
@@ -40,12 +40,12 @@ description:
 ---
 [glibc vs. musl — Chainguard Academy](https://edu.chainguard.dev/chainguard/chainguard-images/about/images-compiled-programs/glibc-vs-musl/)
 
-[musl](/mentions/musl) 和 [glibc](/mentions/glibc) 的对比，主要为了解释为什么 [Wolfi](/mentions/wolfi) 使用 [glibc](/mentions/glibc) 。[Wolfi](/mentions/wolfi) 在有些时候很有用，比如你想快速构建一个 container image，打包一些命令工具，但是其中一个命令是 glibc 的，此时直接将 [alpine](/mentions/alpine) 替换为 [Wolfi](/mentions/wolfi) 即可，零成本。
+[[musl]] 和 [[glibc]] 的对比，主要为了解释为什么 [[Wolfi]] 使用 [[glibc]] 。[[Wolfi]] 在有些时候很有用，比如你想快速构建一个 container image，打包一些命令工具，但是其中一个命令是 glibc 的，此时直接将 [[alpine]] 替换为 [[Wolfi]] 即可，零成本。
 
 ---
 [GitHub - hackclub/terminal-wakatime: Wakatime plugin for bash / zsh / fish shells!](https://github.com/hackclub/terminal-wakatime)
 
-[Wakatime](/mentions/wakatime) 官方不推荐使用各种 terminal 的插件了，文档中已经将其删除了，推荐使用他们的 Desktop 版本，但是 Desktop 版本只追踪窗口级别的粒度，所以 terminal 中的操作都不会被追踪。这个项目通过 Shell Hook 来实现，依赖于 wakatime-cli。
+[[Wakatime]] 官方不推荐使用各种 terminal 的插件了，文档中已经将其删除了，推荐使用他们的 Desktop 版本，但是 Desktop 版本只追踪窗口级别的粒度，所以 terminal 中的操作都不会被追踪。这个项目通过 Shell Hook 来实现，依赖于 wakatime-cli。
 
 ---
 
@@ -60,16 +60,16 @@ description:
 
 > Around the 40-commit mark, manual commits became frequent—styling, removing unused methods, the kind of housekeeping that coding models still struggle with. It's clear that AI generated >95% of the code, but human oversight was essential throughout.
 
-[CloudFlare](/mentions/cloudflare) 的 [GitHub - cloudflare/workers-oauth-provider: OAuth provider library for Cloudflare Workers](https://github.com/cloudflare/workers-oauth-provider) 是开源的 [OAuth](/mentions/oauth) 2.1 实现，在 Git log 中记录了完整的 Prompt。虽然项目是 95% 自动生成的，但是还有一些不得不手动接入的情况。
+[[CloudFlare]] 的 [GitHub - cloudflare/workers-oauth-provider: OAuth provider library for Cloudflare Workers](https://github.com/cloudflare/workers-oauth-provider) 是开源的 [[OAuth]] 2.1 实现，在 Git log 中记录了完整的 Prompt。虽然项目是 95% 自动生成的，但是还有一些不得不手动接入的情况。
 
 ---
 [Why We’re Moving on From Nix](https://blog.railway.com/p/introducing-railpack#image-sizes-and-caching)
 
 [GitHub - railwayapp/railpack: Zero-config application builder that automatically analyzes and turns your code into an image](https://github.com/railwayapp/railpack)
 
-[Railway](/mentions/railway) 将自己的应用包管理器从 Nix-based 切换到了 Buildkit-based。切换的原因主要有：Nix 的版本管理机制导致在进行基础软件版本更新时，所有上层应用都要更新，有可能引入构建错误；Nix 引入会将 `/nix/store` 作为单一 Layer 引入，无法拆分，导致最终的构建 Image 体积较大；同时还有缓存问题，这里没有看懂，将 Deployment ID 注入到构建过程中，后续的 Layer 缓存失效不是预期的么？
+[[Railway]] 将自己的应用包管理器从 Nix-based 切换到了 Buildkit-based。切换的原因主要有：Nix 的版本管理机制导致在进行基础软件版本更新时，所有上层应用都要更新，有可能引入构建错误；Nix 引入会将 `/nix/store` 作为单一 Layer 引入，无法拆分，导致最终的构建 Image 体积较大；同时还有缓存问题，这里没有看懂，将 Deployment ID 注入到构建过程中，后续的 Layer 缓存失效不是预期的么？
 
-他们改进的方式是自己实现了一套 Buildkit LLB + Frontend。之前有看过一些其他的实现方式，Buildkit 引入自定义的语法使用上是很方便的。同时他们使用 [mise](/mentions/mise) 来作为一些运行时的版本管理，不觉得这是一个好的方式，感觉这里会埋坑。
+他们改进的方式是自己实现了一套 Buildkit LLB + Frontend。之前有看过一些其他的实现方式，Buildkit 引入自定义的语法使用上是很方便的。同时他们使用 [[mise]] 来作为一些运行时的版本管理，不觉得这是一个好的方式，感觉这里会埋坑。
 
 ---
 

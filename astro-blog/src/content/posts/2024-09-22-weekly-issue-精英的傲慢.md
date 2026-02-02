@@ -38,13 +38,13 @@ description:
 
 [Yaak Is Now Open Source](https://yaak.app/blog/now-open-source)
 
-[Yaak](/mentions/yaak) 是 [Insomnia](/mentions/insomnia) 作者创建的新的 REST Client。2014 年推出 [Insomnia](/mentions/insomnia) 后，获得了某种意义的成功，但随后作者陷入了大量的 issue 和讨论中，作者感到了倦怠（burnt out），于是将其出售给了 [Kong](/mentions/kong)。
+[[Yaak]] 是 [[Insomnia]] 作者创建的新的 REST Client。2014 年推出 [[Insomnia]] 后，获得了某种意义的成功，但随后作者陷入了大量的 issue 和讨论中，作者感到了倦怠（burnt out），于是将其出售给了 [[Kong]]。
 
-作者加入 [Railway](/mentions/railway) 之后，发现自己工作中还需要一个 API client，于是先尝试 Insomnia，发现已经远离了自己的初衷，且发现市面上大部分 API Client 都 `but every tool left me wanting more.`。
+作者加入 [[Railway]] 之后，发现自己工作中还需要一个 API client，于是先尝试 Insomnia，发现已经远离了自己的初衷，且发现市面上大部分 API Client 都 `but every tool left me wanting more.`。
 
-于是又创建了 [Yaak](/mentions/yaak)，但是没有公开发布。公开发布的契机是 [Insomnia](/mentions/insomnia) 的几个行为：添加了 Github star widget、强迫用户需要创建用户才可以使用。这两个行为甚至让作者觉得出售 [Insomnia](/mentions/insomnia) 是一个错误。于是公开发布了 [Yaak](/mentions/yaak)。
+于是又创建了 [[Yaak]]，但是没有公开发布。公开发布的契机是 [[Insomnia]] 的几个行为：添加了 Github star widget、强迫用户需要创建用户才可以使用。这两个行为甚至让作者觉得出售 [[Insomnia]] 是一个错误。于是公开发布了 [[Yaak]]。
 
-其中关于 [Yaak](/mentions/yaak) 是否应该开源，最初是不想开源的，因为觉得开源没什么收益，且会让自己再次陷入 [Insomnia](/mentions/insomnia) 的处境，但是后来发现可以开源但是不接受功能级别的 PR，还是决定开源，目前是 [MIT](/mentions/mit) 协议。
+其中关于 [[Yaak]] 是否应该开源，最初是不想开源的，因为觉得开源没什么收益，且会让自己再次陷入 [[Insomnia]] 的处境，但是后来发现可以开源但是不接受功能级别的 PR，还是决定开源，目前是 [[MIT]] 协议。
 
 ---
 
@@ -65,7 +65,7 @@ description:
 
 >Pivotal Labs was acquired by EMC back in the day. They bundled it with some cloud foundry work and created Pivotal. When Dell acquired EMC they also acquired a big share of Pivotal. Dell then decided to squeeze more blood from the VMWare stone and forced them to acquire Pivotal before selling the whole thing off to Broadcom.
 
-记得前阵子 [Meta](/mentions/meta) 也关闭了一个类似系统，导致大量用户迁移，现在 [vmware](/mentions/vmware) [Tanzu](/mentions/tanzu) 也关闭了 Pivotal Tracker，又有很多用户需要迁移了。所以说 [Jira](/mentions/jira) 不好用是因为市面上没有能打的啊。
+记得前阵子 [[Meta]] 也关闭了一个类似系统，导致大量用户迁移，现在 [[vmware]] [[Tanzu]] 也关闭了 Pivotal Tracker，又有很多用户需要迁移了。所以说 [[Jira]] 不好用是因为市面上没有能打的啊。
 
 ---
 
@@ -97,7 +97,7 @@ SSH 端口转发图示。
 
 [Update from Amazon CEO Andy Jassy on return-to-office plans and manager team ratio](https://www.aboutamazon.com/news/company-news/ceo-andy-jassy-latest-update-on-amazon-return-to-office-manager-team-ratio)
 
-[Amazon](/mentions/amazon) 要求员工每周在办公室工作 5 天。世界要恢复到疫情前的样子了么？
+[[Amazon]] 要求员工每周在办公室工作 5 天。世界要恢复到疫情前的样子了么？
 
 ---
 

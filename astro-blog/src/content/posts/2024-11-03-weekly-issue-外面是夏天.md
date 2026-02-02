@@ -14,19 +14,19 @@ description:
 
 [Using less memory to look up IP addresses in Mess With DNS](https://jvns.ca/blog/2024/10/27/asn-ip-address-memory/)
 
-一个 [Golang](/mentions/golang) 程序的内存使用优化过程记录，先是尝试了一些其他的方案，比如 SQLite，trie，都放弃了。最后一点点通过 runtime 来分析内存使用，通过修改部分数据结构来优化内存，在优化的过程中，搜索到了 Tailscale 发表的关于 `net.IP` 问题的博客，最终节省了 70MB 的内存。
+一个 [[Golang]] 程序的内存使用优化过程记录，先是尝试了一些其他的方案，比如 SQLite，trie，都放弃了。最后一点点通过 runtime 来分析内存使用，通过修改部分数据结构来优化内存，在优化的过程中，搜索到了 Tailscale 发表的关于 `net.IP` 问题的博客，最终节省了 70MB 的内存。
 
 ---
 
 [Omnivore is joining ElevenLabs - Omnivore Blog](https://blog.omnivore.app/p/omnivore-is-joining-elevenlabs)
 
-[omnivore](/mentions/omnivore) 被 [ElevenLabs](/mentions/elevenlabs) 收购了，[ElevenLabs](/mentions/elevenlabs) 是一个 AI 音频平台。[omnivore](/mentions/omnivore)  所谓的 self-hosted 之前是一句笑话，之后应该也是。
+[[omnivore]] 被 [[ElevenLabs]] 收购了，[[ElevenLabs]] 是一个 AI 音频平台。[[omnivore]]  所谓的 self-hosted 之前是一句笑话，之后应该也是。
 
 ---
 
 [An update from Drew | Dropbox Blog](https://blog.dropbox.com/topics/company/an-update-from-drew)
 
-[Dropbox](/mentions/dropbox) 决定裁员约 20%（528 人）。Dropbox  本身是盈利的，4.5 亿美元利润/2.5B 美元收入的净利润。
+[[Dropbox]] 决定裁员约 20%（528 人）。Dropbox  本身是盈利的，4.5 亿美元利润/2.5B 美元收入的净利润。
 
 想到之前在 Twitter 上看到的 Dropbox 办公室政治已经非常严重，裁员也不意外。
 
@@ -42,19 +42,19 @@ description:
 
 [SSH Remoting is Here!](https://zed.dev/blog/remote-development)
 
-[Zed](/mentions/zed) 的 SSH Remoting 功能进入到了 Beta 版本，快速试用了一下， Golang 项目的代码跳转速度明显比之前的 Alpha 快很多，感觉到了可以真正尝试的阶段了。
+[[Zed]] 的 SSH Remoting 功能进入到了 Beta 版本，快速试用了一下， Golang 项目的代码跳转速度明显比之前的 Alpha 快很多，感觉到了可以真正尝试的阶段了。
 
 ---
 
 [GitHub - henrygd/beszel: Lightweight server monitoring hub with historical data, docker stats, and alerts.](https://github.com/henrygd/beszel)
 
-轻量级的监控方案，基于 [PocketBase](/mentions/pocketbase) 构建，想着作为 PocketBase 学习素材看看，结果发现是通过 SSH 协议通信的，在 agent 启动一个 ssh server，然后 hub 作为 client 通过 ssh 链接 agent 来获取实时的监控数据。为啥是 SSH 呢？每个 agent 都需要占用一个端口，对于没有公网 IP 的场景怎么办？后续的扩展性如何处理，感觉是个玩具项目。
+轻量级的监控方案，基于 [[PocketBase]] 构建，想着作为 PocketBase 学习素材看看，结果发现是通过 SSH 协议通信的，在 agent 启动一个 ssh server，然后 hub 作为 client 通过 ssh 链接 agent 来获取实时的监控数据。为啥是 SSH 呢？每个 agent 都需要占用一个端口，对于没有公网 IP 的场景怎么办？后续的扩展性如何处理，感觉是个玩具项目。
 
 ---
 
 [Go单元测试 Mock 方案总结](https://taoshu.in/go/mock.html)
 
-[Golang](/mentions/golang) 单元测试相关的 Mock 方案，其中提到了 [GitHub - bouk/monkey: Monkey patching in Go](https://github.com/bouk/monkey) 以及 [xgo/README\_zh\_cn.md at master · xhd2015/xgo · GitHub](https://github.com/xhd2015/xgo/blob/master/README_zh_cn.md) 。
+[[Golang]] 单元测试相关的 Mock 方案，其中提到了 [GitHub - bouk/monkey: Monkey patching in Go](https://github.com/bouk/monkey) 以及 [xgo/README\_zh\_cn.md at master · xhd2015/xgo · GitHub](https://github.com/xhd2015/xgo/blob/master/README_zh_cn.md) 。
 
 之前看到有人推荐过字节的这个 mockey： https://github.com/bytedance/mockey ，与上面的 houk/monkey 是一样的，都需要禁用内联和编译优化。
 
@@ -68,16 +68,16 @@ description:
 
 [Okta AD/LDAP Delegated Authentication - Username Above 52 Characters Security Advisory](https://trust.okta.com/security-advisories/okta-ad-ldap-delegated-authentication-username/)
 
-[Okta](/mentions/okta) AD/LDAP 存在安全问题，如果用户名长度大于等于 52 时，用户 **有可能** 只需要提供用户名就能登录。
+[[Okta]] AD/LDAP 存在安全问题，如果用户名长度大于等于 52 时，用户 **有可能** 只需要提供用户名就能登录。
 
-[Okta](/mentions/okta) 有一些[黑历史](https://x.com/GergelyOrosz/status/1852503333149241780)，[CloudFlare](/mentions/cloudflare) 也不使用 [Okta](/mentions/okta) 作为 identity vendor 了，选择自己搞。
+[[Okta]] 有一些[黑历史](https://x.com/GergelyOrosz/status/1852503333149241780)，[[CloudFlare]] 也不使用 [[Okta]] 作为 identity vendor 了，选择自己搞。
 
 ---
 
 [Authentication for beginners, part 1: You don’t store the passwords](https://unknwon.substack.com/p/authentication-for-beginners-part-one)
 > As of this writing, popular and safe choices of signature algorithms are **Argon2, Bcrypt, Scrypt and PBKDF2 with cryptographically randomly-generated salts and right parameters**.
 
- [Joe Chen](/mentions/joe-chen) 的 newsletter，作者是 [Sourcegraph](/mentions/sourcegraph) 负责身份验证/鉴权验证/IAM 等系统的开发。这篇文章是早于上面的 [Okta](/mentions/okta) 事故公开时间的，但是一起阅读很应景。
+ [[Joe Chen]] 的 newsletter，作者是 [[Sourcegraph]] 负责身份验证/鉴权验证/IAM 等系统的开发。这篇文章是早于上面的 [[Okta]] 事故公开时间的，但是一起阅读很应景。
 
 ---
 
@@ -89,7 +89,7 @@ description:
 - My willingness to use a language or framework I am less familiar with is much higher.
 - I find myself iterating quickly on small components before integrating them into the larger codebase.
 
-虽然大家都说 [Cursor](/mentions/cursor) 交互很好，但感觉想要用好还是需要花些时间学习下的。
+虽然大家都说 [[Cursor]] 交互很好，但感觉想要用好还是需要花些时间学习下的。
 
 ---
 

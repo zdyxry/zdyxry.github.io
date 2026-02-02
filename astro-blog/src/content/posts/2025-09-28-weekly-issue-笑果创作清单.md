@@ -37,7 +37,7 @@ description:
 ---
 [Zed's Pricing Has Changed: LLM Usage Is Now Token-Based — Zed's Blog](https://zed.dev/blog/pricing-change-llm-usage-is-now-token-based)
 
-[Zed](/mentions/zed) 调整了计费模式，原因也很简单：**Current pricing is too expensive for Zed**，**Prompt-based pricing is decoupled from user value**。
+[[Zed]] 调整了计费模式，原因也很简单：**Current pricing is too expensive for Zed**，**Prompt-based pricing is decoupled from user value**。
 
 ---
 
@@ -50,7 +50,7 @@ description:
 
 > 增长最快的公司在过去两年内调整价格三次或三次以上的可能性，是低增长公司的三倍。
 
-有趣，可以和上面的 [Zed](/mentions/zed) 调整配合来看。作为用户来说，我是很不喜欢频繁的调整定价的行为。
+有趣，可以和上面的 [[Zed]] 调整配合来看。作为用户来说，我是很不喜欢频繁的调整定价的行为。
 
 ---
 

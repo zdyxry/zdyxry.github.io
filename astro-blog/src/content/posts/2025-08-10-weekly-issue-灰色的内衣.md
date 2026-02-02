@@ -22,7 +22,7 @@ description:
 > 👦🏻 Koji：那有没有什么是你八年前坚信不疑的，但现在已经完全不信了？    
 > 👨🏻 星爵：在创业前，我是个百分百的理想主义者。但八年下来，这层彩色的外衣已经褪去，现在更多留下的是一件灰色的内衣。
 
-[Milvus](/mentions/milvus)项目老板的访谈，这个问题的回答很有趣，让人笑出来，至少不是“皇帝的新衣”。
+[[Milvus]]项目老板的访谈，这个问题的回答很有趣，让人笑出来，至少不是“皇帝的新衣”。
 
 ---
 
@@ -37,16 +37,16 @@ description:
 
 > It would be naive to pretend people are not going to use AI tools, so we should help get best results. More than that, we ALL should be using these tools when we can, and when they improve our productivity. I feel like a dinosaur myself, but when the tools work (which is not every problem!), they can be amazing.
 
-[kubernetes](/mentions/kubernetes) 仓库添加了 `AGENT.md`，和前阵子 QEMU 社区的态度是相反的。
+[[kubernetes]] 仓库添加了 `AGENT.md`，和前阵子 QEMU 社区的态度是相反的。
 
 ---
 
 
 [Litestar is worth a look](https://www.b-list.org/weblog/2025/aug/06/litestar/)
 
-又一篇 [Litestar](/mentions/starlite) 的推荐文章，主要讨论关于 Scale 、[Pydantic](/mentions/pydantic) 和 [SQLAlchemy](/mentions/sqlalchemy) 的处理方式上的选择上的思考。
+又一篇 [[Litestar]] 的推荐文章，主要讨论关于 Scale 、[[Pydantic]] 和 [[SQLAlchemy]] 的处理方式上的选择上的思考。
 
-在 HN 的评论区看到了 [FastAPI](/mentions/fastapi) 的这个[讨论](https://github.com/fastapi/fastapi/discussions/6656)，原来它们的文档中也有这么多 Emoji ，真恐怖啊：
+在 HN 的评论区看到了 [[FastAPI]] 的这个[讨论](https://github.com/fastapi/fastapi/discussions/6656)，原来它们的文档中也有这么多 Emoji ，真恐怖啊：
 
 > You go with your crush 😍 to get fast food 🍔, you stand in line while the cashier 💁 takes the orders from the people in front of you.  
 > Then it's your turn, you place your order of 2 very fancy burgers 🍔 for your crush 😍 and you.   
@@ -70,7 +70,7 @@ description:
 
 [Cursed Knowledge | Immich](https://immich.app/cursed-knowledge/)
 
-[Immich](/mentions/immich) 公开记录了开发过程中遇到的 **“坑“**，我司内部 Slack 也有一个 channel，叫 `you-dont-know-$product`，是有用的。
+[[Immich]] 公开记录了开发过程中遇到的 **“坑“**，我司内部 Slack 也有一个 channel，叫 `you-dont-know-$product`，是有用的。
 
 ---
 
@@ -81,7 +81,7 @@ description:
 
 > As the sole person running OpenFreeMap, I'm incredibly proud of these two numbers. First, that my architecture hit a 99.4% CDN cache rate, which is fantastic for a service with weekly data updates. And second, that my own servers successfully handled the remaining 1,000 requests per second.
 
-[OpenFreeMap](/mentions/openfreemap) 大善人。 从这篇文章知道了 [Wplace.live](https://wplace.live/) 网站，还挺有趣的，不同城市的画风差异比较大，上海地图上显示的是大大的原神，北京地图上显示的是 XX。
+[[OpenFreeMap]] 大善人。 从这篇文章知道了 [Wplace.live](https://wplace.live/) 网站，还挺有趣的，不同城市的画风差异比较大，上海地图上显示的是大大的原神，北京地图上显示的是 XX。
 
 ---
 

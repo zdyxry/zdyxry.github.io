@@ -23,7 +23,7 @@ description:
 
 [踩坑异闻录——Windows 前端工具链之痛 - 三咲智子 Kevin Deng](https://xlog.sxzz.moe/nodejs-windows-compatibility)
 
-身边用 [Windows](/mentions/windows) 开发的同事只有一个，如果只是兼容性问题还是好的，大部分项目中的 Makefile/Taskfile 等 setup 工具，有可能完全没有考虑 Windows 用户，经常会遇到一些只有他会遇到的问题。
+身边用 [[Windows]] 开发的同事只有一个，如果只是兼容性问题还是好的，大部分项目中的 Makefile/Taskfile 等 setup 工具，有可能完全没有考虑 Windows 用户，经常会遇到一些只有他会遇到的问题。
 
 ---
 
@@ -54,7 +54,7 @@ description:
 官方文档：  [| yoke](https://yokecd.github.io/docs/)  
 示例代码：[yoke-stuff/within-website-app/v1/app.go at main · Xe/yoke-stuff · GitHub](https://github.com/Xe/yoke-stuff/blob/main/within-website-app/v1/app.go)   
 
-[Yoke](/mentions/yoke) 是一个 [kubernetes](/mentions/kubernetes) 的包管理器，定位与 [Helm](/mentions/helm) 和 [Timoni](/mentions/timoni) 相同，Yoke 的 Flights 相当于 Helm 的 Chart。主要的区别是 Yoke 不使用 YAML/CUE 等配置语言，而是使用通用的编程语言来描述资源，可能会想到 [Pulumi](/mentions/pulumi) ，与 [Pulumi](/mentions/pulumi) 不同的是，Pulumi 需要准备对应语言的 runtime 和 deps，Yoke Flights 的发布形态是 [WASM](/mentions/wasm)，Flights 接收输入参数，输出 Kubernetes 资源描述，这里有点疑问，Flights 的接收参数如果过多，最终不会演进为需要一个配置文件的程度么？
+[[Yoke]] 是一个 [[kubernetes]] 的包管理器，定位与 [[Helm]] 和 [[Timoni]] 相同，Yoke 的 Flights 相当于 Helm 的 Chart。主要的区别是 Yoke 不使用 YAML/CUE 等配置语言，而是使用通用的编程语言来描述资源，可能会想到 [[Pulumi]] ，与 [[Pulumi]] 不同的是，Pulumi 需要准备对应语言的 runtime 和 deps，Yoke Flights 的发布形态是 [[WASM]]，Flights 接收输入参数，输出 Kubernetes 资源描述，这里有点疑问，Flights 的接收参数如果过多，最终不会演进为需要一个配置文件的程度么？
 
 Yoke 引入了 ATC 解决这个问题，ATC 是一个 Kubernetes controller，通过定义 CRD，并与对应的 Flights 进行关联，从而将用户声明的配置转换为 Flights 需要的输入，最终部署到集群中。相当于一个简化版的 Operator ？
 
@@ -64,7 +64,7 @@ Flights 的发布形式是 WASM，那其他人如何了解对应的 Flights 的�
 
 [IO devices and latency — PlanetScale](https://planetscale.com/blog/io-devices-and-latency)
 
-[PlanetScale](/mentions/planetscale) 的博客，图示生动形象。
+[[PlanetScale]] 的博客，图示生动形象。
 
 ---
 

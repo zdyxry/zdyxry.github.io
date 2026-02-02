@@ -13,7 +13,7 @@ description:
 
 [HTTP QUERY and Go](https://kmcd.dev/posts/http-query/)
 
-[HTTP](/mentions/http) `QUERY` 方法，一种介于 `GET` 和 `POST` 之间的查询方法，允许在 request body 中携带复杂的 query 语句。等真正能用上估计要很久以后，大概率永远也用不上。
+[[HTTP]] `QUERY` 方法，一种介于 `GET` 和 `POST` 之间的查询方法，允许在 request body 中携带复杂的 query 语句。等真正能用上估计要很久以后，大概率永远也用不上。
 
 ---
 
@@ -31,10 +31,10 @@ IP 头部的第一个字节中：前四位是 IP 版本（通常是 `0x4`），
 
 [Lovable went from $1M to $100M ARR faster than any other software company in history.](https://x.com/antonosika/status/1948073116984652052)
 
-[Lovable](/mentions/lovable) 的 ARR (年度经常性收入 ）从 $1M 到$100 M 的速度超过了 [Cursor](/mentions/cursor)。
+[[Lovable]] 的 ARR (年度经常性收入 ）从 $1M 到$100 M 的速度超过了 [[Cursor]]。
 
 榜单上分别是：
-- [Lovable](/mentions/lovable) 8 个月
+- [[Lovable]] 8 个月
 - Cursor 1 年
 - WIZ 不到 2 年
 - OpenAI 2 年
@@ -71,7 +71,7 @@ IP 头部的第一个字节中：前四位是 IP 版本（通常是 `0x4`），
 
 > Life insurers can predict when you'll die with about [98% accuracy](https://www.soa.org/4aa060/globalassets/assets/files/resources/research-report/2024/rpec-mort-improvement-update.pdf?utm_source=chatgpt.com).
 
-有趣，[GLP-1](/mentions/glp-1) 对保险公司的影响很大，因为复用了 [GLP-1](/mentions/glp-1) 之后，对于保单评估是有很大的误导性，而当前 [GLP-1](/mentions/glp-1) 停用后大概率会反弹。
+有趣，[[GLP-1]] 对保险公司的影响很大，因为复用了 [[GLP-1]] 之后，对于保单评估是有很大的误导性，而当前 [[GLP-1]] 停用后大概率会反弹。
 
 ---
 

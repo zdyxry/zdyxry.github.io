@@ -15,13 +15,13 @@ description:
 
 > Most enterprise-type organizations won’t build their own AI factories. Instead “they will consume application programming interfaces and software built on top by firms such as OpenAI, Anthropic PBC, other AI labs and cloud players.” Silicon Angle suggests “enterprise AI will be adopted through access to mega AI factories via APIs and connectors with a software layer that hides underlying primitives and tools complexity that live under the hood.”
 
-大多数公司最终不会自建 AI 基础设施，但是他们可能会积极的采用 AI 功能，这些 API 需要一个统一的组件来管理，[Kong](/mentions/kong) 这类 API Gateway 的产品需求量和重要性是大大增加的么。
+大多数公司最终不会自建 AI 基础设施，但是他们可能会积极的采用 AI 功能，这些 API 需要一个统一的组件来管理，[[Kong]] 这类 API Gateway 的产品需求量和重要性是大大增加的么。
 
 ---
 
 [CVE-2025-62725: From “docker compose ps” to System Compromise | Imperva](https://www.imperva.com/blog/cve-2025-62725-from-docker-compose-ps-to-system-compromise/)
 
-[docker](/mentions/docker) compose 在处理 OCI artifacts 时，没有针对 `compose.file` 进行校验，导致攻击者会获得任意路径的些权限。`v2.40.2` 引入了 `validatePathInBase` 修复这个问题：
+[[docker]] compose 在处理 OCI artifacts 时，没有针对 `compose.file` 进行校验，导致攻击者会获得任意路径的些权限。`v2.40.2` 引入了 `validatePathInBase` 修复这个问题：
 
 ```go
 // validatePathInBase ensures a file path is contained within the base directory,
@@ -60,11 +60,11 @@ func validatePathInBase(base, unsafePath string) error {
 
 > Ran the MicroK 8 s + Ceph stack in production for 730+ days with 99.993% measured availability.
 
-介绍了过去的两年内 [OneUptime](/mentions/oneuptime) 从 [AWS](/mentions/aws) 迁移走之后的成果，回答了一些社区问题，从当前的现状来看，这个选择没有任何问题，无论从成本、还是长期维护的角度。
+介绍了过去的两年内 [[OneUptime]] 从 [[AWS]] 迁移走之后的成果，回答了一些社区问题，从当前的现状来看，这个选择没有任何问题，无论从成本、还是长期维护的角度。
 
 > **Automation:** We're now moving to Talos. We PXE boot with Tinkerbell, image with Talos, manage configs through Flux and Terraform, and run conformance suites before each Kubernetes upgrade. All of those tools also hardened our AWS estate, so they were not net-new effort.
 
-文章中多次提到他们会从当前的 [MicroK8s](/mentions/microk8s) 切换到 [Talos](/mentions/talos)，以至于我以为是一篇软文。[hacker news](/mentions/hacker-news) 上面的一个评论，能够感受到他的痛苦：
+文章中多次提到他们会从当前的 [[MicroK8s]] 切换到 [[Talos]]，以至于我以为是一篇软文。[[hacker news]] 上面的一个评论，能够感受到他的痛苦：
 > Talos is great until it's not. We ran into Ceph IO speed bottlenecks and found it was impossible to debug ("talosctl cgroups —preset=io" is a mess) because the devs didn't want to add an SSH escape hatch into their black box OS. Our Talos nodes would also randomly become unhealthy and you have no way of knowing why. 
 > Switched to PXE booted Alpine linux with vanille k8s, and we had a much more stable experience with no surprises, and the ability to SSH whenever we want has been hugely helpful.
 
@@ -73,14 +73,14 @@ func validatePathInBase(base, unsafePath string) error {
 
 [Fluid Storage: Forkable, Ephemeral, and Durable Infrastructure for the Age of Agents | Tiger Data](https://www.tigerdata.com/blog/fluid-storage-forkable-ephemeral-durable-infrastructure-age-of-agents)
 
-[TigerData](/mentions/tigerdata) 为自己的业务设计的分布式块存储，他们当前的业务是在 AWS EBS 上， EBS 存在一些问题，且这些问题在 Agents 场景下更加突出，Agents 经常需要创建一个临时环境进行工作，工作完成后又自动清理：
+[[TigerData]] 为自己的业务设计的分布式块存储，他们当前的业务是在 AWS EBS 上， EBS 存在一些问题，且这些问题在 Agents 场景下更加突出，Agents 经常需要创建一个临时环境进行工作，工作完成后又自动清理：
 - 并不弹性，很多操作有 6-24 h 冷却期，冷却期内无法执行其他操作，无法缩容（文章中提到了 xfs 和 ext 4, 但 xfs 不能缩容，ext 4 也不能在线缩容吧？）
 - 按照分配空间收费，用户通常需要超额分配来防止空间不足；
-- 操作缓慢，数据从 [S3](/mentions/s3) 中加载耗时较长
+- 操作缓慢，数据从 [[S3]] 中加载耗时较长
 
 于是他们实现了 Fluid Storage，目标是解决上述问题：A forkable storage layer offers a more general foundation: volumes that can be cloned, branched, or scaled independently of the systems that use them (and not limited to Postgres databases)。主要组件有 DBS (Distributed Key-Value Block Store), Storage Proxy 和 User-space Storage Device Driver。
 
-有人在 [hacker news](/mentions/hacker-news) 上问为啥不用 [Ceph](/mentions/ceph)，得到的回复是：There's some secret sauce there I don't know if I'm allowed to talk about yet。 
+有人在 [[hacker news]] 上问为啥不用 [[Ceph]]，得到的回复是：There's some secret sauce there I don't know if I'm allowed to talk about yet。 
 
 ---
 
@@ -105,7 +105,7 @@ func validatePathInBase(base, unsafePath string) error {
 
 > Bottom line is that we all need a long break every now and then. Not just two weeks on Mallorca, but time enough to get bored. To get hungry for the intellectual stimulation of work and the social connection of colleagues. The sabbatical is a great way to deliver that and keep founders from wanting to sell and employees from wanting to quit.
 
-[37Signals](/mentions/37signals) 所有员工每 3 年有 6 周的带薪休假，他们觉得这样的长假是可以让头脑 reset（重置？），因为当一个员工觉得 Burnout 想要发生改变的时候，通常只能选择辞职，他们觉得单纯的从人才留存的角度就很有说服力：看着自己培养的人离开代价太高。
+[[37Signals]] 所有员工每 3 年有 6 周的带薪休假，他们觉得这样的长假是可以让头脑 reset（重置？），因为当一个员工觉得 Burnout 想要发生改变的时候，通常只能选择辞职，他们觉得单纯的从人才留存的角度就很有说服力：看着自己培养的人离开代价太高。
 
 ---
 
@@ -121,13 +121,13 @@ func validatePathInBase(base, unsafePath string) error {
 
 [Kaze.run-Yan's Blog](https://blog.mockee.com/kaze-is-up/)
 
-听播客知道的一个跑步工具，搜着关键词找到了作者的博客。Kaze 可以连接 [Strava](/mentions/strava) 数据，并可以通过创建自定义机器人来完善活动信息（标题、描述），便于记录和分享。作者的博客整体配色也很舒服。
+听播客知道的一个跑步工具，搜着关键词找到了作者的博客。Kaze 可以连接 [[Strava]] 数据，并可以通过创建自定义机器人来完善活动信息（标题、描述），便于记录和分享。作者的博客整体配色也很舒服。
 
 ---
 
 [Tips for stroke-surviving software engineers - by James Padolsey](https://blog.j11y.io/2025-10-29_stroke_tips_for_engineers/)
 
-作者给[中风](/posts/中风)工程师的一些生活和工作建议，希望我永远也用不上。中风之后可能会导致注意力障碍，里面提到了一些工作方式的调整，原因是顶叶皮层在信息转换与重组时负荷很高，如果频繁的切换任务会加重认知负担，严重可能会诱发癫痫。
+作者给[[中风]]工程师的一些生活和工作建议，希望我永远也用不上。中风之后可能会导致注意力障碍，里面提到了一些工作方式的调整，原因是顶叶皮层在信息转换与重组时负荷很高，如果频繁的切换任务会加重认知负担，严重可能会诱发癫痫。
 - 及时休息
 - 减少不必要的干扰
 - 健康优先

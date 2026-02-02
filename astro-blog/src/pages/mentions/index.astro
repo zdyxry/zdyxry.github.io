@@ -4,17 +4,42 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
 const posts = await getCollection('posts');
 
+/**
+ * Normalize keyword to URL-safe slug
+ */
+function normalizeKeyword(keyword: string): string {
+  return keyword
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\u4e00-\u9fa5-]/g, '');
+}
+
 // Collect all mentions from all posts (count unique posts per keyword)
 const mentionsMap = new Map<string, Set<string>>();
 
 for (const post of posts) {
   const content = typeof post.body === 'string' ? post.body : '';
-  // Match [text](/mentions/keyword) syntax
-  const mentionRegex = /\[([^\]]+)\]\(\/mentions\/([^)]+)\)/g;
+  
+  // Match [[keyword]] and [[keyword|display text]] syntax
+  const wikiLinkRegex = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
   let match;
   
-  while ((match = mentionRegex.exec(content)) !== null) {
-    const keyword = match[2].trim().toLowerCase();
+  while ((match = wikiLinkRegex.exec(content)) !== null) {
+    const keyword = normalizeKeyword(match[1]);
+    if (!keyword) continue;
+    
+    if (!mentionsMap.has(keyword)) {
+      mentionsMap.set(keyword, new Set());
+    }
+    mentionsMap.get(keyword)!.add(post.slug);
+  }
+  
+  // Also support legacy [text](/mentions/keyword) syntax
+  const legacyRegex = /\[([^\]]+)\]\(\/mentions\/([^)]+)\)/g;
+  while ((match = legacyRegex.exec(content)) !== null) {
+    const keyword = normalizeKeyword(match[2]);
+    if (!keyword) continue;
     
     if (!mentionsMap.has(keyword)) {
       mentionsMap.set(keyword, new Set());

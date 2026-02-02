@@ -21,7 +21,7 @@ bus factor：团队对关键知识或关键人员的依赖程度。
 
 [写在离开 Folo 之后 - 静かな森](https://web.archive.org/web/20251201065213/https://innei.in/posts/experience/after-leaving-folo)
 
-[Folo](/mentions/folo) 的商业化就是 RSS 的商业化，而  [RSS](/mentions/rss) 商业化的上限很低。
+[[Folo]] 的商业化就是 RSS 的商业化，而  [[RSS]] 商业化的上限很低。
 
 ---
 
@@ -32,13 +32,13 @@ bus factor：团队对关键知识或关键人员的依赖程度。
 
 > A few weeks ago, I went on a [four hour walk](https://x.com/thdxr/status/1985586605877252285) with Boris from the Claude Code team. We talked about Bun. We talked about where AI coding is going. We talked about what it would look like for Bun's team to join Anthropic. Then we did that about 3 more times over the next few weeks. Then I did that with many of their competitors. I think Anthropic is going to win.
 
-[Anthropic](/mentions/anthropic) 收购了 [Bun](/mentions/bun)。想要被收购么？先 City Walk 四个小时吧。
+[[Anthropic]] 收购了 [[Bun]]。想要被收购么？先 City Walk 四个小时吧。
 
 ---
 
 [Senior Infra Engineer: Datacenters | Railway](https://railway.com/careers/dc-engineer)
 
-[Railway](/mentions/railway) 打算自建数据中心了，想到了这两天又看到有人在讨论下云，可以看看能否应付要面临的问题：
+[[Railway]] 打算自建数据中心了，想到了这两天又看到有人在讨论下云，可以看看能否应付要面临的问题：
 - 为数据中心设计和采购了价值超过 100 万美元的硬件
 - 在全球范围内管理和协调供应链
 - 设计机架级布局以实现最佳效率（散热 / 能耗等）
@@ -60,7 +60,7 @@ if appErr, ok := errors.AsType[AppError](err); ok {
 }
 ```
 
-[Go](/mentions/go) 1.26 版本引入 `errors.AsType`，真不错。
+[[Go]] 1.26 版本引入 `errors.AsType`，真不错。
 
 ---
 
@@ -70,13 +70,13 @@ if appErr, ok := errors.AsType[AppError](err); ok {
 
 > Before the end of next week we will publish a detailed breakdown of all the resiliency projects underway, including the ones listed above. While that work is underway, we are locking down all changes to our network in order to ensure we have better mitigation and rollback systems before we begin again.
 
-[CloudFlare](/mentions/cloudflare) 在周五再一次发生严重故障，Lua 版本的 Proxy 没有处理 nil 异常。这种短时间内的两次严重故障，如果我是企业用户，是否需要更换服务商？这时候评估的标准是什么？
+[[CloudFlare]] 在周五再一次发生严重故障，Lua 版本的 Proxy 没有处理 nil 异常。这种短时间内的两次严重故障，如果我是企业用户，是否需要更换服务商？这时候评估的标准是什么？
 
 ---
 
 [Harbor GC 问题 | 卡瓦邦噶！](https://www.kawabangga.com/posts/7057)
 
-维护 [Harbor](/mentions/harbor) 总是很麻烦，很久之前我维护了一个 docker compose 的 Harbor，但是后面尝试几次升级都失败了，后面只能重建一个新的 Harbor 实例，后面负责的同事针对每个 Project 进行了严格的空间限制，经常用着用着就需要去删除无用 Image，Harbor 自己的删除策略不太好用。
+维护 [[Harbor]] 总是很麻烦，很久之前我维护了一个 docker compose 的 Harbor，但是后面尝试几次升级都失败了，后面只能重建一个新的 Harbor 实例，后面负责的同事针对每个 Project 进行了严格的空间限制，经常用着用着就需要去删除无用 Image，Harbor 自己的删除策略不太好用。
 
 > 这是一个很有意思的「用运维手段解决技术问题」的例子，在 SRE 的工作中，迫于没有对软件的实现的控制力，我们经常需要用运维手段来解决代码实现上的问题。
 
@@ -111,7 +111,7 @@ if appErr, ok := errors.AsType[AppError](err); ok {
 ---
 [2025 Garmin Connect data report | Garmin Blog](https://www.garmin.com/en-US/blog/general/2025-garmin-connect-data-report/)
 
-[Garmin](/mentions/garmin) 2025 用户数据报告，力量训练增长 29%，女性比男性多 6%；巴西用户人均力量训练量比排名第二的墨西哥高 44%，这数字好夸张。不同年龄端用户的运动偏好感觉也挺符合刻板印象的：18–29 岁：户外跑步、田径跑； 30–39 岁：力量训练、室内有氧、跑步机；40–49 岁：越野跑。
+[[Garmin]] 2025 用户数据报告，力量训练增长 29%，女性比男性多 6%；巴西用户人均力量训练量比排名第二的墨西哥高 44%，这数字好夸张。不同年龄端用户的运动偏好感觉也挺符合刻板印象的：18–29 岁：户外跑步、田径跑； 30–39 岁：力量训练、室内有氧、跑步机；40–49 岁：越野跑。
 
 比如关注的一个博主，上马 2023 年成绩是 518，年龄段 34 岁以下排名是 1511。2025 年成绩是 408，年龄段 35-39 岁排名是 1781。
 

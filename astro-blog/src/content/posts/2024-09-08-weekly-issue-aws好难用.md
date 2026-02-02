@@ -27,7 +27,7 @@ description:
 
 [Exploring Cloud Native projects in CNCF Sandbox. Part 1: 13 arrivals of 2023 H1 – Palark | Blog](https://blog.palark.com/cncf-sandbox-2023-h1/)
 
-[CNCF](/mentions/cncf) 2023 年上半年新加入 Sandbox 的项目，没看到想要立即试用的。
+[[CNCF]] 2023 年上半年新加入 Sandbox 的项目，没看到想要立即试用的。
 
 更想知道哪些 Sandbox 项目已经死了（不活跃了），然后被踢出去的。
 
@@ -60,20 +60,20 @@ const getTableName = (addressType: 'shipping' | 'billing') => {
 
 PoC 到生产可用，至少要做到如下几点：
 - 文档记录，每个任务、变更和实施都要被记录
-- 尽可能的使用 [IaC](/mentions/iac) 或 Config as Code ，来保证可扩展、可重复的执行
+- 尽可能的使用 [[IaC]] 或 Config as Code ，来保证可扩展、可重复的执行
 - 知识转移，在完成该工作的基本背景和操作知识必须与至少一名团队成员共享，可以采用 demo 或视频录制的方式
 
 ---
 
 [vmware-explore-2024-session-urls/vmware-explore-us.md at master · lamw/vmware-explore-2024-session-urls · GitHub](https://github.com/lamw/vmware-explore-2024-session-urls/blob/master/vmware-explore-us.md)
 
-[vmware](/mentions/vmware) Explore 2024 相关资料。看了 `Tech Deep Dive: Automating VMware ESXi Installation at Scale`，通过 PXE 配合 Kickstart 大规模安装，在安装部署模式上没看到太多改变，随着 ESXi 的更新，Kickstart 的一些配置方式发生了变化。
+[[vmware]] Explore 2024 相关资料。看了 `Tech Deep Dive: Automating VMware ESXi Installation at Scale`，通过 PXE 配合 Kickstart 大规模安装，在安装部署模式上没看到太多改变，随着 ESXi 的更新，Kickstart 的一些配置方式发生了变化。
 
 ---
 
 [Why vSAN Max aka disaggregated storage? | Yellow Bricks](https://www.yellow-bricks.com/2024/09/06/why-vsan-max-aka-disaggregated-storage/)
 
-2023 年这个时候，[vmware](/mentions/vmware) 推出了 vSAN MAX，是一个分离式的存储产品，最初的定位是“用于 PB 级别的存储平台“，现在这个解释发生了一些变化，是作者之前没想到过的，与技术无关，与运营和政治有关。
+2023 年这个时候，[[vmware]] 推出了 vSAN MAX，是一个分离式的存储产品，最初的定位是“用于 PB 级别的存储平台“，现在这个解释发生了一些变化，是作者之前没想到过的，与技术无关，与运营和政治有关。
 
 在传统环境中，根据规模的不同，通常会看到职责分离。有虚拟化管理员、网络管理员和存储管理员。在过去的十年中，VMware 一直期望的是能够培养 ful-stack 工程师，但是没什么效果，很多公司还存在这样的职责，而且 20 年之后可能还会存在。
 

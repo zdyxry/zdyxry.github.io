@@ -58,7 +58,7 @@ ARP 没有得到回应，可能是处于不同的广播域了。
 
 [Blog - Private Cloud Compute: A new frontier for AI privacy in the cloud - Apple Security Research](https://security.apple.com/blog/private-cloud-compute/)
 
-[Apple](/mentions/apple) 的 [Private Cloud Compute](/mentions/private-cloud-compute) 文章介绍。在 iOS 18 发布会结束后，大家都在关心 Apple 引入 [OpenAI](/mentions/openai) 的服务之后，用户数据是否会泄露，这篇文章是 Apple 的回答。我对于技术上是否能做到没有疑问，在实施上是否能做到，有很大的疑虑。
+[[Apple]] 的 [[Private Cloud Compute]] 文章介绍。在 iOS 18 发布会结束后，大家都在关心 Apple 引入 [[OpenAI]] 的服务之后，用户数据是否会泄露，这篇文章是 Apple 的回答。我对于技术上是否能做到没有疑问，在实施上是否能做到，有很大的疑虑。
 
 ---
 
@@ -78,7 +78,7 @@ ARP 没有得到回应，可能是处于不同的广播域了。
 
 [x.com](https://x.com/DakotaChambers/status/1798914414747553820)
 
-推上有人说，[DHH](/mentions/dhh) 从零开始构建项目的速度令人印象深刻。下面的评论很精准的说出了我的感觉：
+推上有人说，[[DHH]] 从零开始构建项目的速度令人印象深刻。下面的评论很精准的说出了我的感觉：
 
 >他也总是擅长营销。简单但漂亮的网站。精彩的演示视频。超级干净的代码库。所有这一切都让你点头说“是的，这一切都有道理”，在你意识到之前，你已经开始亲自尝试了。
 

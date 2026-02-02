@@ -19,7 +19,7 @@ description:
 
 [Amp Free - Amp](https://ampcode.com/news/amp-free)
 
-[ampcode](/mentions/ampcode) 提供了免费模式，由广告商提供支持，会在使用过程中增加广告显示，并且会使用该模式下的代码仓库进行训练。
+[[ampcode]] 提供了免费模式，由广告商提供支持，会在使用过程中增加广告显示，并且会使用该模式下的代码仓库进行训练。
 
 这不是第一次在 AI 相关的产品中看到广告了，之前好像在小爱同学中看到过太太乐鸡精的广告。
 
@@ -49,7 +49,7 @@ description:
 
 > 开源可能加剧市场竞争，特别是那些无需承担项目维护成本的竞争者能以更低价格抢占市场。这正是开源社区中善意往往逐渐消解的关键节点。要在开源基础上建立商业体系，你必须为自己创造某些优势，以确保企业的可持续运营。
 
-补充说明，这个 [Newsletter](/mentions/newsletter) 作者是 [docker](/mentions/docker) 的前 CTO。
+补充说明，这个 [[Newsletter]] 作者是 [[docker]] 的前 CTO。
 
 ---
 
@@ -82,7 +82,7 @@ description:
 
 > 对于相对低带宽的 fsync () 工作负载（例如 40 MB / 秒 + 大量 fsync 操作），您是否预期 NVMe 固态硬盘会比 SATA 固态硬盘有明显更快的表现？
 
-事实上，[NVMe](/mentions/nvme) 的性能就是要比 [SATA](/mentions/sata) 高很多，控制器更新，实际写入闪存芯片的真正瓶颈是寻找已擦除的块，或者在没有可用块时等待块被擦除的过程。
+事实上，[[NVMe]] 的性能就是要比 [[SATA]] 高很多，控制器更新，实际写入闪存芯片的真正瓶颈是寻找已擦除的块，或者在没有可用块时等待块被擦除的过程。
 
 [SSD Benchmarks Hierarchy 2025: We've tested over 100 different SSDs over the past few years, and here's how they stack up.](https://www.tomshardware.com/features/ssd-benchmarks-hierarchy) 这个网站对 100+ SSD 进行了性能测试，PCIe 5.0 很好，但日常使用没什么必要。SSD 价格过去一年一直在上涨，接下来也看不到下降的可能。
 

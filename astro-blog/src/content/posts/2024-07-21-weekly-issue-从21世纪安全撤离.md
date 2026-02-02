@@ -13,7 +13,7 @@ description:
 
 [Google Now Defaults to Not Indexing Your Content - Vincent Schmalbach](https://www.vincentschmalbach.com/google-now-defaults-to-not-indexing-your-content/)
 
-作者猜测 [Google](/mentions/google) 目前不会自动索引所有站点，可能会进行站点内容评估，如果觉得内容没有“价值”，可能不会评估，这一切目前可能是猜测，因为没有真实的证据指明这一点。
+作者猜测 [[Google]] 目前不会自动索引所有站点，可能会进行站点内容评估，如果觉得内容没有“价值”，可能不会评估，这一切目前可能是猜测，因为没有真实的证据指明这一点。
 
 我在 Google Search Console 查看我的博客，发现也有很多文章没有被索引，不知道什么原因。
 
@@ -22,7 +22,7 @@ description:
 
 [Docker Best Practices: Choosing Between RUN, CMD, and ENTRYPOINT | Docker](https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/)
 
-[Dockerfile](/mentions/dockerfile) 中的 `CMD` 和 `ENTRYPOINT` 区别，里面提到的使用判断流程图挺好的。
+[[Dockerfile]] 中的 `CMD` 和 `ENTRYPOINT` 区别，里面提到的使用判断流程图挺好的。
 
 ---
 
@@ -55,7 +55,7 @@ description:
 
 [大西北自驾游记 - 陪她去流浪](https://blog.twofei.com/1433/)
 
-[西北](/posts/西北) [游记](/posts/游记)，翡翠湖真漂亮啊。
+[[西北]] [[游记]]，翡翠湖真漂亮啊。
 
 之前和同事聊天才反应过来，我几乎没有长途（超过 7 天）旅行过。
 

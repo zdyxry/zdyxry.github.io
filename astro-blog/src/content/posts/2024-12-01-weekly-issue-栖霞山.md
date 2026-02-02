@@ -14,7 +14,7 @@ description:
 
 [1 dataset. 100 visualizations.](https://100.datavizproject.com/)
 
-100 种[可视化](/posts/可视化)图表。合适的图表比文字更适合叙事。
+100 种[[可视化]]图表。合适的图表比文字更适合叙事。
 
 ---
 
@@ -36,7 +36,7 @@ description:
 
 [Future Crate Maintenance and Redis Inc. Relationship · Issue #1419 · redis-rs/redis-rs · GitHub](https://github.com/redis-rs/redis-rs/issues/1419)
 
-[redis](/mentions/redis) 公司联系项目 owner，说 Rust Redis crate 侵犯了 redis 的商标。改名或者将其转移到 Redis Inc 。关注下后续进展。
+[[redis]] 公司联系项目 owner，说 Rust Redis crate 侵犯了 redis 的商标。改名或者将其转移到 Redis Inc 。关注下后续进展。
 
 2024 年 12 月 2 日更新：看样子暂时不会发生变更了： https://github.com/redis-rs/redis-rs/issues/1419#issuecomment-2503578646 。
 
@@ -51,7 +51,7 @@ description:
 
 [How I configure my Git identities | benji](https://www.benji.dog/articles/git-config/)
 
-[git](/mentions/git) 技巧，使用 `includeIf` 来针对不同的 repo 使用不同的配置， git config 示例：
+[[git]] 技巧，使用 `includeIf` 来针对不同的 repo 使用不同的配置， git config 示例：
 
 ```
 [includeIf "hasconfig:remote.*.url:git@github.com:orgname/**"]
@@ -78,7 +78,7 @@ IdentityFile ~/.ssh/work.id_ed25519
 
 [Deno v. Oracle: Canceling the JavaScript Trademark](https://deno.com/blog/deno-v-oracle)
 
-[Deno](/mentions/deno) 上次 JavaScript 商标后续，Deno 想 USPTO（美国专利局）申请撤销 Oracle JavaScript 商标。
+[[Deno]] 上次 JavaScript 商标后续，Deno 想 USPTO（美国专利局）申请撤销 Oracle JavaScript 商标。
 
 Deno 的推文中的语句是： `Oracle has until January 4th to respond, or the case will go into default, which will result in the trademark being canceled.`
 在博客中的语句是： `Oracle has until January 4, 2025, to respond. If they fail to act, the case will go into default, and the trademark will likely be canceled.`

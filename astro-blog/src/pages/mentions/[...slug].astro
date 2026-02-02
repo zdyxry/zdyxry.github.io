@@ -3,20 +3,38 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
 export async function getStaticPaths() {
+  /**
+   * Normalize keyword to URL-safe slug
+   * - lowercase
+   * - spaces to dashes
+   * - remove special chars (keep Chinese characters)
+   */
+  function normalizeKeyword(keyword: string): string {
+    return keyword
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\u4e00-\u9fa5-]/g, '');
+  }
+
   const posts = await getCollection('posts');
   
   // Collect all mentions from all posts
-  const mentionsMap = new Map<string, Array<{post: any, context: string}>>();
+  const mentionsMap = new Map<string, Array<{post: any, context: string, displayText: string}>>();
   
   for (const post of posts) {
     const content = typeof post.body === 'string' ? post.body : '';
-    // Match [text](/mentions/keyword) syntax
-    const mentionRegex = /\[([^\]]+)\]\(\/mentions\/([^)]+)\)/g;
+    
+    // Match [[keyword]] and [[keyword|display text]] syntax
+    const wikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
     let match;
     
-    while ((match = mentionRegex.exec(content)) !== null) {
-      const keyword = match[2].trim().toLowerCase();
-      const linkText = match[1];
+    while ((match = wikiLinkRegex.exec(content)) !== null) {
+      const rawKeyword = match[1];
+      const displayText = match[2] || rawKeyword;
+      const keyword = normalizeKeyword(rawKeyword);
+      
+      if (!keyword) continue;
       
       // Extract context around the mention (100 chars before and after)
       const matchIndex = match.index;
@@ -24,7 +42,8 @@ export async function getStaticPaths() {
       const contextEnd = Math.min(content.length, matchIndex + match[0].length + 100);
       let context = content.slice(contextStart, contextEnd);
       
-      // Clean up context: remove other markdown links, limit to one sentence
+      // Clean up context: remove wiki links, markdown syntax
+      context = context.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, k, d) => d || k);
       context = context.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
       context = context.replace(/[#*`_]/g, '');
       context = context.trim();
@@ -40,7 +59,37 @@ export async function getStaticPaths() {
       // Avoid duplicate entries for same post
       const existing = mentionsMap.get(keyword)!.find(m => m.post.slug === post.slug);
       if (!existing) {
-        mentionsMap.get(keyword)!.push({ post, context });
+        mentionsMap.get(keyword)!.push({ post, context, displayText });
+      }
+    }
+    
+    // Also support legacy [text](/mentions/keyword) syntax
+    const legacyRegex = /\[([^\]]+)\]\(\/mentions\/([^)]+)\)/g;
+    while ((match = legacyRegex.exec(content)) !== null) {
+      const keyword = normalizeKeyword(match[2]);
+      const displayText = match[1];
+      
+      if (!keyword) continue;
+      
+      const matchIndex = match.index;
+      const contextStart = Math.max(0, matchIndex - 100);
+      const contextEnd = Math.min(content.length, matchIndex + match[0].length + 100);
+      let context = content.slice(contextStart, contextEnd);
+      
+      context = context.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+      context = context.replace(/[#*`_]/g, '');
+      context = context.trim();
+      
+      if (contextStart > 0) context = '…' + context;
+      if (contextEnd < content.length) context = context + '…';
+      
+      if (!mentionsMap.has(keyword)) {
+        mentionsMap.set(keyword, []);
+      }
+      
+      const existing = mentionsMap.get(keyword)!.find(m => m.post.slug === post.slug);
+      if (!existing) {
+        mentionsMap.get(keyword)!.push({ post, context, displayText });
       }
     }
   }
@@ -75,7 +124,7 @@ export async function getStaticPaths() {
 
 interface Props {
   keyword: string;
-  mentions: Array<{post: any, context: string}>;
+  mentions: Array<{post: any, context: string, displayText: string}>;
   count: number;
 }
 

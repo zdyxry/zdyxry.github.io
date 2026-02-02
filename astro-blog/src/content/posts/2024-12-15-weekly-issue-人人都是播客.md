@@ -15,7 +15,7 @@ description:
 
 > If you rely on this project to generate profit, consider not making it open source from the start. It’s entirely acceptable for someone to use your MIT-licensed projects to make money without even acknowledging your name. Don’t complain if others don’t compensate you for using your Apache 2.0 or MIT-licensed projects. Building a business is far more challenging than maintaining open-source projects.
 
- [Xuanwo](/mentions/xuanwo) 写给开源维护者的一封信，真诚，真实。
+ [[Xuanwo]] 写给开源维护者的一封信，真诚，真实。
 
 ---
 
@@ -29,7 +29,7 @@ Google 要求 FTC 终止微软和 OpenAI 的独家协议。
 
 > To complete the puzzle, we wanted to deterministically test the behavior of the database when interacting with the operating system and other components. To do that, we are partnering with [Antithesis](https://antithesis.com/), a company that provides a system-level Deterministic Simulation Testing framework, and can simulate all sorts of hardware and software failures. Antithesis does that by providing a deterministic hypervisor that runs many fuzzing threads in parallel, allowing us to quickly search the input space.
 
-[Turso](/mentions/turso) 计划使用 Rust 来重写 [SQlite](/mentions/sqlite)。文中提到了 [Antithesis: autonomous software testing](https://antithesis.com/)，是 FoundationDB 的前工程师项目，解决自动化软件测试的问题。上一次看到 Antithesis 相关信息还是 2021 年。
+[[Turso]] 计划使用 Rust 来重写 [[SQlite]]。文中提到了 [Antithesis: autonomous software testing](https://antithesis.com/)，是 FoundationDB 的前工程师项目，解决自动化软件测试的问题。上一次看到 Antithesis 相关信息还是 2021 年。
 
 ---
 
@@ -42,13 +42,13 @@ Google 要求 FTC 终止微软和 OpenAI 的独家协议。
 
 [Gist of Go: Pipelines](https://antonz.org/go-concurrency/pipelines/)
 
-[Golang](/mentions/golang) 中配合使用 `goroutine` 和 `channel` 的示例，包含了 cancel、merge、pipeline 的场景。在 merge 场景中，可以利用从 nil channel 读取时会永远阻塞的特性配合 `select` 处理输入 channel 关闭的场景。
+[[Golang]] 中配合使用 `goroutine` 和 `channel` 的示例，包含了 cancel、merge、pipeline 的场景。在 merge 场景中，可以利用从 nil channel 读取时会永远阻塞的特性配合 `select` 处理输入 channel 关闭的场景。
 
 ---
 
 [The Case for Shared Storage - WarpStream - Stream More, Manage Less](https://www.warpstream.com/blog/the-case-for-shared-storage#apache-kafka-and-other-data-streaming-systems)
 
-[WarpStream](/mentions/warpstream) 关于 Shared Storage 文章，其中前面提到了 Shared Nothing 和 Shared Storage ，以及 WarpStream 采用 Shared Storage 虽然有相对更高的延迟（P 99 是几百毫秒），但是可以解决热点数据管理和 topic-partiton 限制。
+[[WarpStream]] 关于 Shared Storage 文章，其中前面提到了 Shared Nothing 和 Shared Storage ，以及 WarpStream 采用 Shared Storage 虽然有相对更高的延迟（P 99 是几百毫秒），但是可以解决热点数据管理和 topic-partiton 限制。
 
 ---
 

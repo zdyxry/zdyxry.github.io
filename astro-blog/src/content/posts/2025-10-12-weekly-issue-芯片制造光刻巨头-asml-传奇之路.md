@@ -52,7 +52,7 @@ description:
 
 > When OpenZL is able to understand and parse the file format, it is able to offer large improvements in compression ratio, while still providing fast compression and decompression speed. However, this is no magic bullet. When OpenZL doesn’t understand the input file format, it simply falls back to zstd
 
-[OpenZL](/mentions/openzl)，专为结构化数据设计，常见示例包括时间序列数据集、机器学习张量和数据库表。当处理纯文本文档时，会 fallback 到 [zstd](/mentions/zstd)。
+[[OpenZL]]，专为结构化数据设计，常见示例包括时间序列数据集、机器学习张量和数据库表。当处理纯文本文档时，会 fallback 到 [[zstd]]。
 
 ---
 
@@ -60,7 +60,7 @@ description:
 
 > 例如，在过去 30 天里，一位使用我们 250 美元 Max 套餐的用户每小时发出了 335 个请求，持续了 30 天，每月给 Augment Code 造成的成本接近 15,000 美元。这种使用方式本身并无不好，但作为一家企业，我们必须根据成本来定价服务。
 
-[Augment](/mentions/augment) 会在 10 月 20 日起调整定价方式，从“按消息计费”模式转为“按积分计费”模式，看上去积分计费的方式还挺复杂的，不如 [Zed](/mentions/zed) 的透明度高。这篇文章本身没什么，但是我应该学学人家怎么薅羊毛的。
+[[Augment]] 会在 10 月 20 日起调整定价方式，从“按消息计费”模式转为“按积分计费”模式，看上去积分计费的方式还挺复杂的，不如 [[Zed]] 的透明度高。这篇文章本身没什么，但是我应该学学人家怎么薅羊毛的。
 
 ---
 
@@ -88,7 +88,7 @@ Hahahahahahaha，省流：想做事的人无法做事的故事。 故事离谱�
 
 > Organize your photos & videos, chats & messages, location history, social media content, contacts, and more into a single cohesive timeline on your own computer where you can keep them alive forever.
 
-很喜欢这个项目，但是又感觉这个项目的目标太过于宏大，以至于无法进入稳定版本。另外，这个项目的作者是 [Caddy](/mentions/caddy) 的作者。
+很喜欢这个项目，但是又感觉这个项目的目标太过于宏大，以至于无法进入稳定版本。另外，这个项目的作者是 [[Caddy]] 的作者。
 
 ---
 
@@ -118,7 +118,7 @@ Hahahahahahaha，省流：想做事的人无法做事的故事。 故事离谱�
 
 [How to reproduce and fix an I/O data race with Go and DTrace](https://gaultier.github.io/blog/how_to_reproduce_and_fix_an_io_data_race_with_dtrace.html)
 
-使用  [DTrace](/mentions/dtrace) 来进行一个 data race 的调查，作者的一个观点是，在对文件进行操作钱，使用 `stat(2)` 是没必要的，因为如果文件不存在，那么 `read(2)` 和 `write(2)` 这样的 IO 操作会直接返回 `EEXIST` ，并且可能会产生 TOCTOU (Time-of-check to time-of-use) 问题.
+使用  [[DTrace]] 来进行一个 data race 的调查，作者的一个观点是，在对文件进行操作钱，使用 `stat(2)` 是没必要的，因为如果文件不存在，那么 `read(2)` 和 `write(2)` 这样的 IO 操作会直接返回 `EEXIST` ，并且可能会产生 TOCTOU (Time-of-check to time-of-use) 问题.
 
 ---
 

@@ -13,13 +13,13 @@ description:
 
 [Why our 5.2k-star K8s platform struggles overseas while thriving in China? Need your brutal feedback : r/kubernetes](https://www.reddit.com/r/kubernetes/comments/1jvpqil/why_our_52kstar_k8s_platform_struggles_overseas/)
 
-[Rainbond](/mentions/rainbond) 在海外推广遇到了困难，他们观察到的 3 个明显问题是：
+[[Rainbond]] 在海外推广遇到了困难，他们观察到的 3 个明显问题是：
 - 声称自己是 "Heroku for Kubernetes" 替代品
 - Open Source != Trust
 - Deployment Culture Clash: 75% of Chinese clients demand air-gapped installs (even on edge nodes!), while Western teams expect SaaS-first.
 	- 这好像几乎是国内特有的情况了？
 
-评论区中提到了 [Harbor](/mentions/harbor) 在世界范围内被采用，是因为他们隐藏了是中国地区开发的。我觉得可能不是主要原因，当时 Harbor 是顶着 [vmware](/mentions/vmware) 的光环在的，大家看重的更多应该是 [vmware](/mentions/vmware)。对于评论区中的产品选型原因，感觉和行业或者技术壁垒有直接关系，比如 [TiDB](/mentions/tidb) 那么多海外用户，[Clickhouse](/mentions/clickhouse) 背后的投资人 [Yandex](/mentions/yandex) 是俄罗斯公司，[Deepseek](/mentions/deepseek) 的开源项目引起的轰动，他们会没有考虑中国/俄罗斯的政治风险么？我觉得肯定考虑了。
+评论区中提到了 [[Harbor]] 在世界范围内被采用，是因为他们隐藏了是中国地区开发的。我觉得可能不是主要原因，当时 Harbor 是顶着 [[vmware]] 的光环在的，大家看重的更多应该是 [[vmware]]。对于评论区中的产品选型原因，感觉和行业或者技术壁垒有直接关系，比如 [[TiDB]] 那么多海外用户，[[Clickhouse]] 背后的投资人 [[Yandex]] 是俄罗斯公司，[[Deepseek]] 的开源项目引起的轰动，他们会没有考虑中国/俄罗斯的政治风险么？我觉得肯定考虑了。
 
 下面那篇 TiDB 的文章中，也提到了国际化：
 
@@ -53,7 +53,7 @@ description:
 ---
 [DuckDB's CSV Reader and the Pollock Robustness Benchmark: Into the CSV Abyss – DuckDB](https://duckdb.org/2025/04/16/duckdb-csv-pollock-benchmark.html)
 
-[DuckDB](/mentions/duckdb) 尽可能的以兼容方式来读取 [CSV](/mentions/csv) 的方法：
+[[DuckDB]] 尽可能的以兼容方式来读取 [[CSV]] 的方法：
 
 ```sql
 FROM read_csv('cafes.csv',
@@ -64,19 +64,19 @@ FROM read_csv('cafes.csv',
 );
 ```
 
-想到之前帮朋友处理一个奇奇怪怪数据的 Excel 的痛苦，当时好像用 [pandas](/mentions/pandas) 手动处理了很多边界场景。
+想到之前帮朋友处理一个奇奇怪怪数据的 Excel 的痛苦，当时好像用 [[pandas]] 手动处理了很多边界场景。
 
 ---
 [Building OpenAPI Based REST API In Go Using HUMA Framework, With SurrealDB | by Shiju Varghese | Apr, 2025 | Medium](https://shijuvar.medium.com/building-openapi-based-rest-api-in-go-using-huma-framework-with-surrealdb-844ded6a856e)
 
-这篇文章中推荐了 [GitHub - danielgtaylor/huma: Huma REST/HTTP API Framework for Golang with OpenAPI 3.1](https://github.com/danielgtaylor/huma) ，之前在做新项目的时候，考虑使用自动生成 [openapi](/mentions/openapi) 文档的框架，不想在 Gin 里面手动写注释生成，当时的选型还有 [GitHub - go-fuego/fuego: Golang Fuego - Web framework generating OpenAPI 3 spec from source code - Pluggable to existing Gin & Echo APIs](https://github.com/go-fuego/fuego)，好像是因为在自定义错误码的处理上不灵活，最终都没有使用，选择了 [grpc](/mentions/grpc) + grpc-gateway + buf 自动生成的方式。
+这篇文章中推荐了 [GitHub - danielgtaylor/huma: Huma REST/HTTP API Framework for Golang with OpenAPI 3.1](https://github.com/danielgtaylor/huma) ，之前在做新项目的时候，考虑使用自动生成 [[openapi]] 文档的框架，不想在 Gin 里面手动写注释生成，当时的选型还有 [GitHub - go-fuego/fuego: Golang Fuego - Web framework generating OpenAPI 3 spec from source code - Pluggable to existing Gin & Echo APIs](https://github.com/go-fuego/fuego)，好像是因为在自定义错误码的处理上不灵活，最终都没有使用，选择了 [[grpc]] + grpc-gateway + buf 自动生成的方式。
 
 ---
 
 
 [Automating Linux bare-metal server deployment in Hetzner with Ansible – Palark | Blog](https://blog.palark.com/ansible-hetzner-bare-metal-linux/)
 
-最近因为一个内部 BeraMetal 相关项目的后续迭代方向进行了一些思考，做 BareMetal 太苦了，比如这篇文章中的实现方式，如果没有 [Hetzner](/mentions/hetzner) API，会非常痛苦。痛苦的点在于：
+最近因为一个内部 BeraMetal 相关项目的后续迭代方向进行了一些思考，做 BareMetal 太苦了，比如这篇文章中的实现方式，如果没有 [[Hetzner]] API，会非常痛苦。痛苦的点在于：
 - 需要适配大量的服务器品牌（国内和国外是两套生态）
 - 需要适配同一个服务器 BMC 的不同版本
 	- 看似存在 Redfish 这样的通用协议，但是落地下来各有不同
@@ -102,7 +102,7 @@ FROM read_csv('cafes.csv',
 
 [GitHub - jlevy/og-equity-compensation: Stock options, RSUs, taxes — read the latest edition: www.holloway.com/ec](https://github.com/jlevy/og-equity-compensation)
 
-[股权](/posts/股权)激励指南。 有需要的朋友可以看看，避免发生 zhihu 惨案。
+[[股权]]激励指南。 有需要的朋友可以看看，避免发生 zhihu 惨案。
 
 ---
 

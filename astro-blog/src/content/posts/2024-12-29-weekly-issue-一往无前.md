@@ -16,7 +16,7 @@ description:
 > This disruption of data export functionality was triggered by the deletion of an internal project containing essential API keys.:
 > - An internally used API key was flagged for a Google policy non-compliance and deemed no longer in use which led to the deleting of the API key.
 
-[GCP](/mentions/gcp) 因为删除了一个内部项目，内部项目中包含了一个必要的 API key，导致 BigQuery 服务中断。 看到这个事故调查，第一反应是我们内部有没有什么类似的仓库。
+[[GCP]] 因为删除了一个内部项目，内部项目中包含了一个必要的 API key，导致 BigQuery 服务中断。 看到这个事故调查，第一反应是我们内部有没有什么类似的仓库。
 
 ---
 
@@ -26,7 +26,7 @@ description:
 
 > “Complex systems usually operate in failure mode.”
 
-[Slack](/mentions/slack) 的[事故分析](/posts/事故分析)，因为一次集群存储空间不足，导致所有的 Kibana 配置丢失。我没有理解即使再 `bad state`，为什么数据会丢失呢？ 我猜是因为他们自信自己有备份所以直接删除了，然后发现自己的备份一直是失效的，所以才 `shocked and disappointed`。。。 
+[[Slack]] 的[[事故分析]]，因为一次集群存储空间不足，导致所有的 Kibana 配置丢失。我没有理解即使再 `bad state`，为什么数据会丢失呢？ 我猜是因为他们自信自己有备份所以直接删除了，然后发现自己的备份一直是失效的，所以才 `shocked and disappointed`。。。 
 
 ---
 

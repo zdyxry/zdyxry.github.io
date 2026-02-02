@@ -49,17 +49,17 @@ GNU tar 会查看文件扩展名来尝试确定用户的意图。如果执行 `t
 
 [x.com](https://x.com/kiwicopple/status/1825955571704508922)
 
-[Supabase](/mentions/supabase) 准备招聘自己的第一个 Product Manager，在 Requirements 中提到了 3 次 `Zero ego`，我理解这里可能的意思是：不以自我为中心、能够接受意见、友善合作？既要有想法，又不能太自我。
+[[Supabase]] 准备招聘自己的第一个 Product Manager，在 Requirements 中提到了 3 次 `Zero ego`，我理解这里可能的意思是：不以自我为中心、能够接受意见、友善合作？既要有想法，又不能太自我。
 
 ---
 
 [uv: Unified Python packaging](https://astral.sh/blog/uv-unified-python-packaging)
 
-属于 [python](/mentions/python) 的 [cargo](/mentions/cargo) 来了，[uv](/mentions/uv) 目前已经是一个完全的 Python 管理器，不只是 package，还包含 project、cmd、workspace 等等。是时候尝试从 [poetry](/mentions/poetry) 切换到 [uv](/mentions/uv) 了。
+属于 [[python]] 的 [[cargo]] 来了，[[uv]] 目前已经是一个完全的 Python 管理器，不只是 package，还包含 project、cmd、workspace 等等。是时候尝试从 [[poetry]] 切换到 [[uv]] 了。
 
 [uv: Unified Python packaging](https://simonwillison.net/2024/Aug/20/uv-unified-python-packaging/)
 
-由于官方的介绍博客内容很多，这是 Simon Willison 关于 [uv](/mentions/uv) 使用的一个快速说明。
+由于官方的介绍博客内容很多，这是 Simon Willison 关于 [[uv]] 使用的一个快速说明。
 
 ---
 
@@ -67,9 +67,9 @@ GNU tar 会查看文件扩展名来尝试确定用户的意图。如果执行 `t
 
 > - If-None-Match — Upload the object only if no existing object with the same key name already exists in the specified bucket. Expects the * (asterisk) value.
 
-[AWS](/mentions/aws) [S3](/mentions/s3) 支持条件写入，可以在创建对象之前检查对象是否存在。对象存储各家的基本操作一样，但是一些高级功能差异感觉还是挺大的。
+[[AWS]] [[S3]] 支持条件写入，可以在创建对象之前检查对象是否存在。对象存储各家的基本操作一样，但是一些高级功能差异感觉还是挺大的。
 
-[Azure](/mentions/azure) 很早就有了类似功能： [Specifying conditional headers for Blob service operations](https://learn.microsoft.com/en-us/rest/api/storageservices/specifying-conditional-headers-for-blob-service-operations)
+[[Azure]] 很早就有了类似功能： [Specifying conditional headers for Blob service operations](https://learn.microsoft.com/en-us/rest/api/storageservices/specifying-conditional-headers-for-blob-service-operations)
 
 ---
 
@@ -112,7 +112,7 @@ Xe 在 Kubernetes 集群上配合 Kubevirt 和 Longhorn 使用 IRC Client，这�
 
 都在追求简单，但是当真的要为简单付费的时候，又好像不太愿意（换位思考，我也不愿意）。只有特别的东西才能有溢价。
 
-最近 [Pieter Levels](/mentions/pieter-levels) 说自己所有的服务都运行在 [Digital Ocean](/mentions/digital-ocean) 的一台 16c 64g  vps 上，一个月成本是 384 $，而运行在之上的服务一个月为他赚 200 万 $ ，大家争论的点是，是否真的需要复杂的技术栈。
+最近 [[Pieter Levels]] 说自己所有的服务都运行在 [[Digital Ocean]] 的一台 16c 64g  vps 上，一个月成本是 384 $，而运行在之上的服务一个月为他赚 200 万 $ ，大家争论的点是，是否真的需要复杂的技术栈。
 
 ---
 
@@ -133,7 +133,7 @@ Xe 在 Kubernetes 集群上配合 Kubevirt 和 Longhorn 使用 IRC Client，这�
 
 >That means that some previously available Developer Images will no longer be freely available. We are doing this to make room for the investments in the Chainguard Production Images offering that represent the majority of what our customers want from us.
 
-[chainguard.dev](/mentions/chainguarddev) 之后免费提供的 image 改为白名单机制，之后只提供一下内容：[Customer Notice: Free Image Tier Changes – Chainguard](https://support.chainguard.dev/hc/en-us/articles/28452542784667-Customer-Notice-Free-Image-Tier-Changes)
+[[chainguard.dev]] 之后免费提供的 image 改为白名单机制，之后只提供一下内容：[Customer Notice: Free Image Tier Changes – Chainguard](https://support.chainguard.dev/hc/en-us/articles/28452542784667-Customer-Notice-Free-Image-Tier-Changes)
 
 （想到之前组内分享 Chainguard 公司的时候，老板问了一句：这个公司的盈利模式是什么？现在知道了
 
@@ -145,7 +145,7 @@ Xe 在 Kubernetes 集群上配合 Kubevirt 和 Longhorn 使用 IRC Client，这�
 
 [“3A 大作不需要女性玩家”的背后，是游戏行业悠久的厌女历史](https://mp.weixin.qq.com/s/bE-VUGousVqV7dRE53_PWA)
 
-[游戏科学](/posts/游戏科学)的一些言论，是带有男女刻板印象的，可能会造成女性受众不买他们的产品，或者抵制他们的产品，他们为自己的言论负责，好像没什么不妥？我不怎么玩游戏，之前在播客中听到某著名 XX 老师的言论：“她们玩的游戏和我玩的游戏不是一个游戏“类似的话术，不少人在评论区无法接受这些言论，他为自己的言论负责，承受了批评，好像没什么不妥？
+[[游戏科学]]的一些言论，是带有男女刻板印象的，可能会造成女性受众不买他们的产品，或者抵制他们的产品，他们为自己的言论负责，好像没什么不妥？我不怎么玩游戏，之前在播客中听到某著名 XX 老师的言论：“她们玩的游戏和我玩的游戏不是一个游戏“类似的话术，不少人在评论区无法接受这些言论，他为自己的言论负责，承受了批评，好像没什么不妥？
 
 如果女性的用户足够多，我相信会有厂商去赚这个钱的，比如《恋与制作人》？（这可能又是我的刻板印象）。想起之前 [【浮生一日】北京投资人的真实一天 -YouTube](https://www.youtube.com/watch?v=x2jl2PRlh0w) 中的男嘉宾的一句话：“巨多公司创业做低度酒，微醺的女孩都不够用了”，大家知道这是一个商机。
 
@@ -163,7 +163,7 @@ Xe 在 Kubernetes 集群上配合 Kubevirt 和 Longhorn 使用 IRC Client，这�
 
 > I'd much rather live in a country that embraces everyone's right to BE FULL OF SHIT than one that pretends it can declare a priori what's true and what's false or one that makes false equivalences between violence and speech.
 
-什么是[自由](/posts/自由)，哪里是真正的[自由](/posts/自由)，自由有其相对的成本，只要你能负担成本，那么就可以去享受自由。同时自由也是相对的，你需要明确的知道你用什么换到了什么。
+什么是[[自由]]，哪里是真正的[[自由]]，自由有其相对的成本，只要你能负担成本，那么就可以去享受自由。同时自由也是相对的，你需要明确的知道你用什么换到了什么。
 
 ---
 
@@ -171,7 +171,7 @@ Xe 在 Kubernetes 集群上配合 Kubevirt 和 Longhorn 使用 IRC Client，这�
 
 [x.com](https://x.com/0065paula/status/1826444029321728449)
 
-最近知名独立开发者 [Pieter Levels](/mentions/pieter-levels) 接受了采访，一个人觉得 levels 只是很幸运，自己很多年轻就做过类似的事情。Levels 恢复了一个截图，截图的内容是，2007 年 [Dropbox](/mentions/dropbox) 创始人在 Hackernews 上发布 Dropbox，标题是“My YC app: Dropbox - Throw away your USB drive”，但是在有一条评论：“对于 Linux 用户来说，可以直接通过 curlftpfs 来挂载 FTP 达到类似的目的，Windows 或者 Mac 也可以直接访问 FTP”。对于没有真正做出过一个完整产品的人来说，不要看一个人说了什么，要看一个人做了什么。有很多东西只有自己去做了，才会知道里面有多少坑。
+最近知名独立开发者 [[Pieter Levels]] 接受了采访，一个人觉得 levels 只是很幸运，自己很多年轻就做过类似的事情。Levels 恢复了一个截图，截图的内容是，2007 年 [[Dropbox]] 创始人在 Hackernews 上发布 Dropbox，标题是“My YC app: Dropbox - Throw away your USB drive”，但是在有一条评论：“对于 Linux 用户来说，可以直接通过 curlftpfs 来挂载 FTP 达到类似的目的，Windows 或者 Mac 也可以直接访问 FTP”。对于没有真正做出过一个完整产品的人来说，不要看一个人说了什么，要看一个人做了什么。有很多东西只有自己去做了，才会知道里面有多少坑。
 
 配合 yihong 之前的一篇博客： [这玩意不是就\_\_ · Issue #291 · yihong0618/gitblog · GitHub](https://github.com/yihong0618/gitblog/issues/291) 
 

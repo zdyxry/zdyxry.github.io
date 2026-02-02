@@ -16,21 +16,21 @@ description:
 
 >The translator is highly resource efficient, requiring CPU cycles only when it's actively translating commands, uses just 20MB of RAM (on top of the OS and Docker requirement of ~120MB), and produces negligible disk IO. Even a device with 512MB of RAM would have ~370MB of RAM available for running applications!
 
-[k2d](/mentions/k2d)，预期是解决在工业场景下节点配置很低，运行一个完整的 [kubernetes](/mentions/kubernetes) 资源消耗过多的场景。
-通过在本地 docker 环境中，运行 [k2d](/mentions/k2d)，来暴露 : 6443 端口，对外提供一个 [kubernetes](/mentions/kubernetes) API，支持有限的 Resources 和 Operations。
+[[k2d]]，预期是解决在工业场景下节点配置很低，运行一个完整的 [[kubernetes]] 资源消耗过多的场景。
+通过在本地 docker 环境中，运行 [[k2d]]，来暴露 : 6443 端口，对外提供一个 [[kubernetes]] API，支持有限的 Resources 和 Operations。
 
 ---
 
 [Introducing Docker Build Checks: Optimize Dockerfiles with Best Practices | Docker](https://www.docker.com/blog/introducing-docker-build-checks/)
 
-[docker](/mentions/docker) 支持了 Build Check，可以在构建的时候检查 Dockerfile ，`docker --debug build` 可以在构建阶段检查，并指向具体的 Dockerfile 行号及上下文位置，也可以直接使用 `docker build --check` 来运行检查。如果期望在 check 不过的时候 build 失败，可以在 Dockerfile 中增加 `check=error=true` 。
+[[docker]] 支持了 Build Check，可以在构建的时候检查 Dockerfile ，`docker --debug build` 可以在构建阶段检查，并指向具体的 Dockerfile 行号及上下文位置，也可以直接使用 `docker build --check` 来运行检查。如果期望在 check 不过的时候 build 失败，可以在 Dockerfile 中增加 `check=error=true` 。
 
 ---
 
 
 [GitHub - SummitRoute/aws\_breaking\_changes: List of changes announced for AWS that may break existing code](https://github.com/SummitRoute/aws_breaking_changes)
 
-[AWS](/mentions/aws) 2024 年开始，有很多的服务下线和 breaking change 发生。
+[[AWS]] 2024 年开始，有很多的服务下线和 breaking change 发生。
 
 ---
 

@@ -18,7 +18,7 @@ description:
 
 [去做类似于 to B 的 Devin 的东西了](https://x.com/yetone/status/1939570458871111785)
 
-在同一天看到了三个人从不同的公司（[DaoCloud](/mentions/daocloud), [Databend](/mentions/databend), [BentoML](/mentions/bentoml)）离职，加入了新的公司，共同点是新的公司都是 [AI](/mentions/ai) 方向。
+在同一天看到了三个人从不同的公司（[[DaoCloud]], [[Databend]], [[BentoML]]）离职，加入了新的公司，共同点是新的公司都是 [[AI]] 方向。
 
 ---
 
@@ -30,7 +30,7 @@ description:
 
 [GitHub - m1k1o/neko: A self hosted virtual browser that runs in docker and uses WebRTC.](https://github.com/m1k1o/neko)
 
-在 [Container](/mentions/container) 中运行多种浏览器的方式，主要用来多人共享。貌似没有找到设置浏览器版本的配置。
+在 [[Container]] 中运行多种浏览器的方式，主要用来多人共享。貌似没有找到设置浏览器版本的配置。
 
 ---
 
@@ -44,13 +44,13 @@ description:
 
 > We have made explicit sharding accessible to hundreds of thousands of users and it is time to bring this power to Postgres. We will not however be using Vitess to do this.
 
-[PlanetScale](/mentions/planetscale) 增加了对 [Postgres](/mentions/postgres) 的支持，看说明应该不会使用 [Vitess](/mentions/vitess) 。结合前阵子这条信息： [Sugu Sougoumarane: Joining Supabase](https://x.com/ssougou/status/1932445665512284645): `For some time, I've been considering a Vitess adaptation for Postgres, and this feeling had been gradually intensifying.`
+[[PlanetScale]] 增加了对 [[Postgres]] 的支持，看说明应该不会使用 [[Vitess]] 。结合前阵子这条信息： [Sugu Sougoumarane: Joining Supabase](https://x.com/ssougou/status/1932445665512284645): `For some time, I've been considering a Vitess adaptation for Postgres, and this feeling had been gradually intensifying.`
 
 ---
 
 [PlanetScale's classy retirement](https://simonwillison.net/2025/Jul/1/classy-retirement/#atom-everything)
 
-很多软件如果试用期结束后，那么会在结束前的一周或两周以邮件形式通知用户，还有 XX 天数据将被删除，请及时备份或购买新的套餐。[PlanetScale](/mentions/planetscale) 提供了一种新的方式，数据处于归档状态，用户可以选择激活 24h 来备份数据，而无需购买完整新的套餐。
+很多软件如果试用期结束后，那么会在结束前的一周或两周以邮件形式通知用户，还有 XX 天数据将被删除，请及时备份或购买新的套餐。[[PlanetScale]] 提供了一种新的方式，数据处于归档状态，用户可以选择激活 24h 来备份数据，而无需购买完整新的套餐。
 
 2B 软件产品会怎么做？我已经不记得处理过多少没有维保但是找上来的客户问题了，万一呢，万一之后客户会复购呢，万一客户续保呢，服务一个购买过的客户感觉比服务一个潜在客户来的感觉好一些。
 
@@ -58,7 +58,7 @@ description:
 
 [Get in losers, we're moving to Linux!](https://world.hey.com/dhh/get-in-losers-we-re-moving-to-linux-5e1b93cd)
 
-最近 [DHH](/mentions/dhh) 开始推荐 [ArchLinux](/mentions/archlinux) 了，并将自己之前基于 [ubuntu](/mentions/ubuntu) 的配置方式 [GitHub - basecamp/omakub: Opinionated Ubuntu Setup](https://github.com/basecamp/omakub) 同样应用到了 Arch： [GitHub - basecamp/omakub: Opinionated Ubuntu Setup](https://github.com/basecamp/omakub) 。
+最近 [[DHH]] 开始推荐 [[ArchLinux]] 了，并将自己之前基于 [[ubuntu]] 的配置方式 [GitHub - basecamp/omakub: Opinionated Ubuntu Setup](https://github.com/basecamp/omakub) 同样应用到了 Arch： [GitHub - basecamp/omakub: Opinionated Ubuntu Setup](https://github.com/basecamp/omakub) 。
 
 当一个有品味、有话语权、行动力拉满、存在争议的人出现来推动一件事情，而这件事情是之前很多年没有阶段性进展的状态，故事可能会出现一些转机。
 
@@ -66,13 +66,13 @@ description:
 
 [Deeplinks](https://manual.raycast.com/deeplinks)
 
-[Raycast](/mentions/raycast) 的所有 command 都有一个 deeplink，可以在 MacOS 上直接通过 `open` 来执行。
+[[Raycast]] 的所有 command 都有一个 deeplink，可以在 MacOS 上直接通过 `open` 来执行。
 
 ---
 
 [Tools: Code Is All You Need | Armin Ronacher's Thoughts and Writings](https://lucumr.pocoo.org/2025/7/3/tools/)
 
-让 [LLM](/mentions/llm) 去生成可以重复执行的代码，而不是让 [MCP](/mentions/mcp) 去做，[MCP](/mentions/mcp) 过于依赖推理。
+让 [[LLM]] 去生成可以重复执行的代码，而不是让 [[MCP]] 去做，[[MCP]] 过于依赖推理。
 
 ---
 

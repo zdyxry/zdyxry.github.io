@@ -23,7 +23,7 @@ description:
 
 [Recent Docker BuildKit Features You're Missing Out On | Martin Heinz | Personal Website & Blog](https://martinheinz.dev/blog/111)
 
-介绍了一些 [Dockerfile](/mentions/dockerfile) 的用法，我的知识需要更新一下：
+介绍了一些 [[Dockerfile]] 的用法，我的知识需要更新一下：
 
 ```shell
 # 在 Docker build 过程中如果失败，则自动进入到交互式 shell 中
@@ -70,7 +70,7 @@ FROM scratch
 
 [VMware Desktop Hypervisor Pro Apps Now Available for Personal Use - VMware Cloud Foundation (VCF) Blog](https://blogs.vmware.com/cloud-foundation/2024/05/14/vmware-desktop-hypervisor-pro-apps-now-available-for-personal-use/)
 
-[vmware](/mentions/vmware) workstation pro 和 fusion pro 现在对个人用户免费试用了。但博通的门户网站太烂，所以作者写了一篇博客单独介绍如何下载试用： [Downloading VMware Fusion and Workstation Free for Personal Use | mikeroySoft.com](https://www.mikeroysoft.com/post/download-fusion-ws/) 
+[[vmware]] workstation pro 和 fusion pro 现在对个人用户免费试用了。但博通的门户网站太烂，所以作者写了一篇博客单独介绍如何下载试用： [Downloading VMware Fusion and Workstation Free for Personal Use | mikeroySoft.com](https://www.mikeroysoft.com/post/download-fusion-ws/) 
 
 >"even a broken clock is right twice a day"
 
@@ -81,7 +81,7 @@ FROM scratch
 
 [Meta is shutting down Workplace](https://world.hey.com/dhh/meta-is-shutting-down-workplace-3e24bca5)
 
-[Meta](/mentions/meta) 关掉了 Workplace 产品。Meta 和 Google 这类公司的主要业务来钱太容易，以至于 Workplace 那么点用户带来的利润实在是不够看，任何一个策略转换随时可能被干掉。
+[[Meta]] 关掉了 Workplace 产品。Meta 和 Google 这类公司的主要业务来钱太容易，以至于 Workplace 那么点用户带来的利润实在是不够看，任何一个策略转换随时可能被干掉。
 
 不要使用所有大公司非核心产品。`非核心==非主要利润来源`。
 
@@ -89,15 +89,15 @@ FROM scratch
 
 [Ep 46. 你知道『赛博佛祖』Cloudflare 吗？ - 捕蛇者说](https://pythonhunter.org/episodes/ep46)
 
-[CloudFlare](/mentions/cloudflare) 的 R2 产品名字，是要比 AWS [S3](/mentions/s3) 少一点，有趣。
+[[CloudFlare]] 的 R2 产品名字，是要比 AWS [[S3]] 少一点，有趣。
 
 ---
 
 [Get Involved with Fedora Bootable Containers - Fedora Magazine](https://fedoramagazine.org/get-involved-with-fedora-bootable-containers/)
 
-感觉上 [Fedora](/mentions/fedora) 在积极的维护 Atomic Desktops 相关项目了，允许每个人都可以构建自己的发行版真的很吸引人，我一直想要尝试，可惜没有投入。
+感觉上 [[Fedora]] 在积极的维护 Atomic Desktops 相关项目了，允许每个人都可以构建自己的发行版真的很吸引人，我一直想要尝试，可惜没有投入。
 
-[bootc](/mentions/bootc) 项目的潜力感觉要比想象中的更大？
+[[bootc]] 项目的潜力感觉要比想象中的更大？
 
 ---
 
@@ -113,7 +113,7 @@ FROM scratch
 
 >地铁站设计复杂。很多列车的两个反方向站台是只有一条路过去的，很容易坐反方向。不过我摸索出一个窍门，东京的地铁每一个线路都有编号，比如 G，JR，JT，等等，每一个站都有标号，比如 G9，G10，G11. 如果你要去一个地方，先查看目的地的编号，比如 G8，然后看当前位置，比如是 G4，那么找到站台之后，确认方向是数字变大的方向，就对了。
 
-[日本](/posts/日本) [东京](/posts/东京) 和[伊豆](/posts/伊豆) [游记](/posts/游记)。
+[[日本]] [[东京]] 和[[伊豆]] [[游记]]。
 
 日本地铁哪怕是同一个站，但是不同的线路可能是无法连通的，因为东京的铁路是由不同的公司运营的。
 
@@ -122,7 +122,7 @@ FROM scratch
 
 [鱼跃 Anytime CT 15 血糖监测仪体验 & 个人心得分享 - 白宦成](https://www.ixiqin.com/2024/05/14/experience-of-fish-leap-anytime-ct-15-blood-glucose/)
 
-[鱼跃](/posts/鱼跃)血糖检测仪使用体验。最近读完《控糖革命》之后，也萌生出要不要搞一个血糖检测仪来监控血糖的想法，但是又觉得有些麻烦，洗澡倒是没有影响，但是价格真的不便宜，一年需要 250 * （52/2） = 6500 元左右，这个是持续成本，可以说是非常高了。
+[[鱼跃]]血糖检测仪使用体验。最近读完《控糖革命》之后，也萌生出要不要搞一个血糖检测仪来监控血糖的想法，但是又觉得有些麻烦，洗澡倒是没有影响，但是价格真的不便宜，一年需要 250 * （52/2） = 6500 元左右，这个是持续成本，可以说是非常高了。
 
 ---
 

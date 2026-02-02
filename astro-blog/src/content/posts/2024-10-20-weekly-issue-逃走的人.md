@@ -14,7 +14,7 @@ description:
 [Self-Hosted device tracking with OwnTracks | Brian Douglass](https://bhdouglass.com/blog/self-hosted-device-tracking-with-owntracks/)
 
 
-因为国内无法使用 Google Timeline，于是使用 [OwnTracks](/mentions/owntracks) 来记录自己的位置轨迹， 默认的 owntracks/recorder 和 owntracks/frontend 的数据呈现方式不是很喜欢，后续打算使用 InfluxDB 配合 Grafana Geomap 来调整一下。
+因为国内无法使用 Google Timeline，于是使用 [[OwnTracks]] 来记录自己的位置轨迹， 默认的 owntracks/recorder 和 owntracks/frontend 的数据呈现方式不是很喜欢，后续打算使用 InfluxDB 配合 Grafana Geomap 来调整一下。
 
 ---
 
@@ -26,7 +26,7 @@ description:
 
 [The Ultimate Guide to Error Handling in Python - miguelgrinberg.com](https://blog.miguelgrinberg.com/post/the-ultimate-guide-to-error-handling-in-python)
 
-[python](/mentions/python) 错误处理指南，比较 LBYL 和 EAFP 的处理方式，对错误进行分类，当前代码产生的错误、调用其他函数产生的错误、可恢复错误、不可恢复错误。
+[[python]] 错误处理指南，比较 LBYL 和 EAFP 的处理方式，对错误进行分类，当前代码产生的错误、调用其他函数产生的错误、可恢复错误、不可恢复错误。
 
 我理解和日常中的实践方式是：
 - 对已知的必要条件进行 LBYL
@@ -38,7 +38,7 @@ description:
 
 [How do HTTP servers figure out Content-Length? - aarol.dev](https://aarol.dev/posts/go-contentlength/)
 
-认同 [hacker news](/mentions/hacker-news) 评论的说法，这其实是"How do Go standard library HTTP servers figure out Content-Length?"。
+认同 [[hacker news]] 评论的说法，这其实是"How do Go standard library HTTP servers figure out Content-Length?"。
 
 默认情况下，如果没有显式设置 `content-length` header，那么会根据 chunking buffer 来进行计算，如果小于则直接计算返回，如果大于则为分 chunk 传输。需要注意下，如果实现的功能是文件下载，那么不指定 `content-length`  会导致用户无法看到下载进度，用户体验不好。
 
@@ -60,14 +60,14 @@ description:
 
 [Why does Twitter limit the message length to 140 characters? - Quora](https://www.quora.com/Why-does-Twitter-limit-the-message-length-to-140-characters)
 
-为什么 [Twitter](/mentions/twitter) 讲消息长度限制为 140 个字符？因为 Twitter 最初是基于短信的服务，短信的限制是 160 个字符，twitter 保留 20 个字符用语用户名，剩下 140 个字符用来保持消息，来防止消息被切割。
+为什么 [[Twitter]] 讲消息长度限制为 140 个字符？因为 Twitter 最初是基于短信的服务，短信的限制是 160 个字符，twitter 保留 20 个字符用语用户名，剩下 140 个字符用来保持消息，来防止消息被切割。
 
 ---
 
 
 [2024.10桂林游记《青山梦》](https://sides-hang-nca.craft.me/tnvY2Vx5PEHYOM)
 
-Bowen 去[桂林](/posts/桂林)和[西双版纳](/posts/西双版纳)的[游记](/posts/游记)。写的挺有趣的，每一天的回目很精彩。好山好景好风光，这两个都是我想去的地方。Bowen 的游记很真诚，在很认真的剖析自己，相比之下我就没有，不是说我不真诚，而是我选择没有说出一些感受。
+Bowen 去[[桂林]]和[[西双版纳]]的[[游记]]。写的挺有趣的，每一天的回目很精彩。好山好景好风光，这两个都是我想去的地方。Bowen 的游记很真诚，在很认真的剖析自己，相比之下我就没有，不是说我不真诚，而是我选择没有说出一些感受。
 
 >四周其他人都在聊天拍照。但热闹是他们的，我什么也没有。我一个人在思考人生。突然感觉到一阵孤独。一个人看落日本就很孤独了，但一个人在一群人中看落日，更加孤独。
 

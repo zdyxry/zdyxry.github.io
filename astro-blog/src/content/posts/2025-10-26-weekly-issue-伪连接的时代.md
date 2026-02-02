@@ -37,7 +37,7 @@ description:
 
 > What’s worse is they the failure state of the bed is not “turn off” but random other stuff. My eightsleep in both downtimes was heating to a setting that was never configured.
 
-[AWS](/mentions/aws) 故障影响到的 Eight Sleep 床垫，无法正常工作，进而很多人睡不好？看了下他们的官网，2014 年成立的，主打的产品功能就是智能调节、健康数据监控，找名人背书，感觉目标用户挺精准的，对自身数据痴迷的用户。这个床垫每年要收 200 美元的订阅费，真赛博啊。感觉不如小米床垫 199 呢。
+[[AWS]] 故障影响到的 Eight Sleep 床垫，无法正常工作，进而很多人睡不好？看了下他们的官网，2014 年成立的，主打的产品功能就是智能调节、健康数据监控，找名人背书，感觉目标用户挺精准的，对自身数据痴迷的用户。这个床垫每年要收 200 美元的订阅费，真赛博啊。感觉不如小米床垫 199 呢。
 
 ---
 
@@ -52,14 +52,14 @@ description:
 
 [Docker release? · Issue #21647 · minio/minio](https://github.com/minio/minio/issues/21647#issuecomment-3418675115)
 
-[Minio](/mentions/minio) 不提供 container image ，之前已经发布的版本如果存在安全问题，需要自行构建使用了。   
-我看了下笔记中关于 [Minio](/mentions/minio) 的 link，发现几乎没有正面的消息，不是撤销了某个公司的许可证，就是去掉了社区功能。
+[[Minio]] 不提供 container image ，之前已经发布的版本如果存在安全问题，需要自行构建使用了。   
+我看了下笔记中关于 [[Minio]] 的 link，发现几乎没有正面的消息，不是撤销了某个公司的许可证，就是去掉了社区功能。
 
 ---
 
 [Fixing UUIDv7 (for database use-cases) - Marc's Blog](https://brooker.co.za/blog/2025/10/22/uuidv7.html)
 
-针对 [UUID](/mentions/uuid) v 7 的一些问题的可能改进方式。我现在是都用 v 7 ，一把梭。
+针对 [[UUID]] v 7 的一些问题的可能改进方式。我现在是都用 v 7 ，一把梭。
 
 ---
 
@@ -93,7 +93,7 @@ description:
 > 原因 2: easyproto 已经代替了 golang/protobuf   
 > 邪门歪道: 用 HTTP / 2 Server 代替 gRPC Server    
 
-针对原因 1 提到的 protoc 工具链不好用，普通用户强烈建议直接使用 [bufbuild](/mentions/bufbuild) 。用 [HTTP-2](/mentions/http-2) 来替代 gRPC Server 感觉也仅限于文章提到的这个特殊场景。
+针对原因 1 提到的 protoc 工具链不好用，普通用户强烈建议直接使用 [[bufbuild]] 。用 [[HTTP-2]] 来替代 gRPC Server 感觉也仅限于文章提到的这个特殊场景。
 
 ---
 

@@ -13,7 +13,7 @@ description:
 
 [Tyblog | systemd has been a complete, utter, unmitigated success](https://blog.tjll.net/the-systemd-revolution-has-been-a-success/)
 
-[systemd](/mentions/systemd) 得到了事实上的采用，这是毫无疑问的，当前的状态下谈论 `systemd` 往往谈论的不是 `systemd` 自身，`systemd` 现在太庞大了，在它还没有大一统的时候，我会尽可能的只用核心功能，而不去使用  `systemd-boot`, `systemd-resolved` 等功能。
+[[systemd]] 得到了事实上的采用，这是毫无疑问的，当前的状态下谈论 `systemd` 往往谈论的不是 `systemd` 自身，`systemd` 现在太庞大了，在它还没有大一统的时候，我会尽可能的只用核心功能，而不去使用  `systemd-boot`, `systemd-resolved` 等功能。
 
 如果最终有一个 Linux 发行版所有的服务都是 `systemd-` 提供的，我会去使用的。
 
@@ -42,29 +42,29 @@ description:
 
 [Rancher 社区双周报｜ 722 个版本的旅程，RKE 即将告别，未来交给 RKE2 与 K3s](https://archive.is/06ubL)
 
-[Rancher](/mentions/rancher) [RKE](/mentions/rke) 完成了它的使命，20250731 正式 EOL，推荐使用 [RKE2](/mentions/rke2) 进行替代，重点提到了安全性：`增强安全性：默认配置即满足 CIS 基准，支持 FIPS 140-2 合规；`。
+[[Rancher]] [[RKE]] 完成了它的使命，20250731 正式 EOL，推荐使用 [[RKE2]] 进行替代，重点提到了安全性：`增强安全性：默认配置即满足 CIS 基准，支持 FIPS 140-2 合规；`。
 
-这里有一个热知识，就是 [RKE2](/mentions/rke2) 的自我介绍一直都是：    
+这里有一个热知识，就是 [[RKE2]] 的自我介绍一直都是：    
 > RKE 2, also known as **RKE Government**, is Rancher's next-generation Kubernetes distribution.     
 > It is a fully conformant Kubernetes distribution that **focuses on security and compliance within the U.S. Federal Government sector.**    
 
-最近刚好是护网期间，加上遇到了很多国密的需求，同事说完全不理解为什么要搞这个，这更多是话语权的问题，在现在的环境下不得不搞的事情。换一个说法，[Rancher](/mentions/rancher) 这些搞合法合规，可是遥遥领先。
+最近刚好是护网期间，加上遇到了很多国密的需求，同事说完全不理解为什么要搞这个，这更多是话语权的问题，在现在的环境下不得不搞的事情。换一个说法，[[Rancher]] 这些搞合法合规，可是遥遥领先。
 
 ---
 
 [TiDB Observability: Moving from Prometheus to VictoriaMetrics](https://www.pingcap.com/blog/tidb-observability-migrating-prometheus-victoriametrics/)
 
-[Pinterest](/mentions/pinterest) 运行这一个 96 core, 768 G 的 Prometheus 实例，频繁的发生 OOM：
+[[Pinterest]] 运行这一个 96 core, 768 G 的 Prometheus 实例，频繁的发生 OOM：
 - 超长的恢复时间，在 replay WAL 时可能会耗时 40 M，甚至可能会失败；
 - 重复 OOM，在 replay WAL 期间也可能会触发 OOM；
 - 因为 OOM 导致的停机导致监控中断活潜在的 metrics 丢失。
 
-在进行评估后，最终决定将其从 [prometheus](/mentions/prometheus) 迁移到了 [VictoriaMetrics](/mentions/victoriametrics)，带来的好处是：
+在进行评估后，最终决定将其从 [[prometheus]] 迁移到了 [[VictoriaMetrics]]，带来的好处是：
 - 更好的资源利用率，CPU usage 降低 50%，内存使用率保持在 35% 以下，性能稳定；
 - 更好的查询性能；
 - 更低的资源消耗（但是这里好像没有写具体的磁盘使用率降低了多少，可能是现阶段无法给出的数字？
 
-文章的最后给出了推荐的调整过的 [VictoriaMetrics](/mentions/victoriametrics) 配置：
+文章的最后给出了推荐的调整过的 [[VictoriaMetrics]] 配置：
 
 ```
 `docker run -it -v {PATH}/victoria-metrics-data:/victoria-metrics-data \`
@@ -113,9 +113,9 @@ Intel 不再维护 Clear Linux 了，立即停止，没有缓冲期，不过好�
 > This also resets the referenced flag, which might confuse the kernel as to which pages to reclaim, especially if swapping is active. This also activates some old kernel code that may not have been used in your environment before, and which modifies page flags: I'd guess there is a risk of an undiscovered kernel panic (the Linux mm community may be able to say how real this risk is).   
 > Test in a lab environment for your kernel versions, and consider this experimental: use at your on risk.
 
-[Pinterest](/mentions/pinterest) 在整个 2024 年决定将自己的搜索系统迁移到了内部的 [kubernetes](/mentions/kubernetes) 集群，近期在进行验验收时遇到了部分请求超时的问题，进行了调查。在前期验收过程中，如果只关注指标的 `P99` 可能会忽略这个问题，之后需要注意下要了解集群最差情况。在排查过程中用了各种方式，最终还是黑盒二分来的彻底。
+[[Pinterest]] 在整个 2024 年决定将自己的搜索系统迁移到了内部的 [[kubernetes]] 集群，近期在进行验验收时遇到了部分请求超时的问题，进行了调查。在前期验收过程中，如果只关注指标的 `P99` 可能会忽略这个问题，之后需要注意下要了解集群最差情况。在排查过程中用了各种方式，最终还是黑盒二分来的彻底。
 
-最终定位到是因为 [cadvisor](/mentions/cadvisor)， [cadvisor](/mentions/cadvisor) 的 `container_referenced_bytes` 是默认启用的，用来跟踪进程在每个测量周期内引用的内存总字节数，在官方文档中显式说明了这是一个侵入式采集，可能会影响内核 page 回收策略并增加延迟。
+最终定位到是因为 [[cadvisor]]， [[cadvisor]] 的 `container_referenced_bytes` 是默认启用的，用来跟踪进程在每个测量周期内引用的内存总字节数，在官方文档中显式说明了这是一个侵入式采集，可能会影响内核 page 回收策略并增加延迟。
 
 ---
 

@@ -13,7 +13,7 @@ description:
 
 [Block AI scrapers with Anubis - Xe Iaso](https://xeiaso.net/blog/2025/anubis/)
 
-使用 [hashcash](/mentions/hashcash) 方式来对 AI 爬虫进行过滤。好像第一次看到 hashcash 的实际应用。代码实现在这里： [x/cmd/anubis/README.md at master · Xe/x · GitHub](https://github.com/Xe/x/blob/master/cmd/anubis/README.md) 
+使用 [[hashcash]] 方式来对 AI 爬虫进行过滤。好像第一次看到 hashcash 的实际应用。代码实现在这里： [x/cmd/anubis/README.md at master · Xe/x · GitHub](https://github.com/Xe/x/blob/master/cmd/anubis/README.md) 
 
 ---
 
@@ -33,7 +33,7 @@ description:
 
 [x.com](https://x.com/glcst/status/1882387330129973514?s=46)
 
-[Turso](/mentions/turso) Cloud 再一次发生数据丢失事故（是的，这是第二次）。这种事情发生过一次，就会失去信任了。
+[[Turso]] Cloud 再一次发生数据丢失事故（是的，这是第二次）。这种事情发生过一次，就会失去信任了。
 
 ---
 
@@ -48,7 +48,7 @@ description:
 
 > 至于屋久岛，则是一个令我想再去一次的地方。整个岛屿都像是一个巨大的森林公园，在西部林道到处都可以见到各种动物：躺在马路上晒太阳的鹿、在车子旁边抓耳挠腮的猴子。在这个岛上，比人类更多的是动物，而这些动物都没有受到任何拘束，随意行走，在岛上的生活很像隐居山林，每天都有新的惊喜。
 
-[日本](/posts/日本) [屋久岛](/posts/屋久岛)很美。
+[[日本]] [[屋久岛]]很美。
 
 ---
 
@@ -95,7 +95,7 @@ general_prompt = """
 
 对于被反引号 (`) 包围的代码片段，不要更改内容，保持英文原文。 例如，`list`， `dict`，保持不变。
 
-对于被 ([[]]) 包围的内容，不要更正内容，保持原文。 例如，[pull request](/mentions/pull-request)，保持不变。
+对于被 ([[]]) 包围的内容，不要更正内容，保持原文。 例如，[[pull request]]，保持不变。
 
 对于以 (---) 开头的内容，不要更正内容，保持原文。 例如，---，保持不变。
 

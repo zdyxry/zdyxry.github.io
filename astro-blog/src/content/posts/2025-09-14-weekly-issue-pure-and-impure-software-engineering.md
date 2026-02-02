@@ -17,7 +17,7 @@ description:
 > 2. 很多客户不想用公有云，要赚钱，还得提供一套私有云部署，如果是私有云，debug 那叫一个难
 > 3. 三大云厂商，产品大体相似，但又各种不同，要会的知识太多，细节太多；如果还要接入更小的云，那就更复杂了
 
-为啥 [SaaS](/mentions/saas) 还要让客户感知是哪个云服务商？感觉可以把 `SaaS` 去掉。
+为啥 [[SaaS]] 还要让客户感知是哪个云服务商？感觉可以把 `SaaS` 去掉。
 
 ---
 
@@ -27,13 +27,13 @@ description:
 
 [DuckDB npm Account Compromised in Continuing Supply Chain At...](https://socket.dev/blog/duckdb-npm-account-compromised-in-continuing-supply-chain-attack)
 
-这两天针对 [npm](/mentions/npm) 的钓鱼攻击影响范围确实太大了。依赖（的依赖）管理问题真是老大难。
+这两天针对 [[npm]] 的钓鱼攻击影响范围确实太大了。依赖（的依赖）管理问题真是老大难。
 
 ---
 
 [Issue #12786: Copr outage - build queue slow down (or halt) - fedora-infrastructure - Pagure.io](https://pagure.io/fedora-infrastructure/issue/12786)
 
-尝试更新我维护的 [EasyTier](/mentions/easytier) Fedora RPM，发现 COPR 构建很慢，看到了已经存在的 Ticket ，发现这个项目的监控系统还在使用 Nagios，已经不记得上一次看到这个名词是什么时候了： "The copr-backend is running out of storage. I'm not sure why we didn't receive an early Nagios alert, or if we did, I missed it."
+尝试更新我维护的 [[EasyTier]] Fedora RPM，发现 COPR 构建很慢，看到了已经存在的 Ticket ，发现这个项目的监控系统还在使用 Nagios，已经不记得上一次看到这个名词是什么时候了： "The copr-backend is running out of storage. I'm not sure why we didn't receive an early Nagios alert, or if we did, I missed it."
 
 ---
 
@@ -139,7 +139,7 @@ Shell Xu 写的上海旅游小贴士。原来现在所有的酒店都允许接�
 
 > 当我不知以什么角度向父母介绍这座城时，偶然看了邓丽君的故事，这是一个悲伤的往事，1995 年，因哮喘病突发，抢救不及时，她在这个城市病逝，这是妈妈最爱的歌手了，就这样，这个城市多了一个锚定物，突然与远处的人产生了关联。
 
-[清迈](/posts/清迈)，想去。
+[[清迈]]，想去。
 
 ---
 

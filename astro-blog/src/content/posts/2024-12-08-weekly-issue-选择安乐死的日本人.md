@@ -13,7 +13,7 @@ description:
 
 [The next platform](https://www.macchaffee.com/blog/2024/the-next-platform/)
 
-作者提到的 [kubernetes](/mentions/kubernetes) 的问题：
+作者提到的 [[kubernetes]] 的问题：
 - Steep learning curve.
 - Lots of moving parts.
 - Requires a dozen other CNCF projects to do useful work.
@@ -27,7 +27,7 @@ description:
 [Gregory Szorc's Digital Home | Transferring Python Build Standalone Stewardship to Astral](https://gregoryszorc.com/blog/2024/12/03/transferring-python-build-standalone-stewardship-to-astral/)
 [A new home for python-build-standalone](https://astral.sh/blog/python-build-standalone)
 
-`python-build-standalone` 项目将转移到 [Astral](/mentions/astral) Org 下。过去几个月的版本发布已经是 Astral 员工维护，为了更好的体现这一点，所以进行了转移。
+`python-build-standalone` 项目将转移到 [[Astral]] Org 下。过去几个月的版本发布已经是 Astral 员工维护，为了更好的体现这一点，所以进行了转移。
 
 `python-build-standalone` 的一个 Release 包含的 Assets 有 947 个，这会不会是 Github 上面最多的.....
 
@@ -35,7 +35,7 @@ description:
 
 [What is proto? | moonrepo](https://moonrepo.dev/docs/proto)
 
-一个新的版本管理器，重点是 pluggable。不知道和 [mise](/mentions/mise) 的区别是什么。
+一个新的版本管理器，重点是 pluggable。不知道和 [[mise]] 的区别是什么。
 
 ---
 
@@ -79,7 +79,7 @@ description:
 
 > 评价：下次可能不会再来了
 
-[韩国](/posts/韩国)游记。刚好最近朋友也去韩国玩了很久，跟我推荐釜山。我还挺想去一次韩国的，因为日常看韩剧比较多，听歌也听 K-pop 多一些，想实际的去看看韩国的生活。
+[[韩国]]游记。刚好最近朋友也去韩国玩了很久，跟我推荐釜山。我还挺想去一次韩国的，因为日常看韩剧比较多，听歌也听 K-pop 多一些，想实际的去看看韩国的生活。
 
 ---
 

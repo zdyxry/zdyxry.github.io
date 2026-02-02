@@ -12,7 +12,7 @@ description:
 ### 技术
 [Go 1.26 interactive tour](https://antonz.org/go-1-26/)
 
-[Golang](/mentions/golang) 1.26 是一个很大的版本迭代，性能、开发体验都有改进，感觉值得升级。
+[[Golang]] 1.26 是一个很大的版本迭代，性能、开发体验都有改进，感觉值得升级。
 
 ---
 [Why I don’t like “Correction of Error” – Surfing Complexity](https://surfingcomplexity.blog/2025/12/20/why-i-dont-like-correction-of-error/)
@@ -38,7 +38,7 @@ description:
 
 [Code And Let Live · The Fly Blog](https://fly.io/blog/code-and-let-live/)
 
-[Fly.io](/mentions/flyio) 推出了新的产品：[Sprites - Stateful sandboxes](https://sprites.dev/)。
+[[Fly.io]] 推出了新的产品：[Sprites - Stateful sandboxes](https://sprites.dev/)。
 这是一篇关于 Agents 和 sandbox 的讨论，看似说了很多，但是我没有理解，这和 EC2/MicroVM 区别是啥呢？可能是基于 Firecracker  的，计费粒度细一点？操作速度快一点？
 
 确实不理解为啥要新造词，这种叙事风格观感不好。

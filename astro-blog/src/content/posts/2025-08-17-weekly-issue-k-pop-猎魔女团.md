@@ -23,7 +23,7 @@ description:
 
 [NixOS Now Celebrates Pride Month… Year Round](https://lunduke.substack.com/p/nixos-now-celebrates-pride-month)
 
-[NixOS](/mentions/nixos) 表示出明确的政治倾向，并且直接 block 提出异议的人。挺好，双向选择。
+[[NixOS]] 表示出明确的政治倾向，并且直接 block 提出异议的人。挺好，双向选择。
 
 ---
 
@@ -42,13 +42,13 @@ description:
 
 > Every startup pitch deck with ‘model-agnostic’ as a feature should become a red flag for investors who understand product-market fit. Stop putting ‘works with any LLM’ in your one-liner. It screams ‘we don’t know what we’re building.’
 
-这里的一些观点和 [ampcode](/mentions/ampcode) 是一样的。
+这里的一些观点和 [[ampcode]] 是一样的。
 
 ---
 
 [pyx: a Python-native package registry, now in Beta](https://simonwillison.net/2025/Aug/13/pyx/)
 
-[Astral](/mentions/astral) 的商业化项目，一个 private package registry。和去年在 [Mastodon](/mentions/mastodon) 上的回复一致。是在 PYPI 之上的一层么？没看懂。
+[[Astral]] 的商业化项目，一个 private package registry。和去年在 [[Mastodon]] 上的回复一致。是在 PYPI 之上的一层么？没看懂。
 
 ---
 

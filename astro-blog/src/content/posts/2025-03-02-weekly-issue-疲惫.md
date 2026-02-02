@@ -29,14 +29,14 @@ description:
 
 > 其中，普通云环境的镜像又分为 generic 和 genericcloud 两个变种，generic 相比 genericcloud 额外增加了一些驱动以便部署至裸金属物理机上；而 genericcloud 只包含 VirtIO 等虚拟机需要的驱动，因此 genericcloud 镜像相比 generic 镜像体积更小。genericcloud 镜像的体积普遍小于 350 MiB，不到 Debian ISO 官方安装镜像体积的十分之一。  
 
-给 [Proxmox](/mentions/proxmox) 制作 [Debian](/mentions/debian) Cloud Image，使用 `libguestfs-tools`。
+给 [[Proxmox]] 制作 [[Debian]] Cloud Image，使用 `libguestfs-tools`。
 
 ---
 
 
 [Deno shows us there's a better way](https://www.macchaffee.com/blog/2025/deno/)
 
-作者将一个服务从 [Django](/mentions/django) 换到了 [Deno](/mentions/deno)，带来的主要体验改进是 DevEx 相关的。这里如此顺利的另一个原因可能是 Deno 和自身的 Cloud 相关服务配合很好？
+作者将一个服务从 [[Django]] 换到了 [[Deno]]，带来的主要体验改进是 DevEx 相关的。这里如此顺利的另一个原因可能是 Deno 和自身的 Cloud 相关服务配合很好？
 
 ---
 
@@ -54,7 +54,7 @@ description:
 
 [Amazon Now Openly Discloses You’re Buying a License to View Kindle eBooks](https://blog.the-ebook-reader.com/2025/02/22/amazon-now-openly-discloses-youre-buying-a-license-to-view-kindle-ebooks/)
 
-[Amazon](/mentions/amazon) 也开始了，购买电子书购买的是查看该内容的许可，而不是拥有该内容。
+[[Amazon]] 也开始了，购买电子书购买的是查看该内容的许可，而不是拥有该内容。
 
 ---
 

@@ -42,8 +42,8 @@ Endpoint vs Entrypoint 。
 
 [2024 Stack Overflow Developer Survey](https://survey.stackoverflow.co/2024/)
 
-[StackOverflow](/mentions/stackoverflow) 2024 开发者调查：
-- 云平台： AWS、Azure、GCP，[Fly.io](/mentions/flyio) 上榜了；
+[[StackOverflow]] 2024 开发者调查：
+- 云平台： AWS、Azure、GCP，[[Fly.io]] 上榜了；
 - AI 工具：ChatGPT、Copilot、Gemini；
 - 对于从头构建还是购买产品，Cloud Infra Engineer 购买的意愿最低；
 - 在研究新技术或者工具时，询问其他开发人员是一个靠谱的选择，所以产品的口碑很重要；
@@ -98,9 +98,9 @@ Intel `i3` 是残缺版的 `i9` ？
 
 [The New Internet](https://tailscale.com/blog/new-internet)
 
-[TailScale](/mentions/tailscale) 老板的文章，读下来感觉是那种典型的“宏大叙事“文体，宏大到我不知道他想要说什么。老板写的东西就是不一样。
+[[TailScale]] 老板的文章，读下来感觉是那种典型的“宏大叙事“文体，宏大到我不知道他想要说什么。老板写的东西就是不一样。
 
-[hacker news](/mentions/hacker-news) 热门评论比较有趣，谁阻止了 [IPv6](/mentions/ipv6) 的发展呢？我觉得肯定不是 [TailScale](/mentions/tailscale)：“The eternal problem with companies like Tailscale (and Cloudflare, Google, etc. etc.) is that, by solving a problem with the modern internet which the internet should have been designed to solve by itself, like simple end-to-end secure connectivity, Tailscale becomes _incentivized to keep the problem_. What the internet would need is something like IPv6 with automatic encryption via IPsec, with PKI provided by DNSSEC. But Tailscale has every incentive to _prevent_ such things to be widely and compatibly implemented, because it would destroy their business. Their whole business depends on the problem persisting.”
+[[hacker news]] 热门评论比较有趣，谁阻止了 [[IPv6]] 的发展呢？我觉得肯定不是 [[TailScale]]：“The eternal problem with companies like Tailscale (and Cloudflare, Google, etc. etc.) is that, by solving a problem with the modern internet which the internet should have been designed to solve by itself, like simple end-to-end secure connectivity, Tailscale becomes _incentivized to keep the problem_. What the internet would need is something like IPv6 with automatic encryption via IPsec, with PKI provided by DNSSEC. But Tailscale has every incentive to _prevent_ such things to be widely and compatibly implemented, because it would destroy their business. Their whole business depends on the problem persisting.”
 
 
 ---
@@ -120,7 +120,7 @@ Intel `i3` 是残缺版的 `i9` ？
 
 >“可以合理地将这种流失解释为对该岛经济和政治状况普遍不满的迹象，”他说。 “成千上万的古巴人，尤其是最年轻的人，对国家的未来失去了信心，选择到国外寻求更好的运气。”
 
-[古巴](/posts/古巴)在 2022 到 2023 年之间，有 10% 人口离开了古巴，是古巴历史上最大规模的移民浪潮。
+[[古巴]]在 2022 到 2023 年之间，有 10% 人口离开了古巴，是古巴历史上最大规模的移民浪潮。
 
 ---
 [37%法则](https://wiki.mbalib.com/wiki/37%25%E6%B3%95%E5%88%99)

@@ -15,7 +15,7 @@ description:
 
 > That meant we needed to build our own editor, because the extension APIs in VS Code and JetBrains IDEs were too restrictive to build the interface we wanted.
 
-[Supermaven](/mentions/supermaven) 加入了 [Cursor](/mentions/cursor)，前者的补全速度是我用过所有代码补全里面最快的。
+[[Supermaven]] 加入了 [[Cursor]]，前者的补全速度是我用过所有代码补全里面最快的。
 
 ---
 
@@ -39,7 +39,7 @@ DHH 和孩子们一起玩堡垒之夜，制定了两个规则：呆在一起，�
 
 > What’s possibly more interesting is that, while this behaviour has been in place for a while you might not have noticed it, as the default in Kubernetes was to use [SPDY](https://en.wikipedia.org/wiki/SPDY) for `exec` commands instead of websockets, until Kubernetes version 1.31. So if a user with `GET` rights on `pods/exec` tried to use `kubectl exec` in 1.29 you’d get an error like this
 
-[kubernetes](/mentions/kubernetes) 在 1.31 版本从 SPDY 切换到 Websockets 之后，会导致有 get API 权限的用户可以执行 `exec` 。
+[[kubernetes]] 在 1.31 版本从 SPDY 切换到 Websockets 之后，会导致有 get API 权限的用户可以执行 `exec` 。
 
 ---
 
@@ -78,7 +78,7 @@ Bluesky 的 starter-pack 确实很好用，可以用来快速关注某个列表�
 
 ### 生活
 
-[霸王茶姬](/posts/霸王茶姬)中的咖啡因含量真的高么？
+[[霸王茶姬]]中的咖啡因含量真的高么？
 
 2024 年 11 月 12 日官方小程序显式，一杯伯牙绝弦中咖啡因行量是 103.9 毫克，与之对比的：  
 - 奥地利红牛（蓝罐）每罐含量是 40 毫克 

@@ -13,27 +13,27 @@ description:
 
 [Less: Quickly Jump to Line Number in Large File - Super User](https://superuser.com/questions/113039/less-quickly-jump-to-line-number-in-large-file)
 
-[less](/mentions/less) 命令小技巧： `less +100g` 跳转到 100 行开始； `less +50p` 跳转到文件的 50% 开始。
+[[less]] 命令小技巧： `less +100g` 跳转到 100 行开始； `less +50p` 跳转到文件的 50% 开始。
 
 ---
 
 [网络中的环路和防环技术 | 卡瓦邦噶！](https://www.kawabangga.com/posts/6291)
 
-上一篇 [网工闯了什么祸？ | 卡瓦邦噶！](https://www.kawabangga.com/posts/6286) ，当时我只看出 ARP 没有响应，没有看出更多细节。可以通过 [WireShark](/mentions/wireshark) 打开 `Delta time Displayed` 列，Delta time 的含义是这个包抓到的时间距离上一个包过去了多久，比如可以看到同样是 ARP request，但是可以看到距离上一个“请求”过去 5us 就有了下一个请求，所以这个包不是发出去的包而是收到的包，说明网络出现了环路。
+上一篇 [网工闯了什么祸？ | 卡瓦邦噶！](https://www.kawabangga.com/posts/6286) ，当时我只看出 ARP 没有响应，没有看出更多细节。可以通过 [[WireShark]] 打开 `Delta time Displayed` 列，Delta time 的含义是这个包抓到的时间距离上一个包过去了多久，比如可以看到同样是 ARP request，但是可以看到距离上一个“请求”过去 5us 就有了下一个请求，所以这个包不是发出去的包而是收到的包，说明网络出现了环路。
 
-可以使用 [tcpdump](/mentions/tcpdump) `-Q in/out/inout` 来抓取指定方向的包。
+可以使用 [[tcpdump]] `-Q in/out/inout` 来抓取指定方向的包。
 
 ---
 
 [MacRumors Buyer's Guide: Know When to Buy iPhone, Mac, iPad](https://buyersguide.macrumors.com/) 
 
-[Apple](/mentions/apple) 家产品的购买建议指导，会标明产品的上一次发布周期，平均发布周期，最近更新时间等等。
+[[Apple]] 家产品的购买建议指导，会标明产品的上一次发布周期，平均发布周期，最近更新时间等等。
 
 ---
 
 [Kubernetes 与 Cybernetics (初稿)](https://shimo.im/docs/wV3VMxPWx6svbBAy/read)
 
-海剑同学的文章，关于控制论和 [kubernetes](/mentions/kubernetes) 的关系。
+海剑同学的文章，关于控制论和 [[kubernetes]] 的关系。
 
 >kubernetes 是一个典型的负反馈控制系统，它基于负反馈等控制方法实现了高效实时稳定的容器编排管理。一个控制系统可以由多个子控制系统组成。一个大的目标可以拆分成多个小目标，并由不同的子控制系统协作完成每个小目标，直至整个大的目标达成。
 

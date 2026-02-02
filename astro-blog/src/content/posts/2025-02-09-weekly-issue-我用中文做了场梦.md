@@ -13,7 +13,7 @@ description:
 
 [Ingesting Millions of PDFs and why Gemini 2.0 Changes Everything](https://www.sergey.fyi/articles/gemini-flash-2)
 
-对于 [PDF](/mentions/pdf) 提取来说，Gemini 2.0 Flash 目前来看是一个性价比很高的选择，可以做到 1$ 提取 6000 页，4o-mini 可以提取 450 页，Reducto (专用模型)是 100 页。在提取的精度上页只是比 Reducto 略差。目前 Gemini 2.0 Flash 存在的问题是对于表格的边框处理上。
+对于 [[PDF]] 提取来说，Gemini 2.0 Flash 目前来看是一个性价比很高的选择，可以做到 1$ 提取 6000 页，4o-mini 可以提取 450 页，Reducto (专用模型)是 100 页。在提取的精度上页只是比 Reducto 略差。目前 Gemini 2.0 Flash 存在的问题是对于表格的边框处理上。
 
 测试使用的 benchmark：[GitHub - Filimoa/rd-tablebench](https://github.com/Filimoa/rd-tablebench)，通用方式是将 PDF 转换为 Image 之后，通过 API 去转换为 HTML，Google 和 Azure 提供了针对性的 API 来处理，比如 `from google.cloud import documentai` 和 `from azure.ai.documentintelligence import DocumentIntelligenceClient`。
 
@@ -28,7 +28,7 @@ description:
 
 [VSCode’s SSH Agent Is Bananas · The Fly Blog](https://fly.io/blog/vscode-ssh-wtf/)
 
-[vscode](/mentions/vscode) 的 Agent 确实做了很多事情，印象中早起的 NixOS 和 OSTree 为了支持它都需要折腾一番。
+[[vscode]] 的 Agent 确实做了很多事情，印象中早起的 NixOS 和 OSTree 为了支持它都需要折腾一番。
 
 （看到这篇文章的时候想去 HackerNews 上看看大家的想法，搜了下发现还没有人提交过，于是我提交了，成了当天的热门帖子）
 
@@ -36,7 +36,7 @@ description:
 
 [How to install multi-container applications with Podman quadlets | Giacomo Coletto](https://giacomo.coletto.io/blog/podman-quadlets/)
 
-[systemd](/mentions/systemd) Quadlets 的使用方式，可以通过 systemd 配置以 rootless 的方式来组织类似于 docker compose 的多个容器。我不觉得这种跨多个文件管理应用是一个好的方式。
+[[systemd]] Quadlets 的使用方式，可以通过 systemd 配置以 rootless 的方式来组织类似于 docker compose 的多个容器。我不觉得这种跨多个文件管理应用是一个好的方式。
 
 ---
 

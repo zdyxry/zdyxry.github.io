@@ -15,7 +15,7 @@ description:
 
 [【BPF网络篇系列-2】容器网络延时之 ipvs 定时器篇 | Head First eBPF](https://www.ebpf.top/post/ebpf_network_kpatch_ipvs/)
 
-[IPVS](/mentions/ipvs) 的统计函数 `estimation_timer` 导致的网络延迟。
+[[IPVS]] 的统计函数 `estimation_timer` 导致的网络延迟。
 
 排查过程中提到的工具有：
 - [GitHub - bytedance/trace-irqoff: Interrupts-off or softirqs-off latency tracer](https://github.com/bytedance/trace-irqoff)
@@ -42,7 +42,7 @@ FDD，有时候想要快速修复一个问题而直接 push 代码，引发了�
 
 [DBOS | Build Reliable Backends 10x Faster, Scale to Millions with 1 Click](https://www.dbos.dev/)
 
-[DBOS](/mentions/dbos)，基于 [PostgreSQL](/mentions/postgresql) 实现的代码框架，可以执行 workflow/task/job/.... 相较于 [Temporal](/mentions/temporal) 需要 Server 和 Worker，DBOS 只是一个 Lib，目前提供了 TypeScript 和 Python 两个语言的 SDK。自身有 Cloud 服务，应该也可以本地化运行？
+[[DBOS]]，基于 [[PostgreSQL]] 实现的代码框架，可以执行 workflow/task/job/.... 相较于 [[Temporal]] 需要 Server 和 Worker，DBOS 只是一个 Lib，目前提供了 TypeScript 和 Python 两个语言的 SDK。自身有 Cloud 服务，应该也可以本地化运行？
 
 我尝试搜索 DBOS 名字的含义，本能的有些抗拒这个名字，像是蹭热度（即使 DB 或 OS 都不是啥大热点）。
 
@@ -53,7 +53,7 @@ FDD，有时候想要快速修复一个问题而直接 push 代码，引发了�
 
 > This all seems very far removed from software, DevOps, or what you’d typically think of as “infrastructure,” and that is very true — building a datacenter cage is probably closer to building a house than to deploying a Terraform stack.
 
-[Railway](/mentions/railway) 最初是基于 GCP 构建的，之前写过博客吐槽 [GCP](/mentions/gcp) 的体验很糟糕，这篇文章讲述了他们自建基础设施的故事（租用了数据中心的一个笼子），包含了网络、电力、制冷相关的考虑。很喜欢引用中的这句话，Infrastructure 这个词包含的范围超过想象。
+[[Railway]] 最初是基于 GCP 构建的，之前写过博客吐槽 [[GCP]] 的体验很糟糕，这篇文章讲述了他们自建基础设施的故事（租用了数据中心的一个笼子），包含了网络、电力、制冷相关的考虑。很喜欢引用中的这句话，Infrastructure 这个词包含的范围超过想象。
 
 对应岗位的 JD 中的一句话： “Delivered projects 0→N. Lead it, scaled it, seen your “brilliant solutions” become tech debt, etc”
 
@@ -63,7 +63,7 @@ FDD，有时候想要快速修复一个问题而直接 push 代码，引发了�
 
 [Benchmarking Gob vs Protobuf. This article is a Part 2 of my… | by Roman Sheremeta | Medium](https://rsheremeta.medium.com/benchmarking-gob-vs-protobuf-9dc36ea56ba4)
 
-[Golang](/mentions/golang) 中常见的序列化方式性能比较。如果需要在 Gob 和 protobuf 中选择，直接选择 protobuf 就好。
+[[Golang]] 中常见的序列化方式性能比较。如果需要在 Gob 和 protobuf 中选择，直接选择 protobuf 就好。
 
 ---
 
@@ -80,7 +80,7 @@ FDD，有时候想要快速修复一个问题而直接 push 代码，引发了�
 
 [新疆二十日（下）：古道高原，南疆的冰与火之歌 - Simon's Blog](https://song.al/xinjiang2)
 
-[新疆](/posts/新疆) [游记](/posts/游记)，太美了，看照片已经心情变好。
+[[新疆]] [[游记]]，太美了，看照片已经心情变好。
 
 ---
 

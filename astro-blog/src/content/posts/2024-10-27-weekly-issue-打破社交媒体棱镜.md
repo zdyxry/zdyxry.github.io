@@ -25,13 +25,13 @@ description:
 [Why your mock doesn’t work | Ned Batchelder](https://nedbatchelder.com/blog/201908/why_your_mock_doesnt_work.html)
 > The best approach to mocking is to mock the object where it is used, not where it is defined.
 
-在写 [python](/mentions/python) 单元测试时，mock 的使用方式及解释，重点是在对象使用的地方进行 mock，而不是在定义的地方。对于文章中的 `os.listdir` 示例，我赞同评论中的观点，通常情况下这个时候建议使用 fakefs， 来 mock 整个 fs 对于业务代码应该是更明确的。
+在写 [[python]] 单元测试时，mock 的使用方式及解释，重点是在对象使用的地方进行 mock，而不是在定义的地方。对于文章中的 `os.listdir` 示例，我赞同评论中的观点，通常情况下这个时候建议使用 fakefs， 来 mock 整个 fs 对于业务代码应该是更明确的。
 
 ---
 
 [From Shared Nothing to Shared Disk: Build a Fully Flexible Data System on Cloud Services | by Flex Ninja | Oct, 2024 | Medium](https://flex-ninja.medium.com/from-shared-nothing-to-shared-disk-build-a-fully-flexible-data-system-on-cloud-services-31538a356db2)
 
-来自 @tison1096 的文章，如果经常在推上看到各种数据库的相关信息，可以看到大家都在基于 Cloud 提供的基础设施来构建，比如之前提到 [DuckDB](/mentions/duckdb) 可以直接从 S3 读取数据。这篇文章对我来说是一个很好的 101。Shared Nothing , Shared Disk，随着 Cloud native 发展 Shared Nothing 面临的问题，如何利用 Cloud Infra 来解决问题。
+来自 @tison1096 的文章，如果经常在推上看到各种数据库的相关信息，可以看到大家都在基于 Cloud 提供的基础设施来构建，比如之前提到 [[DuckDB]] 可以直接从 S3 读取数据。这篇文章对我来说是一个很好的 101。Shared Nothing , Shared Disk，随着 Cloud native 发展 Shared Nothing 面临的问题，如何利用 Cloud Infra 来解决问题。
 
 ---
 

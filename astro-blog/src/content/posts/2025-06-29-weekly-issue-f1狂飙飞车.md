@@ -13,7 +13,7 @@ description:
 
 [Attach to a running container](https://code.visualstudio.com/docs/devcontainers/attach-container)
 
-[vscode](/mentions/vscode) 在配合 [distrobox](/mentions/distrobox) 使用时，默认使用的是 `root` 用户，需要在 [vscode](/mentions/vscode) 本地配置中， `Dev Containers: Open Container Configuration File` 打开配置文件，指定 remoteUser 配置，配置示例：
+[[vscode]] 在配合 [[distrobox]] 使用时，默认使用的是 `root` 用户，需要在 [[vscode]] 本地配置中， `Dev Containers: Open Container Configuration File` 打开配置文件，指定 remoteUser 配置，配置示例：
 
 ```json
 {
@@ -37,7 +37,7 @@ description:
 
 很难说是人不行还是产品不行。想到了某个同事的“总结性”周报，每次在 Slack 上都是一大篇，现在好像都快 1000 字了。  
 
-"MiniMax 万物追踪停运前，竞品「Readwise」已迭代 3 次推荐算法，而万物追踪停留在初始版本；"，这里也挺奇怪的，[Feedly](/mentions/feedly) 和 [Readwise](/mentions/readwise) 面向的用户有重叠但是核心需求应该是不同的，印象中 [Readwise](/mentions/readwise) 在 AI 火爆之前就是热门产品了，现在说干不过 [Readwise](/mentions/readwise) 是因为推荐算法迭代速度赶不上，有点强行解释的意思。 
+"MiniMax 万物追踪停运前，竞品「Readwise」已迭代 3 次推荐算法，而万物追踪停留在初始版本；"，这里也挺奇怪的，[[Feedly]] 和 [[Readwise]] 面向的用户有重叠但是核心需求应该是不同的，印象中 [[Readwise]] 在 AI 火爆之前就是热门产品了，现在说干不过 [[Readwise]] 是因为推荐算法迭代速度赶不上，有点强行解释的意思。 
 
 ---
 
@@ -56,7 +56,7 @@ description:
 > Everyone reads texts, too, then writes new texts. They may need to pay for getting their hands on a text in the first instance. But to make anyone pay specifically for the use of a book each time they read it, each time they recall it from memory, each time they later draw upon it when writing new things in new ways would be unthinkable.  
 >  For centuries, we have read and re-read books. We have admired, memorized, and internalized their sweeping themes, their substantive points, and their stylistic solutions to recurring writing problems.
 
-[Anthropic](/mentions/anthropic) 在早期下载了大量的盗版书籍用于训练，后期为了避免法律风险，找到了负责 Google 图书扫描项目的合伙人，让他来获取"all the books in the world"，于是花了数百万美元买了大量二手书，进行拆解扫描得到 PDF。购买二手书籍用于训练目前被认为是合法的。
+[[Anthropic]] 在早期下载了大量的盗版书籍用于训练，后期为了避免法律风险，找到了负责 Google 图书扫描项目的合伙人，让他来获取"all the books in the world"，于是花了数百万美元买了大量二手书，进行拆解扫描得到 PDF。购买二手书籍用于训练目前被认为是合法的。
 
 相关信息：20250131 Anna Archive（盗版资源站）发布博客，提到很多中国的 LLM 厂商与他们合作获取信息，希望美国能够改善版权管理。20250206 TorrentFreak 报道 Meta 通过 AnnaArchive 下载大量数据用于 AI 模型训练。
 
@@ -68,7 +68,7 @@ description:
 > Myth 2: Rust is more efficient than Golang
 > Myth 3: The learning curve of Rust is too high
 
-[Grab](/mentions/grab) 将自己的 [Golang](/mentions/golang) Counter Service 用 [Rust](/mentions/rust) 重写了，最终得到的性能差不多，计算资源消耗是之前的 20%。这篇文章的叙事风格很舒服。
+[[Grab]] 将自己的 [[Golang]] Counter Service 用 [[Rust]] 重写了，最终得到的性能差不多，计算资源消耗是之前的 20%。这篇文章的叙事风格很舒服。
 
 ---
 

@@ -15,7 +15,7 @@ description:
 
 [systemd socket activation | Michael Maclean](https://mgdm.net/weblog/systemd-socket-activation/)
 
-关于 [systemd](/mentions/systemd) socket activation 的一些说明。2025 年了，很多服务默认都不需要（应该）enable service 了，比如 `sshd.service`, `docker.service`，而是应该 enable socket： `sshd.socket`, `docker.socket` ，可以保证只有在请求真正到达时才会启动服务，可以减少系统启动时间。
+关于 [[systemd]] socket activation 的一些说明。2025 年了，很多服务默认都不需要（应该）enable service 了，比如 `sshd.service`, `docker.service`，而是应该 enable socket： `sshd.socket`, `docker.socket` ，可以保证只有在请求真正到达时才会启动服务，可以减少系统启动时间。
 
 ---
 

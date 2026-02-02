@@ -41,7 +41,7 @@ if err := decoder.Decode(&req); err != nil {
 }
 ```
 
-[Golang](/mentions/golang) 通过 `DisallowUnknownFields` 方法来显式的禁止 API client 传递无效参数。
+[[Golang]] 通过 `DisallowUnknownFields` 方法来显式的禁止 API client 传递无效参数。
 
 - 如果是已有的服务，那么在打开这个选项之前，需要先通过日志记录 API 是否存在传递无效参数的情况，如果存在，则联系下游进行调整。
 - 在废弃字段时，需要显式的添加相关注释说明该字段现状，明确不应该继续使用。
@@ -51,7 +51,7 @@ if err := decoder.Decode(&req); err != nil {
 
 [linux - How to force nginx to resolve DNS (of a dynamic hostname) everytime when doing proxy\_pass? - Server Fault](https://serverfault.com/questions/240476/how-to-force-nginx-to-resolve-dns-of-a-dynamic-hostname-everytime-when-doing-p/593003#593003)
 
-[Nginx](/mentions/nginx) 如果 `proxy_pass` 指向的是一个域名而不是一个变量，那么域名解析只发生在启动解析期间。 需要在变量中设置域名，以此来保证每次都被正确的解析。
+[[Nginx]] 如果 `proxy_pass` 指向的是一个域名而不是一个变量，那么域名解析只发生在启动解析期间。 需要在变量中设置域名，以此来保证每次都被正确的解析。
 
 ```
 server {
@@ -67,14 +67,14 @@ server {
 
 [Zed Decoded: Linux when?](https://zed.dev/blog/zed-decoded-linux-when)
 
-[Zed](/mentions/zed) 对 [Linux](/mentions/linux) 的支持，里面提到对原生应用的构建支持非常的苦：
-- 比如说到 [Linux](/mentions/linux) 的时候，说的是什么？从来没有 [Linux](/mentions/linux) 这个东西
-- 发行版，要支持哪些，也要支持对应的包管理器，用了 [TailScale](/mentions/tailscale) 作为例子，相关的构建代码在这里：[tailscale/release at main · tailscale/tailscale · GitHub](https://github.com/tailscale/tailscale/tree/main/release)
-- 支持 [X11](/mentions/x11) 还是 [Wayland](/mentions/wayland)？
-- 支持 [KDE](/mentions/kde) 还是 [GNOME](/mentions/gnome)？
+[[Zed]] 对 [[Linux]] 的支持，里面提到对原生应用的构建支持非常的苦：
+- 比如说到 [[Linux]] 的时候，说的是什么？从来没有 [[Linux]] 这个东西
+- 发行版，要支持哪些，也要支持对应的包管理器，用了 [[TailScale]] 作为例子，相关的构建代码在这里：[tailscale/release at main · tailscale/tailscale · GitHub](https://github.com/tailscale/tailscale/tree/main/release)
+- 支持 [[X11]] 还是 [[Wayland]]？
+- 支持 [[KDE]] 还是 [[GNOME]]？
 - ...
 
-P.S. 每次看到 [Zed](/mentions/zed) 的更新，都会想起隔壁的 [Fleet](/mentions/fleet)，刚刚又去看了一圈，没什么新东西。
+P.S. 每次看到 [[Zed]] 的更新，都会想起隔壁的 [[Fleet]]，刚刚又去看了一圈，没什么新东西。
 
 ---
 
@@ -100,21 +100,21 @@ P.S. 每次看到 [Zed](/mentions/zed) 的更新，都会想起隔壁的 [Fleet]
 
 >向 192.168.0.239 直接发送的包，没有离开机器，所以 IP 地址不会被 MASQUERADE 为本机的 IP，然后直接被 docker-proxy 接管后 src ip 依旧为 172.18.0.3，导致了 conntrack 的状态不匹配，所以最终在 172.18.0.3 上没有对应的 socket，导致了 skb 被丢弃
 
-多个 [DIND](/mentions/dind) 上的容器之间无法进行 UDP 通信调查。
+多个 [[DIND]] 上的容器之间无法进行 UDP 通信调查。
 
 ---
 
 [How LLMs Work, Explained Without Math - miguelgrinberg.com](https://blog.miguelgrinberg.com/post/how-llms-work-explained-without-math)
 
-[LLM](/mentions/llm) 101，写的很不错。
+[[LLM]] 101，写的很不错。
 
 ---
 
 [k8gb: 云原生最佳开源 GSLB 方案 | Oilbeater 的自习室](https://oilbeater.com/2024/04/18/k8gb-best-cloudnative-gslb/)
 
-[k8gb](/mentions/k8gb) 是可以和 [kubernetes](/mentions/kubernetes) 无缝对接的一款 [GSLB](/mentions/gslb)，解决多个 kubernetes 集群之间的负载均衡问题。当前已有的 GSLB 实现方案存在无法和 kubernetes 无缝对接、公有云服务绑定、容器网络要求限制等问题。
+[[k8gb]] 是可以和 [[kubernetes]] 无缝对接的一款 [[GSLB]]，解决多个 kubernetes 集群之间的负载均衡问题。当前已有的 GSLB 实现方案存在无法和 kubernetes 无缝对接、公有云服务绑定、容器网络要求限制等问题。
 
-[k8gb](/mentions/k8gb) 使用自身维护的 CoreDNS 来解决多集群负载均衡的问题，将上游的 DNS 记录 forward 到 k8gb 自身的 CoreDNS 中，具体请求流程： [K8GB | k8gb](https://www.k8gb.io/docs/) 。
+[[k8gb]] 使用自身维护的 CoreDNS 来解决多集群负载均衡的问题，将上游的 DNS 记录 forward 到 k8gb 自身的 CoreDNS 中，具体请求流程： [K8GB | k8gb](https://www.k8gb.io/docs/) 。
 
 k8gb 多集群之间的数据同步实现方式：
 >大致的思路是每个集群的 k8gb 会把自己的 CoreDNS 的 Ingress IP 同样注册到上游 CoreDNS，这样每个集群就可以直接访问另一个集群的 CoreDNS 了。然后每个集群内的 CoreDNS 再按照一个特殊的域名格式比如 `localtargets-app.cloud.example.com` 来保存本集群内 `app.cloud.example.com` Ingress 的 Ingress IP 并维护其健康状态。    
@@ -131,14 +131,14 @@ k8gb 多集群之间的数据同步实现方式：
 
 >Have taken up farming.
 
-[neofetch](/mentions/neofetch) 、 [pure-bash-bible](/mentions/pure-bash-bible) 的作者，把所有的项目归档了，离开了软件开发行业，从事农业。
+[[neofetch]] 、 [[pure-bash-bible]] 的作者，把所有的项目归档了，离开了软件开发行业，从事农业。
 
 ---
 
 
 [熊野古道徒步游记](https://sides-hang-nca.craft.me/pEkbr1l5FFfMCt)
 
-同事的 [日本](/posts/日本) [熊野古道](/posts/熊野古道) [游记](/posts/游记)，非常的有趣，记录的很详细。
+同事的 [[日本]] [[熊野古道]] [[游记]]，非常的有趣，记录的很详细。
 
 我要不要也搞一个录音笔，用来长时间的记录自己出去游玩的感受呢？
 

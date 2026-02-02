@@ -13,7 +13,7 @@ description:
 
 https://muratbuffalo.blogspot.com/2024/07/advice-to-young.html
 
-[Murat Demirbas](/mentions/murat-demirbas) (MongoDB Principal Research Scientist)给的一些建议：
+[[Murat Demirbas]] (MongoDB Principal Research Scientist)给的一些建议：
 - 很多知识是基础知识，不是理论知识
 - 保持动手能力，只有真正写过才能了解其中的细节
 	- 不产蜜的蜜蜂只是害虫。每周少量运动是防止肌肉萎缩的关键。
@@ -27,18 +27,18 @@ https://muratbuffalo.blogspot.com/2024/07/advice-to-young.html
 
 https://ytch.xyz/
 
-把 [Youtube](/mentions/youtube) 中的视频封装为电视频道，像看电视那样看 Youtube 视频，感觉在家里播放是一个挺好的方式。做一个合格的沙发土豆。
+把 [[Youtube]] 中的视频封装为电视频道，像看电视那样看 Youtube 视频，感觉在家里播放是一个挺好的方式。做一个合格的沙发土豆。
 
 ---
 
 https://www.cockroachlabs.com/blog/enterprise-license-announcement/
 
-[CockroachDB](/mentions/cockroachdb) 调整了他们的开源许可，他们最早是 Apache 2.0 ，然后改到 BSL，再到现在。
+[[CockroachDB]] 调整了他们的开源许可，他们最早是 Apache 2.0 ，然后改到 BSL，再到现在。
 如果你是想要使用 Enterprise 的版本，那么仅限于年收入 1000 万美元以下的企业免费。
 
 越来越多的开源软件逐渐的从 "OpenSource" 变为了 "Source Available"。
 
-[VictoriaMetrics](/mentions/victoriametrics) CTO 的评论：[VictoriaMetrics CTO here. I don't understand why pure open-source license such a... | Hacker News](https://news.ycombinator.com/item?id=41266819)
+[[VictoriaMetrics]] CTO 的评论：[VictoriaMetrics CTO here. I don't understand why pure open-source license such a... | Hacker News](https://news.ycombinator.com/item?id=41266819)
 
 >不明白为什么开源软件要更换 License，如果现在大公司使用你的产品和你竞争，不给你付费，期望更改 License 之后就能收到付费，是不可能的。大公司只会 Fork 项目，用户会分散，更多的人会寻找新的替代品，产品会失去更多的用户和市场份额。
 
@@ -46,7 +46,7 @@ https://www.cockroachlabs.com/blog/enterprise-license-announcement/
 
 [508 - Whither CockroachDB? / RFD / Oxide](https://rfd.shared.oxide.computer/rfd/0508)
 
-[Oxide](/mentions/oxide) 决定自己 fork 并维护 [CockroachDB](/mentions/cockroachdb) ，以满足自身产品需求，不接受外部贡献。
+[[Oxide]] 决定自己 fork 并维护 [[CockroachDB]] ，以满足自身产品需求，不接受外部贡献。
 
 ---
 

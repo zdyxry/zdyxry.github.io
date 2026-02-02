@@ -15,7 +15,7 @@ description:
 
 [Majority for chat control possible – Users who refuse scanning to be prevented from sharing photos and links – Patrick Breyer](https://www.patrick-breyer.de/en/majority-for-chat-control-possible-users-who-refuse-scanning-to-be-prevented-from-sharing-photos-and-links/)
 
-欧盟想要通过聊天控制方式，避免儿童性虐待事件的发生，需要让所有的 IM App 进行信息扫描。[Signal](/mentions/signal) 为了反对这个提议可能会退出欧盟市场。
+欧盟想要通过聊天控制方式，避免儿童性虐待事件的发生，需要让所有的 IM App 进行信息扫描。[[Signal]] 为了反对这个提议可能会退出欧盟市场。
 
 印象中的欧盟一直以保护用户隐私而出名，现在的这个提议感觉有点过激了，不知道之前一直以欧盟来抨击国内审查制度的人，会如何看待这件事情呢？
 
@@ -25,7 +25,7 @@ description:
 
 [「不可以用路由器？」 | 卡瓦邦噶！](https://www.kawabangga.com/posts/6178)
 
-xintao 编写的网络系列博客，第一篇。打开 [WireShark](/mentions/wireshark) 可以直接看到根本原因，返回的 TTL=1，导致经过路由器就被丢弃了，可以通过 iptables 在路由器上在传入或者传出时重新设置 TTL。
+xintao 编写的网络系列博客，第一篇。打开 [[WireShark]] 可以直接看到根本原因，返回的 TTL=1，导致经过路由器就被丢弃了，可以通过 iptables 在路由器上在传入或者传出时重新设置 TTL。
 
 ---
 
@@ -34,7 +34,7 @@ xintao 编写的网络系列博客，第一篇。打开 [WireShark](/mentions/wi
 
 [Kubernetes 2.0 - Justin Garrison](https://justingarrison.com/blog/2024-06-06-kubernetes-2.0/)
 
-[kubernetes](/mentions/kubernetes) 已经发布 10 年了，作者讲述了自己与 [kubernetes](/mentions/kubernetes) 的故事，已经对下一阶段的展望：
+[[kubernetes]] 已经发布 10 年了，作者讲述了自己与 [[kubernetes]] 的故事，已经对下一阶段的展望：
 - 可选择的 etcd：Almost every customer I worked with at AWS gained no benefits of etcd being the data store behind Kubernetes.
 - Versionless：我理解这里不是要 Versionless，而是稳定的 API ？
 - 更多的单体服务？其中提到 Cluster API 默认使用微服务，“It’s too complex unless you’re going to be selling it. It’s not for end users.”
@@ -44,9 +44,9 @@ xintao 编写的网络系列博客，第一篇。打开 [WireShark](/mentions/wi
 
 [Comparison to asdf | mise-en-place](https://mise.jdx.dev/dev-tools/comparison-to-asdf.html)
 
-[DHH](/mentions/dhh) 推荐了 [mise](/mentions/mise)，一个环境设置工具，可以取代 [pyenv](/mentions/pyenv)/[nvm](/mentions/nvm)/[asdf](/mentions/asdf) 等等，使用 [Rust](/mentions/rust) 编写。这篇官方文档比较了 [mise](/mentions/mise) 和 [asdf](/mentions/asdf) ，一句话就是更快更易用。
+[[DHH]] 推荐了 [[mise]]，一个环境设置工具，可以取代 [[pyenv]]/[[nvm]]/[[asdf]] 等等，使用 [[Rust]] 编写。这篇官方文档比较了 [[mise]] 和 [[asdf]] ，一句话就是更快更易用。
 
-提到了 [asdf](/mentions/asdf) 是使用 [Bash](/mentions/bash) 编写的，在调用 node 时的顺序是： `~/.asdf/shims/node` 然后调用 `asdf exec` ，这里每次运行时调用会增加 120ms，性能很差。mise 直接更新 PATH 来实现。
+提到了 [[asdf]] 是使用 [[Bash]] 编写的，在调用 node 时的顺序是： `~/.asdf/shims/node` 然后调用 `asdf exec` ，这里每次运行时调用会增加 120ms，性能很差。mise 直接更新 PATH 来实现。
 
 ---
 
@@ -58,7 +58,7 @@ xintao 编写的网络系列博客，第一篇。打开 [WireShark](/mentions/wi
 
 [Preventing Server Side Request Forgery in Golang](https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang)
 
-[Golang](/mentions/golang) 中防止 [SSRF](/mentions/ssrf) 攻击的方式，在 `net.Dialer` 的 `Control` 中进行一些基本的防御检查操作：
+[[Golang]] 中防止 [[SSRF]] 攻击的方式，在 `net.Dialer` 的 `Control` 中进行一些基本的防御检查操作：
 
 ```Go
 func safeSocketControl(network string, address string, conn syscall.RawConn) error {
@@ -119,7 +119,7 @@ resp, err := safeClient.Get(untrustedURL)
 
 ### 生活
 
-[儿童节](/posts/儿童节)的由来：1949年11月，苏联莫斯科举行的国际民主妇女联合会执行委员会议[2]。执委会委员海伦·加波罗佐（Helen Gabrozo）在会上代表国际妇联书记处建议，订立6月1日为“国际儿童节”[4][1][2]，以悼念在1942年6月10日被纳粹德国屠杀的捷克利迪策村的88名儿童、以及全世界所有在法西斯侵略战争中死难的儿童[4][2]。加波罗佐指出，订立该节是为了保障世界各地儿童的生存权、保健权及受教育权，进而改善儿童的生活面貌[1]。1954年，6月1日被定为“保护儿童国际日”，以保护儿童权益及儿童的学习权、终结童工[5]，使得该日作为儿童节的国际认可有所提升[6]。
+[[儿童节]]的由来：1949年11月，苏联莫斯科举行的国际民主妇女联合会执行委员会议[2]。执委会委员海伦·加波罗佐（Helen Gabrozo）在会上代表国际妇联书记处建议，订立6月1日为“国际儿童节”[4][1][2]，以悼念在1942年6月10日被纳粹德国屠杀的捷克利迪策村的88名儿童、以及全世界所有在法西斯侵略战争中死难的儿童[4][2]。加波罗佐指出，订立该节是为了保障世界各地儿童的生存权、保健权及受教育权，进而改善儿童的生活面貌[1]。1954年，6月1日被定为“保护儿童国际日”，以保护儿童权益及儿童的学习权、终结童工[5]，使得该日作为儿童节的国际认可有所提升[6]。
 
 
 ---

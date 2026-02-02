@@ -31,13 +31,13 @@ description:
 
 [Why 'if not list' is 2x Faster Than len() in Python](https://blog.codingconfessions.com/p/python-performance-why-if-not-list)
 
-很久之前还记得这种 [python](/mentions/python) tips，现在已经忘光了。
+很久之前还记得这种 [[python]] tips，现在已经忘光了。
 
 ---
 
 [It doesn't make sense to wrap modern data in a 1979 format, introducing .ptar | Plakar - Effortless backup](https://www.plakar.io/posts/2025-06-27/it-doesnt-make-sense-to-wrap-modern-data-in-a-1979-format-introducing-.ptar/)
 
-[Plakar](/mentions/plakar) 推出的 `.ptar` 格式，目标是用来替代 `.tar`。在备份场景下，貌似想要享受完整的好处，需要配合他们的备份引擎 Kloset 一起用才行。
+[[Plakar]] 推出的 `.ptar` 格式，目标是用来替代 `.tar`。在备份场景下，貌似想要享受完整的好处，需要配合他们的备份引擎 Kloset 一起用才行。
 
 原来 `tar` 的全拼是 `Tape Archive`。
 
@@ -45,7 +45,7 @@ description:
 
 [Guest Post: How I Scanned all of GitHub’s “Oops Commits” for Leaked Secrets ◆ Truffle Security Co.](https://trufflesecurity.com/blog/guest-post-how-i-scanned-all-of-github-s-oops-commits-for-leaked-secrets)
 
-这篇文章很好，前阵子刚好和同事聊到了这个方式，即使 `git reset && git push` 清理包含了敏感信息的 commit，还是有办法通过 [Github](/mentions/github) 获取到历史提交。如果要彻底清理的话，只能联系 [Github](/mentions/github) 发 DMCA 了。
+这篇文章很好，前阵子刚好和同事聊到了这个方式，即使 `git reset && git push` 清理包含了敏感信息的 commit，还是有办法通过 [[Github]] 获取到历史提交。如果要彻底清理的话，只能联系 [[Github]] 发 DMCA 了。
 
 ---
 

@@ -14,7 +14,7 @@ description:
 
 [Backing up Spotify - Anna’s Blog](https://annas-archive.li/blog/backing-up-spotify.html)
 
-Anna-Archive 抓取了 [Spotify](/mentions/spotify) 的所有歌曲，大约 300TB。Spotify 拥有约 2.56 亿首曲目，超过 70% 的歌曲没人听，37% 的歌曲占了 99.6% 的收听量。
+Anna-Archive 抓取了 [[Spotify]] 的所有歌曲，大约 300TB。Spotify 拥有约 2.56 亿首曲目，超过 70% 的歌曲没人听，37% 的歌曲占了 99.6% 的收听量。
 
 这件事情的另一个角度就是，按照 300TB 数据量来计算，如果都存储在 AWS 上，那么 Spotify 每个月只需要花 $7000 。
 
@@ -22,7 +22,7 @@ Anna-Archive 抓取了 [Spotify](/mentions/spotify) 的所有歌曲，大约 300
 
 [Go ahead, self-host Postgres | Pierce Freeman](https://pierce.dev/notes/go-ahead-self-host-postgres#user-content-fn-1)
 
- 一些关于 [Postgres](/mentions/postgres) 设置建议：
+ 一些关于 [[Postgres]] 设置建议：
 * 内存配置（Memory Configuration）：`shared_buffers` 设为 RAM 的 25%，`effective_cache_size` 设为 75%
 * 连接管理：务必使用 PgBouncer 等连接池
 * 存储调优：NVMe SSD 需调整 `random_page_cost` 为 1.1

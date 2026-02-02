@@ -13,7 +13,7 @@ description:
 
 [Things you can do with codebases - by Thorsten Ball](https://registerspill.thorstenball.com/p/things-you-can-to-with-codebases)
 
-[Github](/mentions/github) 上有 2 亿个仓库，几乎可以在里面找到所有你需要的代码，如果没找到，可能是你的搜索姿势不对。这篇文章的建议很有用，我现在大部分时间也是这样去了解一个项目的。
+[[Github]] 上有 2 亿个仓库，几乎可以在里面找到所有你需要的代码，如果没找到，可能是你的搜索姿势不对。这篇文章的建议很有用，我现在大部分时间也是这样去了解一个项目的。
 
 工作中我一直使用 `grep.app` 和 `cs.github.com` 来搜索代码，几乎每天都会使用，最常用的就是编写工具类的代码（Makefile、hack/shell 脚本），看看别人是如何实现的，拿过来用用。
 
@@ -30,13 +30,13 @@ description:
 >2. 行业发生根本性的转变
 >同事必须具备技术基础。
 
-之前和同事聊到，说 [figma](/mentions/figma) 性能为什么那么好，操作很顺畅，记得当时的结论是因为他们技术太强。
+之前和同事聊到，说 [[figma]] 性能为什么那么好，操作很顺畅，记得当时的结论是因为他们技术太强。
 
 ---
 
 https://williamlam.com/2024/08/nvme-tiering-in-vsphere-8-0-update-3-is-a-homelab-game-changer.html
 
-[vSphere](/mentions/vsphere) 8.0 U 3 支持了 NVME Tiering 能力，可以将部分 NVME 空间当做内存来使用，看着很强大。不过如果已经有 PCI 直通或者预留全部内存的虚拟机，无法支持 NVME Tiering ，需要注意。
+[[vSphere]] 8.0 U 3 支持了 NVME Tiering 能力，可以将部分 NVME 空间当做内存来使用，看着很强大。不过如果已经有 PCI 直通或者预留全部内存的虚拟机，无法支持 NVME Tiering ，需要注意。
 
 教练我想用 VMware。
 
@@ -54,7 +54,7 @@ https://github.com/kubernetes/kubernetes/blob/60c4c2b2521fb454ce69dee737e3eb91a2
 
 https://kmcd.dev/posts/yall-are-sleeping-on-http3/
 
-2024 年 [HTTP-3](/mentions/http-3) 的一些现状，目前主流浏览器都已经支持了 HTTP/3 协议，主流云厂商也已经支持，截止到 2024年 8 月，从使用率来看，HTTP/3 在快速接近 HTTP/2 。
+2024 年 [[HTTP-3]] 的一些现状，目前主流浏览器都已经支持了 HTTP/3 协议，主流云厂商也已经支持，截止到 2024年 8 月，从使用率来看，HTTP/3 在快速接近 HTTP/2 。
 
 日常使用中，有明显感知的 QUIC 的就是 Cloudflare Tunnel 了，现在默认是 QUIC，但是我家里的无法建立 UDP 连接，被迫切换回 HTTP/2 了。
 
@@ -62,13 +62,13 @@ https://kmcd.dev/posts/yall-are-sleeping-on-http3/
 
 https://github.com/ccbikai/BroadcastChannel/blob/main/README.zh-cn.md
 
-将 [Telegram](/mentions/telegram) Channel 转换为 Blog 的项目，可以部署在 Cloudflare/Vercel 上，SEO 友好。需要将 Channel 公开。
+将 [[Telegram]] Channel 转换为 Blog 的项目，可以部署在 Cloudflare/Vercel 上，SEO 友好。需要将 Channel 公开。
 
 ---
 
 
 https://sspai.com/post/90668
-[济州岛](/posts/济州岛) [游记](/posts/游记)。躺平佛系在咖啡店待一天也不错。
+[[济州岛]] [[游记]]。躺平佛系在咖啡店待一天也不错。
 
 ---
 
@@ -76,7 +76,7 @@ https://www.v2ex.com/t/1063856
 
 [Update components.md the length should be all to keep consisdence by cyy8 · Pull Request #47414 · kubernetes/website · GitHub](https://github.com/kubernetes/website/pull/47414#issuecomment-2277646230)
 
-最近有人在小红书，发了自己给 [kubernetes](/mentions/kubernetes) 贡献了一个 PR，修复了一个文档样式问题，引发了大家的讨论。我觉得修复文档样式问题挺好的，很多项目看似很完整，但是当真正走一遍 Quick Start 的时候，多多少少会发现点问题，我都会顺手提一个 PR，毕竟你不修我不修，那就有更多人觉得项目不行。在了解了项目贡献指南之后，参照着指南来进行贡献是没有问题的。
+最近有人在小红书，发了自己给 [[kubernetes]] 贡献了一个 PR，修复了一个文档样式问题，引发了大家的讨论。我觉得修复文档样式问题挺好的，很多项目看似很完整，但是当真正走一遍 Quick Start 的时候，多多少少会发现点问题，我都会顺手提一个 PR，毕竟你不修我不修，那就有更多人觉得项目不行。在了解了项目贡献指南之后，参照着指南来进行贡献是没有问题的。
 
 感觉大家的讨论点是两个：是否要因为这样的小的修复去浪费维护人员的时间；是否有必要发小红书来宣传。在符合贡献指南要求的前提下，去贡献我不觉得是浪费维护人员的时间，因为改动很小，review 很快，同时看到有其他 PR 没有描述，维护人员也给了很友好的回复，这应该不是问题。
 我觉得宣传自己也没什么问题，大家的戾气太重，去 PR 下刷一些无关的评论，多了很多无用的信息，明显会对社区正常的处理流程产生干扰，不好。
@@ -103,7 +103,7 @@ https://anduin.aiursoft.cn/page/about
 ---
 https://blog.twofei.com/1463/
 
-[小红书](/posts/小红书)找搭子，同事也有不少这样出行的，可行度全看运气。
+[[小红书]]找搭子，同事也有不少这样出行的，可行度全看运气。
 
 ---
 

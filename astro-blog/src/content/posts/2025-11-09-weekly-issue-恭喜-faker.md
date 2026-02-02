@@ -20,7 +20,7 @@ description:
 > **Transparency**: You **MUST** disclose the use of AI tools when the significant part of the contribution is taken from a tool without changes.
 > **Contribution & Community Evaluation**: AI tools may be used to assist human reviewers by providing analysis and suggestions. You **MUST NOT** use AI as the sole or final arbiter in making a substantive or subjective judgment on a contribution, nor may it be used to evaluate a person’s standing within the community 
 
-[Fedora](/mentions/fedora) 这个策略说明和方式很不错，显式的告知使用的是什么模型、工具来辅助。
+[[Fedora]] 这个策略说明和方式很不错，显式的告知使用的是什么模型、工具来辅助。
 
 ---
 [Why we migrated from Python to Node.js](https://blog.yakkomajuri.com/blog/python-to-node)
@@ -32,16 +32,16 @@ description:
 
 > Our initial benchmarks show we've gained ~3 x throughput out of the box and that's just with us running what is mostly sequential code in an async context.
 
-不管咋说，用自己熟悉的技术栈都是有利于后续维护的。作者没有采用 [Prisma](/mentions/prisma)。
+不管咋说，用自己熟悉的技术栈都是有利于后续维护的。作者没有采用 [[Prisma]]。
 
 ---
 [Why our website looks like an operating system - PostHog](https://posthog.com/blog/why-os)
 
-[PostHog](/mentions/posthog) 介绍自己为什么要这样设计网站，我作为用户不喜欢现在的状态，会让我有一种“失控”感。
+[[PostHog]] 介绍自己为什么要这样设计网站，我作为用户不喜欢现在的状态，会让我有一种“失控”感。
 
 > Often times, I’ll want to refer to different pages at the same time. So I’ll `CMD` + click “a couple times” while browsing around and before I know it, I have 12 new tabs open – all indistinguishable from each other because they share the same favicon.
 
-这里提到的浏览方式是我之前经常使用的方式，甚至一度是我的搜索“屠龙记”「打开 Google 搜索，CMD 按住，点击前 10 个搜索，快速浏览页面找到自己想到的东西」，可惜这个方式在现在 [LLM](/mentions/llm) Research 时代已经用不到了。
+这里提到的浏览方式是我之前经常使用的方式，甚至一度是我的搜索“屠龙记”「打开 Google 搜索，CMD 按住，点击前 10 个搜索，快速浏览页面找到自己想到的东西」，可惜这个方式在现在 [[LLM]] Research 时代已经用不到了。
 
 ---
 
@@ -58,7 +58,7 @@ description:
 
 [You Should Write An Agent · The Fly Blog](https://fly.io/blog/everyone-write-an-agent/)
 
-[Fly.io](/mentions/flyio) 关于 [Agent](/mentions/agent) 的 101 文章，不如直接去看 [GitHub - PsiACE/bub: Bub it. Build it.](https://github.com/PsiACE/bub) 代码。
+[[Fly.io]] 关于 [[Agent]] 的 101 文章，不如直接去看 [GitHub - PsiACE/bub: Bub it. Build it.](https://github.com/PsiACE/bub) 代码。
 
 ---
 
@@ -74,7 +74,7 @@ description:
 
 [Fu, Wei: Previewing Rebase Snapshots in containerd v2.2.0](https://fuweid.com/post/2025-containerd-220-rebase-snapshot/)
 
-[containerd](/mentions/containerd) v 2.2.0 版本中包含了 Rebase Snapshot 特性，可以提升大型镜像的下载效率。为了下载镜像速度做过的努力：
+[[containerd]] v 2.2.0 版本中包含了 Rebase Snapshot 特性，可以提升大型镜像的下载效率。为了下载镜像速度做过的努力：
 - 首先并发下载所有镜像层，然后按照层级关系依次解压。
 	- 局限：解压每一层都需要先将所有祖先 snapshot 按照顺序 union mount，写放大。
 - 直接将镜像层解压到对应的 snapshot 目录，避免为了解压而执行 union mount
@@ -87,7 +87,7 @@ description:
 ---
 [Fu, Wei: Previewing new mount manager in containerd v2.2.0](https://fuweid.com/post/2025-containerd-220-mount-manager/)
 
-[containerd](/mentions/containerd) Mount Manager 的背景知识，目标是解决现有 snapshotter 接口在处理复杂挂在场景时的问题，将挂载初始化动作从 snapshotter 中接口，并将挂载点的生命周期与容器绑定，可以及时清理。当前只有 EROFS snapshotter 集成了。
+[[containerd]] Mount Manager 的背景知识，目标是解决现有 snapshotter 接口在处理复杂挂在场景时的问题，将挂载初始化动作从 snapshotter 中接口，并将挂载点的生命周期与容器绑定，可以及时清理。当前只有 EROFS snapshotter 集成了。
 
 ---
 

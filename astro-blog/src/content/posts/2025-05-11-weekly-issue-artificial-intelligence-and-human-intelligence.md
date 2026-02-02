@@ -56,7 +56,7 @@ description:
 
 [日本旅游攻略：赴日前的准备与注意事项 - Simon's Blog](https://song.al/japantravel)
 
-简单有效的[日本](/posts/日本) [攻略](/posts/攻略)。
+简单有效的[[日本]] [[攻略]]。
 
 ---
 

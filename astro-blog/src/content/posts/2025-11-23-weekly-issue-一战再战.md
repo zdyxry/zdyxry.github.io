@@ -19,7 +19,7 @@ description:
 
 > We had been using an older Bitnami image, and following [Bitnami's deprecation of their public images](https://github.com/bitnami/charts/issues/35164), we migrated to our internal mirrored repository. This migration advanced us several PgBouncer versions ahead.
 
-[Railway](/mentions/railway) [事故分析](/posts/事故分析)。DB schema 变更因为“不小心”被 revert 了，控制面崩了，控制面崩了发现是 PgBouncer 资源消耗异常，原来是因为 [bitnami](/mentions/bitnami) 不维护公开 image 了，所有他们迁移到了内部的 repository，但是这次迁移并不只是“迁移”，而是将 PgBouncer 升级了几个版本。。。这两个变更咋能通过 review 上线的呢？
+[[Railway]] [[事故分析]]。DB schema 变更因为“不小心”被 revert 了，控制面崩了，控制面崩了发现是 PgBouncer 资源消耗异常，原来是因为 [[bitnami]] 不维护公开 image 了，所有他们迁移到了内部的 repository，但是这次迁移并不只是“迁移”，而是将 PgBouncer 升级了几个版本。。。这两个变更咋能通过 review 上线的呢？
 
 当然，如果要调侃的话，可以说一句：“博通罪大恶极”。
 
@@ -34,9 +34,9 @@ description:
 [从 Cloudflare 故障到代码安全 | Cyandev](https://cyandev.app/post/from-cloudflare-outage-to-code-safety)
 
 
-[CloudFlare](/mentions/cloudflare) [事故分析](/posts/事故分析)，这是它们自 2019 年以来最严重的故障，故障原因已经写的很清楚了，各种分析也很多，很多人开始玩梗来说 [Rust](/mentions/rust) blabla，看到这类言论感觉和那种营销号标题党没有差别，太无聊了。
+[[CloudFlare]] [[事故分析]]，这是它们自 2019 年以来最严重的故障，故障原因已经写的很清楚了，各种分析也很多，很多人开始玩梗来说 [[Rust]] blabla，看到这类言论感觉和那种营销号标题党没有差别，太无聊了。
 
-这里有一个有意思的地方，[CloudFlare](/mentions/cloudflare) Status 站点与 Cloudflare 自身所有资源都是隔离的，但是当主站故障的时候，Status 站点也刚好故障了。。。这应该是误导他们认为是 DDOS 的一个原因？不知道这里的故障原因是什么，文章中没有提到。
+这里有一个有意思的地方，[[CloudFlare]] Status 站点与 Cloudflare 自身所有资源都是隔离的，但是当主站故障的时候，Status 站点也刚好故障了。。。这应该是误导他们认为是 DDOS 的一个原因？不知道这里的故障原因是什么，文章中没有提到。
 
 ---
 
@@ -63,7 +63,7 @@ description:
 
 再次坚定：指定 tag 甚至指定 hash 总是没错的。
 
-原来 PG 的 dockerhub 里面的 Official Image 主语是 [Docker](/mentions/docker)，不是 PG 社区自己维护的......
+原来 PG 的 dockerhub 里面的 Official Image 主语是 [[Docker]]，不是 PG 社区自己维护的......
 
 ---
 

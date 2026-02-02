@@ -20,7 +20,7 @@ description:
 
 [周思博 - 维基百科，自由的百科全书](https://zh.wikipedia.org/zh-cn/%E5%91%A8%E6%80%9D%E5%8D%9A)
 
-[StackOverflow](/mentions/stackoverflow) 的创始人和 [Trello](/mentions/trello) 的创始人是同一个人，一直以为这是两个时代的软件。
+[[StackOverflow]] 的创始人和 [[Trello]] 的创始人是同一个人，一直以为这是两个时代的软件。
 
 ---
 

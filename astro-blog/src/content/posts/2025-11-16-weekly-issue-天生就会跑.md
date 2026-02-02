@@ -21,7 +21,7 @@ description:
 
 [“捉迷藏”式收割：撕开鲁大师为首系列企业流量劫持黑幕！-技术文章-火绒安全](https://www.huorong.cn/document/tech/vir_report/1858)
 
-火绒发布的针对[鲁大师](/posts/鲁大师)的恶迹调查，他们的推广条件还挺有意思的：
+火绒发布的针对[[鲁大师]]的恶迹调查，他们的推广条件还挺有意思的：
 - 检查浏览器历史记录，如果访问过 12345 等投诉网站、zhihu、微博、看雪、吾爱破解网站的，不推广；
 - 安装了火绒、卡巴斯基的，不推广；
 - 安装了 IDA、Visual Studio 、WireShark、VSCode 的，不推广；
@@ -35,7 +35,7 @@ description:
 
 [sudo-rs Affected By Multiple Security Vulnerabilities - Impacting Ubuntu 25.10](https://www.phoronix.com/news/sudo-rs-security-ubuntu-25.10)
 
-谁如果用了 [Ubuntu](/mentions/ubuntu) 25.10，我会敬佩一声勇士。
+谁如果用了 [[Ubuntu]] 25.10，我会敬佩一声勇士。
 
 ---
 
@@ -46,7 +46,7 @@ description:
 
 > 注：文中提到关于我在 AI 编程时遇到的各种状况，全都是 AI 生成的，如有不切实际本人概不负责，我只提供了本文的基本观点。
 
-这是现在大家的一个共识了，[Jetbrains](/mentions/jetbrains) 的[年度调查](https://blog.jetbrains.com/go/2025/11/10/go-language-trends-ecosystem-2025/)中也提到了： “Survey data indicates that, on average, Go developers began adopting AI earlier than their peers using other languages, and they continue to use it more extensively for day-to-day tasks.”
+这是现在大家的一个共识了，[[Jetbrains]] 的[年度调查](https://blog.jetbrains.com/go/2025/11/10/go-language-trends-ecosystem-2025/)中也提到了： “Survey data indicates that, on average, Go developers began adopting AI earlier than their peers using other languages, and they continue to use it more extensively for day-to-day tasks.”
 
 现在我写 Python 的时候也会尽量在 AGENTSmd 文件中强调要制定类型，方便之后迭代，我自己 review 代码也方便。
 
@@ -79,7 +79,7 @@ description:
 
 [Calculating String length and width – Fun with Unicode | Tom de Bruijn](https://tomdebruijn.com/posts/rust-string-length-width-calculations/)
 
-以 [Rust](/mentions/rust) 为例讨论 `.len()` 、`.chars().count()` 、`graphemes(true).count()` 的差异。
+以 [[Rust]] 为例讨论 `.len()` 、`.chars().count()` 、`graphemes(true).count()` 的差异。
 
 在说“字符串长度”的时候，到底在说啥，是字节长度、还是字符数量、还是 grapheme cluster，即使是 grapheme cluster 也可能不是最终用户看到的显示宽度。
 
@@ -89,7 +89,7 @@ description:
 
 [Bending Spoons Cofounders Become Billionaires After Italian Startup Raises At $11 Billion Valuation](https://www.forbes.com/sites/iainmartin/2025/10/30/bending-spoons-cofounders-become-billionaire-after-italian-startup-raises-at-11-billion-valuation/)
 
-[Bending Spoons](/mentions/bending-spoons) 最新融资后估值达到了 110 亿美元，4 位联合创始人都已经是亿万身价了。这个公司真有意思，收购成熟的产品，改造，然后盈利，感觉像是有一批能力超强的雇佣兵，收购之后可以进行快速的迭代改造，短期完成后继续下一个目标。代表是 [Evernote](/mentions/evernote)。
+[[Bending Spoons]] 最新融资后估值达到了 110 亿美元，4 位联合创始人都已经是亿万身价了。这个公司真有意思，收购成熟的产品，改造，然后盈利，感觉像是有一批能力超强的雇佣兵，收购之后可以进行快速的迭代改造，短期完成后继续下一个目标。代表是 [[Evernote]]。
 
 ---
 
@@ -115,7 +115,7 @@ description:
 ---
 [Eliud Kipchoge Custom Nike New York City Marathon Top — NIKE, Inc.](https://about.nike.com/en/magazine/eliud-kipchoge-radical-airflow-new-york-city-marathon)
 
-[Nike](/mentions/nike) 为基普乔格定制的运动服，可以让汗水快速蒸发。国内好像轻功、必迈也有类似的“科技”衣服，不知道实际效果怎么样。
+[[Nike]] 为基普乔格定制的运动服，可以让汗水快速蒸发。国内好像轻功、必迈也有类似的“科技”衣服，不知道实际效果怎么样。
 
 ---
 

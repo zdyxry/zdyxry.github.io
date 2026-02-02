@@ -34,7 +34,7 @@ description:
 
 > When a large team congregates around work that cannot be parallelized, we’ve observed that new work gets created to keep everyone busy - new nice-to-have features get worked on. This ends up adding complexity to the product. New team routines are invented because there’s bandwidth available. This ends up adding communication overhead and layers between users and builders and slows down the pace of innovation. This sadly becomes a vicious cycle that dilutes the core product.
 
-[Typesense](/mentions/typesense) 是  [Algolia](/mentions/algolia) , [meilisearch](/mentions/meilisearch) 的开源替代品，这篇博客讲述了为什么没有接受风险投资的原因，在和很多 VC 进行沟通后，最终还是选择建立一家由客户收入支撑的公司，践行类似理念的还有 [Obsidian](/mentions/obsidian)。读完这篇文章，我就想试用一下他们的产品了。
+[[Typesense]] 是  [[Algolia]] , [[meilisearch]] 的开源替代品，这篇博客讲述了为什么没有接受风险投资的原因，在和很多 VC 进行沟通后，最终还是选择建立一家由客户收入支撑的公司，践行类似理念的还有 [[Obsidian]]。读完这篇文章，我就想试用一下他们的产品了。
 
 ---
 
@@ -51,7 +51,7 @@ description:
 
 [中兴 F50 随身 Wi-Fi 体验记录 - 陪她去流浪](https://blog.twofei.com/1546/)
 
-看上去这个 `F500` 400+ 的价格完全不可用，最近看到很多人在晒[中兴](/posts/中兴)的 `U60Pro` 随身 Wifi，2000+的价格，不知道实际使用怎么样。
+看上去这个 `F500` 400+ 的价格完全不可用，最近看到很多人在晒[[中兴]]的 `U60Pro` 随身 Wifi，2000+的价格，不知道实际使用怎么样。
 
 ---
 

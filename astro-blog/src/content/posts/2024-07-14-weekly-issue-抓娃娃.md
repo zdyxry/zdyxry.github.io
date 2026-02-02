@@ -13,7 +13,7 @@ description:
 
 [After 14 Years of Cantarell, GNOME is Testing a New Default Font - OMG! Linux](https://www.omglinux.com/gnome-may-switch-to-inter-font/)
 
-[GNOME](/mentions/gnome) 计划将默认字体改为 [GitHub - rsms/inter: The Inter font family](https://github.com/rsms/inter)
+[[GNOME]] 计划将默认字体改为 [GitHub - rsms/inter: The Inter font family](https://github.com/rsms/inter)
 
 ---
 

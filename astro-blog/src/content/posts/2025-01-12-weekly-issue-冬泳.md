@@ -13,7 +13,7 @@ description:
 
 [GitHub Actions?! 想说爱你不容易之记一次 Release CI 重构经验 - 晒太阳的猫](https://zyy.dev/post/github-actions-wtf/)
 
-[Github](/mentions/github) [Actions](/mentions/actions) 的一些经验总结：
+[[Github]] [[Actions]] 的一些经验总结：
 - 尽可能使用 Dockerfile
 - 将 Release 环节中的细节放在 Makefile 中
 - Action 模块解耦
@@ -42,7 +42,7 @@ description:
 
 [Open source all the way down: Upgrading our developer documentation](https://blog.cloudflare.com/open-source-all-the-way-down-upgrading-our-developer-documentation/)
 
-[CloudFlare](/mentions/cloudflare) 的开发者文档从 [Hugo](/mentions/hugo) 迁移到了 [Astro](/mentions/astro)。他们在 2021 年从 Gatsby 迁移到了 Hugo，带来了更快的开发流程、自定义组件、结构化的 changelog 管理以及性能优化。
+[[CloudFlare]] 的开发者文档从 [[Hugo]] 迁移到了 [[Astro]]。他们在 2021 年从 Gatsby 迁移到了 Hugo，带来了更快的开发流程、自定义组件、结构化的 changelog 管理以及性能优化。
 
 现在迁移到 Astro 是为了：内容组织改进、扩展性、开发体验、JS/TS 支持、CSS 管理。[Starlight 🌟 Build documentation sites with Astro](https://starlight.astro.build/) 是其中的一个决定性因素。
 
@@ -69,7 +69,7 @@ description:
 
 [containerd internals: Images](https://samuel.karp.dev/blog/2024/12/containerd-internals-images/)
 
-[containerd](/mentions/containerd) internal 系列文章，这篇介绍了 Image 及 snapshotter。之前看过 OCI Image Spec 的话，感觉可以略过。
+[[containerd]] internal 系列文章，这篇介绍了 Image 及 snapshotter。之前看过 OCI Image Spec 的话，感觉可以略过。
 
 ---
 

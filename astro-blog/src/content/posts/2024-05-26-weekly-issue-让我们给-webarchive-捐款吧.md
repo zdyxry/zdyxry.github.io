@@ -13,7 +13,7 @@ description:
 
 [OpenAI compatible API endpoints · Cloudflare Workers AI docs](https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/?utm_medium=organic-social)
 
-[CloudFlare](/mentions/cloudflare) Workers AI 的 API 现在提供了与 [OpenAI](/mentions/openai) 兼容的 Endpoints。
+[[CloudFlare]] Workers AI 的 API 现在提供了与 [[OpenAI]] 兼容的 Endpoints。
 
 ---
 
@@ -27,7 +27,7 @@ description:
 
 [Reclaiming CPU for free with Go's Profile Guided Optimization](https://blog.cloudflare.com/reclaiming-cpu-for-free-with-pgo/)
 
-[CloudFlare](/mentions/cloudflare) 使用 `PGO` 优化 CPU 使用情况，在他们内部环境中，节省了 3.5% 的 CPU cores。
+[[CloudFlare]] 使用 `PGO` 优化 CPU 使用情况，在他们内部环境中，节省了 3.5% 的 CPU cores。
 
 通过获取典型节点的 pprof 信息，然后使用 `go tool pprof -proto "${working_dir/}"*.pprof > profile.pprof` ，最终在构建产品时传递 `go build -pgo ./pgo/profile.pprof` 参数。
 
@@ -37,7 +37,7 @@ Google Cloud 的一个相关视频介绍： [Boost performance of Go application
 
 [Introducing Copilot+ PCs - The Official Microsoft Blog](https://blogs.microsoft.com/blog/2024/05/20/introducing-copilot-pcs/)
 
-[Microsoft](/mentions/microsoft) 退出的新版本 Surface，取名 Copilot+ PC，是 ARM 架构的，起售价 999$。描述中可以提供长达 22h 的本地视频播放或 15h 的网页浏览（有点怀疑真实性）。
+[[Microsoft]] 退出的新版本 Surface，取名 Copilot+ PC，是 ARM 架构的，起售价 999$。描述中可以提供长达 22h 的本地视频播放或 15h 的网页浏览（有点怀疑真实性）。
 
 特色功能：
 - Recall，类似于 [Rewind](https://www.rewind.ai/) ，自动获取屏幕中的所有信息，并保存索引，便于后续的搜索。
@@ -48,7 +48,7 @@ Google Cloud 的一个相关视频介绍： [Boost performance of Go application
 
 [Amber](https://amber-lang.com/)
 
-一门新的编程语言, 可以编译为 [Bash](/mentions/bash)。优势是：现代语法，类型安全。
+一门新的编程语言, 可以编译为 [[Bash]]。优势是：现代语法，类型安全。
 
 直接编写 Bash，使用 ShellCheck 配合 [https://github.com/dylanaraps/pure-bash-bible…](https://t.co/gLUITP96Un) ，基本上可以应付大部分场景了吧
 
@@ -56,16 +56,16 @@ Google Cloud 的一个相关视频介绍： [Boost performance of Go application
 
 [一个不知名的开源项目可以带来多少收入 —— NocoBase 3 年总结分享](https://blog-cn.nocobase.com/posts/nocobase-opensource-income-3years/#%E6%9B%B4%E9%87%8D%E8%A6%81%E7%9A%84%E6%94%B6%E8%8E%B7)
 
-[NocoBase](/mentions/nocobase) ，一个开源项目的背后故事。当前团队规模 10 人，已经盈利。
+[[NocoBase]] ，一个开源项目的背后故事。当前团队规模 10 人，已经盈利。
 
 ---
 
 
 [Making EC2 boot time 8x faster](https://depot.dev/blog/faster-ec2-boot-time)
 
-将 [EC2](/mentions/ec2) 的启动时间从 40s 减少至 5s，有点标题党。
+将 [[EC2]] 的启动时间从 40s 减少至 5s，有点标题党。
 
-通过提前准备好 [EC2](/mentions/ec2) 虚拟机，并使用 fio 来预热，然后将虚拟机关机，在下次需要的时候进行开机即可，减少时间主要来自于：从 AMI 创建 EBS 时间，虚拟机基础信息配置，IP 地址分配时间等。
+通过提前准备好 [[EC2]] 虚拟机，并使用 fio 来预热，然后将虚拟机关机，在下次需要的时候进行开机即可，减少时间主要来自于：从 AMI 创建 EBS 时间，虚拟机基础信息配置，IP 地址分配时间等。
 
 ---
 
@@ -81,7 +81,7 @@ Google Cloud 的一个相关视频介绍： [Boost performance of Go application
 
 >CoreOS was radical and way ahead of its time. # 非常同意。
 
-Xe 因为 [Nix](/mentions/nix) 事件而抛弃 [Nix](/mentions/nix)，在重新折腾自己的 homelab。
+Xe 因为 [[Nix]] 事件而抛弃 [[Nix]]，在重新折腾自己的 homelab。
 - 先尝试了 RockyLinux 配合 Ansible，管理比较麻烦
 - 评估 CoreOS，Fleet 可以自动发现 CoreOS 并组件集群，但已经不维护了。Fork 的 Flatcar 如果想要修改 Ignition 配置，一定要重新的 Image machine ，所以没有尝试
 - 评估 Fedora CoreOS，按照 Bazzite Linux 的方式，准备一个 Base Image 作为不可变基础层，然后在上面安装一些日常使用中需要的 RPM。
@@ -94,7 +94,7 @@ Xe 因为 [Nix](/mentions/nix) 事件而抛弃 [Nix](/mentions/nix)，在重新�
 	- Talos 默认的安全策略比较严格，需要注意
 	- 接下来就是一堆 K8s 相关的配置了，Ingress，DNS 等等。
 
-优雅的维护 [homelab](/mentions/homelab) 是一门艺术。
+优雅的维护 [[homelab]] 是一门艺术。
 
 ---
 
@@ -106,7 +106,7 @@ Xe 因为 [Nix](/mentions/nix) 事件而抛弃 [Nix](/mentions/nix)，在重新�
 
 [新加坡OCBC华侨银行线上开户完全指南 – 土木坛子](https://tumutanzi.com/archives/17315)
 
-[新加坡](/posts/新加坡) [OCBC](/mentions/ocbc) 开户说明，可以支持大陆用户远程开户。管理费需要满足日均一定数量的存款可免。
+[[新加坡]] [[OCBC]] 开户说明，可以支持大陆用户远程开户。管理费需要满足日均一定数量的存款可免。
 
 ---
 
@@ -128,7 +128,7 @@ Xe 因为 [Nix](/mentions/nix) 事件而抛弃 [Nix](/mentions/nix)，在重新�
 
 能够完整保留内容的方式，就是保存在自己手里。
 
-让我们继续给 [WebArchive](/mentions/webarchive) 捐款吧。
+让我们继续给 [[WebArchive]] 捐款吧。
 
 ---
 

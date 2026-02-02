@@ -33,7 +33,7 @@ description:
 > Since it’s 2025, we just ask Claude.
 > There are probably more effective methods of achieving the same, but it costs us less than a dollar to provision 50 servers using Claude to screen-scrape every minute during the install.
 
-我喜欢看到 [Railway](/mentions/railway) 分享自己从零开始构建自己的 [BareMetal](/mentions/baremetal) 产品线的博客，但是其中的一些细节感觉让人迷惑，OS 安装这样一个在 BareMetal 中高频且基础的动作，依赖于外部的 Claude API，并且这个 API 还是一个需要付费的 API，这不是一个稳定且可持续的事情，太奇怪了。
+我喜欢看到 [[Railway]] 分享自己从零开始构建自己的 [[BareMetal]] 产品线的博客，但是其中的一些细节感觉让人迷惑，OS 安装这样一个在 BareMetal 中高频且基础的动作，依赖于外部的 Claude API，并且这个 API 还是一个需要付费的 API，这不是一个稳定且可持续的事情，太奇怪了。
 
 ---
 
@@ -46,13 +46,13 @@ description:
 
 [Introducing Hardened Images | Docker](https://www.docker.com/blog/introducing-docker-hardened-images/)
 
-[Docker](/mentions/docker) 出的这个 DHI 看着很不错啊，后面可以试试， 即使都是收费服务，感觉也会把 Wolfi 干掉。
+[[Docker]] 出的这个 DHI 看着很不错啊，后面可以试试， 即使都是收费服务，感觉也会把 Wolfi 干掉。
 
 ---
 
 [Python Tooling at Scale: LlamaIndex’s Monorepo Overhaul — LlamaIndex - Build Knowledge Assistants over your Enterprise Data](https://www.llamaindex.ai/blog/python-tooling-at-scale-llamaindex-s-monorepo-overhaul)
 
-[LlamaIndex](/mentions/llamaindex) 介绍自己从 [poetry](/mentions/poetry) 迁移到了 [uv](/mentions/uv) 的背景，他们是一个巨大的 [Monorepo](/mentions/monorepo)。
+[[LlamaIndex]] 介绍自己从 [[poetry]] 迁移到了 [[uv]] 的背景，他们是一个巨大的 [[Monorepo]]。
 PR： [Migrate repo to \`uv\` by masci · Pull Request #18524 · run-llama/llama\_index · GitHub](https://github.com/run-llama/llama_index/pull/18524)
 
 ---
@@ -73,12 +73,12 @@ https://frostming.com/2025/henan/
 
 > 但是清明上河园和万岁山武侠城这两个沉浸式复原古代生活场景的园区，绝对是能值回票价（那场打铁花和烟火表演，在我看过的所有里面都算顶级的，单这一场表演就能值 120 块），推荐一去。
 
-[河南](/posts/河南)记录，之前也看过一些 up 主去过“只有河南”，感觉可以错峰感受一下。
+[[河南]]记录，之前也看过一些 up 主去过“只有河南”，感觉可以错峰感受一下。
 
 ---
 [Bus Stops Here: Shanghai Lets Riders Design Their Own Routes](https://www.sixthtone.com/news/1017072)
 
-[上海](/posts/上海)公交提供了定制功能，用户提交自己的需求，当需求达到一定人数，则开通对应线路，看了下当前线路，有些还挺有吸引力的。
+[[上海]]公交提供了定制功能，用户提交自己的需求，当需求达到一定人数，则开通对应线路，看了下当前线路，有些还挺有吸引力的。
 
 ---
 
@@ -91,7 +91,7 @@ https://frostming.com/2025/henan/
 ---
 [网友怒喷峰哥：“峰哥你是不是不信中医？！”\_哔哩哔哩\_bilibili](https://www.bilibili.com/video/BV1kvJMzFEUg/)
 
->  [中医](/posts/中医)有用，有什么用？证明老祖宗的智慧，证明我的老祖宗的智慧比你老祖宗的强，从而证明我比你强。
+>  [[中医]]有用，有什么用？证明老祖宗的智慧，证明我的老祖宗的智慧比你老祖宗的强，从而证明我比你强。
 
 ---
 
@@ -112,7 +112,7 @@ https://frostming.com/2025/henan/
 ---
 [The Future of Customer Support is Lies, I Guess](https://aphyr.com/posts/387-the-future-of-customer-support-is-lies-i-guess)
 
-虽然随着模型的能力越来越强，我是相信 [LLM](/mentions/llm) 可以越来越好的完成客服的功能的，但是现阶段 (2025)，如果一家公司提供的产品能**方便**的联系到人工客服，那是真正的加分项。
+虽然随着模型的能力越来越强，我是相信 [[LLM]] 可以越来越好的完成客服的功能的，但是现阶段 (2025)，如果一家公司提供的产品能**方便**的联系到人工客服，那是真正的加分项。
 
 ---
 
@@ -124,13 +124,13 @@ https://frostming.com/2025/henan/
 
 [樱花特辑：东京圈赏樱指南 (上) - Simon's Blog](https://song.al/sakura_1)
 
-[日本](/posts/日本)观看 [樱花](/posts/樱花)指南。
+[[日本]]观看 [[樱花]]指南。
 
 ---
 
 [What is HDR, anyway?](https://www.lux.camera/what-is-hdr/)
 
-有趣的 [HDR](/mentions/hdr) 科普文章。
+有趣的 [[HDR]] 科普文章。
 
 ---
 

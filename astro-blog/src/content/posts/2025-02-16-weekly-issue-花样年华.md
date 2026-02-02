@@ -15,7 +15,7 @@ description:
 
 代码仓库地址： [GitHub - iamshaynez/deep-research-cli](https://github.com/iamshaynez/deep-research-cli.git)，所有的 Prompt 第一句是定义对方的角色，定义好返回的格式。第一次在 Prompt 见到“温柔”这个词，有趣。
 
-原来有 [Tavily](/mentions/tavily) 这种专门提供 LLM Search 功能 API 的平台，不过确实不便宜。
+原来有 [[Tavily]] 这种专门提供 LLM Search 功能 API 的平台，不过确实不便宜。
 
 ---
 
@@ -33,7 +33,7 @@ description:
 
 [From PDFs to Insights: Structured Outputs from PDFs with Gemini 2.0](https://www.philschmid.de/gemini-pdf-to-data)
 
-使用 Gemini 从 [PDF](/mentions/pdf) 中提取结构化数据的文章，使用 [Pydantic](/mentions/pydantic) BaseModel 定义结构。看上去效果很不错。
+使用 Gemini 从 [[PDF]] 中提取结构化数据的文章，使用 [[Pydantic]] BaseModel 定义结构。看上去效果很不错。
 
 ---
 

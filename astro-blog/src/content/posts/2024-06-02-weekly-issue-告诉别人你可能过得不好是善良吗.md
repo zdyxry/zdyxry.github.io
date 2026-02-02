@@ -14,15 +14,15 @@ description:
 
 [Cloudflare took down our website after trying to force us to pay 120k$ within 24h](https://robindev.substack.com/p/cloudflare-took-down-our-website)
 
-[CloudFlare](/mentions/cloudflare) 要求客户在一周内（24h 内）将付费计划从 250 `$/M` 提升至 10 k `$/M` ，在得知该客户有 [Fastly](/mentions/fastly) 进行谈判时，清楚了该客户的所有域名，导致业务宕机。
+[[CloudFlare]] 要求客户在一周内（24h 内）将付费计划从 250 `$/M` 提升至 10 k `$/M` ，在得知该客户有 [[Fastly]] 进行谈判时，清楚了该客户的所有域名，导致业务宕机。
 
-无论 [CloudFlare](/mentions/cloudflare) 后续的反馈如何，这里的沟通方式和处理方式，都有些粗暴。截止到目前，Cloudflare 还没有对这件事发表回应。
+无论 [[CloudFlare]] 后续的反馈如何，这里的沟通方式和处理方式，都有些粗暴。截止到目前，Cloudflare 还没有对这件事发表回应。
 
 ---
 
 [I Sold TinyPilot, My First Successful Business · mtlynch.io](https://mtlynch.io/i-sold-tinypilot/)
 
-[TinyPilot](/mentions/tinypilot) 的创始人把它卖掉了，卖掉的价格是 2.4 倍的年收益，TinyPilot 项目整体带来的利润是 4 年 920 k$ 。
+[[TinyPilot]] 的创始人把它卖掉了，卖掉的价格是 2.4 倍的年收益，TinyPilot 项目整体带来的利润是 4 年 920 k$ 。
 主要的原因是运营一家公司涉及到了大量的杂事，虽然 TinyPilot 只占用了 20% 的时间，但是却带来了 90% 的压力，加上创始人马上就要当爸爸了，所以他打算换一个方向。
 
 ---
@@ -77,7 +77,7 @@ Yes, but why ???
 
 [docs: proposal to raise awareness about an unexpected behavior of COPY --link · Issue #4964 · moby/buildkit · GitHub](https://github.com/moby/buildkit/issues/4964)
 
-[Dockerfile](/mentions/dockerfile) `COPY --link`  会导致文件权限不符合预期，使用的时候需要注意下。
+[[Dockerfile]] `COPY --link`  会导致文件权限不符合预期，使用的时候需要注意下。
 
 ---
 

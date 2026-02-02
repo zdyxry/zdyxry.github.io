@@ -48,7 +48,7 @@ description:
 
 [Writing secure Go code | Jakub Jarosz](https://jarosz.dev/article/writing-secure-go-code/)
 
-编写安全的 [Go](/mentions/go) 代码，这里的“安全”是多种含义，包含了 CVE 相关的安全，也包含了业务语义上的安全。
+编写安全的 [[Go]] 代码，这里的“安全”是多种含义，包含了 CVE 相关的安全，也包含了业务语义上的安全。
 - 即是更新 golang 版本
 - 使用工具检查
 	- `go vet`
