@@ -77,6 +77,33 @@ function generateRedirectFiles() {
   };
 }
 
+// Integration to rename sitemap files to a single sitemap.xml
+function simplifySitemap() {
+  return {
+    name: 'simplify-sitemap',
+    hooks: {
+      'astro:build:done': async ({ dir }) => {
+        const outDir = fileURLToPath(dir);
+        const sitemap0Path = path.join(outDir, 'sitemap-0.xml');
+        const sitemapIndexPath = path.join(outDir, 'sitemap-index.xml');
+        const sitemapPath = path.join(outDir, 'sitemap.xml');
+        
+        if (fs.existsSync(sitemap0Path)) {
+          // Rename sitemap-0.xml to sitemap.xml
+          fs.renameSync(sitemap0Path, sitemapPath);
+          console.log('Renamed sitemap-0.xml to sitemap.xml');
+        }
+        
+        // Remove sitemap-index.xml
+        if (fs.existsSync(sitemapIndexPath)) {
+          fs.unlinkSync(sitemapIndexPath);
+          console.log('Removed sitemap-index.xml');
+        }
+      }
+    }
+  };
+}
+
 // Integration to generate Pagefind search index
 function pagefindIntegration() {
   return {
@@ -106,9 +133,12 @@ export default defineConfig({
   redirects,
   integrations: [
     mdx(),
-    sitemap(),
+    sitemap({
+      entryLimit: 50000,  // 设置最大值，确保生成单个 sitemap.xml
+    }),
     react(),
     generateRedirectFiles(),
+    simplifySitemap(),  // 将 sitemap-0.xml 重命名为 sitemap.xml
     pagefindIntegration(),
   ],
   markdown: {
