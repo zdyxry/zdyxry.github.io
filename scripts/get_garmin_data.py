@@ -104,6 +104,46 @@ class GarminDataFetcher:
             logger.error(f"获取活动数据失败: {e}")
             return []
 
+    def _print_activity_details(self, activity: Dict[str, Any], index: int = 0):
+        """
+        打印活动的详细信息（用于调试）
+
+        Args:
+            activity: 活动数据
+            index: 活动索引
+        """
+        logger.info(f"\n{'='*60}")
+        logger.info(f"活动 {index} 的完整数据结构:")
+        logger.info(f"{'='*60}")
+        
+        # 打印所有顶层字段
+        logger.info("顶层字段:")
+        for key in sorted(activity.keys()):
+            value = activity[key]
+            if isinstance(value, (dict, list)):
+                logger.info(f"  {key}: <{type(value).__name__}>")
+            else:
+                logger.info(f"  {key}: {value}")
+        
+        # 特别关注可能包含训练名称的字段
+        logger.info("\n可能包含训练名称的字段:")
+        name_fields = ['activityName', 'name', 'description', 'workoutName', 'courseName', 
+                       'trainingPlanName', 'trainingType', 'sportType', 'subSportType',
+                       'eventType', 'activityType', 'workout', 'training']
+        for field in name_fields:
+            if field in activity:
+                logger.info(f"  {field}: {activity[field]}")
+        
+        # 详细查看 activityType
+        if 'activityType' in activity:
+            logger.info(f"\nactivityType 详情: {activity['activityType']}")
+        
+        # 查看是否有 workout 相关数据
+        if 'workout' in activity:
+            logger.info(f"\nworkout 详情: {activity['workout']}")
+        
+        logger.info(f"{'='*60}\n")
+
     def filter_running_activities(self, activities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         过滤出跑步活动
@@ -116,14 +156,25 @@ class GarminDataFetcher:
         """
         running_activities = []
 
-        # 调试：打印所有活动的类型
-        logger.info("调试：打印所有活动的类型")
-        for i, activity in enumerate(activities[:5]):  # 只打印前5个活动的类型
-            activity_type = activity.get('activityType', {})
-            type_key = activity_type.get('typeKey', 'unknown')
-            display_name = activity_type.get('displayName', 'unknown')
-            activity_category = self._get_activity_type(activity)
-            logger.info(f"活动 {i+1}: typeKey={type_key}, displayName={display_name}, category={activity_category}")
+        # 调试：打印第一个活动的完整数据结构
+        if activities:
+            logger.info("调试：打印第一个活动的完整数据结构")
+            self._print_activity_details(activities[0], 1)
+            
+            # 也打印前3个活动的关键字段用于对比
+            logger.info("\n前3个活动的关键字段对比:")
+            for i, activity in enumerate(activities[:3]):
+                activity_type = activity.get('activityType', {})
+                type_key = activity_type.get('typeKey', 'unknown')
+                display_name = activity_type.get('displayName', 'unknown')
+                activity_name = activity.get('activityName', 'N/A')
+                name = activity.get('name', 'N/A')
+                description = activity.get('description', 'N/A')[:50] if activity.get('description') else 'N/A'
+                workout = activity.get('workout', 'N/A')
+                logger.info(f"活动 {i+1}: typeKey={type_key}, displayName={display_name}")
+                logger.info(f"         activityName={activity_name}, name={name}")
+                logger.info(f"         description={description}...")
+                logger.info(f"         workout={workout}")
 
         # 尝试多种可能的跑步活动类型标识
         running_type_keys = ['running', 'run', 'jogging', 'trail_running', 'treadmill_running']
@@ -194,6 +245,48 @@ class GarminDataFetcher:
         else:
             return '未知'
 
+    def _get_workout_name(self, activity: Dict[str, Any]) -> str:
+        """
+        获取训练名称（如"轻松跑"、"间歇跑"等）
+
+        Args:
+            activity: 活动数据
+
+        Returns:
+            训练名称，如果没有则返回空字符串
+        """
+        # 尝试多个可能的字段
+        # 1. activityName - 用户自定义的活动名称
+        if activity.get('activityName'):
+            return activity['activityName']
+        
+        # 2. name - 另一个可能的字段
+        if activity.get('name'):
+            return activity['name']
+        
+        # 3. workout 对象中的名称
+        workout = activity.get('workout', {})
+        if isinstance(workout, dict):
+            workout_name = workout.get('workoutName') or workout.get('name')
+            if workout_name:
+                return workout_name
+        
+        # 4. trainingPlan 中的名称
+        training_plan = activity.get('trainingPlan', {})
+        if isinstance(training_plan, dict):
+            plan_name = training_plan.get('trainingPlanName') or training_plan.get('name')
+            if plan_name:
+                return plan_name
+        
+        # 5. 从 description 中提取（有些用户会在描述中写训练类型）
+        description = activity.get('description', '')
+        if description:
+            # 取第一行或前20个字符
+            first_line = description.split('\n')[0][:30]
+            return first_line
+        
+        return ''
+
     def format_running_data(self, activities: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         格式化跑步数据为 Hugo 所需格式
@@ -239,6 +332,9 @@ class GarminDataFetcher:
             stats['longest_run'] = max(stats['longest_run'], distance)
             total_seconds += duration_seconds
 
+            # 获取训练名称
+            workout_name = self._get_workout_name(activity)
+            
             # 创建格式化的跑步记录
             run_data = {
                 'date': activity.get('startTimeLocal', '').split('T')[0],
@@ -249,7 +345,8 @@ class GarminDataFetcher:
                 'cadence': activity.get('avgRunningCadenceInStepsPerMinute', 0),
                 'route': activity.get('locationName', '未知路线'),
                 'weather': self._get_weather_info(activity),
-                'activity_type': self._get_activity_type(activity)
+                'activity_type': self._get_activity_type(activity),
+                'workout_name': workout_name
             }
 
             formatted_runs.append(run_data)
@@ -453,6 +550,8 @@ def parse_args():
                        help='Garmin 账户邮箱 (也可通过环境变量 GARMIN_EMAIL 设置)')
     parser.add_argument('--password', type=str,
                        help='Garmin 账户密码 (也可通过环境变量 GARMIN_PASSWORD 设置)')
+    parser.add_argument('--debug', action='store_true',
+                       help='打印详细调试信息，查看活动数据结构')
 
     return parser.parse_args()
 
@@ -515,6 +614,11 @@ def main():
 
     # 过滤跑步活动
     running_activities = fetcher.filter_running_activities(activities)
+    
+    # 如果是调试模式，打印更多详细信息
+    if args.debug and running_activities:
+        logger.info("\n调试模式：打印第一个跑步活动的完整数据")
+        fetcher._print_activity_details(running_activities[0], 1)
 
     if not running_activities:
         print("没有找到跑步活动")
@@ -536,6 +640,12 @@ def main():
         print(f"跑步时间: {stats['total_duration']}")
         print(f"平均配速: {stats['avg_pace']}")
         print(f"最长距离: {stats['longest_run']} 公里")
+        
+        # 打印前5条记录的详细信息（包括训练名称）
+        print(f"\n前5条跑步记录:")
+        for i, run in enumerate(running_data['runs'][:5]):
+            workout_info = f" [{run.get('workout_name', '')}]" if run.get('workout_name') else ""
+            print(f"  {i+1}. {run['date']}: {run['distance']}km, {run['pace']}/km{workout_info}")
 
         # 如果是合并模式，打印总统计信息
         if merge and os.path.exists(args.output):
