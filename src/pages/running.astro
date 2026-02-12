@@ -26,6 +26,28 @@ function formatDuration(duration: string): string {
   }
 }
 
+// 将时长转换为分钟数
+function durationToMinutes(duration: string): number {
+  const hourMatch = duration.match(/(\d+)小时/);
+  const minMatch = duration.match(/(\d+)分钟/);
+  const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
+  const mins = minMatch ? parseInt(minMatch[1]) : 0;
+  return hours * 60 + mins;
+}
+
+// 将分钟数转换为时长字符串
+function minutesToDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0 && mins > 0) {
+    return `${hours}小时${mins}分钟`;
+  } else if (hours > 0) {
+    return `${hours}小时`;
+  } else {
+    return `${mins}分钟`;
+  }
+}
+
 // 准备日历数据 - 展示最近12个月，从每个月1号开始
 const today = new Date();
 const currentYear = today.getFullYear();
@@ -39,13 +61,30 @@ const startOfRange = new Date(Date.UTC(startYear, startMonth, 1));
 // 计算结束日期：本月的最后一天
 const endOfRange = new Date(Date.UTC(currentYear, currentMonth + 1, 0));
 
-// 生成日期映射
-const dateMap = new Map();
+// 生成日期映射 - 同一天的多条记录合并
+interface DaySummary {
+  distance: number;
+  duration: string;
+  runs: typeof data.runs;
+}
+
+const dateMap = new Map<string, DaySummary>();
 data.runs.forEach(run => {
   const dateStr = run.date.split(' ')[0];
   const existing = dateMap.get(dateStr);
-  if (!existing || run.distance > existing.distance) {
-    dateMap.set(dateStr, run);
+  if (!existing) {
+    dateMap.set(dateStr, {
+      distance: run.distance,
+      duration: run.duration,
+      runs: [run]
+    });
+  } else {
+    // 合并同一天的记录
+    const totalDistance = existing.distance + run.distance;
+    const totalMinutes = durationToMinutes(existing.duration) + durationToMinutes(run.duration);
+    existing.runs.push(run);
+    existing.distance = totalDistance;
+    existing.duration = minutesToDuration(totalMinutes);
   }
 });
 
@@ -92,7 +131,7 @@ for (let w = 0; w < totalWeeks; w++) {
     const isInRange = currentDate >= startOfRange && currentDate <= endOfRange;
     const intensity = getIntensity(run?.distance || 0);
     const title = run 
-      ? `${dateStr}: ${run.distance.toFixed(1)}km, ${run.duration}`
+      ? `${dateStr}: ${run.distance.toFixed(1)}km, ${run.duration}${run.runs.length > 1 ? ` (${run.runs.length}次)` : ''}`
       : dateStr;
     
     weekDays.push({
@@ -166,7 +205,7 @@ const stats = data.stats;
               {recentRuns.map(run => (
                 <div class="run-card">
                   <div class="run-main">
-                    <time class="run-date">{run.date}</time>
+                    <time class="run-date">{run.date.split(' ')[0]}</time>
                     <span class="run-type">
                       {run.activity_type || '室外跑步'}
                       {run.workout_name && (
