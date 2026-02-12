@@ -542,8 +542,8 @@ def parse_args():
     group.add_argument('--all', action='store_true',
                        help='获取所有跑步数据')
 
-    parser.add_argument('--output', type=str, default='data/running.json',
-                       help='输出文件路径 (默认: data/running.json)')
+    parser.add_argument('--output', type=str, default='src/data/running.json',
+                       help='输出文件路径 (默认: src/data/running.json)')
     parser.add_argument('--no-merge', action='store_true',
                        help='不与现有数据合并，直接覆盖文件')
     parser.add_argument('--email', type=str,
