@@ -112,6 +112,13 @@ python3 scripts/calculate_vdot_for_existing.py
 uv run scripts/get_garmin_data.py --days 30
 ```
 
+## 感谢
+
+本项目参考了以下优秀项目的设计和实现：
+
+- [pbRun](https://github.com/xuandao/pbRun) - 跑步数据展示灵感
+- [Kaze Run](https://kaze.run/dashboard) - 跑步仪表盘界面设计参考
+
 ## 许可证
 
 MIT
