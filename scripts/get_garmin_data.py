@@ -425,13 +425,210 @@ class GarminDataFetcher:
         
         return ''
 
-    def format_running_data(self, activities: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _get_activity_details(self, activity_id: str) -> Dict[str, Any]:
+        """
+        获取活动的详细数据（分段、记圈等）
+        
+        Args:
+            activity_id: 活动ID
+            
+        Returns:
+            详细数据字典
+        """
+        details = {
+            'segments': [],
+            'laps': []
+        }
+        
+        if not self.client or not activity_id:
+            return details
+            
+        try:
+            # 获取活动分段数据（splits）
+            logger.info(f"获取活动 {activity_id} 的详细数据...")
+            splits_data = self.client.get_activity_splits(activity_id)
+            logger.debug(f"splits_data keys: {splits_data.keys() if splits_data else 'None'}")
+            if splits_data and 'lapDTOs' in splits_data:
+                laps = splits_data['lapDTOs']
+                logger.info(f"活动 {activity_id}: 获取到 {len(laps)} 个 lapDTOs")
+                
+                # 处理记圈数据（laps）
+                for lap in laps:
+                    # 获取速度，尝试多个字段
+                    speed = self._get_speed_from_lap(lap)
+                    
+                    # 如果找不到速度，通过距离和时间计算配速
+                    if speed > 0:
+                        pace = self._format_pace(speed)
+                    else:
+                        pace = self._calculate_pace_from_distance_time(
+                            lap.get('distance', 0),
+                            lap.get('duration', 0)
+                        )
+                    
+                    # 获取功率，尝试多个可能的字段名
+                    power = 0
+                    for power_field in ['avgPower', 'averagePower', 'power', 'currentPower']:
+                        power_val = lap.get(power_field, 0)
+                        if power_val and power_val > 0:
+                            power = round(power_val)
+                            break
+                    
+                    # 获取步频，尝试多个可能的字段名
+                    cadence = 0
+                    for cadence_field in ['averageRunCadence', 'avgRunCadence', 'runCadence', 'cadence']:
+                        cadence_val = lap.get(cadence_field, 0)
+                        if cadence_val and cadence_val > 0:
+                            cadence = round(cadence_val)
+                            break
+                    
+                    lap_data = {
+                        'distance': round(lap.get('distance', 0) / 1000, 2),  # km
+                        'pace': pace,
+                        'cadence': cadence,
+                        'power': power,
+                        'heart_rate': round(lap.get('averageHR', 0)),
+                        'hr_zone': self.vdot_calculator.get_hr_zone(lap.get('averageHR', 0))
+                    }
+                    details['laps'].append(lap_data)
+                
+                # 从 lapDTOs 中提取分段数据（segments）
+                # 通常每公里一个分段，根据 distance 字段判断
+                segment_distance = 0
+                current_segment_laps = []
+                segment_number = 1
+                
+                for lap in laps:
+                    lap_distance = lap.get('distance', 0) / 1000  # km
+                    segment_distance += lap_distance
+                    current_segment_laps.append(lap)
+                    
+                    # 当累计距离达到或超过1公里时，创建一个分段
+                    if segment_distance >= 0.99:  # 允许小的误差
+                        # 计算该分段的平均数据
+                        avg_hr = sum(l.get('averageHR', 0) for l in current_segment_laps) / len(current_segment_laps) if current_segment_laps else 0
+                        
+                        # 计算该分段的总距离和总时间
+                        total_distance_m = sum(l.get('distance', 0) for l in current_segment_laps)
+                        total_duration_sec = sum(l.get('duration', 0) for l in current_segment_laps)
+                        
+                        # 通过距离和时间计算配速
+                        pace = self._calculate_pace_from_distance_time(total_distance_m, total_duration_sec)
+                        
+                        segment_data = {
+                            'km': segment_number,
+                            'pace': pace,
+                            'gap': pace,  # GAP 暂时用平均配速
+                            'heart_rate': round(avg_hr) if avg_hr else 0,
+                            'hr_zone': self.vdot_calculator.get_hr_zone(avg_hr)
+                        }
+                        details['segments'].append(segment_data)
+                        
+                        # 重置分段数据
+                        segment_distance = 0
+                        current_segment_laps = []
+                        segment_number += 1
+                
+                # 处理剩余的距离（如果有）
+                if current_segment_laps and segment_distance > 0.1:  # 至少100米才记录
+                    avg_hr = sum(l.get('averageHR', 0) for l in current_segment_laps) / len(current_segment_laps) if current_segment_laps else 0
+                    
+                    # 计算剩余分段的总距离和总时间
+                    total_distance_m = sum(l.get('distance', 0) for l in current_segment_laps)
+                    total_duration_sec = sum(l.get('duration', 0) for l in current_segment_laps)
+                    
+                    # 通过距离和时间计算配速
+                    pace = self._calculate_pace_from_distance_time(total_distance_m, total_duration_sec)
+                    
+                    segment_data = {
+                        'km': round(segment_distance, 2),  # 显示实际距离，如 0.31
+                        'pace': pace,
+                        'gap': pace,
+                        'heart_rate': round(avg_hr) if avg_hr else 0,
+                        'hr_zone': self.vdot_calculator.get_hr_zone(avg_hr)
+                    }
+                    details['segments'].append(segment_data)
+                    
+        except Exception as e:
+            logger.warning(f"获取活动 {activity_id} 详细数据失败: {e}")
+            
+        return details
+    
+    def _get_speed_from_lap(self, lap: Dict[str, Any]) -> float:
+        """
+        从 lap 数据中获取速度（米/秒）
+        尝试多个可能的字段名
+        
+        Args:
+            lap: lap 数据字典
+            
+        Returns:
+            速度（米/秒），如果找不到则返回 0
+        """
+        # 尝试多个可能的字段名
+        speed_fields = ['speed', 'averageSpeed', 'avgSpeed', 'currentSpeed']
+        for field in speed_fields:
+            speed = lap.get(field, 0)
+            if speed and speed > 0:
+                return speed
+        
+        # 如果找不到速度，尝试通过距离和时间计算
+        distance = lap.get('distance', 0)  # 米
+        duration = lap.get('duration', 0)  # 秒
+        if distance > 0 and duration > 0:
+            return distance / duration
+        
+        return 0
+    
+    def _format_pace(self, speed_m_per_s: float) -> str:
+        """
+        将速度（米/秒）转换为配速（分钟/公里）
+        
+        Args:
+            speed_m_per_s: 速度（米/秒）
+            
+        Returns:
+            配速字符串，如 "6'30\""
+        """
+        if speed_m_per_s <= 0:
+            return "0'00\""
+        
+        # 计算每公里所需秒数
+        seconds_per_km = 1000 / speed_m_per_s
+        minutes = int(seconds_per_km // 60)
+        seconds = int(seconds_per_km % 60)
+        
+        return f"{minutes}'{seconds:02d}\""
+    
+    def _calculate_pace_from_distance_time(self, distance_m: float, duration_sec: float) -> str:
+        """
+        根据距离和时间计算配速
+        
+        Args:
+            distance_m: 距离（米）
+            duration_sec: 时间（秒）
+            
+        Returns:
+            配速字符串
+        """
+        if distance_m <= 0 or duration_sec <= 0:
+            return "0'00\""
+        
+        # 计算每公里所需秒数
+        seconds_per_km = duration_sec / (distance_m / 1000)
+        minutes = int(seconds_per_km // 60)
+        seconds = int(seconds_per_km % 60)
+        
+        return f"{minutes}'{seconds:02d}\""
+
+    def format_running_data(self, activities: List[Dict[str, Any]], fetch_details: bool = False) -> Dict[str, Any]:
         """
         格式化跑步数据为 Hugo 所需格式
         包含 VDOT 跑力和训练负荷计算
 
         Args:
             activities: 跑步活动数据
+            fetch_details: 是否获取详细数据（分段、记圈等）
 
         Returns:
             格式化后的数据
@@ -456,6 +653,25 @@ class GarminDataFetcher:
             distance_meters = activity.get('distance', 0)
             duration_seconds = activity.get('duration', 0)
             avg_hr = activity.get('averageHR', 0)
+            
+            # 获取最大心率
+            max_hr = activity.get('maxHR', 0)
+            
+            # 获取步频（转换为步/分钟）
+            cadence = activity.get('avgRunningCadenceInStepsPerMinute', 0)
+            
+            # 获取步幅（米）
+            stride_length = activity.get('avgStrideLength', 0)
+            
+            # 获取功率数据
+            avg_power = activity.get('avgPower', 0)
+            max_power = activity.get('maxPower', 0)
+            
+            # 获取卡路里
+            calories = activity.get('calories', 0)
+            
+            # 获取爬升数据
+            elevation_gain = activity.get('elevationGain', 0)
 
             # 计算配速（分钟/公里）
             pace_seconds = duration_seconds / distance if distance > 0 else 0
@@ -494,12 +710,18 @@ class GarminDataFetcher:
             
             # 创建格式化的跑步记录
             run_data = {
-                'date': activity.get('startTimeLocal', '').split('T')[0],
-                'distance': round(distance, 1),
+                'date': activity.get('startTimeLocal', ''),
+                'distance': round(distance, 2),
                 'duration': duration_str,
                 'pace': pace,
-                'heart_rate': avg_hr,
-                'cadence': activity.get('avgRunningCadenceInStepsPerMinute', 0),
+                'heart_rate': round(avg_hr, 1) if avg_hr else 0,
+                'max_heart_rate': round(max_hr, 1) if max_hr else 0,
+                'cadence': round(cadence) if cadence else 0,
+                'stride_length': round(stride_length, 2) if stride_length else 0,
+                'avg_power': round(avg_power) if avg_power else 0,
+                'max_power': round(max_power) if max_power else 0,
+                'calories': round(calories) if calories else 0,
+                'elevation_gain': round(elevation_gain, 1) if elevation_gain else 0,
                 'route': activity.get('locationName', '未知路线'),
                 'weather': self._get_weather_info(activity),
                 'activity_type': self._get_activity_type(activity),
@@ -508,6 +730,17 @@ class GarminDataFetcher:
                 'training_load': training_load,
                 'hr_zone': hr_zone
             }
+            
+            # 获取详细数据（如果需要）
+            if fetch_details:
+                activity_id = activity.get('activityId')
+                if activity_id:
+                    details = self._get_activity_details(activity_id)
+                    run_data['segments'] = details['segments']
+                    run_data['laps'] = details['laps']
+                    # 调试日志
+                    if details['segments']:
+                        logger.info(f"活动 {activity_id}: 获取到 {len(details['segments'])} 个分段, {len(details['laps'])} 个记圈")
 
             formatted_runs.append(run_data)
 
@@ -617,12 +850,24 @@ class GarminDataFetcher:
         # 处理新跑步记录
         for new_run in new_data.get('runs', []):
             if new_run['date'] in existing_runs_map:
-                # 更新现有记录，添加新字段
+                # 更新现有记录
                 existing_run = existing_runs_map[new_run['date']]
-                # 只更新缺失的字段，保留现有数据
+                # 更新所有字段，但对于列表类型（如 segments, laps），如果新数据有值则覆盖
                 for key, value in new_run.items():
                     if key not in existing_run:
+                        # 字段不存在，直接添加
                         existing_run[key] = value
+                    elif key in ['segments', 'laps']:
+                        # 对于 segments 和 laps，如果新数据有内容则覆盖
+                        if value and len(value) > 0:
+                            existing_run[key] = value
+                    elif key == 'date':
+                        # 日期字段保留原值（用于标识）
+                        pass
+                    else:
+                        # 其他字段：如果新数据有值则更新，否则保留旧值
+                        if value and value != 0 and value != '0\'00"':
+                            existing_run[key] = value
             else:
                 # 添加新记录
                 existing_data['runs'].append(new_run)
@@ -734,6 +979,8 @@ def parse_args():
                        help='Garmin 账户密码 (也可通过环境变量 GARMIN_PASSWORD 设置)')
     parser.add_argument('--debug', action='store_true',
                        help='打印详细调试信息，查看活动数据结构')
+    parser.add_argument('--no-details', action='store_true',
+                       help='不获取详细数据（分段、记圈等），减少 API 调用次数')
 
     return parser.parse_args()
 
@@ -806,8 +1053,8 @@ def main():
         print("没有找到跑步活动")
         return
 
-    # 格式化数据
-    running_data = fetcher.format_running_data(running_activities)
+    # 格式化数据（默认获取详细数据）
+    running_data = fetcher.format_running_data(running_activities, fetch_details=not args.no_details)
 
     # 保存到 Hugo 数据文件
     merge = not args.no_merge

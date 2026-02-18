@@ -224,8 +224,8 @@ const hrZoneColors: Record<number, string> = {
 
             <h2 class="section-title">最近活动</h2>
             <div class="run-list" id="runList" data-all-runs={JSON.stringify(allRuns)} data-hr-zone-labels={JSON.stringify(hrZoneLabels)} data-hr-zone-colors={JSON.stringify(hrZoneColors)}>
-              {recentRuns.map(run => (
-                <div class="run-card">
+              {recentRuns.map((run, index) => (
+                <div class="run-card" data-run-index={index} data-run={JSON.stringify(run)}>
                   <div class="run-main">
                     <div class="run-header">
                       <time class="run-date">{run.date.split(' ')[0]}</time>
@@ -283,6 +283,19 @@ const hrZoneColors: Record<number, string> = {
       }
     </article>
   </div>
+
+  <!-- 运动详情弹窗 -->
+  <div class="run-detail-modal" id="runDetailModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div class="modal-body" id="modalBody">
+        <!-- 动态内容 -->
+      </div>
+    </div>
+  </div>
 </BaseLayout>
 
 <script>
@@ -302,24 +315,44 @@ const hrZoneColors: Record<number, string> = {
     }
   }
 
+  // 心率区间标签
+  const hrZoneLabels = {
+    0: '未知',
+    1: 'Z1 恢复',
+    2: 'Z2 有氧',
+    3: 'Z3 节奏',
+    4: 'Z4 阈值',
+    5: 'Z5 最大'
+  };
+
+  // 心率区间颜色
+  const hrZoneColors = {
+    0: 'var(--text-secondary)',
+    1: '#4ade80',
+    2: '#60a5fa',
+    3: '#fbbf24',
+    4: '#fb923c',
+    5: '#f87171'
+  };
+
   // 查看更多功能
   const loadMoreBtn = document.getElementById('loadMoreBtn');
   const runList = document.getElementById('runList');
   
   if (loadMoreBtn && runList) {
     const allRuns = JSON.parse(runList.dataset.allRuns || '[]');
-    const hrZoneLabels = JSON.parse(runList.dataset.hrZoneLabels || '{}');
-    const hrZoneColors = JSON.parse(runList.dataset.hrZoneColors || '{}');
     let isExpanded = false;
     
     loadMoreBtn.addEventListener('click', () => {
       if (!isExpanded) {
         // 展开显示全部
         const remainingRuns = allRuns.slice(10);
-        remainingRuns.forEach(run => {
+        remainingRuns.forEach((run, idx) => {
           const runCard = document.createElement('div');
           runCard.className = 'run-card';
           runCard.style.animation = 'fadeIn 0.3s ease';
+          runCard.dataset.runIndex = 10 + idx;
+          runCard.dataset.run = JSON.stringify(run);
           
           const hrZoneBadge = run.hr_zone > 0 ? `
             <span 
@@ -373,6 +406,9 @@ const hrZoneColors: Record<number, string> = {
             </div>
           `;
           
+          // 添加点击事件
+          runCard.addEventListener('click', () => openModal(run));
+          
           runList.appendChild(runCard);
         });
         
@@ -401,6 +437,346 @@ const hrZoneColors: Record<number, string> = {
       }
     });
   }
+
+  // 详情弹窗功能
+  const modal = document.getElementById('runDetailModal');
+  const modalBody = document.getElementById('modalBody');
+  const modalClose = document.getElementById('modalClose');
+  const modalOverlay = modal?.querySelector('.modal-overlay');
+
+  function openModal(run) {
+    if (!modal || !modalBody) return;
+    
+    // 生成心率区间徽章
+    const hrZoneBadge = run.hr_zone > 0 ? `
+      <span class="detail-hr-zone" style="background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;">
+        ${hrZoneLabels[run.hr_zone]}
+      </span>
+    ` : '';
+
+    // 生成详细统计数据
+    const detailStats = [];
+    
+    // 基础数据
+    detailStats.push({
+      icon: '📏',
+      label: '距离',
+      value: `${run.distance.toFixed(2)} km`
+    });
+    
+    detailStats.push({
+      icon: '⏱️',
+      label: '移动时间',
+      value: formatDuration(run.duration)
+    });
+    
+    detailStats.push({
+      icon: '⏰',
+      label: '总时间',
+      value: formatDuration(run.duration)
+    });
+    
+    detailStats.push({
+      icon: '🏃',
+      label: '配速',
+      value: `${run.pace} /km`
+    });
+    
+    // 心率数据
+    if (run.heart_rate > 0) {
+      detailStats.push({
+        icon: '❤️',
+        label: '平均心率',
+        value: `${Math.round(run.heart_rate)} bpm`
+      });
+    }
+    
+    // 最大心率（如果有）
+    if (run.max_heart_rate > 0) {
+      detailStats.push({
+        icon: '💓',
+        label: '最大心率',
+        value: `${Math.round(run.max_heart_rate)} bpm`
+      });
+    }
+    
+    // 步频
+    if (run.cadence > 0) {
+      detailStats.push({
+        icon: '👟',
+        label: '步频',
+        value: `${Math.round(run.cadence)} spm`
+      });
+    }
+    
+    // 步幅
+    if (run.stride_length > 0) {
+      detailStats.push({
+        icon: '📐',
+        label: '步幅',
+        value: `${run.stride_length.toFixed(2)} m`
+      });
+    }
+    
+    // 功率
+    if (run.avg_power > 0) {
+      detailStats.push({
+        icon: '⚡',
+        label: '平均功率',
+        value: `${Math.round(run.avg_power)} w`
+      });
+    }
+    
+    if (run.max_power > 0) {
+      detailStats.push({
+        icon: '🔋',
+        label: '最大功率',
+        value: `${Math.round(run.max_power)} w`
+      });
+    }
+    
+    // 卡路里
+    if (run.calories > 0) {
+      detailStats.push({
+        icon: '🔥',
+        label: '热量消耗',
+        value: `${Math.round(run.calories)} kcal`
+      });
+    }
+    
+    // 爬升
+    if (run.elevation_gain > 0) {
+      detailStats.push({
+        icon: '🏔️',
+        label: '累计爬升',
+        value: `${Math.round(run.elevation_gain)} m`
+      });
+    }
+    
+    // VDOT
+    if (run.vdot > 0) {
+      detailStats.push({
+        icon: '📊',
+        label: 'VDOT',
+        value: run.vdot.toFixed(1)
+      });
+    }
+    
+    // 训练负荷
+    if (run.training_load > 0) {
+      detailStats.push({
+        icon: '💪',
+        label: '训练负荷',
+        value: run.training_load
+      });
+    }
+
+    // 辅助函数：将配速字符串转换为秒数
+    function paceToSeconds(paceStr) {
+      if (!paceStr || paceStr === "0'00\"") return 0;
+      const match = paceStr.match(/(\d+)'(\d+)/);
+      if (match) {
+        return parseInt(match[1]) * 60 + parseInt(match[2]);
+      }
+      return 0;
+    }
+    
+    // 辅助函数：计算配速柱状图宽度
+    // 使用非线性映射，让快慢配速差异更明显
+    // 配速范围：4'00" (240s) 到 8'00" (480s)
+    function getPaceBarWidth(paceStr, allPaces = []) {
+      const paceSeconds = paceToSeconds(paceStr);
+      if (paceSeconds === 0) return 0;
+      
+      // 如果有多个配速，使用相对比例
+      if (allPaces.length > 1) {
+        const allSeconds = allPaces.map(p => paceToSeconds(p)).filter(s => s > 0);
+        if (allSeconds.length > 1) {
+          const minPace = Math.min(...allSeconds);
+          const maxPace = Math.max(...allSeconds);
+          const range = maxPace - minPace;
+          if (range > 0) {
+            // 越快的配速（数值越小），宽度越宽
+            // 使用反向映射：(max - current) / range
+            const ratio = (maxPace - paceSeconds) / range;
+            // 最小宽度 30%，最大 100%
+            return Math.max(30, Math.min(100, 30 + ratio * 70));
+          }
+        }
+      }
+      
+      // 默认映射：4'00" = 100%, 8'00" = 20%
+      const minSeconds = 240;  // 4'00"
+      const maxSeconds = 480;  // 8'00"
+      const ratio = (maxSeconds - paceSeconds) / (maxSeconds - minSeconds);
+      return Math.max(20, Math.min(100, 20 + ratio * 80));
+    }
+    
+    // 辅助函数：根据配速获取颜色类
+    // fast: < 5'30" (330s), medium: 5'30" - 7'00" (420s), slow: > 7'00"
+    function getPaceBarClass(paceStr) {
+      const paceSeconds = paceToSeconds(paceStr);
+      if (paceSeconds === 0) return 'medium';
+      
+      if (paceSeconds < 330) {  // < 5'30"
+        return 'fast';
+      } else if (paceSeconds > 420) {  // > 7'00"
+        return 'slow';
+      } else {
+        return 'medium';
+      }
+    }
+
+    // 生成分段数据表格（如果有）
+    let segmentsHtml = '';
+    if (run.segments && run.segments.length > 0) {
+      // 收集所有配速用于相对比例计算
+      const allSegmentPaces = run.segments.map(s => s.pace).filter(p => p && p !== "0'00\"");
+      
+      const segmentRows = run.segments.map((seg, idx) => {
+        const zoneClass = seg.hr_zone ? `zone-${seg.hr_zone}` : '';
+        const zoneLabel = seg.hr_zone ? hrZoneLabels[seg.hr_zone]?.split(' ')[0] : '';
+        const barWidth = getPaceBarWidth(seg.pace, allSegmentPaces);
+        const barClass = getPaceBarClass(seg.pace);
+        return `
+          <tr>
+            <td>${seg.km || idx + 1}</td>
+            <td>
+              <div class="pace-bar">
+                <div class="pace-bar-fill ${barClass}" style="width: ${barWidth}%"></div>
+                <span>${seg.pace}</span>
+              </div>
+            </td>
+            <td>${seg.gap || seg.pace}</td>
+            <td>
+              <span class="hr-zone-tag ${zoneClass}">${seg.heart_rate || '-'} ${zoneLabel}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      segmentsHtml = `
+        <div class="detail-section">
+          <h4 class="section-subtitle">分段数据</h4>
+          <div class="segments-table-wrapper">
+            <table class="segments-table">
+              <thead>
+                <tr>
+                  <th>公里</th>
+                  <th>配速</th>
+                  <th>GAP</th>
+                  <th>心率</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${segmentRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // 生成记圈数据表格（如果有）
+    let lapsHtml = '';
+    if (run.laps && run.laps.length > 0) {
+      const lapRows = run.laps.map((lap, idx) => {
+        const zoneClass = lap.hr_zone ? `zone-${lap.hr_zone}` : '';
+        const zoneLabel = lap.hr_zone ? hrZoneLabels[lap.hr_zone]?.split(' ')[0] : '';
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${lap.distance?.toFixed(2) || '-'}</td>
+            <td>
+              <span class="pace-tag ${zoneClass}">${lap.pace || '-'}</span>
+            </td>
+            <td>${lap.cadence || '-'}</td>
+            <td>${lap.power || '-'}</td>
+            <td>
+              <span class="hr-zone-tag ${zoneClass}">${lap.heart_rate || '-'} ${zoneLabel}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      lapsHtml = `
+        <div class="detail-section">
+          <h4 class="section-subtitle">记圈数据</h4>
+          <div class="laps-table-wrapper">
+            <table class="laps-table">
+              <thead>
+                <tr>
+                  <th>圈</th>
+                  <th>距离(km)</th>
+                  <th>配速</th>
+                  <th>步频</th>
+                  <th>功率</th>
+                  <th>心率</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${lapRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    modalBody.innerHTML = `
+      <div class="detail-header">
+        <h3 class="detail-title">${run.workout_name || '跑步'}</h3>
+        <div class="detail-meta">
+          <span class="detail-date">${run.date}</span>
+          ${hrZoneBadge}
+          <span class="detail-type">${run.activity_type || '室外跑步'}</span>
+        </div>
+      </div>
+      
+      <div class="detail-stats-grid">
+        ${detailStats.map(stat => `
+          <div class="detail-stat-item">
+            <span class="detail-stat-icon">${stat.icon}</span>
+            <span class="detail-stat-label">${stat.label}</span>
+            <span class="detail-stat-value">${stat.value}</span>
+          </div>
+        `).join('')}
+      </div>
+      
+      ${segmentsHtml}
+      ${lapsHtml}
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // 为初始的跑步卡片添加点击事件
+  document.querySelectorAll('.run-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const runData = card.dataset.run;
+      if (runData) {
+        openModal(JSON.parse(runData));
+      }
+    });
+  });
+
+  // 关闭弹窗事件
+  modalClose?.addEventListener('click', closeModal);
+  modalOverlay?.addEventListener('click', closeModal);
+  
+  // ESC键关闭弹窗
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+  });
 </script>
 
 <style>
@@ -424,7 +800,7 @@ const hrZoneColors: Record<number, string> = {
   }
 
   .subtitle {
-    color: var(--text-secondary);
+    color: var(--text-primary);
     margin: 0;
     font-size: 1rem;
   }
@@ -491,7 +867,7 @@ const hrZoneColors: Record<number, string> = {
 
   .stat-desc {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   /* 心率区间标签 */
@@ -527,7 +903,7 @@ const hrZoneColors: Record<number, string> = {
     background: var(--background-secondary);
     border: 1px solid var(--border);
     border-radius: 8px;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
@@ -537,7 +913,7 @@ const hrZoneColors: Record<number, string> = {
   .load-more-btn:hover {
     border-color: var(--accent);
     color: var(--accent);
-    background: var(--background-primary);
+    background: var(--background);
   }
 
   .load-more-btn svg {
@@ -571,6 +947,7 @@ const hrZoneColors: Record<number, string> = {
     align-items: center;
     gap: 0.75rem;
     transition: border-color 0.2s ease;
+    cursor: pointer;
   }
 
   :global(.run-card:hover),
@@ -595,12 +972,12 @@ const hrZoneColors: Record<number, string> = {
 
   :global(.run-date) {
     font-size: 0.8125rem;
-    color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   :global(.run-type) {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     opacity: 0.8;
   }
 
@@ -631,7 +1008,7 @@ const hrZoneColors: Record<number, string> = {
 
   :global(.stat-label) {
     font-size: 0.6875rem;
-    color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   .contribution-graph {
@@ -662,7 +1039,7 @@ const hrZoneColors: Record<number, string> = {
   .month-label {
     position: absolute;
     font-size: 0.625rem;
-    color: var(--text-secondary);
+    color: var(--text-primary);
     white-space: nowrap;
   }
 
@@ -748,6 +1125,290 @@ const hrZoneColors: Record<number, string> = {
   :global([data-theme="dark"]) .day.intensity-4 { background: #39d353; }
   :global([data-theme="dark"]) .day.intensity-5 { background: #56f576; }
 
+  /* 详情弹窗样式 - 使用 :global 因为内容是动态插入的 */
+  :global(.run-detail-modal) {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  :global(.run-detail-modal.active) {
+    display: flex;
+  }
+
+  :global(.modal-overlay) {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  :global(.modal-content) {
+    position: relative;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: modalSlideIn 0.3s ease;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  :global(.modal-close) {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+  }
+
+  :global(.modal-close:hover) {
+    background: var(--border);
+    color: var(--text-primary);
+  }
+
+  :global(.modal-body) {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: 90vh;
+  }
+
+  :global(.detail-header) {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  :global(.detail-title) {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+  }
+
+  :global(.detail-meta) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  :global(.detail-date) {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+  }
+
+  :global(.detail-type) {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+  }
+
+  :global(.detail-hr-zone) {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  :global(.detail-stats-grid) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  :global(.detail-stat-item) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  :global(.detail-stat-icon) {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  :global(.detail-stat-label) {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  :global(.detail-stat-value) {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  :global(.detail-section) {
+    margin-top: 1.5rem;
+  }
+
+  :global(.section-subtitle) {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+  }
+
+  :global(.segments-table-wrapper),
+  :global(.laps-table-wrapper) {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  :global(.segments-table),
+  :global(.laps-table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+
+  :global(.segments-table th),
+  :global(.segments-table td),
+  :global(.laps-table th),
+  :global(.laps-table td) {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  :global(.segments-table th),
+  :global(.laps-table th) {
+    background: var(--background-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  :global(.segments-table tr:last-child td),
+  :global(.laps-table tr:last-child td) {
+    border-bottom: none;
+  }
+
+  :global(.segments-table tr:hover),
+  :global(.laps-table tr:hover) {
+    background: var(--background-secondary);
+  }
+
+  :global(.pace-bar) {
+    position: relative;
+    height: 22px;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+  }
+
+  :global(.pace-bar-fill) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 4px;
+    opacity: 0.35;
+    transition: width 0.3s ease;
+  }
+
+  /* 根据配速显示不同颜色：快=绿色，中=蓝色，慢=橙色/红色 */
+  :global(.pace-bar-fill.fast) {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+  }
+
+  :global(.pace-bar-fill.medium) {
+    background: linear-gradient(90deg, #60a5fa, #3b82f6);
+  }
+
+  :global(.pace-bar-fill.slow) {
+    background: linear-gradient(90deg, #fb923c, #f97316);
+  }
+
+  :global(.pace-bar span) {
+    position: relative;
+    z-index: 1;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  :global(.hr-zone-tag),
+  :global(.pace-tag) {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  :global(.hr-zone-tag.zone-1),
+  :global(.pace-tag.zone-1) {
+    background: #4ade8020;
+    color: #4ade80;
+  }
+
+  :global(.hr-zone-tag.zone-2),
+  :global(.pace-tag.zone-2) {
+    background: #60a5fa20;
+    color: #60a5fa;
+  }
+
+  :global(.hr-zone-tag.zone-3),
+  :global(.pace-tag.zone-3) {
+    background: #fbbf2420;
+    color: #fbbf24;
+  }
+
+  :global(.hr-zone-tag.zone-4),
+  :global(.pace-tag.zone-4) {
+    background: #fb923c20;
+    color: #fb923c;
+  }
+
+  :global(.hr-zone-tag.zone-5),
+  :global(.pace-tag.zone-5) {
+    background: #f8717120;
+    color: #f87171;
+  }
+
   @media (max-width: 768px) {
     h1 {
       font-size: 1.75rem;
@@ -788,6 +1449,29 @@ const hrZoneColors: Record<number, string> = {
     .day {
       border-radius: 1px;
     }
+
+    :global(.modal-content) {
+      max-height: 95vh;
+      margin: 0.5rem;
+    }
+
+    :global(.modal-body) {
+      padding: 1rem;
+    }
+
+    :global(.detail-stats-grid) {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    :global(.detail-stat-item) {
+      padding: 0.5rem;
+    }
+
+    :global(.detail-title) {
+      font-size: 1.125rem;
+      padding-right: 2.5rem;
+    }
   }
 
   @media (max-width: 480px) {
@@ -807,6 +1491,10 @@ const hrZoneColors: Record<number, string> = {
 
     :global(.stat-label) {
       font-size: 0.625rem;
+    }
+
+    :global(.detail-stats-grid) {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>
