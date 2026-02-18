@@ -23,6 +23,7 @@
 - 🗺️ 站点地图（Sitemap）
 - 🔄 文章重定向支持
 - 💬 文章引用（Mentions）
+- 🏃 跑步数据追踪（支持 VDOT 跑力和训练负荷）
 
 ## 项目结构
 
@@ -77,6 +78,39 @@
 2. 使用 Wiki 链接语法 `[[文章标题]]` 创建内部链接
 3. 构建时会自动生成搜索索引和站点地图
 4. URL 重定向配置在 `url-mapping.json` 中
+
+## 跑步数据
+
+跑步数据通过 Garmin Connect API 自动同步，包含以下功能：
+
+- **VDOT 跑力计算**: 基于 Jack Daniels' Running Formula 计算跑力值
+- **训练负荷**: 根据时长和心率区间计算训练负荷
+- **心率区间**: 自动识别 Z1-Z5 心率区间
+
+### 配置心率参数
+
+在 GitHub Secrets 中设置以下可选参数：
+
+- `MAX_HR`: 最大心率（默认 190）
+- `RESTING_HR`: 静息心率（默认 55）
+
+### 自动同步流程
+
+GitHub Actions 每天自动执行以下步骤：
+
+1. **获取最近 30 天的 Garmin 数据** - 增量更新跑步记录
+2. **重新计算所有记录的 VDOT 和训练负荷** - 确保心率参数调整后所有历史数据都更新
+3. **构建并部署网站**
+
+### 本地更新跑步数据
+
+```bash
+# 为现有数据计算 VDOT 和训练负荷
+python3 scripts/calculate_vdot_for_existing.py
+
+# 获取最近 30 天的数据（需要 Garmin 账号）
+uv run scripts/get_garmin_data.py --days 30
+```
 
 ## 许可证
 

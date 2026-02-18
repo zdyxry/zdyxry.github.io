@@ -26,8 +26,19 @@ jobs:
         env:
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+          MAX_HR: ${{ secrets.MAX_HR || '190' }}
+          RESTING_HR: ${{ secrets.RESTING_HR || '55' }}
         run: |
           uv run scripts/get_garmin_data.py --email ${{ secrets.GARMIN_EMAIL }} --password ${{ secrets.GARMIN_PASSWORD }} --days 30
+
+      - name: Recalculate VDOT and training load for all records
+        env:
+          MAX_HR: ${{ secrets.MAX_HR || '190' }}
+          RESTING_HR: ${{ secrets.RESTING_HR || '55' }}
+        run: |
+          # 重新计算所有历史数据的 VDOT 和训练负荷
+          # 这确保当 MAX_HR/RESTING_HR 调整时，所有数据都会更新
+          python3 scripts/calculate_vdot_for_existing.py
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

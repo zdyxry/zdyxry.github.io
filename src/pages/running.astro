@@ -161,6 +161,26 @@ for (let m = 0; m < 12; m++) {
 
 // 统计数据
 const stats = data.stats;
+
+// 心率区间标签
+const hrZoneLabels: Record<number, string> = {
+  0: '未知',
+  1: 'Z1 恢复',
+  2: 'Z2 有氧',
+  3: 'Z3 节奏',
+  4: 'Z4 阈值',
+  5: 'Z5 最大'
+};
+
+// 心率区间颜色
+const hrZoneColors: Record<number, string> = {
+  0: 'var(--text-secondary)',
+  1: '#4ade80',  // 绿色 - 恢复
+  2: '#60a5fa',  // 蓝色 - 有氧
+  3: '#fbbf24',  // 黄色 - 节奏
+  4: '#fb923c',  // 橙色 - 阈值
+  5: '#f87171'   // 红色 - 最大
+};
 ---
 
 <BaseLayout title={title} description={description}>
@@ -175,6 +195,56 @@ const stats = data.stats;
           <p>暂无数据。</p>
         ) : (
           <div>
+            {/* 统计概览卡片 */}
+            <div class="stats-overview">
+              <div class="stat-card">
+                <div class="stat-icon">🏃</div>
+                <div class="stat-content">
+                  <span class="stat-number">{stats.total_runs}</span>
+                  <span class="stat-desc">总次数</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">📏</div>
+                <div class="stat-content">
+                  <span class="stat-number">{stats.total_distance.toFixed(1)}</span>
+                  <span class="stat-desc">总距离 (km)</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-content">
+                  <span class="stat-number">{stats.total_duration}</span>
+                  <span class="stat-desc">总时长</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                  <span class="stat-number">{stats.avg_pace}</span>
+                  <span class="stat-desc">平均配速</span>
+                </div>
+              </div>
+              {stats.avg_vdot && (
+                <div class="stat-card vdot-card">
+                  <div class="stat-icon">💪</div>
+                  <div class="stat-content">
+                    <span class="stat-number">{stats.avg_vdot}</span>
+                    <span class="stat-desc">平均 VDOT</span>
+                  </div>
+                </div>
+              )}
+              {stats.total_training_load && (
+                <div class="stat-card load-card">
+                  <div class="stat-icon">📊</div>
+                  <div class="stat-content">
+                    <span class="stat-number">{stats.total_training_load}</span>
+                    <span class="stat-desc">总训练负荷</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <h2 class="section-title">年度跑步日历</h2>
             <div class="contribution-graph">
               <div class="calendar-wrapper">
@@ -212,6 +282,15 @@ const stats = data.stats;
                         <span class="workout-name"> · {run.workout_name}</span>
                       )}
                     </span>
+                    {/* 心率区间标签 */}
+                    {run.hr_zone > 0 && (
+                      <span 
+                        class="hr-zone-badge"
+                        style={`background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;`}
+                      >
+                        {hrZoneLabels[run.hr_zone]}
+                      </span>
+                    )}
                   </div>
                   <div class="run-stats">
                     <div class="stat">
@@ -226,10 +305,24 @@ const stats = data.stats;
                       <span class="stat-value">{run.pace}</span>
                       <span class="stat-label">配速</span>
                     </div>
-                    {run.heart_rate && (
+                    {run.heart_rate > 0 && (
                       <div class="stat">
                         <span class="stat-value">{Math.round(run.heart_rate)}</span>
                         <span class="stat-label">bpm</span>
+                      </div>
+                    )}
+                    {/* VDOT 显示 */}
+                    {run.vdot && (
+                      <div class="stat vdot-stat">
+                        <span class="stat-value">{run.vdot}</span>
+                        <span class="stat-label">VDOT</span>
+                      </div>
+                    )}
+                    {/* 训练负荷显示 */}
+                    {run.training_load > 0 && (
+                      <div class="stat load-stat">
+                        <span class="stat-value">{run.training_load}</span>
+                        <span class="stat-label">负荷</span>
                       </div>
                     )}
                   </div>
@@ -274,6 +367,85 @@ const stats = data.stats;
     font-weight: 600;
     margin: 2rem 0 1rem 0;
     color: var(--text-primary);
+  }
+
+  /* 统计概览卡片 */
+  .stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .stat-card {
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .stat-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-card.vdot-card {
+    background: linear-gradient(135deg, var(--background-secondary) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+
+  .stat-card.load-card {
+    background: linear-gradient(135deg, var(--background-secondary) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .stat-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .stat-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .stat-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  /* 心率区间标签 */
+  .hr-zone-badge {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    margin-top: 0.25rem;
+  }
+
+  /* VDOT 和训练负荷统计样式 */
+  .vdot-stat .stat-value {
+    color: #8b5cf6;
+    font-weight: 700;
+  }
+
+  .load-stat .stat-value {
+    color: #3b82f6;
+    font-weight: 700;
   }
 
   .run-list {
@@ -468,6 +640,19 @@ const stats = data.stats;
       font-size: 1.75rem;
     }
 
+    .stats-overview {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .stat-card {
+      padding: 0.75rem;
+    }
+
+    .stat-number {
+      font-size: 1.1rem;
+    }
+
     .run-card {
       flex-direction: column;
       align-items: flex-start;
@@ -476,12 +661,22 @@ const stats = data.stats;
 
     .run-stats {
       width: 100%;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 0.5rem;
     }
 
     .day {
       border-radius: 1px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-overview {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .run-stats {
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 </style>
