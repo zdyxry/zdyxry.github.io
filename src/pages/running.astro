@@ -9,6 +9,8 @@ const description = '这里展示我的跑步记录统计与列表。';
 
 const data = runningJson;
 const recentRuns = data.runs.slice(0, 10);
+const allRuns = data.runs;
+const hasMoreRuns = data.runs.length > 10;
 
 // 转换时长格式："1小时16分钟" -> "1h16m", "41分钟" -> "41m"
 function formatDuration(duration: string): string {
@@ -195,56 +197,6 @@ const hrZoneColors: Record<number, string> = {
           <p>暂无数据。</p>
         ) : (
           <div>
-            {/* 统计概览卡片 */}
-            <div class="stats-overview">
-              <div class="stat-card">
-                <div class="stat-icon">🏃</div>
-                <div class="stat-content">
-                  <span class="stat-number">{stats.total_runs}</span>
-                  <span class="stat-desc">总次数</span>
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-icon">📏</div>
-                <div class="stat-content">
-                  <span class="stat-number">{stats.total_distance.toFixed(1)}</span>
-                  <span class="stat-desc">总距离 (km)</span>
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-icon">⏱️</div>
-                <div class="stat-content">
-                  <span class="stat-number">{stats.total_duration}</span>
-                  <span class="stat-desc">总时长</span>
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-icon">⚡</div>
-                <div class="stat-content">
-                  <span class="stat-number">{stats.avg_pace}</span>
-                  <span class="stat-desc">平均配速</span>
-                </div>
-              </div>
-              {stats.avg_vdot && (
-                <div class="stat-card vdot-card">
-                  <div class="stat-icon">💪</div>
-                  <div class="stat-content">
-                    <span class="stat-number">{stats.avg_vdot}</span>
-                    <span class="stat-desc">平均 VDOT</span>
-                  </div>
-                </div>
-              )}
-              {stats.total_training_load && (
-                <div class="stat-card load-card">
-                  <div class="stat-icon">📊</div>
-                  <div class="stat-content">
-                    <span class="stat-number">{stats.total_training_load}</span>
-                    <span class="stat-desc">总训练负荷</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
             <h2 class="section-title">年度跑步日历</h2>
             <div class="contribution-graph">
               <div class="calendar-wrapper">
@@ -271,26 +223,27 @@ const hrZoneColors: Record<number, string> = {
             </div>
 
             <h2 class="section-title">最近活动</h2>
-            <div class="run-list">
+            <div class="run-list" id="runList" data-all-runs={JSON.stringify(allRuns)} data-hr-zone-labels={JSON.stringify(hrZoneLabels)} data-hr-zone-colors={JSON.stringify(hrZoneColors)}>
               {recentRuns.map(run => (
                 <div class="run-card">
                   <div class="run-main">
-                    <time class="run-date">{run.date.split(' ')[0]}</time>
+                    <div class="run-header">
+                      <time class="run-date">{run.date.split(' ')[0]}</time>
+                      {run.hr_zone > 0 && (
+                        <span 
+                          class="hr-zone-badge"
+                          style={`background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;`}
+                        >
+                          {hrZoneLabels[run.hr_zone]}
+                        </span>
+                      )}
+                    </div>
                     <span class="run-type">
                       {run.activity_type || '室外跑步'}
                       {run.workout_name && (
                         <span class="workout-name"> · {run.workout_name}</span>
                       )}
                     </span>
-                    {/* 心率区间标签 */}
-                    {run.hr_zone > 0 && (
-                      <span 
-                        class="hr-zone-badge"
-                        style={`background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;`}
-                      >
-                        {hrZoneLabels[run.hr_zone]}
-                      </span>
-                    )}
                   </div>
                   <div class="run-stats">
                     <div class="stat">
@@ -305,20 +258,12 @@ const hrZoneColors: Record<number, string> = {
                       <span class="stat-value">{run.pace}</span>
                       <span class="stat-label">配速</span>
                     </div>
-                    {run.heart_rate > 0 && (
-                      <div class="stat">
-                        <span class="stat-value">{Math.round(run.heart_rate)}</span>
-                        <span class="stat-label">bpm</span>
-                      </div>
-                    )}
-                    {/* VDOT 显示 */}
                     {run.vdot && (
                       <div class="stat vdot-stat">
                         <span class="stat-value">{run.vdot}</span>
                         <span class="stat-label">VDOT</span>
                       </div>
                     )}
-                    {/* 训练负荷显示 */}
                     {run.training_load > 0 && (
                       <div class="stat load-stat">
                         <span class="stat-value">{run.training_load}</span>
@@ -329,12 +274,136 @@ const hrZoneColors: Record<number, string> = {
                 </div>
               ))}
             </div>
+            {hasMoreRuns && (
+              <button class="load-more-btn" id="loadMoreBtn">
+                <span>更多</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            )}
           </div>
         )
       }
     </article>
   </div>
 </BaseLayout>
+
+<script>
+  // 时长格式化函数
+  function formatDuration(duration) {
+    const hourMatch = duration.match(/(\d+)小时/);
+    const minMatch = duration.match(/(\d+)分钟/);
+    const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
+    const mins = minMatch ? parseInt(minMatch[1]) : 0;
+    
+    if (hours > 0 && mins > 0) {
+      return `${hours}h${mins}m`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      return `${mins}m`;
+    }
+  }
+
+  // 查看更多功能
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const runList = document.getElementById('runList');
+  
+  if (loadMoreBtn && runList) {
+    const allRuns = JSON.parse(runList.dataset.allRuns || '[]');
+    const hrZoneLabels = JSON.parse(runList.dataset.hrZoneLabels || '{}');
+    const hrZoneColors = JSON.parse(runList.dataset.hrZoneColors || '{}');
+    let isExpanded = false;
+    
+    loadMoreBtn.addEventListener('click', () => {
+      if (!isExpanded) {
+        // 展开显示全部
+        const remainingRuns = allRuns.slice(10);
+        remainingRuns.forEach(run => {
+          const runCard = document.createElement('div');
+          runCard.className = 'run-card';
+          runCard.style.animation = 'fadeIn 0.3s ease';
+          
+          const hrZoneBadge = run.hr_zone > 0 ? `
+            <span 
+              class="hr-zone-badge"
+              style="background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;"
+            >
+              ${hrZoneLabels[run.hr_zone]}
+            </span>
+          ` : '';
+          
+          const vdotStat = run.vdot ? `
+            <div class="stat vdot-stat">
+              <span class="stat-value">${run.vdot}</span>
+              <span class="stat-label">VDOT</span>
+            </div>
+          ` : '';
+          
+          const loadStat = run.training_load > 0 ? `
+            <div class="stat load-stat">
+              <span class="stat-value">${run.training_load}</span>
+              <span class="stat-label">负荷</span>
+            </div>
+          ` : '';
+          
+          runCard.innerHTML = `
+            <div class="run-main">
+              <div class="run-header">
+                <time class="run-date">${run.date.split(' ')[0]}</time>
+                ${hrZoneBadge}
+              </div>
+              <span class="run-type">
+                ${run.activity_type || '室外跑步'}
+                ${run.workout_name ? `<span class="workout-name"> · ${run.workout_name}</span>` : ''}
+              </span>
+            </div>
+            <div class="run-stats">
+              <div class="stat">
+                <span class="stat-value">${run.distance.toFixed(1)}</span>
+                <span class="stat-label">km</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">${formatDuration(run.duration)}</span>
+                <span class="stat-label">时长</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">${run.pace}</span>
+                <span class="stat-label">配速</span>
+              </div>
+              ${vdotStat}
+              ${loadStat}
+            </div>
+          `;
+          
+          runList.appendChild(runCard);
+        });
+        
+        loadMoreBtn.innerHTML = `
+          <span>收起</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(180deg);"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        `;
+        isExpanded = true;
+      } else {
+        // 收起，只保留前10条
+        const allCards = runList.querySelectorAll('.run-card');
+        allCards.forEach((card, index) => {
+          if (index >= 10) {
+            card.remove();
+          }
+        });
+        
+        loadMoreBtn.innerHTML = `
+          <span>更多</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        `;
+        isExpanded = false;
+        
+        // 滚动回列表顶部
+        runList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
+</script>
 
 <style>
   .running-page {
@@ -428,96 +497,142 @@ const hrZoneColors: Record<number, string> = {
   }
 
   /* 心率区间标签 */
-  .hr-zone-badge {
+  :global(.hr-zone-badge) {
     display: inline-block;
-    font-size: 0.6875rem;
+    font-size: 0.625rem;
     font-weight: 600;
-    padding: 0.125rem 0.5rem;
-    border-radius: 12px;
-    margin-top: 0.25rem;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 10px;
+    line-height: 1.4;
   }
 
   /* VDOT 和训练负荷统计样式 */
-  .vdot-stat .stat-value {
+  :global(.vdot-stat .stat-value) {
     color: #8b5cf6;
     font-weight: 700;
   }
 
-  .load-stat .stat-value {
+  :global(.load-stat .stat-value) {
     color: #3b82f6;
     font-weight: 700;
   }
 
-  .run-list {
+  /* 查看更多按钮 */
+  .load-more-btn {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-  .run-card {
-    padding: 1rem 1.25rem;
+  .load-more-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--background-primary);
+  }
+
+  .load-more-btn svg {
+    transition: transform 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  :global(.run-list) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  :global(.run-card) {
+    padding: 0.625rem 1rem;
     background: var(--background-secondary);
     border: 1px solid var(--border);
     border-radius: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     transition: border-color 0.2s ease;
   }
 
-  .run-card:hover,
-  .run-card:focus-visible {
+  :global(.run-card:hover),
+  :global(.run-card:focus-visible) {
     border-color: var(--accent);
     outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 8px;
   }
 
-  .run-main {
+  :global(.run-main) {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.125rem;
   }
 
-  .run-date {
-    font-size: 0.875rem;
+  :global(.run-header) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  :global(.run-date) {
+    font-size: 0.8125rem;
     color: var(--text-secondary);
   }
 
-  .run-type {
-    font-size: 0.8125rem;
+  :global(.run-type) {
+    font-size: 0.75rem;
     color: var(--text-secondary);
     opacity: 0.8;
   }
 
-  .workout-name {
+  :global(.workout-name) {
     color: var(--accent);
     font-weight: 500;
   }
 
-  .run-stats {
-    display: grid;
-    grid-template-columns: 70px 70px 70px 60px;
-    gap: 1rem;
+  :global(.run-stats) {
+    display: flex;
+    gap: 0.75rem;
   }
 
-  .stat {
+  :global(.stat) {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.125rem;
+    gap: 0.0625rem;
+    min-width: 48px;
   }
 
-  .stat-value {
-    font-size: 1rem;
+  :global(.stat-value) {
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-primary);
     text-align: center;
   }
 
-  .stat-label {
-    font-size: 0.75rem;
+  :global(.stat-label) {
+    font-size: 0.6875rem;
     color: var(--text-secondary);
   }
 
@@ -653,16 +768,23 @@ const hrZoneColors: Record<number, string> = {
       font-size: 1.1rem;
     }
 
-    .run-card {
+    :global(.run-card) {
       flex-direction: column;
       align-items: flex-start;
-      gap: 0.75rem;
+      gap: 0.5rem;
+      padding: 0.75rem;
     }
 
-    .run-stats {
+    :global(.run-stats) {
       width: 100%;
-      grid-template-columns: repeat(3, 1fr);
+      display: flex;
+      justify-content: space-between;
       gap: 0.5rem;
+    }
+
+    :global(.stat) {
+      min-width: auto;
+      flex: 1;
     }
 
     .day {
@@ -675,8 +797,18 @@ const hrZoneColors: Record<number, string> = {
       grid-template-columns: repeat(2, 1fr);
     }
 
-    .run-stats {
-      grid-template-columns: repeat(3, 1fr);
+    :global(.run-stats) {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.375rem;
+    }
+
+    :global(.stat-value) {
+      font-size: 0.8125rem;
+    }
+
+    :global(.stat-label) {
+      font-size: 0.625rem;
     }
   }
 </style>
