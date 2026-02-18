@@ -164,6 +164,15 @@ for (let m = 0; m < 12; m++) {
 // 统计数据
 const stats = data.stats;
 
+// 周期统计数据
+const periodStats = stats.period_stats || {};
+const periodLabels: Record<string, string> = {
+  week: '周',
+  month: '月', 
+  year: '年',
+  total: '总'
+};
+
 // 心率区间标签
 const hrZoneLabels: Record<number, string> = {
   0: '未知',
@@ -197,7 +206,77 @@ const hrZoneColors: Record<number, string> = {
           <p>暂无数据。</p>
         ) : (
           <div>
-            <h2 class="section-title">年度跑步日历</h2>
+            {/* 周期统计卡片 - Tab 切换 */}
+            {periodStats && Object.keys(periodStats).length > 0 && (
+              <div class="period-stats-section" id="periodStats">
+                <div class="period-stats-card">
+                  {/* Tab 导航 */}
+                  <div class="period-tab-nav" id="periodTabNav">
+                    {(['week', 'month', 'year', 'total'] as const).map((period) => {
+                      const pStats = periodStats[period];
+                      if (!pStats) return null;
+                      const isActive = period === 'week';
+                      return (
+                        <button 
+                          class={`period-tab-btn ${isActive ? 'active' : ''}`}
+                          data-period={period}
+                        >
+                          {periodLabels[period]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Tab 内容 */}
+                  <div class="period-tab-content">
+                    {(['week', 'month', 'year', 'total'] as const).map((period) => {
+                      const pStats = periodStats[period];
+                      if (!pStats) return null;
+                      const isActive = period === 'week';
+                      return (
+                        <div 
+                          class={`period-panel ${isActive ? 'active' : ''}`}
+                          data-panel={period}
+                        >
+                          <div class="period-panel-header">
+                            <span class="period-panel-title">{periodLabels[period]}数据统计</span>
+                            <span class="period-panel-count">共计跑步 {pStats.total_activities} 次</span>
+                          </div>
+                          <div class="period-panel-grid">
+                            <div class="period-panel-stat">
+                              <span class="period-panel-value">{pStats.avg_vdot?.toFixed(1) ?? '--'}</span>
+                              <span class="period-panel-label">当前跑力</span>
+                            </div>
+                            <div class="period-panel-stat">
+                              <span class="period-panel-value">{pStats.total_distance.toFixed(0)}</span>
+                              <span class="period-panel-label">距离(公里)</span>
+                            </div>
+                            <div class="period-panel-stat">
+                              <span class="period-panel-value">{pStats.avg_pace}</span>
+                              <span class="period-panel-label">平均配速</span>
+                            </div>
+                            <div class="period-panel-stat">
+                              <span class="period-panel-value">{pStats.total_training_load > 0 ? pStats.total_training_load.toFixed(0) : '--'}</span>
+                              <span class="period-panel-label">训练负荷</span>
+                            </div>
+                            <div class="period-panel-stat">
+                              <span class="period-panel-value">{pStats.total_duration_hours.toFixed(1)}</span>
+                              <span class="period-panel-label">总时长(小时)</span>
+                            </div>
+                            <div class="period-panel-stat">
+                              <span class="period-panel-value">{pStats.avg_heart_rate ?? '--'}</span>
+                              <span class="period-panel-label">平均心率</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+
             <div class="contribution-graph">
               <div class="calendar-wrapper">
                 <div class="calendar">
@@ -299,6 +378,34 @@ const hrZoneColors: Record<number, string> = {
 </BaseLayout>
 
 <script>
+  // 周期统计 Tab 切换
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabNav = document.getElementById('periodTabNav');
+    if (tabNav) {
+      tabNav.addEventListener('click', function(e) {
+        const btn = e.target.closest('.period-tab-btn');
+        if (!btn) return;
+        
+        const period = btn.dataset.period;
+        if (!period) return;
+        
+        // 切换按钮状态
+        document.querySelectorAll('.period-tab-btn').forEach(b => {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        
+        // 切换面板内容
+        document.querySelectorAll('.period-panel').forEach(panel => {
+          panel.classList.remove('active');
+          if (panel.dataset.panel === period) {
+            panel.classList.add('active');
+          }
+        });
+      });
+    }
+  });
+
   // 时长格式化函数
   function formatDuration(duration) {
     const hourMatch = duration.match(/(\d+)小时/);
@@ -825,6 +932,162 @@ const hrZoneColors: Record<number, string> = {
     font-weight: 600;
     margin: 2rem 0 1rem 0;
     color: var(--text-primary);
+  }
+
+  /* 周期统计卡片 - Tab 样式 */
+  .period-stats-section {
+    margin: 1.5rem 0;
+  }
+
+  .period-stats-card {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* Tab 导航 */
+  .period-tab-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 1rem;
+    background: var(--background-secondary);
+  }
+
+  .period-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.875rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .period-tab-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .period-tab-btn.active {
+    color: var(--accent);
+  }
+
+  .period-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  /* Tab 内容 */
+  .period-tab-content {
+    padding: 1.25rem;
+  }
+
+  .period-panel {
+    display: none;
+  }
+
+  .period-panel.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .period-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .period-panel-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .period-panel-count {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .period-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem 0.5rem;
+    width: 100%;
+  }
+
+  .period-panel-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+  }
+
+  .period-panel-stat:hover {
+    background: var(--background-secondary);
+  }
+
+  .period-panel-value {
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+
+  .period-panel-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .period-tab-nav {
+      padding: 0 0.75rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .period-tab-btn {
+      padding: 0.75rem 1rem;
+      font-size: 0.8125rem;
+    }
+
+    .period-tab-content {
+      padding: 1rem;
+    }
+
+    .period-panel-grid {
+      gap: 1rem 0.25rem;
+    }
+
+    .period-panel-stat {
+      padding: 0.375rem;
+    }
+
+    .period-panel-value {
+      font-size: 1.125rem;
+    }
+
+    .period-panel-label {
+      font-size: 0.6875rem;
+    }
   }
 
   /* 统计概览卡片 */

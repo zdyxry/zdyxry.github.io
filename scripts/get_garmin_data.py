@@ -883,7 +883,7 @@ class GarminDataFetcher:
     def _recalculate_stats(self, runs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         重新计算统计数据
-        包含 VDOT 和训练负荷
+        包含 VDOT 和训练负荷，以及各周期统计
 
         Args:
             runs: 跑步记录列表
@@ -898,7 +898,8 @@ class GarminDataFetcher:
             'avg_pace': "0'00\"",
             'longest_run': 0,
             'avg_vdot': 0,
-            'total_training_load': 0
+            'total_training_load': 0,
+            'period_stats': {}
         }
 
         total_seconds = 0
@@ -953,7 +954,158 @@ class GarminDataFetcher:
         stats['total_distance'] = round(stats['total_distance'], 1)
         stats['longest_run'] = round(stats['longest_run'], 1)
 
+        # 计算各周期统计
+        stats['period_stats'] = self._calculate_period_stats(runs)
+
         return stats
+
+    def _calculate_period_stats(self, runs: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        计算各周期（周、月、年、总）的统计数据
+        
+        Args:
+            runs: 跑步记录列表
+            
+        Returns:
+            各周期统计数据
+        """
+        from datetime import datetime, timedelta
+        
+        now = datetime.now()
+        
+        # 定义各周期的日期范围
+        period_ranges = {
+            'week': {
+                'start': now - timedelta(days=7),
+                'end': now
+            },
+            'month': {
+                'start': datetime(now.year, now.month, 1),
+                'end': now
+            },
+            'year': {
+                'start': datetime(now.year, 1, 1),
+                'end': now
+            },
+            'total': {
+                'start': datetime.min,
+                'end': now
+            }
+        }
+        
+        period_stats = {}
+        
+        for period_name, date_range in period_ranges.items():
+            period_data = self._calculate_stats_for_period(
+                runs, 
+                date_range['start'], 
+                date_range['end']
+            )
+            period_stats[period_name] = period_data
+        
+        return period_stats
+    
+    def _calculate_stats_for_period(
+        self, 
+        runs: List[Dict[str, Any]], 
+        start_date: datetime, 
+        end_date: datetime
+    ) -> Dict[str, Any]:
+        """
+        计算指定周期内的统计数据
+        
+        Args:
+            runs: 跑步记录列表
+            start_date: 开始日期
+            end_date: 结束日期
+            
+        Returns:
+            周期统计数据
+        """
+        # 过滤该周期内的跑步记录
+        period_runs = []
+        for run in runs:
+            try:
+                run_date = datetime.strptime(run['date'].split(' ')[0], '%Y-%m-%d')
+                if start_date <= run_date <= end_date:
+                    period_runs.append(run)
+            except (ValueError, IndexError):
+                continue
+        
+        if not period_runs:
+            return {
+                'total_activities': 0,
+                'total_distance': 0,
+                'total_duration_hours': 0,
+                'avg_pace': "--",
+                'avg_heart_rate': None,
+                'avg_vdot': None,
+                'total_training_load': 0
+            }
+        
+        # 计算统计数据
+        total_distance = sum(r['distance'] for r in period_runs)
+        total_activities = len(period_runs)
+        total_training_load = sum(r.get('training_load', 0) for r in period_runs)
+        
+        # 计算总时长（秒）
+        total_seconds = 0
+        total_hr = 0
+        hr_count = 0
+        total_vdot = 0
+        vdot_count = 0
+        
+        for run in period_runs:
+            # 解析时长
+            duration_str = run['duration']
+            duration_parts = duration_str.replace('小时', ':').replace('分钟', '').split(':')
+            if len(duration_parts) == 2:
+                hours = int(duration_parts[0])
+                minutes = int(duration_parts[1])
+                total_seconds += hours * 3600 + minutes * 60
+            else:
+                minutes = int(duration_parts[0])
+                total_seconds += minutes * 60
+            
+            # 累加心率
+            hr = run.get('heart_rate', 0)
+            if hr and hr > 0:
+                total_hr += hr
+                hr_count += 1
+            
+            # 累加 VDOT
+            vdot = run.get('vdot')
+            if vdot and vdot > 0:
+                total_vdot += vdot
+                vdot_count += 1
+        
+        # 计算平均配速
+        if total_distance > 0:
+            avg_pace_seconds = total_seconds / total_distance
+            avg_pace_minutes = int(avg_pace_seconds // 60)
+            avg_pace_remaining_seconds = int(avg_pace_seconds % 60)
+            avg_pace = f"{avg_pace_minutes}'{avg_pace_remaining_seconds:02d}\""
+        else:
+            avg_pace = "--"
+        
+        # 计算平均心率
+        avg_hr = round(total_hr / hr_count) if hr_count > 0 else None
+        
+        # 计算平均 VDOT
+        avg_vdot = round(total_vdot / vdot_count, 1) if vdot_count > 0 else None
+        
+        # 总时长（小时）
+        total_hours = round(total_seconds / 3600, 1)
+        
+        return {
+            'total_activities': total_activities,
+            'total_distance': round(total_distance, 1),
+            'total_duration_hours': total_hours,
+            'avg_pace': avg_pace,
+            'avg_heart_rate': avg_hr,
+            'avg_vdot': avg_vdot,
+            'total_training_load': total_training_load
+        }
 
 
 def parse_args():
