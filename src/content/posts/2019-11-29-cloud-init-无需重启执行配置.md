@@ -60,7 +60,7 @@ hostname: yiran
 
 我们在 Cloud-init 自动配置时，执行命令 echo 保存信息到文件中
 
-```she l l
+```bash
 [root@localhost nocloud]# pwd
 /var/lib/cloud/seed/nocloud
 [root@localhost nocloud]# cat user-data

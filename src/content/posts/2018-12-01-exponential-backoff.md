@@ -51,7 +51,7 @@ WHILE (retry AND (retries < MAX_RETRIES))
 
 ### Ansible linux reboot  plugin
 
-```pyth
+```python
 fail_count = 0
 max_fail_sleep = 12
 

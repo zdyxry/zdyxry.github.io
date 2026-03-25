@@ -30,7 +30,7 @@ Python Logging 最佳实践
 尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
 一些 print ，在开发结束时删除这些 print。向下面这样：
 
-```Python
+```python
 print 'Start reading database'
 records = model.read_recrods()
 print '# records', records
@@ -51,7 +51,7 @@ print 'done'
 所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样：
 
-```Python
+```python
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ logger.info('Finish updating records')
 
 你可以运行得到下面输出：
 
-```Python
+```python
 INFO:__main__:Start reading database
 INFO:__main__:Updating records ...
 INFO:__main__:Finish updating records
@@ -86,7 +86,7 @@ INFO:__main__:Finish updating records
 
 输出结果：
 
-```Python
+```python
 INFO:__main__:Start reading database
 DEBUG:__main__:Records: {'john': 55, 'tom': 66}
 INFO:__main__:Updating records ...
@@ -96,7 +96,7 @@ INFO:__main__:Finish updating records
 像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定
 如何处理这些信息.举个例子你可以使用 FileHandler 让日志输出到一个文件中：
 
-```Python
+```python
 import logging
 
 logger = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ logger.info('Hello baby')
 调试过程中开启。我只使用调试级别来获取详细的调试信息，特别是当数据量很大或者频率
 很高的时候，比如在一个 for 循环中记录某些内部的状态变化。
 
-```Python
+```python
 def complex_algorithm(items):
     for i, item in enumerate(items):
         # do some complex algorithm computation
@@ -137,7 +137,7 @@ def complex_algorithm(items):
 
 对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：
 
-```Python
+```python
 def handle_request(request):
     logger.info('Handling request %s', request)
     # handle request here
@@ -153,7 +153,7 @@ def start_service():
 当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如
 当一个用户登录时使用了错误的密码或者连接很慢时：
 
-```Python
+```python
 def authenticate(user_name, password, ip_address):
     if user_name != USER_NAME and password != PASSWORD:
         logger.warn('Login attempt to %s from IP %s', user_name, ip_address)
@@ -163,7 +163,7 @@ def authenticate(user_name, password, ip_address):
 
 当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：
 
-```Python
+```python
 def get_user_by_id(user_id):
     user = db.read_user(user_id)
     if user is None:
@@ -188,7 +188,7 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
 异常并与 traceback 一起记录他们。像这个例子：
 
-```Python
+```python
 try:
     open('/path/to/does/not/exist', 'rb')
 except (SystemExit, KeyboardInterrupt):
@@ -200,7 +200,7 @@ except Exception, e:
 通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以
 看到这样的结果：
 
-```Python
+```python
 ERROR:__main__:Failed to open file
 Traceback (most recent call last):
   File "example.py", line 6, in <module>
@@ -218,7 +218,7 @@ IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
 
 ---
 my_module.py
-```Python
+```python
 import logging
 
 logger = logging.getLogger(__name__)
@@ -235,7 +235,7 @@ class Bar(object):
 
 main.py
 
-```Python
+```python
 import logging
 
 # load my module
@@ -284,7 +284,7 @@ datefmt=
 默认禁用已经存在的 logger。 所以配置文件中的配置不会在你的 logger 中生效。
 这适合在你需要的时候获取 logger。 你可以像下面这样编写：
 
-```Python
+```python
 import logging
 
 def foo():
@@ -304,7 +304,7 @@ class Bar(object):
 从 Python 2.7 开始，添加一个新的参数名为 "disable_existing_loggers" 到 fileConfig 和 
 dictConfig，通过将其设置为 False，可以解决上面提到的问题。比如：
 
-```Python
+```python
 import logging
 import logging.config
 
@@ -456,7 +456,7 @@ root:
 
 以下配置展示了如何从 json 文件中读取 logging 配置：
 
-```Python
+```python
 import os
 import json
 import logging.config

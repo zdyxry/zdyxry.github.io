@@ -68,7 +68,7 @@ description:
 
 最近看到了很多次 PydanticAI ，自己实际上在代码场景下除了 Copilot，貌似没有使用 AI 解决实际的问题。正好我有一个需求场景是很适合 AI 来做：笔记中的拼写错误。于是花了些时间阅读了 PydanticAI 文档，跟着示例走了一遍，发现这个有些玄学，比如关于 Result 的示例中，预期是可以将 AI 返回的结果转换为特定的数据结构的，我预想是将笔记内容给 Agent 后，Agent 可以返回给我成一个特定的数据类型，然后我解析数据类型来更新笔记，但是实际上我试了多个 Model，都没有得到预期的结果。
 
-```Python
+```python
 from pydantic import BaseModel
 
 from pydantic_ai import Agent

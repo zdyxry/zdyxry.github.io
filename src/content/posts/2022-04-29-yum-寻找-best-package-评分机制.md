@@ -198,7 +198,7 @@ def _bestPackageFromList(self, pkglist, req=None):
 终于找到最关键的部分： `_compare_providers` ，这是一个巨大的函数，300行，根据注释可以看到主要用户给 pkg 打分：
 
 Github: https://github.com/rpm-software-management/yum/blob/master/yum/depsolve.py#L1465
-```Python
+```python
 def _compare_providers(self, pkgs, reqpo, req=None):
     """take the list of pkgs and score them based on the requesting package
         return a dictionary of po=score"""

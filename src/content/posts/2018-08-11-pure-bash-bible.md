@@ -16,7 +16,7 @@ tags:
 
 ### 删除字符串前后空格
 
-```Bash
+```bash
 trim_string（）{ # Ups：trim_string“example string” 
     ： “ $ {1 ＃” $ {1 %% [！[：space：]] * } “ } ”
     ： “ $ {_ ％” $ {_ ## * [！[：space：]]} “ } ”
@@ -27,7 +27,7 @@ $ name = “ John Black ” $ trim_string “ $ name ” John Black
 ```
 
 ### 删除字符串中所有空格
-```Bash
+```bash
 # shellcheck disable=SC2086,SC2048
 trim_all() {
     # Usage: trim_all "   example   string    "
@@ -46,7 +46,7 @@ John Black is my name.
 
 ### 根据指定分隔符分隔字符串
 
-```source-shell
+```bash
 split() {
    # Usage: split "string" "delimiter"
    IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"
@@ -79,7 +79,7 @@ john
 
 ### 反转
 
-```Bash
+```bash
 reverse_array() {
     # Usage: reverse_array "array"
     shopt -s extdebug
@@ -101,7 +101,7 @@ red
 ```
 
 ### 删除重复项
-```Bash
+```bash
 remove_array_dups() {
     # Usage: remove_array_dups "array"
     declare -A tmp_array
@@ -128,7 +128,7 @@ blue
 
 ### 随机选择
 
-```Bash
+```bash
 random_array_element() {
     # Usage: random_array_element "array"
     local arr=("$@")
@@ -146,7 +146,7 @@ $ random_array_element 1 2 3 4 5 6 7
 ## 文件
 ### 获取文件绝对路径
 
-```Bash
+```bash
 dirname() {
     # Usage: dirname "path"
     printf '%s\n' "${1%/*}/"
@@ -160,7 +160,7 @@ $ dirname ~/Pictures/Downloads/
 
 ### 获取文件相对路径
 
-```Bash
+```bash
 basename() {
     # Usage: basename "path"
     : "${1%/}"
@@ -176,7 +176,7 @@ Downloads
 ## 进度条
 ### 打印进度条
 
-```Bash
+```bash
 bar() {
     # Usage: bar 1 10
     #            ^----- Elapsed Percentage (0-100).

@@ -60,7 +60,7 @@ xintao 编写的网络系列博客，第一篇。打开 [[WireShark]] 可以直�
 
 [[Golang]] 中防止 [[SSRF]] 攻击的方式，在 `net.Dialer` 的 `Control` 中进行一些基本的防御检查操作：
 
-```Go
+```go
 func safeSocketControl(network string, address string, conn syscall.RawConn) error {
 	if !(network == "tcp4" || network == "tcp6") {
 		return fmt.Errorf("%s is not a safe network type", network)

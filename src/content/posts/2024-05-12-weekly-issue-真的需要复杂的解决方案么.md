@@ -25,7 +25,7 @@ description:
 
 [Web APIs: Enriched DX By Disallowing Unknown Fields](https://brandur.org/disallow-unknown-fields)
 
-```Go
+```go
 type Request struct {
     Message string `json:"message"`
 }

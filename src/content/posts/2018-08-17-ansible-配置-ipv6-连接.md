@@ -17,7 +17,7 @@ tags:
 IPv6 维基百科的解释是：网际协议第6版（英文：Internet Protocol version 6，缩写：IPv6）是网际协议（IP）的最新版本，用作互联网的网络层协议，用它来取代IPv4主要是为了解决IPv4地址枯竭问题，不过它也在其他很多方面对IPv4有所改进。我们目前日常中使用的地址都是 IPv4 的地址（比如：192.168.1.1）。
 使用 IPv6 有一个好处是，可以通过 NDP（Neighbor Discovery Protocol）扫描二层网络内的所有的 IPv6 地址，方便我们使用，那么我们如何判断 IPv6 是否可以连通呢？
 可以通过 ping6 的方式判断，比如：
-```Bash
+```bash
 [root@node111 14:00:44 ~]$ping6 fe80::2487:93ff:fe9a:c546%port-mgt
 PING fe80::2487:93ff:fe9a:c546%port-mgt(fe80::2487:93ff:fe9a:c546%port-mgt) 56 data bytes
 64 bytes from fe80::2487:93ff:fe9a:c546%port-mgt: icmp_seq=1 ttl=64 time=0.443 ms
@@ -36,7 +36,7 @@ rtt min/avg/max/mdev = 0.443/0.465/0.488/0.031 ms
 ## SSH 远程连接
 
 通常我们通过 IPv4 地址链接远程 Linux，通过如下方式：
-```Bash
+```bash
 [root@node111 14:01:23 ~]$ssh 192.168.30.112
 root@192.168.30.112's password: 
 Last login: Fri Aug 17 12:15:52 2018 from 192.168.16.1
@@ -45,14 +45,14 @@ Last login: Fri Aug 17 12:15:52 2018 from 192.168.16.1
 
 我们尝试将上面的 IPv4 地址替换为 IPv6 地址试试看：
 
-```Bash
+```bash
 [root@node111 14:04:55 ~]$ssh fe80::2487:93ff:fe9a:c546
 ssh: connect to host fe80::2487:93ff:fe9a:c546 port 22: Invalid argument
 [root@node111 14:05:10 ~]$
 ```
 
 直接指定 IPv6 地址是无法识别的，那么我们按照 ping6 规则，加上网络接口名称试试看：
-```Bash
+```bash
 [root@node111 14:05:10 ~]$ssh fe80::2487:93ff:fe9a:c546%port-mgt
 root@fe80::2487:93ff:fe9a:c546%port-mgt's password: 
 Last login: Fri Aug 17 14:04:56 2018 from fe80::d4b7:acff:fe2f:604e%ovsbr-mgt
@@ -64,14 +64,14 @@ Last login: Fri Aug 17 14:04:56 2018 from fe80::d4b7:acff:fe2f:604e%ovsbr-mgt
 ## Ansible 远程连接
 
 Ansible Inventory 标准格式是：`IP  options` ，比如：
-```Bash
+```bash
 [cluster]
 fe80::58d3:16ff:fe43:ce77%port-mgt ansible_ssh_user=root ansible_ssh_pass=abc123
 ```
 
 验证 Ansible 远程控制：
 
-```Bash
+```bash
 [root@node111 14:11:14 ~]$ansible cluster -m raw -a 'uptime'
 fe80::58d3:16ff:fe43:ce77%port-mgt | SUCCESS | rc=0 >>
  14:11:22 up 7 days, 23:15,  2 users,  load average: 1.55, 1.39, 1.23
