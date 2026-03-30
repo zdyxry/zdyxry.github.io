@@ -40,55 +40,55 @@
 <hr>
 <p><a href="https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang">Preventing Server Side Request Forgery in Golang</a></p>
 <p><a class="internal new" href="/mentions/golang">Golang</a> 中防止 <a class="internal new" href="/mentions/ssrf">SSRF</a> 攻击的方式，在 <code>net.Dialer</code> 的 <code>Control</code> 中进行一些基本的防御检查操作：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>func safeSocketControl(network string, address string, conn syscall.RawConn) error {</span></span>
-<span class="line"><span>	if !(network == "tcp4" || network == "tcp6") {</span></span>
-<span class="line"><span>		return fmt.Errorf("%s is not a safe network type", network)</span></span>
-<span class="line"><span>	}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>	host, port, err := net.SplitHostPort(address)</span></span>
-<span class="line"><span>	if err != nil {</span></span>
-<span class="line"><span>		return fmt.Errorf("%s is not a valid host/port pair: %s", address, err)</span></span>
-<span class="line"><span>	}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>	ipaddress := net.ParseIP(host)</span></span>
-<span class="line"><span>	if ipaddress == nil {</span></span>
-<span class="line"><span>		return fmt.Errorf("%s is not a valid IP address", host)</span></span>
-<span class="line"><span>	}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>	if !isPublicIPAddress(ipaddress) {</span></span>
-<span class="line"><span>		return fmt.Errorf("%s is not a public IP address", ipaddress)</span></span>
-<span class="line"><span>	}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>	if !(port == "80" || port == "443") {</span></span>
-<span class="line"><span>		return fmt.Errorf("%s is not a safe port number", port)</span></span>
-<span class="line"><span>	}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>	return nil</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>safeDialer := &#x26;net.Dialer{</span></span>
-<span class="line"><span>	Timeout:   30 * time.Second,</span></span>
-<span class="line"><span>	KeepAlive: 30 * time.Second,</span></span>
-<span class="line"><span>	DualStack: true,</span></span>
-<span class="line"><span>	Control:   safeSocketControl,</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>safeTransport := &#x26;http.Transport{</span></span>
-<span class="line"><span>	Proxy:                 http.ProxyFromEnvironment,</span></span>
-<span class="line"><span>	DialContext:           safeDialer.DialContext,</span></span>
-<span class="line"><span>	ForceAttemptHTTP2:     true,</span></span>
-<span class="line"><span>	MaxIdleConns:          100,</span></span>
-<span class="line"><span>	IdleConnTimeout:       90 * time.Second,</span></span>
-<span class="line"><span>	TLSHandshakeTimeout:   10 * time.Second,</span></span>
-<span class="line"><span>	ExpectContinueTimeout: 1 * time.Second,</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>safeClient := &#x26;http.Client{</span></span>
-<span class="line"><span>	Transport: safeTransport,</span></span>
-<span class="line"><span>}</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>resp, err := safeClient.Get(untrustedURL)</span></span>
-<span class="line"><span></span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> safeSocketControl</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">network</span><span style="color:#F97583"> string</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">address</span><span style="color:#F97583"> string</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">conn</span><span style="color:#B392F0"> syscall</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">RawConn</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">error</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#F97583"> !</span><span style="color:#E1E4E8">(network </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> "tcp4"</span><span style="color:#F97583"> ||</span><span style="color:#E1E4E8"> network </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> "tcp6"</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#E1E4E8"> fmt.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"</span><span style="color:#79B8FF">%s</span><span style="color:#9ECBFF"> is not a safe network type"</span><span style="color:#E1E4E8">, network)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">	host, port, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> net.</span><span style="color:#B392F0">SplitHostPort</span><span style="color:#E1E4E8">(address)</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#E1E4E8"> fmt.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"</span><span style="color:#79B8FF">%s</span><span style="color:#9ECBFF"> is not a valid host/port pair: </span><span style="color:#79B8FF">%s</span><span style="color:#9ECBFF">"</span><span style="color:#E1E4E8">, address, err)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">	ipaddress </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> net.</span><span style="color:#B392F0">ParseIP</span><span style="color:#E1E4E8">(host)</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> ipaddress </span><span style="color:#F97583">==</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#E1E4E8"> fmt.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"</span><span style="color:#79B8FF">%s</span><span style="color:#9ECBFF"> is not a valid IP address"</span><span style="color:#E1E4E8">, host)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#F97583"> !</span><span style="color:#B392F0">isPublicIPAddress</span><span style="color:#E1E4E8">(ipaddress) {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#E1E4E8"> fmt.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"</span><span style="color:#79B8FF">%s</span><span style="color:#9ECBFF"> is not a public IP address"</span><span style="color:#E1E4E8">, ipaddress)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#F97583"> !</span><span style="color:#E1E4E8">(port </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> "80"</span><span style="color:#F97583"> ||</span><span style="color:#E1E4E8"> port </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> "443"</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">		return</span><span style="color:#E1E4E8"> fmt.</span><span style="color:#B392F0">Errorf</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"</span><span style="color:#79B8FF">%s</span><span style="color:#9ECBFF"> is not a safe port number"</span><span style="color:#E1E4E8">, port)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">	return</span><span style="color:#79B8FF"> nil</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">safeDialer </span><span style="color:#F97583">:=</span><span style="color:#F97583"> &#x26;</span><span style="color:#B392F0">net</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Dialer</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">	Timeout:   </span><span style="color:#79B8FF">30</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second,</span></span>
+<span class="line"><span style="color:#E1E4E8">	KeepAlive: </span><span style="color:#79B8FF">30</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second,</span></span>
+<span class="line"><span style="color:#E1E4E8">	DualStack: </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">	Control:   safeSocketControl,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">safeTransport </span><span style="color:#F97583">:=</span><span style="color:#F97583"> &#x26;</span><span style="color:#B392F0">http</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Transport</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">	Proxy:                 http.ProxyFromEnvironment,</span></span>
+<span class="line"><span style="color:#E1E4E8">	DialContext:           safeDialer.DialContext,</span></span>
+<span class="line"><span style="color:#E1E4E8">	ForceAttemptHTTP2:     </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">	MaxIdleConns:          </span><span style="color:#79B8FF">100</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">	IdleConnTimeout:       </span><span style="color:#79B8FF">90</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second,</span></span>
+<span class="line"><span style="color:#E1E4E8">	TLSHandshakeTimeout:   </span><span style="color:#79B8FF">10</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second,</span></span>
+<span class="line"><span style="color:#E1E4E8">	ExpectContinueTimeout: </span><span style="color:#79B8FF">1</span><span style="color:#F97583"> *</span><span style="color:#E1E4E8"> time.Second,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">safeClient </span><span style="color:#F97583">:=</span><span style="color:#F97583"> &#x26;</span><span style="color:#B392F0">http</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Client</span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#E1E4E8">	Transport: safeTransport,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">resp, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> safeClient.</span><span style="color:#B392F0">Get</span><span style="color:#E1E4E8">(untrustedURL)</span></span>
+<span class="line"></span></code></pre>
 <hr>
 <h3 id="生活">生活</h3>
 <p><a class="internal new" href="/mentions/儿童节">儿童节</a>的由来：1949年11月，苏联莫斯科举行的国际民主妇女联合会执行委员会议[2]。执委会委员海伦·加波罗佐（Helen Gabrozo）在会上代表国际妇联书记处建议，订立6月1日为“国际儿童节”[4][1][2]，以悼念在1942年6月10日被纳粹德国屠杀的捷克利迪策村的88名儿童、以及全世界所有在法西斯侵略战争中死难的儿童[4][2]。加波罗佐指出，订立该节是为了保障世界各地儿童的生存权、保健权及受教育权，进而改善儿童的生活面貌[1]。1954年，6月1日被定为“保护儿童国际日”，以保护儿童权益及儿童的学习权、终结童工[5]，使得该日作为儿童节的国际认可有所提升[6]。</p>
