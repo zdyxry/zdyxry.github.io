@@ -833,6 +833,48 @@ class GarminDataFetcher:
             logger.error(f"保存数据失败: {e}")
             return False
 
+    def _is_same_run(self, run_a: Dict[str, Any], run_b: Dict[str, Any]) -> bool:
+        """
+        判断两条记录是否是同一次跑步
+
+        判断规则：
+        1. 精确匹配 date（包含时间）
+        2. 或同一天 + 同距离 + 同时长（容错不同数据源时间戳差几秒的情况）
+        """
+        # 1. 精确匹配 date
+        if run_a.get('date') == run_b.get('date'):
+            return True
+
+        # 2. 同一天 + 同距离 + 同时长
+        date_a = run_a.get('date', '').split(' ')[0]
+        date_b = run_b.get('date', '').split(' ')[0]
+        if date_a and date_a == date_b:
+            distance_a = run_a.get('distance', 0)
+            distance_b = run_b.get('distance', 0)
+            duration_a = run_a.get('duration', '')
+            duration_b = run_b.get('duration', '')
+            if (distance_a == distance_b and
+                duration_a == duration_b and
+                distance_a is not None and distance_a > 0):
+                return True
+
+        return False
+
+    def _deduplicate_runs(self, runs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        对跑步记录列表进行去重
+        """
+        unique_runs: List[Dict[str, Any]] = []
+        for run in runs:
+            is_duplicate = False
+            for existing in unique_runs:
+                if self._is_same_run(existing, run):
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                unique_runs.append(run)
+        return unique_runs
+
     def _merge_running_data(self, existing_data: Dict[str, Any], new_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         合并跑步数据
@@ -844,36 +886,45 @@ class GarminDataFetcher:
         Returns:
             合并后的数据
         """
-        # 获取现有跑步记录的日期到记录的映射
-        existing_runs_map = {run['date']: run for run in existing_data.get('runs', [])}
+        existing_runs = existing_data.get('runs', [])
+
+        # 先对现有数据去重（防止历史数据已存在重复）
+        existing_runs = self._deduplicate_runs(existing_runs)
 
         # 处理新跑步记录
         for new_run in new_data.get('runs', []):
-            if new_run['date'] in existing_runs_map:
-                # 更新现有记录
-                existing_run = existing_runs_map[new_run['date']]
-                # 更新所有字段，但对于列表类型（如 segments, laps），如果新数据有值则覆盖
-                for key, value in new_run.items():
-                    if key not in existing_run:
-                        # 字段不存在，直接添加
-                        existing_run[key] = value
-                    elif key in ['segments', 'laps']:
-                        # 对于 segments 和 laps，如果新数据有内容则覆盖
-                        if value and len(value) > 0:
+            matched = False
+            for existing_run in existing_runs:
+                if self._is_same_run(existing_run, new_run):
+                    # 更新现有记录
+                    for key, value in new_run.items():
+                        if key == 'date':
+                            # 日期字段保留原值（用于标识）
+                            pass
+                        elif key not in existing_run:
+                            # 字段不存在，直接添加
                             existing_run[key] = value
-                    elif key == 'date':
-                        # 日期字段保留原值（用于标识）
-                        pass
-                    else:
-                        # 其他字段：如果新数据有值则更新，否则保留旧值
-                        if value and value != 0 and value != '0\'00"':
-                            existing_run[key] = value
-            else:
+                        elif key in ['segments', 'laps']:
+                            # 对于 segments 和 laps，如果新数据有内容则覆盖
+                            if value and len(value) > 0:
+                                existing_run[key] = value
+                        else:
+                            # 其他字段：如果新数据有值则更新，否则保留旧值
+                            if value and value != 0 and value != '0\'00"':
+                                existing_run[key] = value
+                    matched = True
+                    break
+
+            if not matched:
                 # 添加新记录
-                existing_data['runs'].append(new_run)
+                existing_runs.append(new_run)
+
+        # 最终去重（防止新数据内部或合并后产生重复）
+        existing_runs = self._deduplicate_runs(existing_runs)
 
         # 按日期排序（最新的在前）
-        existing_data['runs'].sort(key=lambda x: x['date'], reverse=True)
+        existing_runs.sort(key=lambda x: x['date'], reverse=True)
+        existing_data['runs'] = existing_runs
 
         # 重新计算统计数据
         existing_data['stats'] = self._recalculate_stats(existing_data['runs'])

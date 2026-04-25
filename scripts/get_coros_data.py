@@ -17,7 +17,7 @@ import logging
 import math
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -36,6 +36,9 @@ COROS_URL_DICT = {
     "LOGIN_URL": "https://teamcnapi.coros.com/account/login",
     "ACTIVITY_LIST": "https://teamcnapi.coros.com/activity/query",
 }
+
+# 本地时区（UTC+8），COROS API 返回 UTC 时间戳，需统一转换
+LOCAL_TZ = timezone(timedelta(hours=8))
 
 TIME_OUT = httpx.Timeout(240.0, connect=360.0)
 
@@ -256,10 +259,16 @@ class CorosDataFetcher:
         all_activities = self.get_all_activities()
         filtered = []
 
+        # 确保传入的日期带有时区信息（兼容 naive 和 aware datetime）
+        if start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=LOCAL_TZ)
+        if end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=LOCAL_TZ)
+
         for activity in all_activities:
             start_time = activity.get("startTime", 0)
             if start_time:
-                activity_dt = datetime.fromtimestamp(start_time)
+                activity_dt = datetime.fromtimestamp(start_time, tz=LOCAL_TZ)
                 if start_date <= activity_dt <= end_date:
                     filtered.append(activity)
 
@@ -295,10 +304,10 @@ class CorosDataFetcher:
         return "室外跑步"
 
     def _format_timestamp(self, timestamp: int) -> str:
-        """将 Unix 时间戳格式化为日期时间字符串"""
+        """将 Unix 时间戳格式化为日期时间字符串（UTC+8）"""
         if not timestamp:
             return ""
-        return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.fromtimestamp(timestamp, tz=LOCAL_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     def _seconds_to_pace(self, pace_seconds: float) -> str:
         """将秒/公里转换为配速字符串"""
@@ -451,31 +460,80 @@ class CorosDataFetcher:
             logger.error(f"保存数据失败: {e}")
             return False
 
+    def _is_same_run(self, run_a: Dict[str, Any], run_b: Dict[str, Any]) -> bool:
+        """
+        判断两条记录是否是同一次跑步
+
+        判断规则：
+        1. 精确匹配 date（包含时间）
+        2. 或同一天 + 同距离 + 同时长（容错不同数据源时间戳差几秒的情况）
+        """
+        # 1. 精确匹配 date
+        if run_a.get("date") == run_b.get("date"):
+            return True
+
+        # 2. 同一天 + 同距离 + 同时长
+        date_a = run_a.get("date", "").split(" ")[0]
+        date_b = run_b.get("date", "").split(" ")[0]
+        if date_a and date_a == date_b:
+            distance_a = run_a.get("distance", 0)
+            distance_b = run_b.get("distance", 0)
+            duration_a = run_a.get("duration", "")
+            duration_b = run_b.get("duration", "")
+            if (distance_a == distance_b and
+                duration_a == duration_b and
+                distance_a is not None and distance_a > 0):
+                return True
+
+        return False
+
+    def _deduplicate_runs(self, runs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """对跑步记录列表进行去重"""
+        unique_runs: List[Dict[str, Any]] = []
+        for run in runs:
+            is_duplicate = False
+            for existing in unique_runs:
+                if self._is_same_run(existing, run):
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                unique_runs.append(run)
+        return unique_runs
+
     def _merge_running_data(
         self, existing_data: Dict[str, Any], new_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """合并跑步数据（与 Garmin 脚本逻辑一致）"""
-        existing_runs_map = {
-            run["date"]: run for run in existing_data.get("runs", [])
-        }
+        existing_runs = existing_data.get("runs", [])
+
+        # 先对现有数据去重（防止历史数据已存在重复）
+        existing_runs = self._deduplicate_runs(existing_runs)
 
         for new_run in new_data.get("runs", []):
-            if new_run["date"] in existing_runs_map:
-                existing_run = existing_runs_map[new_run["date"]]
-                for key, value in new_run.items():
-                    if key not in existing_run:
-                        existing_run[key] = value
-                    elif key in ["segments", "laps"]:
-                        if value and len(value) > 0:
+            matched = False
+            for existing_run in existing_runs:
+                if self._is_same_run(existing_run, new_run):
+                    for key, value in new_run.items():
+                        if key == "date":
+                            pass
+                        elif key not in existing_run:
                             existing_run[key] = value
-                    elif key == "date":
-                        pass
-                    else:
-                        if value and value != 0 and value != "0'00\"":
-                            existing_run[key] = value
-            else:
-                existing_data["runs"].append(new_run)
+                        elif key in ["segments", "laps"]:
+                            if value and len(value) > 0:
+                                existing_run[key] = value
+                        else:
+                            if value and value != 0 and value != "0'00\"":
+                                existing_run[key] = value
+                    matched = True
+                    break
 
+            if not matched:
+                existing_runs.append(new_run)
+
+        # 最终去重（防止新数据内部或合并后产生重复）
+        existing_runs = self._deduplicate_runs(existing_runs)
+
+        existing_data["runs"] = existing_runs
         existing_data["runs"].sort(key=lambda x: x["date"], reverse=True)
         existing_data["stats"] = self._recalculate_stats(existing_data["runs"])
 
@@ -706,22 +764,24 @@ def main():
 
     activities = []
 
+    now = datetime.now(LOCAL_TZ)
+
     if args.all:
         print("获取所有跑步数据...")
         activities = fetcher.get_all_activities()
     elif args.year:
         print(f"获取 {args.year} 年的跑步数据...")
-        if args.year == datetime.now().year:
-            start_date = datetime(args.year, 1, 1)
-            end_date = datetime.now()
+        if args.year == now.year:
+            start_date = datetime(args.year, 1, 1, tzinfo=LOCAL_TZ)
+            end_date = now
         else:
-            start_date = datetime(args.year, 1, 1)
-            end_date = datetime(args.year, 12, 31, 23, 59, 59)
+            start_date = datetime(args.year, 1, 1, tzinfo=LOCAL_TZ)
+            end_date = datetime(args.year, 12, 31, 23, 59, 59, tzinfo=LOCAL_TZ)
 
         activities = fetcher.get_activities_by_date(start_date, end_date)
     else:
         print(f"获取最近 {args.days} 天的跑步数据...")
-        end_date = datetime.now()
+        end_date = now
         start_date = end_date - timedelta(days=args.days)
         activities = fetcher.get_activities_by_date(start_date, end_date)
 
