@@ -12,7 +12,7 @@
 - **样式**: 原生 CSS（`src/styles/global.css`），组件内 `<style>` 块
 - **搜索**: Pagefind（构建后生成索引）
 - **Markdown 插件**: `remark-wiki-link`（双链 `[[]]` 语法，解析到 `/mentions/` 路径）、`astro-expressive-code`
-- **数据获取**: Python 脚本 (`garminconnect`) 通过 `uv run` 执行
+- **数据获取**: Python 脚本 (`garminconnect` / `httpx`) 通过 `uv run` 执行
 - **部署**: GitHub Actions → `gh-pages` 分支
 
 ## 目录结构
@@ -38,7 +38,7 @@ src/
 │   ├── friends.astro   # 友链页
 │   └── atom.xml.ts     # RSS feed
 ├── data/
-│   └── running.json    # Garmin 跑步数据（由脚本生成，会被 CI 更新）
+│   └── running.json    # 跑步数据（由脚本生成，会被 CI 更新，支持 Garmin/COROS 混合）
 ├── styles/
 │   └── global.css      # 全局样式
 └── utils/
@@ -46,6 +46,7 @@ src/
     └── og-image.ts     # OG 图片生成
 scripts/
 ├── get_garmin_data.py          # 从 Garmin Connect 拉取跑步数据
+├── get_coros_data.py           # 从高驰 COROS 拉取跑步数据
 └── calculate_vdot_for_existing.py  # 重算历史 VDOT 和训练负荷
 ```
 
@@ -81,19 +82,30 @@ scripts/
 
 `url-mapping.json` 定义旧 URL 到新 URL 的映射，`astro.config.mjs` 中的 `generateRedirectFiles()` 在构建时生成静态 HTML 重定向文件。
 
-## Garmin 数据管道
+## 跑步数据管道
 
-### 数据流
+支持 **Garmin** 和 **COROS（高驰）** 两种数据源，输出格式完全一致，可混合合并到同一份 `running.json`。
+
+### Garmin 数据流
 
 1. `scripts/get_garmin_data.py` 通过 `garminconnect` 库登录 Garmin Connect
 2. 拉取跑步活动数据，计算 VDOT 跑力和训练负荷
 3. 输出到 `src/data/running.json`（默认合并模式，与已有数据合并）
 4. `scripts/calculate_vdot_for_existing.py` 可重算所有历史记录的 VDOT（当 MAX_HR/RESTING_HR 调整时）
 
+### COROS（高驰）数据流
+
+1. `scripts/get_coros_data.py` 直接调用高驰 `teamcnapi.coros.com` API
+2. 登录后分页获取活动列表，过滤 `sportType=101`（跑步）
+3. 计算 VDOT 跑力和训练负荷（算法与 Garmin 脚本一致）
+4. 输出到 `src/data/running.json`（默认合并模式，与已有数据合并）
+
 ### 环境变量
 
 | 变量 | 说明 |
 |------|------|
+| `COROS_ACCOUNT` | 高驰账号（手机号/邮箱） |
+| `COROS_PASSWORD` | 高驰明文密码（脚本内自动 MD5 加密） |
 | `GARMIN_EMAIL` | Garmin 账户邮箱 |
 | `GARMIN_PASSWORD` | Garmin 账户密码 |
 | `MAX_HR` | 最大心率（默认 190） |
@@ -102,6 +114,10 @@ scripts/
 ### 本地运行
 
 ```bash
+# 高驰
+uv run scripts/get_coros_data.py --days 30
+
+# Garmin
 uv run scripts/get_garmin_data.py --days 30
 ```
 
@@ -111,10 +127,11 @@ uv run scripts/get_garmin_data.py --days 30
 
 - **触发条件**: push 到 `astro` 分支、PR、每日定时 `cron: '10 0 * * *'`（UTC 00:10）
 - **流程**:
-  1. `uv run scripts/get_garmin_data.py --days 30` — 拉取最近 30 天跑步数据
-  2. `python3 scripts/calculate_vdot_for_existing.py` — 重算 VDOT
-  3. `npm ci && npm run build` — 构建 Astro 站点
-  4. 部署到 `gh-pages` 分支（仅 `astro` 分支触发）
+  1. `uv run scripts/get_coros_data.py --days 30` — 拉取最近 30 天高驰跑步数据
+  2. `uv run scripts/get_garmin_data.py --days 30` — 若高驰步骤失败，回退拉取 Garmin 数据
+  3. `python3 scripts/calculate_vdot_for_existing.py` — 重算 VDOT
+  4. `npm ci && npm run build` — 构建 Astro 站点
+  5. 部署到 `gh-pages` 分支（仅 `astro` 分支触发）
 
 ## Astro 自定义集成
 

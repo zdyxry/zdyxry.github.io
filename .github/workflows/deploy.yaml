@@ -22,14 +22,25 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Fetch Garmin running data (uv)
+      - name: Fetch COROS running data (uv)
+        id: coros
+        env:
+          COROS_ACCOUNT: ${{ secrets.COROS_ACCOUNT }}
+          COROS_PASSWORD: ${{ secrets.COROS_PASSWORD }}
+          MAX_HR: ${{ secrets.MAX_HR || '190' }}
+          RESTING_HR: ${{ secrets.RESTING_HR || '55' }}
+        run: |
+          uv run scripts/get_coros_data.py --days 30
+
+      - name: Fetch Garmin running data (fallback, uv)
+        if: ${{ steps.coros.outcome == 'failure' }}
         env:
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
           MAX_HR: ${{ secrets.MAX_HR || '190' }}
           RESTING_HR: ${{ secrets.RESTING_HR || '55' }}
         run: |
-          uv run scripts/get_garmin_data.py --email ${{ secrets.GARMIN_EMAIL }} --password ${{ secrets.GARMIN_PASSWORD }} --days 30
+          uv run scripts/get_garmin_data.py --days 30
 
       - name: Recalculate VDOT and training load for all records
         env:
