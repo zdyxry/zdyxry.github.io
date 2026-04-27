@@ -1,7 +1,7 @@
 ---
 title: Weekly Issue-《寄生首尔》
 date: "2026-04-26:00:00.000Z"
-slug: "Weekly-Issue-flowers-and-bread"
+slug: "Weekly-Issue-Exploitation-City-Seoul"
 tags:
   - Weekly
 description:
