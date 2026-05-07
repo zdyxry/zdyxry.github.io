@@ -164,7 +164,7 @@ class VDOTCalculator:
 class CorosDataFetcher:
     """高驰 COROS 数据获取器"""
 
-    RUNNING_SPORT_TYPES = {101}  # 高驰跑步 sportType
+    RUNNING_SPORT_TYPES = {100, 101}  # 高驰跑步 sportType: 100=室外跑步, 101=室内跑步/跑步机
 
     def __init__(self, account: str, password: str):
         self.account = account
