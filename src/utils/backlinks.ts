@@ -12,12 +12,12 @@ let backlinksCache: Map<string, Backlink[]> | null = null;
  * Generate Hugo-style slug from post data
  * Format: YYYY/MM/DD/slug
  */
-function generateHugoSlug(post: { data: { pubDate?: Date; date?: Date; customSlug?: string }; slug: string }): string {
+function generateHugoSlug(post: { data: { pubDate?: Date; date?: Date; customSlug?: string }; id: string }): string {
   const date = new Date(post.data.pubDate || post.data.date || Date.now());
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  const slugPart = post.data.customSlug || post.slug;
+  const slugPart = post.data.customSlug || post.id;
   return `${year}/${month}/${day}/${slugPart}`;
 }
 
@@ -54,7 +54,7 @@ async function buildBacklinksMap(): Promise<Map<string, Backlink[]>> {
   const slugToHugoMap = new Map<string, string>();
   for (const post of posts) {
     const hugoSlug = generateHugoSlug(post);
-    const slugPart = post.data.customSlug || post.slug;
+    const slugPart = post.data.customSlug || post.id;
     slugToHugoMap.set(slugPart, hugoSlug);
     // Also map by normalized title
     const normalizedTitle = post.data.title
