@@ -1,7 +1,7 @@
 ---
 title: Weekly Issue-《干吧！辣茶！》
 date: "2026-06-21:00:00.000Z"
-slug: "Weekly-Issue-"
+slug: "Weekly-Issue-lacha"
 tags:
   - Weekly
 description:
