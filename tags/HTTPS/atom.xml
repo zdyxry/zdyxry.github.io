@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: HTTPS - Yiran&apos;s Blog</title><description>标签 &quot;HTTPS&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>证书 CommonName 和 subjectAltName 的关系</title><link>https://zdyxry.github.io/2023/03/25/%E8%AF%81%E4%B9%A6-CommonName-%E5%92%8C-subjectAltName-%E7%9A%84%E5%85%B3%E7%B3%BB/</link><guid isPermaLink="true">https://zdyxry.github.io/2023/03/25/%E8%AF%81%E4%B9%A6-CommonName-%E5%92%8C-subjectAltName-%E7%9A%84%E5%85%B3%E7%B3%BB/</guid><pubDate>Sat, 25 Mar 2023 00:00:00 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;因为产品中的 HTTPS 所用证书是自签发证书，不满足一些场景的安全要求，需要导入用户证书。本身这个变更很容易，只需要按照&lt;a href=&quot;http://nginx.org/en/docs/http/configuring_https_servers.html&quot;&gt;Nginx 官方文档&lt;/a&gt;  配置下指定证书即可，但遇到了一个特殊的场景：集群存在3个节点，每个节点用户配置了相应的 Domain Name，其中集群中存在 VIP(Virtual IP Address) ，用户给对应的 VIP 配置了相应的 Domain Name。用户在签发证书时，使用的 CN(CommonName) 是 VIP 对应的 Domain Name，subjectAltName 是集群中3个节点的 Domain Name。此时如果通过各个节点相应的 Domain Name 访问，证书有效，但是通过 VIP 对应的 Domain Name 访问，证书无效（因环境特殊，未能看到具体错误提示）。&lt;/p&gt;
-&lt;p&gt;印象中 &lt;code&gt;CommonName&lt;/code&gt; 必须指定对应的 Domain Name，&lt;code&gt;subjectAltName&lt;/code&gt; 是 &lt;code&gt;CommonName&lt;/code&gt; 的补充，所以这个现象感觉不合理，然后查阅了相关资料进行调查。&lt;/p&gt;
+&lt;p id=&quot;s-60b0e355&quot;&gt;因为产品中的 HTTPS 所用证书是自签发证书，不满足一些场景的安全要求，需要导入用户证书。本身这个变更很容易，只需要按照&lt;a href=&quot;http://nginx.org/en/docs/http/configuring_https_servers.html&quot;&gt;Nginx 官方文档&lt;/a&gt;  配置下指定证书即可，但遇到了一个特殊的场景：集群存在3个节点，每个节点用户配置了相应的 Domain Name，其中集群中存在 VIP(Virtual IP Address) ，用户给对应的 VIP 配置了相应的 Domain Name。用户在签发证书时，使用的 CN(CommonName) 是 VIP 对应的 Domain Name，subjectAltName 是集群中3个节点的 Domain Name。此时如果通过各个节点相应的 Domain Name 访问，证书有效，但是通过 VIP 对应的 Domain Name 访问，证书无效（因环境特殊，未能看到具体错误提示）。&lt;/p&gt;
+&lt;p id=&quot;s-ee1899c5&quot;&gt;印象中 &lt;code&gt;CommonName&lt;/code&gt; 必须指定对应的 Domain Name，&lt;code&gt;subjectAltName&lt;/code&gt; 是 &lt;code&gt;CommonName&lt;/code&gt; 的补充，所以这个现象感觉不合理，然后查阅了相关资料进行调查。&lt;/p&gt;
 &lt;h2 id=&quot;gpt4&quot;&gt;GPT4&lt;/h2&gt;
-&lt;p&gt;在调查之前，按照现在的主流操作，遇事不决先问 GPT，于是得到了如下答复，也符合我的理解：&lt;/p&gt;
-&lt;p&gt;问：&lt;/p&gt;
-&lt;blockquote&gt;
+&lt;p id=&quot;s-394750d1&quot;&gt;在调查之前，按照现在的主流操作，遇事不决先问 GPT，于是得到了如下答复，也符合我的理解：&lt;/p&gt;
+&lt;p id=&quot;s-cc8c3899&quot;&gt;问：&lt;/p&gt;
+&lt;blockquote id=&quot;s-0726600d&quot;&gt;
 &lt;p&gt;在 https 证书中，如果 &lt;code&gt;CommonName&lt;/code&gt; 一定存在于 &lt;code&gt;SubjectAltName&lt;/code&gt; 中么？如果同时存在 &lt;code&gt;CommonName&lt;/code&gt; 和 &lt;code&gt;SubjectName&lt;/code&gt; ，使用哪个作为唯一标识校验？&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;答：&lt;/p&gt;
-&lt;blockquote&gt;
+&lt;p id=&quot;s-5009bacb&quot;&gt;答：&lt;/p&gt;
+&lt;blockquote id=&quot;s-1d19d8b1&quot;&gt;
 &lt;p&gt;在HTTPS证书中，&lt;code&gt;CommonName&lt;/code&gt;（CN）和&lt;code&gt;Subject Alternative Name&lt;/code&gt;（SAN）是用于标识证书所表示的域名的字段。在早期的SSL/TLS证书中，&lt;code&gt;CommonName&lt;/code&gt;通常用于表示证书关联的单个域名。然而，随着时间的推移，&lt;code&gt;Subject Alternative Name&lt;/code&gt;扩展被广泛采用，它允许证书关联多个域名和子域名。
 从技术上讲，&lt;code&gt;CommonName&lt;/code&gt;不一定需要出现在&lt;code&gt;Subject Alternative Name&lt;/code&gt;列表中。但是，实际上，许多现代浏览器和客户端会首先检查&lt;code&gt;Subject Alternative Name&lt;/code&gt;字段，如果没有找到匹配的域名，才会检查&lt;code&gt;CommonName&lt;/code&gt;字段。因此，为了确保证书的兼容性和正确性，建议将&lt;code&gt;CommonName&lt;/code&gt;包含在&lt;code&gt;Subject Alternative Name&lt;/code&gt;字段中。
 RFC 6125（表示和确认服务器标识的通用方法）建议在比较服务器标识时使用&lt;code&gt;Subject Alternative Name&lt;/code&gt;，并认为&lt;code&gt;CommonName&lt;/code&gt;已经过时。因此，如果&lt;code&gt;CommonName&lt;/code&gt;和&lt;code&gt;Subject Alternative Name&lt;/code&gt;同时存在，客户端应首先使用&lt;code&gt;Subject Alternative Name&lt;/code&gt;进行匹配和校验。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h2 id=&quot;rfc-调查&quot;&gt;RFC 调查&lt;/h2&gt;
-&lt;p&gt;在 X509 的相关RFC &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc2459&quot;&gt;https://www.rfc-editor.org/rfc/rfc2459&lt;/a&gt; ，&lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc3280&quot;&gt;https://www.rfc-editor.org/rfc/rfc3280&lt;/a&gt; 和 &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc5280&quot;&gt;https://www.rfc-editor.org/rfc/rfc5280&lt;/a&gt; 定义中没有很多关于 CommonName 与 SubjectAltName 关系描述。&lt;/p&gt;
-&lt;p&gt;在 &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc6125&quot;&gt;https://www.rfc-editor.org/rfc/rfc6125&lt;/a&gt; 中，关于两者的关系有如下描述：&lt;/p&gt;
+&lt;p id=&quot;s-3a9093f9&quot;&gt;在 X509 的相关RFC &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc2459&quot;&gt;https://www.rfc-editor.org/rfc/rfc2459&lt;/a&gt; ，&lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc3280&quot;&gt;https://www.rfc-editor.org/rfc/rfc3280&lt;/a&gt; 和 &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc5280&quot;&gt;https://www.rfc-editor.org/rfc/rfc5280&lt;/a&gt; 定义中没有很多关于 CommonName 与 SubjectAltName 关系描述。&lt;/p&gt;
+&lt;p id=&quot;s-f4ed0177&quot;&gt;在 &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc6125&quot;&gt;https://www.rfc-editor.org/rfc/rfc6125&lt;/a&gt; 中，关于两者的关系有如下描述：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;For TLS authentication with X.509 certificates, an identity from the&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;DNS namespace MUST be checked against each subjectAltName extension&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;of type dNSName present in the certificate.  If no such extension is&lt;/span&gt;&lt;/span&gt;
@@ -29,23 +29,23 @@ RFC 6125（表示和确认服务器标识的通用方法）建议在比较服务
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;match example.com.  Similarly, a certificate for *.example.com would&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;be valid for APD identities of a.example.com, foo.example.com,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;*.example.com, etc., but not example.com.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;在 HTTPS 的 RFC &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc2818&quot;&gt;https://www.rfc-editor.org/rfc/rfc2818&lt;/a&gt; 中，关于两者的关系有如下描述：&lt;/p&gt;
+&lt;p id=&quot;s-05a7778c&quot;&gt;在 HTTPS 的 RFC &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc2818&quot;&gt;https://www.rfc-editor.org/rfc/rfc2818&lt;/a&gt; 中，关于两者的关系有如下描述：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;If a subjectAltName extension of type dNSName is present, that MUST&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;be used as the identity. Otherwise, the (most specific) Common Name&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;field in the Subject field of the certificate MUST be used. Although&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;the use of the Common Name is existing practice, it is deprecated and&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;Certification Authorities are encouraged to use the dNSName instead.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;TLS/SSL 证书中的 &lt;code&gt;subjectAltName&lt;/code&gt; 扩展除了包含 &lt;code&gt;dNSName&lt;/code&gt; 类型之外，还可以包含其他类型的名称，比如IP地址、电子邮件地址或URI等。当客户端使用 HTTPS 连接到服务器时，它首先检查服务器的证书以验证其身份。在这个过程中，客户端会检查证书中的subjectAltName扩展，如果证书中存在 &lt;code&gt;subjectAltName&lt;/code&gt; 扩展， &lt;code&gt;subjectAltName&lt;/code&gt; 扩展中的dNSName类型用于指定与证书相关联的域名，如果存在 dNSName，则使用 dNSName 作为身份校验方式。&lt;/p&gt;
-&lt;p&gt;如果客户端的目标域名与 &lt;code&gt;subjectAltName&lt;/code&gt; 扩展中的域名匹配，则证书被视为有效，连接可以继续进行。如果没有匹配，则连接被视为不受信任。&lt;/p&gt;
-&lt;p&gt;如果证书中不存在 &lt;code&gt;subjectAltName&lt;/code&gt; dNSName 字段，则使用证书的Subject字段中的Common Name字段来标识服务器。&lt;/p&gt;
+&lt;p id=&quot;s-f24e18f6&quot;&gt;TLS/SSL 证书中的 &lt;code&gt;subjectAltName&lt;/code&gt; 扩展除了包含 &lt;code&gt;dNSName&lt;/code&gt; 类型之外，还可以包含其他类型的名称，比如IP地址、电子邮件地址或URI等。当客户端使用 HTTPS 连接到服务器时，它首先检查服务器的证书以验证其身份。在这个过程中，客户端会检查证书中的subjectAltName扩展，如果证书中存在 &lt;code&gt;subjectAltName&lt;/code&gt; 扩展， &lt;code&gt;subjectAltName&lt;/code&gt; 扩展中的dNSName类型用于指定与证书相关联的域名，如果存在 dNSName，则使用 dNSName 作为身份校验方式。&lt;/p&gt;
+&lt;p id=&quot;s-049fb5ae&quot;&gt;如果客户端的目标域名与 &lt;code&gt;subjectAltName&lt;/code&gt; 扩展中的域名匹配，则证书被视为有效，连接可以继续进行。如果没有匹配，则连接被视为不受信任。&lt;/p&gt;
+&lt;p id=&quot;s-df1c1a89&quot;&gt;如果证书中不存在 &lt;code&gt;subjectAltName&lt;/code&gt; dNSName 字段，则使用证书的Subject字段中的Common Name字段来标识服务器。&lt;/p&gt;
 &lt;h2 id=&quot;浏览器支持调查&quot;&gt;浏览器支持调查&lt;/h2&gt;
 &lt;h3 id=&quot;chrome&quot;&gt;Chrome&lt;/h3&gt;
-&lt;p&gt;在 58 版本中，删除了对 CommonName 匹配的支持，&lt;a href=&quot;https://chromestatus.com/feature/4981025180483584&quot;&gt;https://chromestatus.com/feature/4981025180483584&lt;/a&gt;：&lt;/p&gt;
-&lt;blockquote&gt;
+&lt;p id=&quot;s-20a7ff84&quot;&gt;在 58 版本中，删除了对 CommonName 匹配的支持，&lt;a href=&quot;https://chromestatus.com/feature/4981025180483584&quot;&gt;https://chromestatus.com/feature/4981025180483584&lt;/a&gt;：&lt;/p&gt;
+&lt;blockquote id=&quot;s-3fbe7967&quot;&gt;
 &lt;p&gt;RFC 2818 describes two methods to match a domain name against a certificate - using the available names within the subjectAlternativeName extension, or, in the absence of a SAN extension, falling back to the commonName.
 The fallback to the commonName was deprecated in RFC 2818 (published in 2000), but support still remains in a number of TLS clients, often incorrectly.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;在Chrome 论坛中关于这个改动的讨论写的非常清晰：&lt;/p&gt;
+&lt;p id=&quot;s-8990174e&quot;&gt;在Chrome 论坛中关于这个改动的讨论写的非常清晰：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;go&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;Link to &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;Intent to Deprecate&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; thread&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;No deprecate thread; it&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#FDAEB7;font-style:italic&quot;&gt;s been deprecated since HTTPS was first introduced (RFC 2818) in 2000.&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
@@ -77,11 +77,11 @@ The fallback to the commonName was deprecated in RFC 2818 (published in 2000), b
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FDAEB7;font-style:italic&quot;&gt;Entry on the feature dashboard&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#FDAEB7;font-style:italic&quot;&gt;https://www.chromestatus.com/feature/4981025180483584 (Apologies if I botched this; not sure how to capture &quot;The standard says this is deprecated, and Mozilla supports deprecating&quot;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&quot;firefox&quot;&gt;Firefox&lt;/h3&gt;
-&lt;p&gt;&lt;a href=&quot;https://bugzilla.mozilla.org/show_bug.cgi?id=1245280&quot;&gt;https://bugzilla.mozilla.org/show_bug.cgi?id=1245280&lt;/a&gt;&lt;/p&gt;
+&lt;p id=&quot;s-68020930&quot;&gt;&lt;a href=&quot;https://bugzilla.mozilla.org/show_bug.cgi?id=1245280&quot;&gt;https://bugzilla.mozilla.org/show_bug.cgi?id=1245280&lt;/a&gt;&lt;/p&gt;
 &lt;h2 id=&quot;结论&quot;&gt;结论&lt;/h2&gt;
-&lt;p&gt;CommonName 已经不被作为身份验证标识，统一使用 SubjectAltName 。&lt;/p&gt;
-&lt;p&gt;参考链接：&lt;/p&gt;
-&lt;ul&gt;
+&lt;p id=&quot;s-72a3de45&quot;&gt;CommonName 已经不被作为身份验证标识，统一使用 SubjectAltName 。&lt;/p&gt;
+&lt;p id=&quot;s-c463b0cb&quot;&gt;参考链接：&lt;/p&gt;
+&lt;ul id=&quot;s-4cff11e1&quot;&gt;
 &lt;li&gt;&lt;a href=&quot;https://chromestatus.com/feature/4981025180483584&quot;&gt;https://chromestatus.com/feature/4981025180483584&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://bugzilla.mozilla.org/show_bug.cgi?id=1245280&quot;&gt;https://bugzilla.mozilla.org/show_bug.cgi?id=1245280&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</content:encoded><category>HTTPS</category></item></channel></rss>

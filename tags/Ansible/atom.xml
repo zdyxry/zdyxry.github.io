@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: Ansible - Yiran&apos;s Blog</title><description>标签 &quot;Ansible&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>使用 Ansible 传输文件的几种方式</title><link>https://zdyxry.github.io/2019/11/22/%E4%BD%BF%E7%94%A8-Ansible-%E4%BC%A0%E8%BE%93%E6%96%87%E4%BB%B6%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/11/22/%E4%BD%BF%E7%94%A8-Ansible-%E4%BC%A0%E8%BE%93%E6%96%87%E4%BB%B6%E7%9A%84%E5%87%A0%E7%A7%8D%E6%96%B9%E5%BC%8F/</guid><pubDate>Fri, 22 Nov 2019 12:15:17 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;Ansible 作为一款配置管理和应用部署的软件，日常使用的场景很多，我自己也是重度用户。最近在使用 Ansible 进行文件传输的时候踩了个坑，借此机会整理下 Ansible 传输文件的几种方式。&lt;/p&gt;
-&lt;p&gt;实验环境：&lt;/p&gt;
+&lt;p id=&quot;s-db0b9529&quot;&gt;Ansible 作为一款配置管理和应用部署的软件，日常使用的场景很多，我自己也是重度用户。最近在使用 Ansible 进行文件传输的时候踩了个坑，借此机会整理下 Ansible 传输文件的几种方式。&lt;/p&gt;
+&lt;p id=&quot;s-037b71b8&quot;&gt;实验环境：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@yiran &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]# ansible --version&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ansible&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2.7.12&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  config&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; file&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; None&lt;/span&gt;&lt;/span&gt;
@@ -9,42 +9,42 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  executable&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; location&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /usr/bin/ansible&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  python&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; version&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2.7.5&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (default, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;Aug&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  7&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 2019,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 00:51:29&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;) [GCC &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;4.8.5&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 20150623&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; (Red Hat &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;4&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;8&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;5&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;39&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)]&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&quot;template&quot;&gt;Template&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/template_module.html&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;Ansible 一个常用的功能就是配置管理，通过 Ansible 批量分发配置文件，达到统一版本管理的效果，如果我们想要进行少量的文件传输，从控制节点传输到被管理节点，那么可以采用这种方式来完成。&lt;/p&gt;
-&lt;p&gt;具体的使用&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;官方文档&lt;/a&gt; 已经讲的很详细了，这里不再啰嗦。&lt;/p&gt;
-&lt;p&gt;因为版本是通过 Jinja2 模板传输，支持模板渲染
+&lt;p id=&quot;s-344e8bc3&quot;&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/template_module.html&lt;/a&gt;&lt;/p&gt;
+&lt;p id=&quot;s-bcee6e42&quot;&gt;Ansible 一个常用的功能就是配置管理，通过 Ansible 批量分发配置文件，达到统一版本管理的效果，如果我们想要进行少量的文件传输，从控制节点传输到被管理节点，那么可以采用这种方式来完成。&lt;/p&gt;
+&lt;p id=&quot;s-926ee330&quot;&gt;具体的使用&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;官方文档&lt;/a&gt; 已经讲的很详细了，这里不再啰嗦。&lt;/p&gt;
+&lt;p id=&quot;s-aaa29888&quot;&gt;因为版本是通过 Jinja2 模板传输，支持模板渲染
 虽然我们可以在模版中不制定任何参数，直接将其拷贝，但是相比 Copy/Fetch 模块还是需要有模版渲染的一步，速度要慢一些&lt;/p&gt;
 &lt;h2 id=&quot;copyfetch-模块&quot;&gt;Copy/Fetch 模块&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/copy_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/copy_module.html&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/fetch_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/fetch_module.html&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;如果说我们通过模板来传输文件优点歪门邪道，那么通过 Copy/Fetch 就是 Ansible 官方提供的两个正统模块。&lt;/p&gt;
-&lt;p&gt;Copy 用于把文件（或文件夹）从控制节点（或远程节点）分发到被管理节点，Copy 在拷贝过程中不会修改文件中的内容或编码，仅仅做传输工作。&lt;/p&gt;
-&lt;p&gt;Fetch 用于从被管理节点传输文件到控制节点。需要注意的是 Fetch 只能拉取文件，而 Copy 是可以传输文件或者文件夹的。&lt;/p&gt;
+&lt;p id=&quot;s-798d29fc&quot;&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/copy_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/copy_module.html&lt;/a&gt;&lt;/p&gt;
+&lt;p id=&quot;s-8a901113&quot;&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/fetch_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/fetch_module.html&lt;/a&gt;&lt;/p&gt;
+&lt;p id=&quot;s-fdbeaf5f&quot;&gt;如果说我们通过模板来传输文件优点歪门邪道，那么通过 Copy/Fetch 就是 Ansible 官方提供的两个正统模块。&lt;/p&gt;
+&lt;p id=&quot;s-5dbcd7ac&quot;&gt;Copy 用于把文件（或文件夹）从控制节点（或远程节点）分发到被管理节点，Copy 在拷贝过程中不会修改文件中的内容或编码，仅仅做传输工作。&lt;/p&gt;
+&lt;p id=&quot;s-1d9d8d6a&quot;&gt;Fetch 用于从被管理节点传输文件到控制节点。需要注意的是 Fetch 只能拉取文件，而 Copy 是可以传输文件或者文件夹的。&lt;/p&gt;
 &lt;h3 id=&quot;不算坑的坑&quot;&gt;不算坑的坑&lt;/h3&gt;
-&lt;p&gt;在使用 Copy/Fetch 时，总体感受是比较好的，但是有一点需要注意，如果你拷贝的文件过多，或者单个文件大小过大，那么最好不要使用 Copy/Fetch。&lt;/p&gt;
-&lt;p&gt;Ansible 默认配置中，使用 SFTP 作为文件传输协议：&lt;/p&gt;
-&lt;blockquote&gt;
+&lt;p id=&quot;s-e42402ff&quot;&gt;在使用 Copy/Fetch 时，总体感受是比较好的，但是有一点需要注意，如果你拷贝的文件过多，或者单个文件大小过大，那么最好不要使用 Copy/Fetch。&lt;/p&gt;
+&lt;p id=&quot;s-c652314c&quot;&gt;Ansible 默认配置中，使用 SFTP 作为文件传输协议：&lt;/p&gt;
+&lt;blockquote id=&quot;s-734d645e&quot;&gt;
 &lt;p&gt;There’s really no reason to change this unless problems are encountered, and then there’s also no real drawback to managing the switch. Most environments support SFTP by default and this doesn’t usually need to be changed.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;SFTP 是基于 SSH 协议的，与 FTP 没啥关系。SFTP 并不以性能渐长，甚至可以说性能很差，至少与 FTP、Rsync 没办法相比。&lt;/p&gt;
-&lt;p&gt;关于 SFTP 为什么速度这么慢，StackOverFlow 有个回答写的很详细，这里引用一段：&lt;/p&gt;
-&lt;blockquote&gt;
+&lt;p id=&quot;s-2102719f&quot;&gt;SFTP 是基于 SSH 协议的，与 FTP 没啥关系。SFTP 并不以性能渐长，甚至可以说性能很差，至少与 FTP、Rsync 没办法相比。&lt;/p&gt;
+&lt;p id=&quot;s-e13d4803&quot;&gt;关于 SFTP 为什么速度这么慢，StackOverFlow 有个回答写的很详细，这里引用一段：&lt;/p&gt;
+&lt;blockquote id=&quot;s-06ef5070&quot;&gt;
 &lt;p&gt;I’m the author of HPN-SSH and I was asked by a commenter here to weigh in. I’d like to start with a couple of background items. First off, it’s important to keep in mind that SSHv2 is a multiplexed protocol - multiple channels over a single TCP connection. As such, the SSH channels are essentially unaware of the underlying flow control algorithm used by TCP. This means that SSHv2 has to implement its own flow control algorithm. The most common implementation basically reimplements sliding windows. The means that you have the SSH sliding window riding on top of the TCP sliding window. The end results is that the effective size of the receive buffer is the minimum of the receive buffers of the two sliding windows.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h2 id=&quot;synchronize&quot;&gt;Synchronize&lt;/h2&gt;
-&lt;p&gt;上面提到的两个模块性能都不好，总会有个性能好的来解决这个问题，就是 Synchronize。Synchronize 是通过 rsync 来达到文件传输的目的，是 rsync 的封装。&lt;/p&gt;
-&lt;p&gt;在使用上因为是调用的 rsync，所以控制节点需要安装 rsync ，Synchronize 模块的并不会完全实现 rsync 所有功能，只是通过 rsync 来达到我们想要的快速同步的功能。&lt;/p&gt;
+&lt;p id=&quot;s-1c8ce78f&quot;&gt;上面提到的两个模块性能都不好，总会有个性能好的来解决这个问题，就是 Synchronize。Synchronize 是通过 rsync 来达到文件传输的目的，是 rsync 的封装。&lt;/p&gt;
+&lt;p id=&quot;s-3267bb6e&quot;&gt;在使用上因为是调用的 rsync，所以控制节点需要安装 rsync ，Synchronize 模块的并不会完全实现 rsync 所有功能，只是通过 rsync 来达到我们想要的快速同步的功能。&lt;/p&gt;
 &lt;h3 id=&quot;坑&quot;&gt;坑&lt;/h3&gt;
-&lt;p&gt;在使用 Ansible 过程中，通常会使用普通用户配合密钥的形式来进行用户验证，如果需要 root 权限那么通过 become 关键字来提权。&lt;/p&gt;
-&lt;p&gt;在 sudo 的早期版本中， &lt;code&gt;/etc/sudoers&lt;/code&gt; 中有这么一条配置，高版本取消了 tty 的限制：&lt;/p&gt;
+&lt;p id=&quot;s-4062c2b6&quot;&gt;在使用 Ansible 过程中，通常会使用普通用户配合密钥的形式来进行用户验证，如果需要 root 权限那么通过 become 关键字来提权。&lt;/p&gt;
+&lt;p id=&quot;s-20633b05&quot;&gt;在 sudo 的早期版本中， &lt;code&gt;/etc/sudoers&lt;/code&gt; 中有这么一条配置，高版本取消了 tty 的限制：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;# Disable &quot;ssh hostname sudo &amp;#x3C;cmd&gt;&quot;, because it will show the password in clear.&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;#         You have to run &quot;ssh -t hostname sudo &amp;#x3C;cmd&gt;&quot;.&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;#&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;Defaults    requiretty&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;这个配置会导致 Ansible 调用 rsync 执行时失败，可以通过修改 &lt;code&gt;/etc/sudoers&lt;/code&gt; 或者升级 sudo 软件包来解决。&lt;/p&gt;
+&lt;p id=&quot;s-0411dfd5&quot;&gt;这个配置会导致 Ansible 调用 rsync 执行时失败，可以通过修改 &lt;code&gt;/etc/sudoers&lt;/code&gt; 或者升级 sudo 软件包来解决。&lt;/p&gt;
 &lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;那么说了以上这三种方式，就需要来一个总结对比，看看什么场景下使用什么模块更方便：&lt;/p&gt;
+&lt;p id=&quot;s-f452362e&quot;&gt;那么说了以上这三种方式，就需要来一个总结对比，看看什么场景下使用什么模块更方便：&lt;/p&gt;
 
 
 
@@ -95,20 +95,20 @@
 
 
 &lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;模块&lt;/th&gt;&lt;th&gt;传输文件&lt;/th&gt;&lt;th&gt;传输文件夹&lt;/th&gt;&lt;th&gt;文件修改&lt;/th&gt;&lt;th&gt;文件编码&lt;/th&gt;&lt;th&gt;速度&lt;/th&gt;&lt;th&gt;文件源&lt;/th&gt;&lt;th&gt;权限配置&lt;/th&gt;&lt;th&gt;文件验证&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;Template&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;慢&lt;/td&gt;&lt;td&gt;控制节点&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Copy/Fetch&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y/N&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;慢&lt;/td&gt;&lt;td&gt;控制节点/远程节点&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Synchronize&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;快&lt;/td&gt;&lt;td&gt;控制节点&lt;/td&gt;&lt;td&gt;Y&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
-&lt;p&gt;各个模块没有具体的好坏，全看个人需求来使用合适的模块就好。&lt;/p&gt;
+&lt;p id=&quot;s-2d6a423e&quot;&gt;各个模块没有具体的好坏，全看个人需求来使用合适的模块就好。&lt;/p&gt;
 &lt;h2 id=&quot;参考链接&quot;&gt;参考链接&lt;/h2&gt;
-&lt;ul&gt;
+&lt;ul id=&quot;s-4e96bf81&quot;&gt;
 &lt;li&gt;&lt;a href=&quot;https://docs.ansible.com/ansible/latest/modules/template_module.html&quot;&gt;https://docs.ansible.com/ansible/latest/modules/template_module.html&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/&quot;&gt;https://daniel.haxx.se/blog/2010/12/08/making-sftp-transfers-fast/&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp&quot;&gt;https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</content:encoded><category>Linux</category><category>Ansible</category></item><item><title>关于Ansible的一点经验</title><link>https://zdyxry.github.io/2019/07/05/%E5%85%B3%E4%BA%8EAnsible%E7%9A%84%E4%B8%80%E7%82%B9%E7%BB%8F%E9%AA%8C/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/07/05/%E5%85%B3%E4%BA%8EAnsible%E7%9A%84%E4%B8%80%E7%82%B9%E7%BB%8F%E9%AA%8C/</guid><pubDate>Fri, 05 Jul 2019 12:55:19 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;先介绍下 Kubespray，Kubespray 是 K8S SIG 下的项目，目标是帮助用户创建 &lt;code&gt;生产环境级别&lt;/code&gt; 的 k8s 集群。&lt;/p&gt;
-&lt;p&gt;是通过 Ansible Playbook 实现的，是的，这又是一个 Ansible 项目，其中 YAML 文件就有 15k 行，名副其实的大项目。&lt;/p&gt;
-&lt;p&gt;花费了几天时间陆陆续续看完了整个项目，大概了解了其中的工作流程，具体内容不提，感觉 Ansible 90% 的使用例子都可以在这个项目中找到，是一个值得阅读的项目。&lt;/p&gt;
-&lt;p&gt;之前写过一篇当时理解的最佳实践，今天趁此机会再总结下最近使用 Ansible 的一些经验。&lt;/p&gt;
+&lt;p id=&quot;s-a8e808b5&quot;&gt;先介绍下 Kubespray，Kubespray 是 K8S SIG 下的项目，目标是帮助用户创建 &lt;code&gt;生产环境级别&lt;/code&gt; 的 k8s 集群。&lt;/p&gt;
+&lt;p id=&quot;s-4d549224&quot;&gt;是通过 Ansible Playbook 实现的，是的，这又是一个 Ansible 项目，其中 YAML 文件就有 15k 行，名副其实的大项目。&lt;/p&gt;
+&lt;p id=&quot;s-a7fde81b&quot;&gt;花费了几天时间陆陆续续看完了整个项目，大概了解了其中的工作流程，具体内容不提，感觉 Ansible 90% 的使用例子都可以在这个项目中找到，是一个值得阅读的项目。&lt;/p&gt;
+&lt;p id=&quot;s-da667ee8&quot;&gt;之前写过一篇当时理解的最佳实践，今天趁此机会再总结下最近使用 Ansible 的一些经验。&lt;/p&gt;
 &lt;h2 id=&quot;tag&quot;&gt;Tag&lt;/h2&gt;
-&lt;p&gt;使用 tag 对 ansible task 进行划分，比如在重启某些服务的时候，我们只希望在初次安装的时候重启，在后续升级的时候不进行重启，那么我们就可以对这个重启服务的 task 进行tag 区分。&lt;/p&gt;
-&lt;p&gt;tag 使用示例如下：&lt;/p&gt;
+&lt;p id=&quot;s-193df6eb&quot;&gt;使用 tag 对 ansible task 进行划分，比如在重启某些服务的时候，我们只希望在初次安装的时候重启，在后续升级的时候不进行重启，那么我们就可以对这个重启服务的 task 进行tag 区分。&lt;/p&gt;
+&lt;p id=&quot;s-1418eeb7&quot;&gt;tag 使用示例如下：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:35:56 ansible]$tree &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible.cfg&lt;/span&gt;&lt;/span&gt;
@@ -154,7 +154,7 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.112&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;172.16.30.113&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;              :&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ok=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    changed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    unreachable=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;    failed=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;   &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&quot;rolesmeta-管理依赖&quot;&gt;roles/meta 管理依赖&lt;/h2&gt;
-&lt;p&gt;在 playbook 中存在多个 roles，且其中有相互依赖关系时，合理使用 meta 配置，填写其所依赖的 roles。注意，被依赖的 roles 会优先执行，示例如下：&lt;/p&gt;
+&lt;p id=&quot;s-1845d7b3&quot;&gt;在 playbook 中存在多个 roles，且其中有相互依赖关系时，合理使用 meta 配置，填写其所依赖的 roles。注意，被依赖的 roles 会优先执行，示例如下：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:49:12 ansible]$tree &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible.cfg&lt;/span&gt;&lt;/span&gt;
@@ -233,7 +233,7 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;You&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; have&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; new&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; mail&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; in&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /var/spool/mail/root&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 16:50:05 ansible]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&quot;参数声明&quot;&gt;参数声明&lt;/h2&gt;
-&lt;p&gt;在一个大型项目中，我们无论是服务的数量还是各个服务对应的参数数量都是极其惊人的，那么我们就要合理的管理相应参数，这里 kubespray 项目给出了一个很好的示例，先来看下 kubespray 的组织结构（简化版）：&lt;/p&gt;
+&lt;p id=&quot;s-8f8d5497&quot;&gt;在一个大型项目中，我们无论是服务的数量还是各个服务对应的参数数量都是极其惊人的，那么我们就要合理的管理相应参数，这里 kubespray 项目给出了一个很好的示例，先来看下 kubespray 的组织结构（简化版）：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;inventory/&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; local&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; group_vars&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ../sample/group_vars&lt;/span&gt;&lt;/span&gt;
@@ -261,35 +261,35 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; defaults&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; meta&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;│  &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; tasks&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;在 kubespray 中，参数定义有三个位置：&lt;/p&gt;
-&lt;ol&gt;
+&lt;p id=&quot;s-ca13804c&quot;&gt;在 kubespray 中，参数定义有三个位置：&lt;/p&gt;
+&lt;ol id=&quot;s-9f6c62b4&quot;&gt;
 &lt;li&gt;inventory/sample/group_vars&lt;/li&gt;
 &lt;li&gt;roles/kubespray-defaults/defaults&lt;/li&gt;
 &lt;li&gt;roles/&lt;common&gt;/defaults&lt;/common&gt;&lt;/li&gt;
 &lt;li&gt;使用 &lt;code&gt;set_fact&lt;/code&gt; 关键字声明&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;上述三个位置是按照参数粒度划分，参数粒度越细，越靠后。&lt;/p&gt;
-&lt;p&gt;举个例子：&lt;/p&gt;
-&lt;ul&gt;
+&lt;p id=&quot;s-8f633b54&quot;&gt;上述三个位置是按照参数粒度划分，参数粒度越细，越靠后。&lt;/p&gt;
+&lt;p id=&quot;s-74dad62f&quot;&gt;举个例子：&lt;/p&gt;
+&lt;ul id=&quot;s-4417a4b7&quot;&gt;
 &lt;li&gt;&lt;code&gt;bin_dir&lt;/code&gt; 这个参数，是一个全局参数，管理下载的二进制文件路径，它在 &lt;code&gt;inventory/samle/group_vars&lt;/code&gt; 中定义；&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;etcd_kubeadm_enabled&lt;/code&gt; 参数，决定是否通过 kubeadm 来创建 etcd 集群，是集群粒度的，在 &lt;code&gt;roles/kubesray-defaults/defaults&lt;/code&gt; 中定义；&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;docker_fedora_repo_base_url&lt;/code&gt; 是 docker 在下载镜像时指定的 repo，是一个容器运行时粒度的参数，那么它就在 &lt;code&gt;roles/container-ngine/docker/defaults&lt;/code&gt; 中定义&lt;/li&gt;
 &lt;li&gt;执行某些命令后，我们希望对命令结果进行过滤或判断，那么我们通常会使用 regster，但是 register 的声明周期仅限于该 playbook，而且他们的优先级也是不同的，具体可以看下&lt;a href=&quot;https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#ansible-variable-precedence&quot;&gt;官方文档&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;可能跟大多数项目不同，kubespray 中涉及的参数数量很多，不知道是否是这个原因，专门使用了 &lt;code&gt;roles/kubespray-defaults&lt;/code&gt; 这个 role 来声明参数。不过它的这种参数划分方式是我们值得学习的。&lt;/p&gt;
+&lt;p id=&quot;s-e1ef8609&quot;&gt;可能跟大多数项目不同，kubespray 中涉及的参数数量很多，不知道是否是这个原因，专门使用了 &lt;code&gt;roles/kubespray-defaults&lt;/code&gt; 这个 role 来声明参数。不过它的这种参数划分方式是我们值得学习的。&lt;/p&gt;
 &lt;h2 id=&quot;handler-触发&quot;&gt;Handler 触发&lt;/h2&gt;
-&lt;p&gt;当我们更新了配置文件之后，我们想要重启相应服务，这时候可以使用 notify 配合 handlers 来完成相应操作，而且 handler
+&lt;p id=&quot;s-e5c00a64&quot;&gt;当我们更新了配置文件之后，我们想要重启相应服务，这时候可以使用 notify 配合 handlers 来完成相应操作，而且 handler
 的方式也可以保证我们代码最大程度的重用。&lt;/p&gt;
 &lt;h2 id=&quot;loop_control&quot;&gt;loop_control&lt;/h2&gt;
-&lt;p&gt;当我们在 playbook 中定义了某个变量为 list 类型，我们想要遍历变量，并且针对每个变量的操作都进行错误处理，我们可以采用 loop_control 关键字配合 include 来实现，比如：&lt;/p&gt;
+&lt;p id=&quot;s-16f9ce6f&quot;&gt;当我们在 playbook 中定义了某个变量为 list 类型，我们想要遍历变量，并且针对每个变量的操作都进行错误处理，我们可以采用 loop_control 关键字配合 include 来实现，比如：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;- include_tasks: docker_plugin.yml&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;  loop: &quot;{{ docker_plugins }}&quot;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;  loop_control:&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;    loop_var: docker_plugin&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;循环 &lt;code&gt;device_plugins&lt;/code&gt; ，每个变量为 &lt;code&gt;docker_plugin&lt;/code&gt; ，将 &lt;code&gt;docker_plugin&lt;/code&gt; 传递到 &lt;code&gt;docker_plugin.yml&lt;/code&gt; 。&lt;/p&gt;
+&lt;p id=&quot;s-c71c04dd&quot;&gt;循环 &lt;code&gt;device_plugins&lt;/code&gt; ，每个变量为 &lt;code&gt;docker_plugin&lt;/code&gt; ，将 &lt;code&gt;docker_plugin&lt;/code&gt; 传递到 &lt;code&gt;docker_plugin.yml&lt;/code&gt; 。&lt;/p&gt;
 &lt;h2 id=&quot;不建议的操作&quot;&gt;不建议的操作&lt;/h2&gt;
 &lt;h3 id=&quot;在-ansible-中使用复杂的语法规则&quot;&gt;在 ansible 中使用复杂的语法规则&lt;/h3&gt;
-&lt;p&gt;在 kubespray 中，随处可见一些很复杂的语法夹杂在 playbook 中，看到一个比较头疼的：&lt;/p&gt;
+&lt;p id=&quot;s-13c2dede&quot;&gt;在 kubespray 中，随处可见一些很复杂的语法夹杂在 playbook 中，看到一个比较头疼的：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;yaml&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   279&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;	&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   280	dashboard_image_repo&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;gcr.io/google_containers/kubernetes-dashboard-{{ image_arch }}&quot;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   281	dashboard_image_tag&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;v1.10.1&quot;&lt;/span&gt;&lt;/span&gt;
@@ -304,25 +304,25 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   290	    repo&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ netcheck_server_image_repo }}&quot;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   291	    tag&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ netcheck_server_image_tag }}&quot;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;   292	    sha256&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;{{ netcheck_server_digest_checksum|default(None) }}&quot;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;284 行获取 &lt;code&gt;image_info_command&lt;/code&gt; ，这里真的是一点可维护性都没有，初步看很难看出这里到底是 ansible 语法，还是 shell 语法，还是 go template 语法，如果我们要通过这么复杂的方式来获取一个参数，为什么不干脆写一个脚本来完成这个事情呢？ 搞不懂。&lt;/p&gt;
+&lt;p id=&quot;s-d5463e58&quot;&gt;284 行获取 &lt;code&gt;image_info_command&lt;/code&gt; ，这里真的是一点可维护性都没有，初步看很难看出这里到底是 ansible 语法，还是 shell 语法，还是 go template 语法，如果我们要通过这么复杂的方式来获取一个参数，为什么不干脆写一个脚本来完成这个事情呢？ 搞不懂。&lt;/p&gt;
 &lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;看完 kubespray 了解了 k8s 集群部署的步骤之外，Ansible 的一些高级用法或者说经验是之后需要改善的，收获多多。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>PingCAP tidb-ansible 源码阅读</title><link>https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</guid><pubDate>Sat, 20 Apr 2019 03:50:41 GMT</pubDate><content:encoded>&lt;p&gt;了解我的同学应该知道，我目前负责公司产品的运维工具开发相关的工作，作为一款 2B 的产品，在产品运维过程中，总是有一些不愉快（又不能让客户知道）的繁琐操作：这些操作可能是为了防止过程中出现错误，而不断添加的检测条件；也有可能是历史问题，随着产品发布迭代而一直遗留至今。&lt;/p&gt;
-&lt;p&gt;所以我平时也在关注一些开源的 2B 产品的配套运维工具，比如 ZStack、PingCAP 之类的公司。&lt;/p&gt;
-&lt;p&gt;但是 ZStack 的开源生态不是很好，感觉只是在保持代码更新（不知道哪个分支）的状态。相比之下 PingCAP 就好很多了，可以很直接的从文档中看到差别，而且社区很活跃。&lt;/p&gt;
-&lt;p&gt;最近看到 PingCAP 的一个关于部署维护的 &lt;a href=&quot;https://university.pingcap.com/views/common/audition.html?courseId=240255&amp;#x26;courseWareId=330983&amp;#x26;designId=270990&quot;&gt;视频讲解&lt;/a&gt; ，可能时间有限，并没有很深入的讲解细节，有兴趣的同学可以看下。&lt;/p&gt;
-&lt;p&gt;在讲解过程中，一个比较核心的工具就是 Ansible，通过 Ansible Playbook 来定义各个步骤，我最近也在使用 Ansible 来进行二次开发，特此学习下 PingCAP 的 &lt;a href=&quot;https://github.com/pingcap/tidb-ansible&quot;&gt;tidb-ansible&lt;/a&gt; 。&lt;/p&gt;
+&lt;p id=&quot;s-f5be9825&quot;&gt;看完 kubespray 了解了 k8s 集群部署的步骤之外，Ansible 的一些高级用法或者说经验是之后需要改善的，收获多多。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>PingCAP tidb-ansible 源码阅读</title><link>https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/04/20/PingCAP-tidb-ansible-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</guid><pubDate>Sat, 20 Apr 2019 03:50:41 GMT</pubDate><content:encoded>&lt;p id=&quot;s-7236368c&quot;&gt;了解我的同学应该知道，我目前负责公司产品的运维工具开发相关的工作，作为一款 2B 的产品，在产品运维过程中，总是有一些不愉快（又不能让客户知道）的繁琐操作：这些操作可能是为了防止过程中出现错误，而不断添加的检测条件；也有可能是历史问题，随着产品发布迭代而一直遗留至今。&lt;/p&gt;
+&lt;p id=&quot;s-0be3dea7&quot;&gt;所以我平时也在关注一些开源的 2B 产品的配套运维工具，比如 ZStack、PingCAP 之类的公司。&lt;/p&gt;
+&lt;p id=&quot;s-c158fbb8&quot;&gt;但是 ZStack 的开源生态不是很好，感觉只是在保持代码更新（不知道哪个分支）的状态。相比之下 PingCAP 就好很多了，可以很直接的从文档中看到差别，而且社区很活跃。&lt;/p&gt;
+&lt;p id=&quot;s-b3c367bf&quot;&gt;最近看到 PingCAP 的一个关于部署维护的 &lt;a href=&quot;https://university.pingcap.com/views/common/audition.html?courseId=240255&amp;#x26;courseWareId=330983&amp;#x26;designId=270990&quot;&gt;视频讲解&lt;/a&gt; ，可能时间有限，并没有很深入的讲解细节，有兴趣的同学可以看下。&lt;/p&gt;
+&lt;p id=&quot;s-d7b3c627&quot;&gt;在讲解过程中，一个比较核心的工具就是 Ansible，通过 Ansible Playbook 来定义各个步骤，我最近也在使用 Ansible 来进行二次开发，特此学习下 PingCAP 的 &lt;a href=&quot;https://github.com/pingcap/tidb-ansible&quot;&gt;tidb-ansible&lt;/a&gt; 。&lt;/p&gt;
 &lt;h2 id=&quot;安装方式&quot;&gt;安装方式&lt;/h2&gt;
-&lt;p&gt;TiDB 目前支持 4 种安装方式：&lt;/p&gt;
-&lt;ol&gt;
+&lt;p id=&quot;s-6ad52492&quot;&gt;TiDB 目前支持 4 种安装方式：&lt;/p&gt;
+&lt;ol id=&quot;s-fa68686f&quot;&gt;
 &lt;li&gt;Ansible Online&lt;/li&gt;
 &lt;li&gt;Ansible Offline&lt;/li&gt;
 &lt;li&gt;Docker&lt;/li&gt;
 &lt;li&gt;Docker compose&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;其中最佳实践应该是 Ansible Online 方式，通过控制机联网下载所需依赖及 TiDB binary 文件。当然如果所在环境无法访问互联网，那么只能采用 Offline 方式了。后两种部署方式，感觉只是用于开发测试或者给用户“看看”的情况。&lt;/p&gt;
-&lt;p&gt;如果要学习的话肯定要学习最佳实践了，那么我们来看看 Ansible Online 方式。&lt;/p&gt;
+&lt;p id=&quot;s-2ae1aa57&quot;&gt;其中最佳实践应该是 Ansible Online 方式，通过控制机联网下载所需依赖及 TiDB binary 文件。当然如果所在环境无法访问互联网，那么只能采用 Offline 方式了。后两种部署方式，感觉只是用于开发测试或者给用户“看看”的情况。&lt;/p&gt;
+&lt;p id=&quot;s-5b749b14&quot;&gt;如果要学习的话肯定要学习最佳实践了，那么我们来看看 Ansible Online 方式。&lt;/p&gt;
 &lt;h2 id=&quot;环境准备&quot;&gt;环境准备&lt;/h2&gt;
-&lt;p&gt;TiDB 作为一个 &lt;strong&gt;开源分布式关系型数据库&lt;/strong&gt; ，所需要的物理环境是很比较苛刻的，官方最佳实践的需求如下：&lt;/p&gt;
+&lt;p id=&quot;s-8fc886c2&quot;&gt;TiDB 作为一个 &lt;strong&gt;开源分布式关系型数据库&lt;/strong&gt; ，所需要的物理环境是很比较苛刻的，官方最佳实践的需求如下：&lt;/p&gt;
 &lt;hr&gt;
 
 
@@ -370,9 +370,9 @@
 
 
 &lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;组件&lt;/th&gt;&lt;th&gt;CPU&lt;/th&gt;&lt;th&gt;内存&lt;/th&gt;&lt;th&gt;硬盘类型&lt;/th&gt;&lt;th&gt;网络&lt;/th&gt;&lt;th&gt;数量(最低要求)&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;TiDB&lt;/td&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;32GB&lt;/td&gt;&lt;td&gt;SAS&lt;/td&gt;&lt;td&gt;10GbE * 2&lt;/td&gt;&lt;td&gt;2&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;PD&lt;/td&gt;&lt;td&gt;4&lt;/td&gt;&lt;td&gt;8GB&lt;/td&gt;&lt;td&gt;SSD&lt;/td&gt;&lt;td&gt;10 GbE * 2&lt;/td&gt;&lt;td&gt;3&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;TiKV&lt;/td&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;32GB&lt;/td&gt;&lt;td&gt;SSD&lt;/td&gt;&lt;td&gt;10 GbE * 2&lt;/td&gt;&lt;td&gt;3&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;监控&lt;/td&gt;&lt;td&gt;8&lt;/td&gt;&lt;td&gt;16GB&lt;/td&gt;&lt;td&gt;SAS&lt;/td&gt;&lt;td&gt;1GbE * 1&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
-&lt;p&gt;对于 CPU、内存和磁盘的要求我们暂时忽略，这里注意网卡数量都是推荐的 2 块网卡，应该是会做 bonding，到时候看下代码中是否处理。&lt;/p&gt;
+&lt;p id=&quot;s-f1cf694e&quot;&gt;对于 CPU、内存和磁盘的要求我们暂时忽略，这里注意网卡数量都是推荐的 2 块网卡，应该是会做 bonding，到时候看下代码中是否处理。&lt;/p&gt;
 &lt;h2 id=&quot;安装部署流程&quot;&gt;安装部署流程&lt;/h2&gt;
-&lt;ul&gt;
+&lt;ul id=&quot;s-7c624ef0&quot;&gt;
 &lt;li&gt;控制节点安装依赖&lt;/li&gt;
 &lt;li&gt;配置普通用户（tidb）
 &lt;ul&gt;
@@ -420,23 +420,23 @@
 &lt;/ul&gt;
 &lt;h2 id=&quot;具体步骤&quot;&gt;具体步骤&lt;/h2&gt;
 &lt;h3 id=&quot;软件依赖&quot;&gt;软件依赖&lt;/h3&gt;
-&lt;p&gt;这里 TiDB 依赖的第三方组件不多，安装方式猜测之所以直接用 pip 是因为要支持不同的发型版本，python 通用些。
+&lt;p id=&quot;s-9e188302&quot;&gt;这里 TiDB 依赖的第三方组件不多，安装方式猜测之所以直接用 pip 是因为要支持不同的发型版本，python 通用些。
 其中如果部署 pump 并开启 binlog 的话，是需要安装 Kafka 集群的，这里在安装部署文档中没有见到更多的说明。&lt;/p&gt;
 &lt;h3 id=&quot;普通用户&quot;&gt;普通用户&lt;/h3&gt;
-&lt;p&gt;这点很重要，一款软件的运行环境很重要，无须 root 权限的坚决不能给与 root 权限，否则之后的权限控制很难做。&lt;/p&gt;
+&lt;p id=&quot;s-5a8f1094&quot;&gt;这点很重要，一款软件的运行环境很重要，无须 root 权限的坚决不能给与 root 权限，否则之后的权限控制很难做。&lt;/p&gt;
 &lt;h3 id=&quot;时钟同步&quot;&gt;时钟同步&lt;/h3&gt;
-&lt;p&gt;这里采用的是 ntpd 同步，不知道为什么没有采用 chronyd，在 RHEL7 之后推荐采用 chronyd 来进行时钟同步，根据这篇&lt;a href=&quot;https://www.thegeekdiary.com/centos-rhel-7-chrony-vs-ntp-differences-between-ntpd-and-chronyd/&quot;&gt;博客&lt;/a&gt;中提到的，chronyd 应该占有绝对&lt;a href=&quot;https://chrony.tuxfamily.org/comparison.html&quot;&gt;优势&lt;/a&gt;的，不知道这里是出于什么考虑。&lt;/p&gt;
+&lt;p id=&quot;s-6de1d64d&quot;&gt;这里采用的是 ntpd 同步，不知道为什么没有采用 chronyd，在 RHEL7 之后推荐采用 chronyd 来进行时钟同步，根据这篇&lt;a href=&quot;https://www.thegeekdiary.com/centos-rhel-7-chrony-vs-ntp-differences-between-ntpd-and-chronyd/&quot;&gt;博客&lt;/a&gt;中提到的，chronyd 应该占有绝对&lt;a href=&quot;https://chrony.tuxfamily.org/comparison.html&quot;&gt;优势&lt;/a&gt;的，不知道这里是出于什么考虑。&lt;/p&gt;
 &lt;h3 id=&quot;cpu-调节器模式&quot;&gt;CPU 调节器模式&lt;/h3&gt;
-&lt;p&gt;这里 TiDB 推荐采用 performance 模式，但是如果你的 2B 产品卖点中有提到 &lt;strong&gt;节省能耗&lt;/strong&gt; 相关字眼的，觉得还是要综合考虑才好。&lt;/p&gt;
+&lt;p id=&quot;s-d7b25e03&quot;&gt;这里 TiDB 推荐采用 performance 模式，但是如果你的 2B 产品卖点中有提到 &lt;strong&gt;节省能耗&lt;/strong&gt; 相关字眼的，觉得还是要综合考虑才好。&lt;/p&gt;
 &lt;h3 id=&quot;格式化磁盘&quot;&gt;格式化磁盘&lt;/h3&gt;
-&lt;p&gt;推荐采用 ext4，在 RHEL7 之后默认的系统分区均为 xfs，这里出于什么考虑也没有透露。&lt;/p&gt;
-&lt;p&gt;在我个人使用过程中，xfs 在处理服务器掉电之后的处理很麻烦，经常是需要手动 xfs_repair 去修复磁盘分区。&lt;/p&gt;
-&lt;p&gt;TiDB 挂载参数强制要求 &lt;strong&gt;nodelalloc&lt;/strong&gt; ，我们看下这个参数的意义：&lt;/p&gt;
+&lt;p id=&quot;s-c69b78fd&quot;&gt;推荐采用 ext4，在 RHEL7 之后默认的系统分区均为 xfs，这里出于什么考虑也没有透露。&lt;/p&gt;
+&lt;p id=&quot;s-b1b14865&quot;&gt;在我个人使用过程中，xfs 在处理服务器掉电之后的处理很麻烦，经常是需要手动 xfs_repair 去修复磁盘分区。&lt;/p&gt;
+&lt;p id=&quot;s-de7854a5&quot;&gt;TiDB 挂载参数强制要求 &lt;strong&gt;nodelalloc&lt;/strong&gt; ，我们看下这个参数的意义：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;when the data is copied from userspace to the page cache, either via the write(2) system call or when an mmap&apos;ed page which was previously unallocated is written for the first time.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&quot;tidb-参数&quot;&gt;TiDB 参数&lt;/h3&gt;
-&lt;p&gt;因为对 TiDB 无更多了解，此节忽略。&lt;/p&gt;
+&lt;p id=&quot;s-a05cb830&quot;&gt;因为对 TiDB 无更多了解，此节忽略。&lt;/p&gt;
 &lt;h3 id=&quot;部署&quot;&gt;部署&lt;/h3&gt;
-&lt;p&gt;终于到了我最想了解的地方了：ansible playbook。我们先看下代码结构：&lt;/p&gt;
+&lt;p id=&quot;s-497d9f16&quot;&gt;终于到了我最想了解的地方了：ansible playbook。我们先看下代码结构：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/tidb-ansible&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;master&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✔&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;tree&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -L&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; .&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;
@@ -509,20 +509,20 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; unsafe_cleanup.yml&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; unsafe_cleanup_container.yml&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;└──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; unsafe_cleanup_data.yml&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;一个标准的 Ansible Playbook 结构：在最外层暴露我们需要执行的 YAML 配置，所有具体的操作和配置文件都放到 roles 和 conf 中，下面我们来一点点看具体做了什么，哪些地方是我们需要注意的。&lt;/p&gt;
+&lt;p id=&quot;s-01ecfc58&quot;&gt;一个标准的 Ansible Playbook 结构：在最外层暴露我们需要执行的 YAML 配置，所有具体的操作和配置文件都放到 roles 和 conf 中，下面我们来一点点看具体做了什么，哪些地方是我们需要注意的。&lt;/p&gt;
 &lt;h4 id=&quot;local_prepareyml&quot;&gt;local_prepare.yml&lt;/h4&gt;
-&lt;p&gt;在这里一共做了以下这么几件事情：&lt;/p&gt;
-&lt;ul&gt;
+&lt;p id=&quot;s-05a70a16&quot;&gt;在这里一共做了以下这么几件事情：&lt;/p&gt;
+&lt;ul id=&quot;s-324fb73b&quot;&gt;
 &lt;li&gt;准备 binary 下载地址配置&lt;/li&gt;
 &lt;li&gt;检查网络(GFW)&lt;/li&gt;
 &lt;li&gt;下载 binary&lt;/li&gt;
 &lt;li&gt;准备 fio 软件&lt;/li&gt;
 &lt;li&gt;清理下载路径&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;主要都是做环境准备的工作，其中网络检测这没有用我们日常使用最多的 &lt;code&gt;ping&lt;/code&gt; ，而是使用了 &lt;code&gt;curl&lt;/code&gt; ，这里猜测是因为有时候机器是可以与互联网通信，但是没有配置 DNS 解析，导致后续的下载也会失败，所以直接 &lt;code&gt;curl baidu.com&lt;/code&gt; 是一个不错的选择。&lt;/p&gt;
-&lt;p&gt;(这里还检查了 GFW - - )&lt;/p&gt;
-&lt;p&gt;用到的 Ansible 模块有：&lt;/p&gt;
-&lt;ul&gt;
+&lt;p id=&quot;s-93ef309b&quot;&gt;主要都是做环境准备的工作，其中网络检测这没有用我们日常使用最多的 &lt;code&gt;ping&lt;/code&gt; ，而是使用了 &lt;code&gt;curl&lt;/code&gt; ，这里猜测是因为有时候机器是可以与互联网通信，但是没有配置 DNS 解析，导致后续的下载也会失败，所以直接 &lt;code&gt;curl baidu.com&lt;/code&gt; 是一个不错的选择。&lt;/p&gt;
+&lt;p id=&quot;s-ef02e1c8&quot;&gt;(这里还检查了 GFW - - )&lt;/p&gt;
+&lt;p id=&quot;s-06838316&quot;&gt;用到的 Ansible 模块有：&lt;/p&gt;
+&lt;ul id=&quot;s-d92f851c&quot;&gt;
 &lt;li&gt;file&lt;/li&gt;
 &lt;li&gt;shell （果然没人会去用 command 的&lt;/li&gt;
 &lt;li&gt;template&lt;/li&gt;
@@ -530,7 +530,7 @@
 &lt;li&gt;…&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h4 id=&quot;bootstrapyml&quot;&gt;bootstrap.yml&lt;/h4&gt;
-&lt;ul&gt;
+&lt;ul id=&quot;s-112883c3&quot;&gt;
 &lt;li&gt;基本环境配置参数检查（机器数、配置、OS发行版）&lt;/li&gt;
 &lt;li&gt;python 环境准备，NTP 软件包安装&lt;/li&gt;
 &lt;li&gt;设置内核参数&lt;/li&gt;
@@ -543,8 +543,8 @@
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;内核参数部分修改了如下配置：&lt;/p&gt;
-&lt;ul&gt;
+&lt;p id=&quot;s-bf2e6e7b&quot;&gt;内核参数部分修改了如下配置：&lt;/p&gt;
+&lt;ul id=&quot;s-011dc5b6&quot;&gt;
 &lt;li&gt;net.core.somaxconn=32768 # 最大 socket 连接数，默认为 128&lt;/li&gt;
 &lt;li&gt;vm.swappiness=0 # 禁用 swap 空间&lt;/li&gt;
 &lt;li&gt;net.ipv4.tcp_syncookies=0 # 关闭 synccookies，默认为关闭&lt;/li&gt;
@@ -552,40 +552,40 @@
 &lt;li&gt;fs.file-max=1000000 # 最大文件数，默认为 1024&lt;/li&gt;
 &lt;li&gt;irqbalance ONESHOT=yes # irqbalance 不以守护进程方式运行&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;关于 fio 检测，嗯，我还是太天真了，这个级别的磁盘延迟要求，估计只有 PCIe SSD 可以满足了吧。&lt;/p&gt;
+&lt;p id=&quot;s-d9e86b10&quot;&gt;关于 fio 检测，嗯，我还是太天真了，这个级别的磁盘延迟要求，估计只有 PCIe SSD 可以满足了吧。&lt;/p&gt;
 &lt;h4 id=&quot;deployyml&quot;&gt;deploy.yml&lt;/h4&gt;
-&lt;p&gt;这部分通用的东西比较少，都是内部的一些配置文件和服务。&lt;/p&gt;
+&lt;p id=&quot;s-42a9517f&quot;&gt;这部分通用的东西比较少，都是内部的一些配置文件和服务。&lt;/p&gt;
 &lt;h4 id=&quot;startyml&quot;&gt;start.yml&lt;/h4&gt;
-&lt;p&gt;貌似 TiDB 服务的启动是有严格的依赖关系的，不知道这里如果启动顺序调整，是否会自动重试直到相应依赖服务启动完成。&lt;/p&gt;
+&lt;p id=&quot;s-01afe150&quot;&gt;貌似 TiDB 服务的启动是有严格的依赖关系的，不知道这里如果启动顺序调整，是否会自动重试直到相应依赖服务启动完成。&lt;/p&gt;
 &lt;h2 id=&quot;滚动升级&quot;&gt;滚动升级&lt;/h2&gt;
-&lt;p&gt;在视频讲解中，提到 TiDB 支持滚动升级，这一点在一个 2B 产品功能中很重要，随着产品的开发迭代，能够无痛的给客户进行升级是很重要的。&lt;/p&gt;
-&lt;p&gt;在官方文档中，看到了两个升级文档，分别为 1.0 升级到 2.0 和 2.0 升级到 2.1。使用的滚动升级 YAML 文件为：rolling_update.yml
+&lt;p id=&quot;s-a500aa63&quot;&gt;在视频讲解中，提到 TiDB 支持滚动升级，这一点在一个 2B 产品功能中很重要，随着产品的开发迭代，能够无痛的给客户进行升级是很重要的。&lt;/p&gt;
+&lt;p id=&quot;s-bf682516&quot;&gt;在官方文档中，看到了两个升级文档，分别为 1.0 升级到 2.0 和 2.0 升级到 2.1。使用的滚动升级 YAML 文件为：rolling_update.yml
 升级过程为滚动升级，步骤为：&lt;/p&gt;
-&lt;ol&gt;
+&lt;ol id=&quot;s-016b5622&quot;&gt;
 &lt;li&gt;pre check&lt;/li&gt;
 &lt;li&gt;upgrade&lt;/li&gt;
 &lt;li&gt;post upgrade&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;这里没搞懂为什么 pre check tidb-server 也要顺序执行，看上去只是检测了 TiDB 版本。&lt;/p&gt;
-&lt;p&gt;在 YAML 中指定的升级顺序为：&lt;/p&gt;
-&lt;ol&gt;
+&lt;p id=&quot;s-b4c7e28f&quot;&gt;这里没搞懂为什么 pre check tidb-server 也要顺序执行，看上去只是检测了 TiDB 版本。&lt;/p&gt;
+&lt;p id=&quot;s-5b27b815&quot;&gt;在 YAML 中指定的升级顺序为：&lt;/p&gt;
+&lt;ol id=&quot;s-bee030b8&quot;&gt;
 &lt;li&gt;pd&lt;/li&gt;
 &lt;li&gt;tikv&lt;/li&gt;
 &lt;li&gt;pump&lt;/li&gt;
 &lt;li&gt;tidb&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;这里比较遗憾没有找到升级失败的处理方式，升级 PD 过程中检查健康状态连续 1分钟都未恢复正常，此时 Ansible 退出，PD 处于高版本状态，其他组件 tikv，tidb 还处于低版本状态，不知道这时如何处理，也许是产品上保证了兼容性？&lt;/p&gt;
+&lt;p id=&quot;s-591ead4d&quot;&gt;这里比较遗憾没有找到升级失败的处理方式，升级 PD 过程中检查健康状态连续 1分钟都未恢复正常，此时 Ansible 退出，PD 处于高版本状态，其他组件 tikv，tidb 还处于低版本状态，不知道这时如何处理，也许是产品上保证了兼容性？&lt;/p&gt;
 &lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;了解了 TiDB 的安装和升级，着重学习下 Ansible Playbook 的组织形式，在 tidb-ansible 中，所有的功能都拆分的很细，能采用 ansible 的都用 ansible 实现了，但是难免需要一些脚本配合（fio），这里的选择需要根据实际情况来进行相应修改。&lt;/p&gt;
+&lt;p id=&quot;s-941e5a12&quot;&gt;了解了 TiDB 的安装和升级，着重学习下 Ansible Playbook 的组织形式，在 tidb-ansible 中，所有的功能都拆分的很细，能采用 ansible 的都用 ansible 实现了，但是难免需要一些脚本配合（fio），这里的选择需要根据实际情况来进行相应修改。&lt;/p&gt;
 &lt;h2 id=&quot;吐槽&quot;&gt;吐槽&lt;/h2&gt;
-&lt;p&gt;不知道为什么在代码中 scripts 下放置了许多json 配置文件。。。。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>Ansible最佳实践</title><link>https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</guid><pubDate>Sat, 24 Nov 2018 13:18:28 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;说起来我真正负责过大批量服务器线上管理的时间，还是在16年负责运维的时候，那时候还都是通过 Shell 脚本来完成一些自动化的工作，当时觉得还不错，至少我觉得可定制化上还是很好的。&lt;/p&gt;
-&lt;p&gt;目前负责公司产品中一部分功能目前是通过 Shell 来完成的，但是 Shell 脚本在使用中存在一些弊端，最近在用 Ansible 来重写这部分功能，在重写过程中感受负责，又爱又恨，也有一些疑惑，特此记录。&lt;/p&gt;
+&lt;p id=&quot;s-f2f1f9ee&quot;&gt;不知道为什么在代码中 scripts 下放置了许多json 配置文件。。。。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>Ansible最佳实践</title><link>https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/11/24/Ansible%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</guid><pubDate>Sat, 24 Nov 2018 13:18:28 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;p id=&quot;s-532f3b0f&quot;&gt;说起来我真正负责过大批量服务器线上管理的时间，还是在16年负责运维的时候，那时候还都是通过 Shell 脚本来完成一些自动化的工作，当时觉得还不错，至少我觉得可定制化上还是很好的。&lt;/p&gt;
+&lt;p id=&quot;s-facf900d&quot;&gt;目前负责公司产品中一部分功能目前是通过 Shell 来完成的，但是 Shell 脚本在使用中存在一些弊端，最近在用 Ansible 来重写这部分功能，在重写过程中感受负责，又爱又恨，也有一些疑惑，特此记录。&lt;/p&gt;
 &lt;h2 id=&quot;ansible&quot;&gt;Ansible&lt;/h2&gt;
-&lt;p&gt;相信大家都或多或少听过 Ansible,Puppet,SaltStack 等等自动管理工具，它们的功能都很强大，但使用起来又不简单，Ansible 可以说是这里面上手最快的一个。&lt;/p&gt;
-&lt;p&gt;这里我不讲述 Ansible 具体的使用规则，大家看文档就好，我讲下我常用的几个场景：&lt;/p&gt;
+&lt;p id=&quot;s-df3e53c8&quot;&gt;相信大家都或多或少听过 Ansible,Puppet,SaltStack 等等自动管理工具，它们的功能都很强大，但使用起来又不简单，Ansible 可以说是这里面上手最快的一个。&lt;/p&gt;
+&lt;p id=&quot;s-c660c8e5&quot;&gt;这里我不讲述 Ansible 具体的使用规则，大家看文档就好，我讲下我常用的几个场景：&lt;/p&gt;
 &lt;h3 id=&quot;批量查看操作拷贝&quot;&gt;批量查看、操作、拷贝&lt;/h3&gt;
-&lt;p&gt;无论是作为一名开发，还是测试、运维，应该都碰到过需要管理多台服务器的情况，比如我们想要查看一个集群中所有节点的负责情况，那么我们可以执行：&lt;/p&gt;
+&lt;p id=&quot;s-6f658e76&quot;&gt;无论是作为一名开发，还是测试、运维，应该都碰到过需要管理多台服务器的情况，比如我们想要查看一个集群中所有节点的负责情况，那么我们可以执行：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-cluster&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -m&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; raw&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -a&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;uptime&apos;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;192.168.67.39&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; SUCCESS&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; rc&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &gt;&gt;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 20:23:24&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; up&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 3&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; days,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  7:32,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  4&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; users,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  load&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; average:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 14.97,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 13.81,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 12.55&lt;/span&gt;&lt;/span&gt;
@@ -596,10 +596,10 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;192.168.67.41&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; SUCCESS&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; rc&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &gt;&gt;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 20:23:24&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; up&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 6&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; days,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 22:36,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; user,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  load&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; average:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 19.89,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 20.10,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 19.79&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Shared&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; connection&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 192.168.67.41&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; closed.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;如果我们想要拷贝自己的测试代码到所有的服务器上，我们可以执行：&lt;/p&gt;
+&lt;p id=&quot;s-bbd04f8d&quot;&gt;如果我们想要拷贝自己的测试代码到所有的服务器上，我们可以执行：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ansible&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-cluster&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -m&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; synchronize&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -a&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;src=zbs_rest dest=/usr/lib/python2.7/site-packages/&apos;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&quot;重复性操作&quot;&gt;重复性操作&lt;/h3&gt;
-&lt;p&gt;如果我们经常要查看某些集群（无监控）情况下的性能，我们可以编写一个 playbook，这个 playbook 专门用来收集集群的状态：&lt;/p&gt;
+&lt;p id=&quot;s-6bac994e&quot;&gt;如果我们经常要查看某些集群（无监控）情况下的性能，我们可以编写一个 playbook，这个 playbook 专门用来收集集群的状态：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cat&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; cluster_status.yml&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#!/usr/bin/env ansible-playbook&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;/span&gt;
@@ -625,10 +625,10 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;       register:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; out&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;     -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; debug:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&quot;shell-script-vs-ansible&quot;&gt;Shell Script vs Ansible&lt;/h2&gt;
-&lt;p&gt;通过上述的简单示例，可以体会到 Ansible 的强大，但是 Ansible 真的有那么好么？&lt;/p&gt;
-&lt;p&gt;明明几行  Shell 就可以搞定的事情，为什么一定要使用 Ansible 来做呢？&lt;br&gt;
+&lt;p id=&quot;s-71221406&quot;&gt;通过上述的简单示例，可以体会到 Ansible 的强大，但是 Ansible 真的有那么好么？&lt;/p&gt;
+&lt;p id=&quot;s-ff766c7a&quot;&gt;明明几行  Shell 就可以搞定的事情，为什么一定要使用 Ansible 来做呢？&lt;br&gt;
 明明一个 Shell 脚本就可以完成的环境监察，为什么一定要使用 Ansible Playbook 来做呢？要知道 Playbook 编写语法虽然是 YAML，但是使用起来并不简单，有很多特殊的语法需要去注意，完全没有必要花费精力去学习一个新的工具去完成。&lt;/p&gt;
-&lt;p&gt;前两天看到 &lt;a href=&quot;https://www.kawabangga.com/&quot;&gt;卡瓦邦噶&lt;/a&gt; 介绍 Ansible的一篇博客中，提到了一篇 &lt;a href=&quot;https://hvops.com/articles/ansible-vs-shell-scripts/&quot;&gt;Shell Script vs Ansible: Fight&lt;/a&gt; 的文章（远古版真香），其中有一段总结，用来描述 Ansible 的优势，我加上了 Shell Script 的对比如下：&lt;/p&gt;
+&lt;p id=&quot;s-5b800a8e&quot;&gt;前两天看到 &lt;a href=&quot;https://www.kawabangga.com/&quot;&gt;卡瓦邦噶&lt;/a&gt; 介绍 Ansible的一篇博客中，提到了一篇 &lt;a href=&quot;https://hvops.com/articles/ansible-vs-shell-scripts/&quot;&gt;Shell Script vs Ansible: Fight&lt;/a&gt; 的文章（远古版真香），其中有一段总结，用来描述 Ansible 的优势，我加上了 Shell Script 的对比如下：&lt;/p&gt;
 
 
 
@@ -675,17 +675,17 @@
 
 
 &lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Ansible&lt;/th&gt;&lt;th&gt;Shell Script&lt;/th&gt;&lt;th&gt;优胜者&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td&gt;可以进行源码管理&lt;/td&gt;&lt;td&gt;Shell 也可以&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;幂等性&lt;/td&gt;&lt;td&gt;Shell 中需要额外做条件判断&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;同时在多台服务器运行&lt;/td&gt;&lt;td&gt;Shell 可以通过 sshpass 编写脚本同时在多台运行&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;验证服务器正确性&lt;/td&gt;&lt;td&gt;Shell 需要编写脚本收集更多信息&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;定位部分服务器组&lt;/td&gt;&lt;td&gt;Shell 需要编写脚本对配置文件进行过滤筛选&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;支持模板&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;技术栈支持&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;td&gt;Ansible&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;
-&lt;p&gt;综合看上去，感觉 Ansible 太好了，上述情况下如果可以选择的话，我们都应该选择 Ansible 来做管理，事实上真的是这样么？&lt;/p&gt;
-&lt;p&gt;我也以为是这样，直到我通过 Ansible 重写 Shell 脚本。&lt;/p&gt;
+&lt;p id=&quot;s-c51b0884&quot;&gt;综合看上去，感觉 Ansible 太好了，上述情况下如果可以选择的话，我们都应该选择 Ansible 来做管理，事实上真的是这样么？&lt;/p&gt;
+&lt;p id=&quot;s-d5c1e957&quot;&gt;我也以为是这样，直到我通过 Ansible 重写 Shell 脚本。&lt;/p&gt;
 &lt;h2 id=&quot;噩梦开始&quot;&gt;噩梦开始&lt;/h2&gt;
-&lt;p&gt;由于产品功能需要处理多平台的、多场景的情况，该功能的 Shell 脚本大概有 4800 行左右。&lt;/p&gt;
+&lt;p id=&quot;s-e3d1434c&quot;&gt;由于产品功能需要处理多平台的、多场景的情况，该功能的 Shell 脚本大概有 4800 行左右。&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;--------------------------------------------------------------------------------&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Language&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;                      files&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;          blank&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        comment&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;           code&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;--------------------------------------------------------------------------------&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Bourne&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Shell&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                     57&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            990&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            154&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;           4847&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Python&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                            2&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;             48&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;              0&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            201&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Bourne&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Again&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Shell&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                1&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;              4&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;              5&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;             28&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;我们找一个简单的脚本来看下：&lt;/p&gt;
+&lt;p id=&quot;s-6364afcf&quot;&gt;我们找一个简单的脚本来看下：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;master&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✔&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;cat&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; stage_mount_extent_disks.sh&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;#!/usr/bin/env bash&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
@@ -716,18 +716,18 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    echo&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;mount &lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$disk&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    $cur&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;/mount_extent_disk.sh&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;/dev/&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$disk&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;done&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;这是一个很简单的脚本，首先我们判断了下输入参数，需要输入两块磁盘盘符，接下来等待服务启动后，我们调用另一个脚本进行磁盘的挂载，如果我们想要执行这个脚本，那么我们可以执行执行：&lt;/p&gt;
+&lt;p id=&quot;s-b582cfd2&quot;&gt;这是一个很简单的脚本，首先我们判断了下输入参数，需要输入两块磁盘盘符，接下来等待服务启动后，我们调用另一个脚本进行磁盘的挂载，如果我们想要执行这个脚本，那么我们可以执行执行：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;./stage_mount_extent_disks.sh&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; sda&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; sdb&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;然后等待脚本执行结束就可以了，这里的 sda 和 sdb 是存在一个 json 文件中，我们使用 &lt;code&gt;jq&lt;/code&gt; 命令可以很容易的获取到 json 文件中的执行磁盘。&lt;/p&gt;
-&lt;p&gt;那么我们在 Ansible Playbook 我们要怎么做？&lt;/p&gt;
-&lt;ol&gt;
+&lt;p id=&quot;s-6bf90a39&quot;&gt;然后等待脚本执行结束就可以了，这里的 sda 和 sdb 是存在一个 json 文件中，我们使用 &lt;code&gt;jq&lt;/code&gt; 命令可以很容易的获取到 json 文件中的执行磁盘。&lt;/p&gt;
+&lt;p id=&quot;s-0003a1bc&quot;&gt;那么我们在 Ansible Playbook 我们要怎么做？&lt;/p&gt;
+&lt;ol id=&quot;s-4247daae&quot;&gt;
 &lt;li&gt;读取配置文件，并将读取结果设置为参数 &lt;code&gt;myvar&lt;/code&gt;&lt;/li&gt;
 &lt;li&gt;解析 &lt;code&gt;myvar&lt;/code&gt; 获取 extent disks list，注意，这里的解析语法是 JMESPath 的语法&lt;/li&gt;
 &lt;li&gt;将 extent disk list 转换为 extent disk string ，这里是因为如果调用 raw 模块，需要传递字符串&lt;/li&gt;
 &lt;li&gt;如果平台是 xen7 的话，执行 xen7 的脚本&lt;/li&gt;
 &lt;li&gt;如果平台不是 xen7，且是 halo 的话，执行 halo 脚本&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;具体 Playbook 如下：&lt;/p&gt;
+&lt;p id=&quot;s-daccc1fd&quot;&gt;具体 Playbook 如下：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; name:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; mount&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; extent&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; disk&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  gather_facts:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; false&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  hosts:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; master:storage&lt;/span&gt;&lt;/span&gt;
@@ -756,13 +756,13 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        when:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; myvar.xen7&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ==&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; False&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; and&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; myvar.halo&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ==&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; True&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        register:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; out&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;      -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; debug:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;相信大家通过这个简单的示例发现一些问题，我总结了下：&lt;/p&gt;
-&lt;ol&gt;
+&lt;p id=&quot;s-5563d430&quot;&gt;相信大家通过这个简单的示例发现一些问题，我总结了下：&lt;/p&gt;
+&lt;ol id=&quot;s-0f64b4ca&quot;&gt;
 &lt;li&gt;如果脚本中存在较多判断，不宜使用 Playbook 实现逻辑&lt;/li&gt;
 &lt;li&gt;如果脚本中存在部分参数解析功能，不宜使用 Playbook 实现逻辑&lt;/li&gt;
 &lt;li&gt;不要过度拆分 task，保证每个 task 完整性&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;其实上面的 Playbook 我们完全可以写成这样：&lt;/p&gt;
+&lt;p id=&quot;s-7589410b&quot;&gt;其实上面的 Playbook 我们完全可以写成这样：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; name:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; mount&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; extent&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; disk&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  gather_facts:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; false&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  hosts:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; master:storage&lt;/span&gt;&lt;/span&gt;
@@ -772,19 +772,19 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        raw:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /usr/share/tuna/script/stage_mount_extent_disks.sh&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;{{ extent_disk_string }}&quot;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;        register:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; out&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;      -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; debug:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; var=out.stdout_lines&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Ansible 只作操作分发，减轻 Playbook 复杂性，虽然这会损失一部分幂等性，但是可以最简化的满足要求，同时执行，获取执行结果。&lt;/p&gt;
+&lt;p id=&quot;s-f6503008&quot;&gt;Ansible 只作操作分发，减轻 Playbook 复杂性，虽然这会损失一部分幂等性，但是可以最简化的满足要求，同时执行，获取执行结果。&lt;/p&gt;
 &lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;从个人使用上来说，Ansible 还是很好用的，至少它无需 Agent，SSH 连接等特性，使用起来很友好。&lt;br&gt;
+&lt;p id=&quot;s-3288d690&quot;&gt;从个人使用上来说，Ansible 还是很好用的，至少它无需 Agent，SSH 连接等特性，使用起来很友好。&lt;br&gt;
 但是我们也不应该过分使用 Playbook，编写 Playbook 解析 json 花费了不少的时间，远不如直接在被执行脚本中完成的成本低。&lt;/p&gt;
-&lt;p&gt;Ansible 还有一些未能合理解决的问题，比如如何知道一个 Playbook 执行的总体进度？
+&lt;p id=&quot;s-a1d9b33a&quot;&gt;Ansible 还有一些未能合理解决的问题，比如如何知道一个 Playbook 执行的总体进度？
 如何获取执行的实时结果输出等。&lt;/p&gt;
-&lt;p&gt;如果我们只是普通的操作一些节点执行命令，获取信息，那么完全可以通过 sshpass，mmh 等命令完成，相对来说更方便。&lt;/p&gt;
-&lt;p&gt;希望随着自己的使用，能够更好的掌握使用 Ansible 的度。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>Ansible 配置 IPv6 连接</title><link>https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</guid><pubDate>Fri, 17 Aug 2018 05:43:40 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;平时工作中因为通常需要远程操作较多 Linux 环境，引入了 Ansible，但是大都是通过 Ansible 远程命令的方式执行，少数的封装为 Playbook 也是很简单的配置。
+&lt;p id=&quot;s-03cc7bda&quot;&gt;如果我们只是普通的操作一些节点执行命令，获取信息，那么完全可以通过 sshpass，mmh 等命令完成，相对来说更方便。&lt;/p&gt;
+&lt;p id=&quot;s-480a5b2e&quot;&gt;希望随着自己的使用，能够更好的掌握使用 Ansible 的度。&lt;/p&gt;</content:encoded><category>Ansible</category></item><item><title>Ansible 配置 IPv6 连接</title><link>https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/08/17/Ansible-%E9%85%8D%E7%BD%AE-IPv6-%E8%BF%9E%E6%8E%A5/</guid><pubDate>Fri, 17 Aug 2018 05:43:40 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
+&lt;p id=&quot;s-eee96b60&quot;&gt;平时工作中因为通常需要远程操作较多 Linux 环境，引入了 Ansible，但是大都是通过 Ansible 远程命令的方式执行，少数的封装为 Playbook 也是很简单的配置。
 最早的时候用过简单的 SaltStack，但是要安装 Agent，觉得不好用，在 16年早期的时候使用 Ansible，简单快捷（当然我对性能没有要求）。
 最近需要把之前由 Shell &amp;#x26; Python 拼装的一个服务统一用 Ansible 进行重写，又花了些时间看了看相关文档。发现大家操作远程机器无论是通过秘钥还是通过密码，都是基于 IPv4 的地址链接的，而有些机器是没有 IPv4 地址的，于是花费了些时间验证 Ansible IPv6 配置方式。&lt;/p&gt;
 &lt;h2 id=&quot;ipv6&quot;&gt;IPv6&lt;/h2&gt;
-&lt;p&gt;IPv6 维基百科的解释是：网际协议第6版（英文：Internet Protocol version 6，缩写：IPv6）是网际协议（IP）的最新版本，用作互联网的网络层协议，用它来取代IPv4主要是为了解决IPv4地址枯竭问题，不过它也在其他很多方面对IPv4有所改进。我们目前日常中使用的地址都是 IPv4 的地址（比如：192.168.1.1）。
+&lt;p id=&quot;s-84f9d099&quot;&gt;IPv6 维基百科的解释是：网际协议第6版（英文：Internet Protocol version 6，缩写：IPv6）是网际协议（IP）的最新版本，用作互联网的网络层协议，用它来取代IPv4主要是为了解决IPv4地址枯竭问题，不过它也在其他很多方面对IPv4有所改进。我们目前日常中使用的地址都是 IPv4 的地址（比如：192.168.1.1）。
 使用 IPv6 有一个好处是，可以通过 NDP（Neighbor Discovery Protocol）扫描二层网络内的所有的 IPv6 地址，方便我们使用，那么我们如何判断 IPv6 是否可以连通呢？
 可以通过 ping6 的方式判断，比如：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 14:00:44 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$ping6 fe80::2487:93ff:fe9a:c546%port-mgt&lt;/span&gt;&lt;/span&gt;
@@ -796,32 +796,32 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; packets&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; transmitted,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; received,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0%&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; packet&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; loss,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; time&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1000ms&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;rtt&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; min/avg/max/mdev&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; =&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 0.443/0.465/0.488/0.031&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ms&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;注意这里的 IPv6 的格式，前面是 IPv6 地址，后面是本地网络接口名称，如果是物理网卡则接物理网卡名称，如果是 OVS Port，则接 Port 名称。&lt;/p&gt;
-&lt;p&gt;既然地址可以连通，那么我们思考如何进行远程控制。&lt;/p&gt;
+&lt;p id=&quot;s-ffa8b6d2&quot;&gt;注意这里的 IPv6 的格式，前面是 IPv6 地址，后面是本地网络接口名称，如果是物理网卡则接物理网卡名称，如果是 OVS Port，则接 Port 名称。&lt;/p&gt;
+&lt;p id=&quot;s-2e3a194d&quot;&gt;既然地址可以连通，那么我们思考如何进行远程控制。&lt;/p&gt;
 &lt;h2 id=&quot;ssh-远程连接&quot;&gt;SSH 远程连接&lt;/h2&gt;
-&lt;p&gt;通常我们通过 IPv4 地址链接远程 Linux，通过如下方式：&lt;/p&gt;
+&lt;p id=&quot;s-084edb2a&quot;&gt;通常我们通过 IPv4 地址链接远程 Linux，通过如下方式：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 14:01:23 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$ssh 192.168.30.112&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@192.168.30.112&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;&apos;s password: &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Last login: Fri Aug 17 12:15:52 2018 from 192.168.16.1&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;[root@node112 14:03:46 ~]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;我们尝试将上面的 IPv4 地址替换为 IPv6 地址试试看：&lt;/p&gt;
+&lt;p id=&quot;s-9dd281d9&quot;&gt;我们尝试将上面的 IPv4 地址替换为 IPv6 地址试试看：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 14:04:55 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$ssh fe80::2487:93ff:fe9a:c546&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ssh:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; connect&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; host&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::2487:93ff:fe9a:c546&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; port&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 22:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; Invalid&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; argument&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 14:05:10 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;直接指定 IPv6 地址是无法识别的，那么我们按照 ping6 规则，加上网络接口名称试试看：&lt;/p&gt;
+&lt;p id=&quot;s-51cc5d44&quot;&gt;直接指定 IPv6 地址是无法识别的，那么我们按照 ping6 规则，加上网络接口名称试试看：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 14:05:10 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$ssh fe80::2487:93ff:fe9a:c546%port-mgt&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@fe80::2487:93ff:fe9a:c546%port-mgt&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;&apos;s password: &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Last login: Fri Aug 17 14:04:56 2018 from fe80::d4b7:acff:fe2f:604e%ovsbr-mgt&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;[root@node112 14:03:46 ~]$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;一切顺利，我们成功的登录到了远程的机器上，我们知道 Ansible 是通过 SSH 的方式远程控制的，具体是调用 Python 的 (paramiko)[&lt;a href=&quot;https://github.com/paramiko/paramiko/&quot;&gt;https://github.com/paramiko/paramiko/&lt;/a&gt;] ，我们接下来配置 Ansible。&lt;/p&gt;
+&lt;p id=&quot;s-659e6140&quot;&gt;一切顺利，我们成功的登录到了远程的机器上，我们知道 Ansible 是通过 SSH 的方式远程控制的，具体是调用 Python 的 (paramiko)[&lt;a href=&quot;https://github.com/paramiko/paramiko/&quot;&gt;https://github.com/paramiko/paramiko/&lt;/a&gt;] ，我们接下来配置 Ansible。&lt;/p&gt;
 &lt;h2 id=&quot;ansible-远程连接&quot;&gt;Ansible 远程连接&lt;/h2&gt;
-&lt;p&gt;Ansible Inventory 标准格式是：&lt;code&gt;IP  options&lt;/code&gt; ，比如：&lt;/p&gt;
+&lt;p id=&quot;s-b83558fe&quot;&gt;Ansible Inventory 标准格式是：&lt;code&gt;IP  options&lt;/code&gt; ，比如：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[cluster]&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::58d3:16ff:fe43:ce77%port-mgt&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible_ssh_user=root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ansible_ssh_pass=abc123&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;验证 Ansible 远程控制：&lt;/p&gt;
+&lt;p id=&quot;s-692a4a19&quot;&gt;验证 Ansible 远程控制：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[root@node111 14:11:14 &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;~&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]$ansible cluster -m raw -a &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;uptime&apos;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;fe80::58d3:16ff:fe43:ce77%port-mgt&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; SUCCESS&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; rc&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;0&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &gt;&gt;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; 14:11:22&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; up&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 7&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; days,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 23:15,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; users,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;  load&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; average:&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1.55,&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1.39,&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 1.23&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Shared&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; connection&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; fe80::58d3:16ff:fe43:ce77%port-mgt&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; closed.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;只要注意在 IPv6 地址后加上本地网络接口名称就可以正确配置 IPv6 远程控制了。&lt;/p&gt;</content:encoded><category>Ansible</category></item></channel></rss>
+&lt;p id=&quot;s-0dede9ab&quot;&gt;只要注意在 IPv6 地址后加上本地网络接口名称就可以正确配置 IPv6 远程控制了。&lt;/p&gt;</content:encoded><category>Ansible</category></item></channel></rss>

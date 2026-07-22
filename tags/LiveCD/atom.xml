@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: LiveCD - Yiran&apos;s Blog</title><description>标签 &quot;LiveCD&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>CentOS LiveCD 构建及修改方式</title><link>https://zdyxry.github.io/2018/08/03/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/08/03/CentOS-LiveCD-%E6%9E%84%E5%BB%BA%E5%8F%8A%E4%BF%AE%E6%94%B9%E6%96%B9%E5%BC%8F/</guid><pubDate>Fri, 03 Aug 2018 22:39:28 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;Linux 作为目前服务器占比超过 60% 的操作系统，日常使用过程中，都是采用官方发布的 DVD ISO 安装，可以选择安装桌面版本还是 Minimal 版本。但是如果我们想要验证服务器硬件是否满足产品需求，就需要通过 Live CD 的方式先在内存中运行操作系统，然后进行硬件检测。通过这种方式可以在最小成本（无需安装操作系统到磁盘中）下完成硬件检测。目前 OpenStack 厂商 Mirantis 及云计算厂商 Nutanix 均采用该种方式进行产品安装前校验。要进行校验的第一步，就是构建属于我们自己的 Live CD ISO，下面以 CentOS 为例介绍如何构建和定制 Live CD ISO。&lt;/p&gt;
+&lt;p id=&quot;s-e44266cf&quot;&gt;Linux 作为目前服务器占比超过 60% 的操作系统，日常使用过程中，都是采用官方发布的 DVD ISO 安装，可以选择安装桌面版本还是 Minimal 版本。但是如果我们想要验证服务器硬件是否满足产品需求，就需要通过 Live CD 的方式先在内存中运行操作系统，然后进行硬件检测。通过这种方式可以在最小成本（无需安装操作系统到磁盘中）下完成硬件检测。目前 OpenStack 厂商 Mirantis 及云计算厂商 Nutanix 均采用该种方式进行产品安装前校验。要进行校验的第一步，就是构建属于我们自己的 Live CD ISO，下面以 CentOS 为例介绍如何构建和定制 Live CD ISO。&lt;/p&gt;
 &lt;h2 id=&quot;流程&quot;&gt;流程&lt;/h2&gt;
-&lt;ol&gt;
+&lt;ol id=&quot;s-16899881&quot;&gt;
 &lt;li&gt;准备构建工具&lt;/li&gt;
 &lt;li&gt;编写 KickStart 脚本&lt;/li&gt;
 &lt;li&gt;准备软件源&lt;/li&gt;
 &lt;li&gt;构建&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h3 id=&quot;构建工具&quot;&gt;构建工具&lt;/h3&gt;
-&lt;p&gt;核心工具 &lt;a href=&quot;https://github.com/livecd-tools/livecd-tools&quot;&gt;livecd-creator&lt;/a&gt;。
+&lt;p id=&quot;s-19138b59&quot;&gt;核心工具 &lt;a href=&quot;https://github.com/livecd-tools/livecd-tools&quot;&gt;livecd-creator&lt;/a&gt;。
 构建环境为 CentOS 7。指定官方 yum repo：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-30-250:/etc/yum.repos.d&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ll&lt;/span&gt;&lt;/span&gt;
@@ -26,13 +26,13 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 1.1K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 10月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  3&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 2017&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; epel-testing.repo&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  306&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 7月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;   2&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 13:58&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; mcepl-vim8-epel-7.repo&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-rw-r--r--&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  1&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; root&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 3.2K&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 6月&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;  23&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; 19:00&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; smartx-idc.repo&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;通过 Yum 安装，会自动安装相应依赖软件包：&lt;/p&gt;
+&lt;p id=&quot;s-77321aca&quot;&gt;通过 Yum 安装，会自动安装相应依赖软件包：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;yum&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; install&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -y&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; livecd-tools&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&quot;kickstart-脚本&quot;&gt;KickStart 脚本&lt;/h3&gt;
-&lt;p&gt;什么是 KickStart？许多系统管理员更愿意使用自动安装方法在其服务器上安装 Red Hat Enterprise Linux。为了满足这一需求，Red Hat 创建了 KickStart 安装方法。具体 KickStart 编写语法查看 &lt;a href=&quot;https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-kickstart-syntax&quot;&gt;RedHat 官方&lt;/a&gt;查看
+&lt;p id=&quot;s-09e57cf8&quot;&gt;什么是 KickStart？许多系统管理员更愿意使用自动安装方法在其服务器上安装 Red Hat Enterprise Linux。为了满足这一需求，Red Hat 创建了 KickStart 安装方法。具体 KickStart 编写语法查看 &lt;a href=&quot;https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-kickstart-syntax&quot;&gt;RedHat 官方&lt;/a&gt;查看
 这里我们可以先参考&lt;a href=&quot;https://github.com/CentOS/sig-core-livemedia/blob/master/kickstarts/centos-7-livecd.cfg&quot;&gt;官方样例&lt;/a&gt;，先确保通过官方样例可以构建成功，我们再来进行自己的定制操作。
 将官方样例下载到本地，接下来看下面一节，不着急定制。&lt;/p&gt;
-&lt;p&gt;如果按照官方样例已经正确构建了自己的 ISO，那么我们下面来看如何进行简单的定制，如配置网络。
+&lt;p id=&quot;s-431f533b&quot;&gt;如果按照官方样例已经正确构建了自己的 ISO，那么我们下面来看如何进行简单的定制，如配置网络。
 打开 KickStart.cfg 文件，我们可以看到除了特定的语法外，其他的都是 Shell 脚本，可见 KickStart 是兼容 Shell 语法的，那么我们就可以直接在 KickStart 内指定要进行的事情。
 如启动之后配置网卡信息：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# config eth0&lt;/span&gt;&lt;/span&gt;
@@ -46,22 +46,22 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;EOF&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;ifup&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; eth0&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;或者安装某指定软件并自动启动：&lt;/p&gt;
+&lt;p id=&quot;s-16b64526&quot;&gt;或者安装某指定软件并自动启动：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# install &amp;#x26; start &amp;#x26; enable dhcpd&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;yum&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; install&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -y&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; dhcpd&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;systemctl&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; enable&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; dhcpd&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;systemctl&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; start&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; dhcpd&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;tail&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -n&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 10&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /var/lib/dhcpd/dhcpd.leases&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&quot;准备软件源&quot;&gt;准备软件源&lt;/h3&gt;
-&lt;p&gt;在之前的博客中我们介绍过 RPM 及 Yum 等工具的概念及使用。
+&lt;p id=&quot;s-7fe2472e&quot;&gt;在之前的博客中我们介绍过 RPM 及 Yum 等工具的概念及使用。
 我们现在需要构建一个本地的 Yum Repo。通用做法为：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$cd /data/&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mkdir packages&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$cp $some_packages packages&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$createrepo &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;.&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;这样我们就创建好了一个本地的 Yum repo，如何让本地 Yum 生效呢？
+&lt;p id=&quot;s-f34d63f1&quot;&gt;这样我们就创建好了一个本地的 Yum repo，如何让本地 Yum 生效呢？
 我们可以通过 http 或者 ftp 的方式配置，只需要将 /data/packages 这个路径允许通过文件方式访问。&lt;/p&gt;
-&lt;p&gt;上面这种方式通常用于定制化使用，我们此处为了简化操作，可以直接拷贝一个官方 ISO，挂载到本地的方式作为本地 Yum Repo。具体操作如下：&lt;/p&gt;
+&lt;p id=&quot;s-e15dce62&quot;&gt;上面这种方式通常用于定制化使用，我们此处为了简化操作，可以直接拷贝一个官方 ISO，挂载到本地的方式作为本地 Yum Repo。具体操作如下：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$cd /data/&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mkdir /data/centos7&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mount CentOS-7.4-x86_64-DVD-1708.iso /data/centos7&lt;/span&gt;&lt;/span&gt;
@@ -75,14 +75,14 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;gpgcheck=0&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;EOF&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;$&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;我们就可以通过 yum 的方式安装软件包了。&lt;/p&gt;
+&lt;p id=&quot;s-ecf97114&quot;&gt;我们就可以通过 yum 的方式安装软件包了。&lt;/p&gt;
 &lt;h3 id=&quot;构建-live-cd-iso&quot;&gt;构建 Live CD ISO&lt;/h3&gt;
-&lt;p&gt;在一切准备好之后，我们开始构建 ISO。
+&lt;p id=&quot;s-0b6a40eb&quot;&gt;在一切准备好之后，我们开始构建 ISO。
 编辑官方样例，将 17 &amp;#x26; 18 行替换为如下文件，指定我们刚刚指定的本地 Yum repo：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;repo&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --name=base&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --baseurl=file:///data/packages&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;使用 livecd-tools 构建名为 yiran-live.iso：&lt;/p&gt;
+&lt;p id=&quot;s-0a7cdb13&quot;&gt;使用 livecd-tools 构建名为 yiran-live.iso：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;livecd-creator&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -v&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --config&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; centos-7-livecd.cfg&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --cache&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; /var/cache/livecd&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --name&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; yiran-livecd&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;构建过程大概需要 5 ~ 10 分钟，构建完成后我们可以再当前路径下看到 yiran-livecd.iso，我们来看下 ISO 中的目录结构：&lt;/p&gt;
+&lt;p id=&quot;s-bcb3ce9a&quot;&gt;构建过程大概需要 5 ~ 10 分钟，构建完成后我们可以再当前路径下看到 yiran-livecd.iso，我们来看下 ISO 中的目录结构：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mkdir /tmp/yiran-livecd&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$mount yiran-livecd.iso /tmp/yiran-livecd&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;$tree /tmp/yiran-livecd&lt;/span&gt;&lt;/span&gt;
@@ -97,7 +97,7 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;└──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; LiveOS&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    ├──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; osmin.img&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    └──&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; squashfs.img&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;可以看到，用于启动引导的文件均在 isolinux 路径下，而设计到文件系统相关的文件均被打包压缩到 &lt;code&gt;squashfs.img&lt;/code&gt; 中，如果想要更多的定制方式，我们就需要解压这个 img 文件并修改对应路径下的内容，然后再压缩重新制作 ISO，这里不深入介绍。&lt;/p&gt;
+&lt;p id=&quot;s-1b6ae2a6&quot;&gt;可以看到，用于启动引导的文件均在 isolinux 路径下，而设计到文件系统相关的文件均被打包压缩到 &lt;code&gt;squashfs.img&lt;/code&gt; 中，如果想要更多的定制方式，我们就需要解压这个 img 文件并修改对应路径下的内容，然后再压缩重新制作 ISO，这里不深入介绍。&lt;/p&gt;
 &lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;构建属于自己的 ISO 可以很方便的在日常工作中开展工作，我们可以直接挂载 LiveCD 并直接查看磁盘内容，可以把我们常用的内置软件放到 ISO 中，减少重复的安装操作。&lt;/p&gt;
-&lt;p&gt;LiveCD 工作中用处不多，硬件检查是一项很符合 LiveCD 本职功能的需求，无论是时间成本还是实现成本都是很低的，推荐使用。&lt;/p&gt;</content:encoded><category>Linux</category><category>LiveCD</category></item></channel></rss>
+&lt;p id=&quot;s-29d20375&quot;&gt;构建属于自己的 ISO 可以很方便的在日常工作中开展工作，我们可以直接挂载 LiveCD 并直接查看磁盘内容，可以把我们常用的内置软件放到 ISO 中，减少重复的安装操作。&lt;/p&gt;
+&lt;p id=&quot;s-1f51c889&quot;&gt;LiveCD 工作中用处不多，硬件检查是一项很符合 LiveCD 本职功能的需求，无论是时间成本还是实现成本都是很低的，推荐使用。&lt;/p&gt;</content:encoded><category>Linux</category><category>LiveCD</category></item></channel></rss>

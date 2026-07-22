@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: logging - Yiran&apos;s Blog</title><description>标签 &quot;logging&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>Python logging 最佳实践-译</title><link>https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</guid><pubDate>Sun, 22 Jul 2018 01:50:47 GMT</pubDate><content:encoded>&lt;p&gt;Python Logging 最佳实践&lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: logging - Yiran&apos;s Blog</title><description>标签 &quot;logging&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>Python logging 最佳实践-译</title><link>https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/07/22/Python-logging-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5-%E8%AF%91/</guid><pubDate>Sun, 22 Jul 2018 01:50:47 GMT</pubDate><content:encoded>&lt;p id=&quot;s-d7d2dc16&quot;&gt;Python Logging 最佳实践&lt;/p&gt;
 &lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有
+&lt;p id=&quot;s-01846764&quot;&gt;最近在工作中要新增一个服务，需要处理服务日志，之前每次使用 logging 都是很简单的配置，没有
 了解过最佳实践， google 到了 fangpenlin 写的一篇博客（&lt;a href=&quot;https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/%EF%BC%89%EF%BC%8C&quot;&gt;https://fangpenlin.com/posts/2012/08/26/good-logging-practice-in-python/），&lt;/a&gt;
 很受用，因此翻译过来便于自己以后回顾使用，也希望大家能够正确配置日志，对运维同学友好些~&lt;/p&gt;
 &lt;h2 id=&quot;good-logging-practice-in-python&quot;&gt;Good Logging practice in Python&lt;/h2&gt;
-&lt;p&gt;在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。
+&lt;p id=&quot;s-f51d70dd&quot;&gt;在显示中，日志是重要的。当你在转账时，它们是转账记录。当飞机起飞时，黑匣子会记录所有事情。
 如果某些事情发生了错误，人们可以通过阅读日志有机会弄清楚发生了什么。同样，在系统开发、排查
 和运行中日志也是重要的。当你编写了一个服务，日志就是必须品。如果没有日志，我几乎不可能发现
 错误如果服务已经挂掉。不仅仅是服务，日志对于桌面应用也是重要的。举个例子，当你的程序在你
 客户电脑崩溃了，你可以让他们发送日志文件给你，你才有可能去查找为什么崩溃。相信我，你永远
 不知道在不同的电脑环境中会发生什么奇怪的问题.&lt;/p&gt;
 &lt;h2 id=&quot;print-不是个好主意&quot;&gt;Print 不是个好主意&lt;/h2&gt;
-&lt;p&gt;尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
+&lt;p id=&quot;s-a9326055&quot;&gt;尽管日志很重要，但是不是所有的开发者都知道如何正确的使用。我见过一些开发者在开发过程中插入
 一些 print ，在开发结束时删除这些 print。向下面这样：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;print&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;Start reading database&apos;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;records &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; model.read_recrods()&lt;/span&gt;&lt;/span&gt;
@@ -19,13 +19,13 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;print&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;Updating record ...&apos;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;model.update_records(records)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;print&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &apos;done&apos;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。
+&lt;p id=&quot;s-08285d7d&quot;&gt;当程序是一个简单的脚本时这是工作的，但是对于一个复杂的系统，你最好不要通过这种途径记录日志。
 第一，你在日志中无法记录重要的信息，你可能看到很多垃圾信息在日志中，但是没有找到任何有用的。
 你也不能通过不修改代码的方式控制日志的输出，还有可能在不使用这些 print 的时候忘记删除掉。
 所有的 print 信息都将输出到标准输出中，这个是要禁止的。当然你可以输出到标准错误输出中，但是
 这仍不是记录日志的最佳实践。&lt;/p&gt;
 &lt;h2 id=&quot;使用-python-标准库-logging&quot;&gt;使用 Python 标准库 Logging&lt;/h2&gt;
-&lt;p&gt;所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
+&lt;p id=&quot;s-07e3f4ec&quot;&gt;所以，如何正确的记录日志？ 很简单，使用标准库中的 logging 模块。感谢 Python 社区，logging
 在标准库中，它被设计的灵活且易用。你可以使用 logging 像下面这样：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logging.basicConfig(&lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;level&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logging.&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;INFO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
@@ -38,25 +38,25 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Updating records ...&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# update records here&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Finish updating records&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;你可以运行得到下面输出：&lt;/p&gt;
+&lt;p id=&quot;s-aabb7c07&quot;&gt;你可以运行得到下面输出：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;INFO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Start reading database&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;INFO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Updating records &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;...&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;INFO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Finish updating records&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;你可能会问这与 print 有什么区别。这样做当然是有好处的：&lt;/p&gt;
-&lt;ul&gt;
+&lt;p id=&quot;s-47770d47&quot;&gt;你可能会问这与 print 有什么区别。这样做当然是有好处的：&lt;/p&gt;
+&lt;ul id=&quot;s-48078e68&quot;&gt;
 &lt;li&gt;你可以控制信息级别，过滤掉不重要的信息&lt;/li&gt;
 &lt;li&gt;你可以决定之后输出的位置和方式&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;有不同的日志级别你可以使用：debug，info，warning，error 和 critical。
+&lt;p id=&quot;s-c6f13c12&quot;&gt;有不同的日志级别你可以使用：debug，info，warning，error 和 critical。
 通过设置不同的日志级别，你可以只输出错误信息到指定的日志文件中，或者在 debug
 时输出调试的详细信息。尝试改变日志级别为 debug 再观察下输出结果：&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;logging.basicConfig(level=logging.DEBUG)&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt;输出结果：&lt;/p&gt;
+&lt;p id=&quot;s-88e313e3&quot;&gt;&lt;code&gt;logging.basicConfig(level=logging.DEBUG)&lt;/code&gt;&lt;/p&gt;
+&lt;p id=&quot;s-e11f2936&quot;&gt;输出结果：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;INFO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Start reading database&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;DEBUG&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Records: {&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;john&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;55&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;tom&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;66&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;INFO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Updating records &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;...&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;INFO&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Finish updating records&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定
+&lt;p id=&quot;s-9cf67df6&quot;&gt;像你所看到的那样，我们调整日志级别为 DEBUG，调试记录输出在日志中。你也可以决定
 如何处理这些信息.举个例子你可以使用 FileHandler 让日志输出到一个文件中：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
@@ -75,19 +75,19 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logger.addHandler(handler)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Hello baby&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。
+&lt;p id=&quot;s-ea092610&quot;&gt;有很多种不同的处理方式，你可以发送日志到你的消息中心，甚至是一个远端的服务器。
 你也可以自定义日志处理方式，更多信息可以参考： Basic Tutorial, Advanced Tutorial and Logging Cookbook.&lt;/p&gt;
 &lt;h2 id=&quot;设置正确的日志级别&quot;&gt;设置正确的日志级别&lt;/h2&gt;
-&lt;p&gt;由于 logging 的灵活性，你可以在任何地方配置适当的日志级别去记录日志，可以再之后配置他们。
+&lt;p id=&quot;s-1338a08d&quot;&gt;由于 logging 的灵活性，你可以在任何地方配置适当的日志级别去记录日志，可以再之后配置他们。
 你可能会问，什么是正确的日志级别，这里我将分享我的经验。&lt;/p&gt;
-&lt;p&gt;在大多数场景下，在日志中不希望去看到大量的详细信息。因此，debug 级别只是在你
+&lt;p id=&quot;s-8c7023a5&quot;&gt;在大多数场景下，在日志中不希望去看到大量的详细信息。因此，debug 级别只是在你
 调试过程中开启。我只使用调试级别来获取详细的调试信息，特别是当数据量很大或者频率
 很高的时候，比如在一个 for 循环中记录某些内部的状态变化。&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; complex_algorithm&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(items):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    for&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; i, item &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;in&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; enumerate&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(items):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;        # do some complex algorithm computation&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        logger.debug(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; iteration, item=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, i, item)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：&lt;/p&gt;
+&lt;p id=&quot;s-8735ca89&quot;&gt;对于一般日志我使用 info 级别，比如，处理请求或者服务状态变化：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; handle_request&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(request):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Handling request &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, request)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;    # handle request here&lt;/span&gt;&lt;/span&gt;
@@ -98,30 +98,30 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Starting service at port &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ...&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, port)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    service.start()&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Service is started&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如
+&lt;p id=&quot;s-0fae441b&quot;&gt;当一个状态比较重要，但是又没有处于 error 状态时，我会使用 warning ，比如
 当一个用户登录时使用了错误的密码或者连接很慢时：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; authenticate&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(user_name, password, ip_address):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; user_name &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;!=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; USER_NAME&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; and&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; password &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;!=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; PASSWORD&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        logger.warn(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Login attempt to &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; from IP &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, user_name, ip_address)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        return&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; False&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;    # do authentication here&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：&lt;/p&gt;
+&lt;p id=&quot;s-12b80a49&quot;&gt;当某些事情出现了错误，我使用 error 级别，比如抛出异常，I/O 操作失败或者连接失败：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; get_user_by_id&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(user_id):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    user &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; db.read_user(user_id)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    if&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; user &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;is&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; None&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        logger.error(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Cannot find user with user_id=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;%s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, user_id)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;        return&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; user&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    return&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; user&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,
+&lt;p id=&quot;s-69bedcea&quot;&gt;我很少使用严重级别，你可以在某些事情真的发生时，你可以使用它。比如内存泄露,
 磁盘空间不足.&lt;/p&gt;
 &lt;h2 id=&quot;使用-name-作为-logger-名称&quot;&gt;使用 &lt;strong&gt;name&lt;/strong&gt; 作为 logger 名称&lt;/h2&gt;
-&lt;p&gt;你不需要讲 logger 名称设置为 &lt;strong&gt;name&lt;/strong&gt; ，但是如果这样做，会带来一些好处。
+&lt;p id=&quot;s-18246ecc&quot;&gt;你不需要讲 logger 名称设置为 &lt;strong&gt;name&lt;/strong&gt; ，但是如果这样做，会带来一些好处。
 &lt;strong&gt;name&lt;/strong&gt; 变量在 Python 中是当前模块名称。举个例子，你可以调用
 logger.getLogger(&lt;strong&gt;name&lt;/strong&gt;) 在模块 “foo.bar.my_module”中，这相当于
 logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配置为 “foo”，
 这样所有在 foo 包中的模块都共享同样的配置。你可以在阅读日志的时候了解模块信息。&lt;/p&gt;
 &lt;h2 id=&quot;捕获异常并使用-traceback-记录&quot;&gt;捕获异常并使用 traceback 记录&lt;/h2&gt;
-&lt;p&gt;记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
+&lt;p id=&quot;s-8a875141&quot;&gt;记录哪些地方出错总是一个好的做法，但是如果没有 traceback 这用处很小。你应该捕获
 异常并与 traceback 一起记录他们。像这个例子：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;try&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    open&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;/path/to/does/not/exist&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;rb&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
@@ -129,20 +129,20 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    raise&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;except&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; Exception&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, e:&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    logger.error(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Failed to open file&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;exc_info&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;True&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以
+&lt;p id=&quot;s-c90febcd&quot;&gt;通过 exc_info=True 参数调用 logger 方法，traceback 会被记录到日志中，你可以
 看到这样的结果：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;ERROR&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:__main__:Failed to &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;open&lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt; file&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;Traceback (most recent call last):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;  File &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&quot;example.py&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, line &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;6&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;in&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; &amp;#x3C;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;module&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;&gt;&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    open&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;/path/to/does/not/exist&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;rb&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;IOError&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: [Errno &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;2&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;] No such &lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;file&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; or&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; directory: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;/path/to/does/not/exist&apos;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;你也可以调用 logger.Exception(msg, *args)，这相当于 logger.error(msg,exc_info=True,*args)。&lt;/p&gt;
+&lt;p id=&quot;s-290088d0&quot;&gt;你也可以调用 logger.Exception(msg, *args)，这相当于 logger.error(msg,exc_info=True,*args)。&lt;/p&gt;
 &lt;h2 id=&quot;除非-disable_existing_loggers--false否则不要在模块级别获取-logger&quot;&gt;除非 disable_existing_loggers == False，否则不要在模块级别获取 logger&lt;/h2&gt;
-&lt;p&gt;你可以看到很多的例子（包括这篇文章）在模块级别获取 logger。这看上去是无害的，
+&lt;p id=&quot;s-f08c9a98&quot;&gt;你可以看到很多的例子（包括这篇文章）在模块级别获取 logger。这看上去是无害的，
 但是实际上，这是一个陷阱 - 在你从一个文件加载配置前，logging 模块会遵守所有
 已经创建的 logger，如果你在模块级别获取 logger，像这种：&lt;/p&gt;
 &lt;hr&gt;
-&lt;p&gt;my_module.py&lt;/p&gt;
+&lt;p id=&quot;s-bc3282ba&quot;&gt;my_module.py&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logger &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging.getLogger(&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;__name__&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;
@@ -154,7 +154,7 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; bar&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(self):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Hi, bar&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;hr&gt;
-&lt;p&gt;main.py&lt;/p&gt;
+&lt;p id=&quot;s-f1bdda93&quot;&gt;main.py&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#6A737D&quot;&gt;# load my module&lt;/span&gt;&lt;/span&gt;
@@ -167,7 +167,7 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;bar &lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; my_module.Bar()&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;bar.bar()&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;hr&gt;
-&lt;p&gt;logging.ini&lt;/p&gt;
+&lt;p id=&quot;s-d3a23f55&quot;&gt;logging.ini&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;[loggers]&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;keys&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;root&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
@@ -191,7 +191,7 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;format&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;%&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;asctime&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; %&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;name&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; %&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;levelname&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; -&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; %&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;message&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;s&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;datefmt&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;hr&gt;
-&lt;p&gt;你期望看到记录显示在日志中，但是日志中是空的。为什么？ 因为你在模块级别创建 logger ，
+&lt;p id=&quot;s-f27537f1&quot;&gt;你期望看到记录显示在日志中，但是日志中是空的。为什么？ 因为你在模块级别创建 logger ，
 所以在从文件加载 logging 配置之前导入该模块。 logging.fileConfig 和 logging.dictConfig
 默认禁用已经存在的 logger。 所以配置文件中的配置不会在你的 logger 中生效。
 这适合在你需要的时候获取 logger。 你可以像下面这样编写：&lt;/p&gt;
@@ -207,8 +207,8 @@ logger.getLogger(foo.bar.my_module)。当你需要配置 logger，你可以配�
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    def&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; bar&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(self):&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;        self&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;.logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;Hi, bar&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;通过这样做， logger 将会在你加载配置之后创建，配置会正确生效。&lt;/p&gt;
-&lt;p&gt;从 Python 2.7 开始，添加一个新的参数名为 “disable_existing_loggers” 到 fileConfig 和
+&lt;p id=&quot;s-e8c41553&quot;&gt;通过这样做， logger 将会在你加载配置之后创建，配置会正确生效。&lt;/p&gt;
+&lt;p id=&quot;s-9a96bc9e&quot;&gt;从 Python 2.7 开始，添加一个新的参数名为 “disable_existing_loggers” 到 fileConfig 和
 dictConfig，通过将其设置为 False，可以解决上面提到的问题。比如：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging.config&lt;/span&gt;&lt;/span&gt;
@@ -243,13 +243,13 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;logger.info(&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;&apos;It works!&apos;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&quot;使用-json-和-yaml-配置-logging&quot;&gt;使用 JSON 和 YAML 配置 logging&lt;/h2&gt;
-&lt;p&gt;你可以再 Python 代码中配置 logging 参数，但是这不够灵活。更好的方式
+&lt;p id=&quot;s-89fef1bb&quot;&gt;你可以再 Python 代码中配置 logging 参数，但是这不够灵活。更好的方式
 是使用 logging 配置文件。在 Python2.7 之后，你可以加载 logging 配置
 从一个字典，这意味着你可以从 JSON 或 YAML 文件中加载 logging 配置。
 虽然你可以通过 old.ini 方式加载 logging 配置，但是这对于可读性和可编辑
 来说是困难的。这里我将展示通过 JSON 或者 YAML 的配置文件示例。&lt;/p&gt;
 &lt;hr&gt;
-&lt;p&gt;logging.json&lt;/p&gt;
+&lt;p id=&quot;s-08247ea9&quot;&gt;logging.json&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;json&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;{&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;version&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;    &quot;disable_existing_loggers&quot;&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;false&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;,&lt;/span&gt;&lt;/span&gt;
@@ -302,7 +302,7 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;    }&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;hr&gt;
-&lt;p&gt;logging.yaml&lt;/p&gt;
+&lt;p id=&quot;s-52899af8&quot;&gt;logging.yaml&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;yaml&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;---&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;version&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;1&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;disable_existing_loggers&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;False&lt;/span&gt;&lt;/span&gt;
@@ -345,7 +345,7 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    level&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;INFO&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    handlers&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;: [&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;console&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;info_file_handler&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;, &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;error_file_handler&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;]&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;...&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;以下配置展示了如何从 json 文件中读取 logging 配置：&lt;/p&gt;
+&lt;p id=&quot;s-c1e0daf6&quot;&gt;以下配置展示了如何从 json 文件中读取 logging 配置：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;python&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; os&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; json&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;import&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; logging.config&lt;/span&gt;&lt;/span&gt;
@@ -368,7 +368,7 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        logging.config.dictConfig(config)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#F97583&quot;&gt;    else&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        logging.basicConfig(&lt;/span&gt;&lt;span style=&quot;color:#FFAB70&quot;&gt;level&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt;=&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;default_level)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;使用 JSON 配置的一个优点是 json 是标准库中的模块，你不需要安装。但就个人来说，
+&lt;p id=&quot;s-7b8165b8&quot;&gt;使用 JSON 配置的一个优点是 json 是标准库中的模块，你不需要安装。但就个人来说，
 我更喜欢 YAML。这有非常好的可读性和可编辑性。你可以按照以下方式加载 YAML 配置：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;yaml&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;import os&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;import logging.config&lt;/span&gt;&lt;/span&gt;
@@ -393,19 +393,19 @@ dictConfig，通过将其设置为 False，可以解决上面提到的问题。�
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        logging.config.dictConfig(config)&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#85E89D&quot;&gt;    else&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;:&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;        logging.basicConfig(level=default_level)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者
+&lt;p id=&quot;s-6a4f826e&quot;&gt;现在，要配置 logging，你可以在程序启动时调用 setup_logging。这将读取 logging.json 或者
 logging.yaml。你也可以设置 LOG_CFG 环境变量去从指定的路径下加载配置文件。比如：&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;LOG_CFG=my_logging.json python my_server.py&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt;或者&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;LOG_CFG=my_logging.yaml python my_server.py&lt;/code&gt;&lt;/p&gt;
+&lt;p id=&quot;s-0ca8e4fb&quot;&gt;&lt;code&gt;LOG_CFG=my_logging.json python my_server.py&lt;/code&gt;&lt;/p&gt;
+&lt;p id=&quot;s-3fbe3edf&quot;&gt;或者&lt;/p&gt;
+&lt;p id=&quot;s-9daef86f&quot;&gt;&lt;code&gt;LOG_CFG=my_logging.yaml python my_server.py&lt;/code&gt;&lt;/p&gt;
 &lt;h2 id=&quot;配置文件轮询&quot;&gt;配置文件轮询&lt;/h2&gt;
-&lt;p&gt;如果你使用 FileHandler 去写日志，随着时间的增加日志文件大小也会增长，某一天，会撑爆你的磁盘。
+&lt;p id=&quot;s-eeab1b1a&quot;&gt;如果你使用 FileHandler 去写日志，随着时间的增加日志文件大小也会增长，某一天，会撑爆你的磁盘。
 为了避免这种情况，你应该在生产环境中使用 RotatingFileHandler 替换 FileHandler 。&lt;/p&gt;
 &lt;h2 id=&quot;配置日志中心&quot;&gt;配置日志中心&lt;/h2&gt;
-&lt;p&gt;当你有多台服务器和不同的日志文件时，你可以配置一个日志中心去手机所有重要的文件。这样你可以
+&lt;p id=&quot;s-88493adf&quot;&gt;当你有多台服务器和不同的日志文件时，你可以配置一个日志中心去手机所有重要的文件。这样你可以
 更方便的监控和通知你的系统发生了哪些报错。&lt;/p&gt;
 &lt;h2 id=&quot;结论&quot;&gt;结论&lt;/h2&gt;
-&lt;p&gt;我很开心 Python logging 库设置的很好，最好的是它是标准库中的一员，你无须选择。
+&lt;p id=&quot;s-906eba33&quot;&gt;我很开心 Python logging 库设置的很好，最好的是它是标准库中的一员，你无须选择。
 它非常灵活，你可以编辑自己的处理器和过滤器。还有第三方程序比如 pyzmq 提供的 ZeroMQ 日志处理，
 它允许你通过 zmq socket 发送日志信息。
 如果你不知道如何正确的使用 logging，那么本文对你会有所帮助。通过良好的日志记录练习，

@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>标签: tools - Yiran&apos;s Blog</title><description>标签 &quot;tools&quot; 的最新文章</description><link>https://zdyxry.github.io/</link><language>zh-CN</language><item><title>代码统计工具 cloc 基本使用</title><link>https://zdyxry.github.io/2019/08/09/%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1%E5%B7%A5%E5%85%B7-cloc-%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/08/09/%E4%BB%A3%E7%A0%81%E7%BB%9F%E8%AE%A1%E5%B7%A5%E5%85%B7-cloc-%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/</guid><pubDate>Fri, 09 Aug 2019 11:35:14 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;在看一个新项目的时候，通常我都会了解下这个项目的代码量，然后心里给个预期，大概需要多久了解这个项目。&lt;/p&gt;
-&lt;p&gt;2023/01/11 更新：现在已切换至 loc/tokei ，速度快了许多。&lt;/p&gt;
+&lt;p id=&quot;s-8f42078a&quot;&gt;在看一个新项目的时候，通常我都会了解下这个项目的代码量，然后心里给个预期，大概需要多久了解这个项目。&lt;/p&gt;
+&lt;p id=&quot;s-d2c12a7c&quot;&gt;2023/01/11 更新：现在已切换至 loc/tokei ，速度快了许多。&lt;/p&gt;
 &lt;h2 id=&quot;wc&quot;&gt;wc&lt;/h2&gt;
-&lt;p&gt;在以前，我一般都是使用 &lt;code&gt;find&lt;/code&gt; 配合 &lt;code&gt;wc&lt;/code&gt; 来完成，比如：&lt;/p&gt;
+&lt;p id=&quot;s-466f90ff&quot;&gt;在以前，我一般都是使用 &lt;code&gt;find&lt;/code&gt; 配合 &lt;code&gt;wc&lt;/code&gt; 来完成，比如：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-workstation:/tmp/cloc&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; $&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; find&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; .&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -name&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; &quot;*.go&quot;&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt; xargs&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; wc&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -l&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; {}&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  81&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ./installer.go&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;  81&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; total&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;显示有一个 &lt;code&gt;installer.go&lt;/code&gt; 的文件，一共有 81行。但是这里有个问题，就是 wc 是不会统计代码里面的具体内容的，比如注释、空白行等。&lt;/p&gt;
-&lt;p&gt;这时候我们就需要一个更高级的工具了： &lt;code&gt;cloc&lt;/code&gt;&lt;/p&gt;
+&lt;p id=&quot;s-8d25c352&quot;&gt;显示有一个 &lt;code&gt;installer.go&lt;/code&gt; 的文件，一共有 81行。但是这里有个问题，就是 wc 是不会统计代码里面的具体内容的，比如注释、空白行等。&lt;/p&gt;
+&lt;p id=&quot;s-7e4932b1&quot;&gt;这时候我们就需要一个更高级的工具了： &lt;code&gt;cloc&lt;/code&gt;&lt;/p&gt;
 &lt;h2 id=&quot;cloc&quot;&gt;cloc&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&quot;https://github.com/AlDanial/cloc&quot;&gt;cloc&lt;/a&gt; 是一个 Perl 语言实现的项目，用途就像它的名字全称：Count Lines of Code。&lt;/p&gt;
-&lt;p&gt;使用方法的话最简单的直接加上项目路径：&lt;/p&gt;
+&lt;p id=&quot;s-c9f8c908&quot;&gt;&lt;a href=&quot;https://github.com/AlDanial/cloc&quot;&gt;cloc&lt;/a&gt; 是一个 Perl 语言实现的项目，用途就像它的名字全称：Count Lines of Code。&lt;/p&gt;
+&lt;p id=&quot;s-5833f586&quot;&gt;使用方法的话最简单的直接加上项目路径：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-workstation:~/go/src/github.com/kubermatic/kubeone&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;master&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✗&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;pwd&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;        &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;/root/go/src/github.com/kubermatic/kubeone&lt;/span&gt;&lt;/span&gt;
@@ -36,8 +36,8 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-------------------------------------------------------------------------------&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;SUM:&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                           215&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;           4005&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;           3127&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;          18614&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-------------------------------------------------------------------------------&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;可以看到统计结果，其中默认会按照语言分类。&lt;/p&gt;
-&lt;p&gt;如果是 Golang 的项目，且使用了 vendor ，那么可以通过 &lt;code&gt;--exclude-dir&lt;/code&gt; 来过滤掉某些路径：&lt;/p&gt;
+&lt;p id=&quot;s-26eaa356&quot;&gt;可以看到统计结果，其中默认会按照语言分类。&lt;/p&gt;
+&lt;p id=&quot;s-206c4183&quot;&gt;如果是 Golang 的项目，且使用了 vendor ，那么可以通过 &lt;code&gt;--exclude-dir&lt;/code&gt; 来过滤掉某些路径：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;aster&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✗&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;cloc&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; .&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    3304&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; text&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files.&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;    3170&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; unique&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files.&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;                                          &lt;/span&gt;&lt;/span&gt;
@@ -89,7 +89,7 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;-------------------------------------------------------------------------------&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-workstation:~/go/src/github.com/kubernetes-sigs/cluster-api-provider-vsphere&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;master&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✗&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;有时候仅仅按照语言分类还不够，我们想看到具体的那些文件代码量比较大，可以使用 &lt;code&gt;--by-file&lt;/code&gt; 参数：&lt;/p&gt;
+&lt;p id=&quot;s-3ddc5e4b&quot;&gt;有时候仅仅按照语言分类还不够，我们想看到具体的那些文件代码量比较大，可以使用 &lt;code&gt;--by-file&lt;/code&gt; 参数：&lt;/p&gt;
 &lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;bash&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;root@yiran-workstation:~/go/src/github.com/kubermatic/kubeone&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;master&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; ✗&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt; $ &lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt;cloc&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; .&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; --by-file&lt;/span&gt;&lt;span style=&quot;color:#F97583&quot;&gt; |&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;head&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; -n&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 30&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;     292&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; text&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; files.&lt;/span&gt;&lt;/span&gt;
@@ -123,10 +123,10 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;./pkg/templates/externalccm/packet.go&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                                               20&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;             12&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            222&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;./docs/quickstart-vsphere.md&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;                                                        59&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;              0&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt;            222&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;</content:encoded><category>tools</category></item><item><title>Wireshark 远程抓包方法</title><link>https://zdyxry.github.io/2019/01/01/Wireshark-%E8%BF%9C%E7%A8%8B%E6%8A%93%E5%8C%85%E6%96%B9%E6%B3%95/</link><guid isPermaLink="true">https://zdyxry.github.io/2019/01/01/Wireshark-%E8%BF%9C%E7%A8%8B%E6%8A%93%E5%8C%85%E6%96%B9%E6%B3%95/</guid><pubDate>Tue, 01 Jan 2019 04:46:50 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;最近在看 《Wireshark网络分析就这么简单》，目前读了 1/3，觉得作为一本工具介绍书籍还是不错的，至少可以让我更关注网络相关知识。
+&lt;p id=&quot;s-5adf0653&quot;&gt;最近在看 《Wireshark网络分析就这么简单》，目前读了 1/3，觉得作为一本工具介绍书籍还是不错的，至少可以让我更关注网络相关知识。
 书中有大量的实例来讲解 Wireshark 的使用，及网络基础，在阅读的过程中，需要实际动手操作下，由于搜到的教程中没有正确操作的步骤，特此记录。&lt;/p&gt;
 &lt;h2 id=&quot;环境信息&quot;&gt;环境信息&lt;/h2&gt;
-&lt;ul&gt;
+&lt;ul id=&quot;s-28a6fa9d&quot;&gt;
 &lt;li&gt;个人 PC
 &lt;ul&gt;
 &lt;li&gt;Windows 10&lt;/li&gt;
@@ -140,15 +140,15 @@
 &lt;/ul&gt;
 &lt;h2 id=&quot;操作流程&quot;&gt;操作流程&lt;/h2&gt;
 &lt;h3 id=&quot;1个人-pc&quot;&gt;(1)个人 PC&lt;/h3&gt;
-&lt;ol&gt;
+&lt;ol id=&quot;s-27de6e2f&quot;&gt;
 &lt;li&gt;登陆 Wireshark 官网，下载最新版本软件包并安装&lt;/li&gt;
 &lt;li&gt;打开 Wireshark ，选择本机的网卡，并进行抓取，验证软件是否正常工作&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;&lt;img src=&quot;/images/pc-wireshark-1769851789449.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;/images/pc-wireshark2-1769851789450.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
 &lt;h3 id=&quot;2服务器&quot;&gt;(2)服务器&lt;/h3&gt;
-&lt;p&gt;验证个人 PC 上软件正常后，我们需要在服务器安装 rpcapd，以便让 Wireshark 连接该服务器。&lt;/p&gt;
-&lt;ol&gt;
+&lt;p id=&quot;s-8e6f497e&quot;&gt;验证个人 PC 上软件正常后，我们需要在服务器安装 rpcapd，以便让 Wireshark 连接该服务器。&lt;/p&gt;
+&lt;ol id=&quot;s-46934e0a&quot;&gt;
 &lt;li&gt;访问 rpcapd &lt;a href=&quot;https://github.com/rpcapd-linux/rpcapd-linux&quot;&gt;github&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;克隆相应代码 &lt;code&gt;cd /tmp; git clone https://github.com/rpcapd-linux/rpcapd-linux&lt;/code&gt;&lt;/li&gt;
 &lt;li&gt;安装相应依赖 &lt;code&gt;yum install glibc-static flex binutils&lt;/code&gt;&lt;/li&gt;
@@ -161,55 +161,55 @@
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;Press&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; CTRL&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; +&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; C&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; to&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; stop&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; the&lt;/span&gt;&lt;span style=&quot;color:#9ECBFF&quot;&gt; server...&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;bind&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;(): Address already in use (&lt;/span&gt;&lt;span style=&quot;color:#B392F0&quot;&gt;code&lt;/span&gt;&lt;span style=&quot;color:#79B8FF&quot;&gt; 98&lt;/span&gt;&lt;span style=&quot;color:#E1E4E8&quot;&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&quot;3个人-pc&quot;&gt;(3)个人 PC&lt;/h3&gt;
-&lt;ol start=&quot;3&quot;&gt;
+&lt;ol start=&quot;3&quot; id=&quot;s-28ff1bc7&quot;&gt;
 &lt;li&gt;打开 Wireshark，点击 &lt;code&gt;Capture&lt;/code&gt; —&gt; &lt;code&gt;Options&lt;/code&gt; —&gt; &lt;code&gt;Manage Interfaces&lt;/code&gt; —&gt; &lt;code&gt;Remote interfaces&lt;/code&gt; —&gt; &lt;code&gt;+&lt;/code&gt; —&gt; 在 Host 输入对应服务器 IP 即可
 &lt;img src=&quot;/images/pc-add-remote-1769851789450.png&quot; alt=&quot;&quot;&gt;&lt;/li&gt;
 &lt;li&gt;在 Wireshark 首页上我们可以看到服务器上的相应网卡列表，选择我们想要抓取的网卡，即可抓取。&lt;/li&gt;
 &lt;/ol&gt;</content:encoded><category>tools</category></item><item><title>个人常用工具</title><link>https://zdyxry.github.io/2018/12/02/%E4%B8%AA%E4%BA%BA%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/</link><guid isPermaLink="true">https://zdyxry.github.io/2018/12/02/%E4%B8%AA%E4%BA%BA%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/</guid><pubDate>Sun, 02 Dec 2018 08:35:54 GMT</pubDate><content:encoded>&lt;h2 id=&quot;背景&quot;&gt;背景&lt;/h2&gt;
-&lt;p&gt;公司标配 Thinkpad，也曾经折腾过 Linux，最终因为舍不得 Windows 下的各种软件，就老老实实用 Windows 。
+&lt;p id=&quot;s-6a507139&quot;&gt;公司标配 Thinkpad，也曾经折腾过 Linux，最终因为舍不得 Windows 下的各种软件，就老老实实用 Windows 。
 周五的时候电脑故障，趁着重新配置开发环境的机会，整理下自己常用的软件|工具。&lt;/p&gt;
 &lt;h2 id=&quot;开发工具&quot;&gt;开发工具&lt;/h2&gt;
 &lt;h3 id=&quot;编辑器&quot;&gt;编辑器&lt;/h3&gt;
 &lt;h4 id=&quot;vim&quot;&gt;VIM&lt;/h4&gt;
-&lt;p&gt;主力编辑器，因为平时写 Python 比较多，所以安装的插件并不多，主要用到的就是函数之间的跳转，具体配置在 &lt;a href=&quot;https://github.com/zdyxry/Dotfiles&quot;&gt;github&lt;/a&gt; 。&lt;/p&gt;
+&lt;p id=&quot;s-7b5847be&quot;&gt;主力编辑器，因为平时写 Python 比较多，所以安装的插件并不多，主要用到的就是函数之间的跳转，具体配置在 &lt;a href=&quot;https://github.com/zdyxry/Dotfiles&quot;&gt;github&lt;/a&gt; 。&lt;/p&gt;
 &lt;h4 id=&quot;vscode&quot;&gt;VScode&lt;/h4&gt;
-&lt;p&gt;在写代码的时候通常使用 vim ，但是看代码还是习惯于 VScode，主要是看代码用鼠标控制比较方便。
+&lt;p id=&quot;s-ead9ba18&quot;&gt;在写代码的时候通常使用 vim ，但是看代码还是习惯于 VScode，主要是看代码用鼠标控制比较方便。
 偶尔会碰到编写配置文件，比如 JSON/YAML 的时候，vim 写起来还是有些吃力，可能是我用的不到家吧。&lt;/p&gt;
 &lt;h3 id=&quot;终端&quot;&gt;终端&lt;/h3&gt;
 &lt;h4 id=&quot;xshell&quot;&gt;XShell&lt;/h4&gt;
-&lt;p&gt;在 Windows 用的比较多的应该是 XShell，同时管理多台服务器简单高效，且有配套的 XSFTP，上传/下载文件很方便。&lt;/p&gt;
+&lt;p id=&quot;s-174f36fa&quot;&gt;在 Windows 用的比较多的应该是 XShell，同时管理多台服务器简单高效，且有配套的 XSFTP，上传/下载文件很方便。&lt;/p&gt;
 &lt;h4 id=&quot;tmux&quot;&gt;Tmux&lt;/h4&gt;
-&lt;p&gt;在 Linux 上主要用系统自带的 Terminal 配合 Tmux 使用，主要原因是 Tmux 可以在多平台使用，不用针对不同平台记不同的快捷键（没错，说的就是 Jetbrains）。&lt;/p&gt;
-&lt;p&gt;并没有对 tmux 做太多定制化配置，因为有时候服务器上面不会允许你修改默认配置文件的，所以大部分用的默认配置，平时用的比较多的应该就是 Window &amp;#x26; Panel 配合使用。&lt;/p&gt;
+&lt;p id=&quot;s-f3a9f6d2&quot;&gt;在 Linux 上主要用系统自带的 Terminal 配合 Tmux 使用，主要原因是 Tmux 可以在多平台使用，不用针对不同平台记不同的快捷键（没错，说的就是 Jetbrains）。&lt;/p&gt;
+&lt;p id=&quot;s-f13497f5&quot;&gt;并没有对 tmux 做太多定制化配置，因为有时候服务器上面不会允许你修改默认配置文件的，所以大部分用的默认配置，平时用的比较多的应该就是 Window &amp;#x26; Panel 配合使用。&lt;/p&gt;
 &lt;h4 id=&quot;hyper&quot;&gt;Hyper&lt;/h4&gt;
-&lt;p&gt;好看。&lt;/p&gt;
+&lt;p id=&quot;s-fcc82dec&quot;&gt;好看。&lt;/p&gt;
 &lt;h3 id=&quot;周边工具&quot;&gt;周边工具&lt;/h3&gt;
 &lt;h4 id=&quot;wox&quot;&gt;Wox&lt;/h4&gt;
-&lt;p&gt;作为 Windows 下的 alfred， Wox 无疑是一个合格的软件，可以极大的提高效率。&lt;/p&gt;
+&lt;p id=&quot;s-1d754045&quot;&gt;作为 Windows 下的 alfred， Wox 无疑是一个合格的软件，可以极大的提高效率。&lt;/p&gt;
 &lt;h4 id=&quot;sumatra-pdf&quot;&gt;Sumatra PDF&lt;/h4&gt;
-&lt;p&gt;一款极小的 PDF 阅读器，该有的功能都有，比福昕好用，无广告。&lt;/p&gt;
+&lt;p id=&quot;s-0d26c4d7&quot;&gt;一款极小的 PDF 阅读器，该有的功能都有，比福昕好用，无广告。&lt;/p&gt;
 &lt;h4 id=&quot;ditto&quot;&gt;Ditto&lt;/h4&gt;
-&lt;p&gt;Windows 下的一款剪切板软件，可以记录复制粘贴的历史情况，提供搜索等功能。&lt;/p&gt;
+&lt;p id=&quot;s-b167ef10&quot;&gt;Windows 下的一款剪切板软件，可以记录复制粘贴的历史情况，提供搜索等功能。&lt;/p&gt;
 &lt;h3 id=&quot;个人管理&quot;&gt;个人管理&lt;/h3&gt;
 &lt;h4 id=&quot;有道云笔记&quot;&gt;有道云笔记&lt;/h4&gt;
-&lt;p&gt;笔记这类工具用上一款之后，随着使用时间的增加，切换成本是成正比的，所以就要选一块稳定可靠的。像近来流行的 Bear，为知，Notion，说实在的，就是担心哪天公司突然倒闭了。&lt;/p&gt;
-&lt;p&gt;有道现在支持 Markdown，部分功能需要开通会员才可以，比如 Markdown 中上传图片。不过对于我来说还是够用了。&lt;/p&gt;
+&lt;p id=&quot;s-d7fee87b&quot;&gt;笔记这类工具用上一款之后，随着使用时间的增加，切换成本是成正比的，所以就要选一块稳定可靠的。像近来流行的 Bear，为知，Notion，说实在的，就是担心哪天公司突然倒闭了。&lt;/p&gt;
+&lt;p id=&quot;s-10439e0f&quot;&gt;有道现在支持 Markdown，部分功能需要开通会员才可以，比如 Markdown 中上传图片。不过对于我来说还是够用了。&lt;/p&gt;
 &lt;h4 id=&quot;trello&quot;&gt;Trello&lt;/h4&gt;
-&lt;p&gt;由于现在工作内容每天变动很大，随时有可能调整任务优先级，所以平时记录 Todo 类型内容基本上靠着 Markdown 上的 &lt;code&gt;- [ ]&lt;/code&gt; 过活。但是对于个人管理而言，还是使用 Trello ，便于管理和记录，方便观察自我成长。&lt;/p&gt;
+&lt;p id=&quot;s-5eea67fb&quot;&gt;由于现在工作内容每天变动很大，随时有可能调整任务优先级，所以平时记录 Todo 类型内容基本上靠着 Markdown 上的 &lt;code&gt;- [ ]&lt;/code&gt; 过活。但是对于个人管理而言，还是使用 Trello ，便于管理和记录，方便观察自我成长。&lt;/p&gt;
 &lt;h4 id=&quot;pocket&quot;&gt;Pocket&lt;/h4&gt;
-&lt;p&gt;稍后阅读工具，配合 Chrome 上的插件使用很完美，多平台同步很快。&lt;br&gt;
+&lt;p id=&quot;s-f59bd072&quot;&gt;稍后阅读工具，配合 Chrome 上的插件使用很完美，多平台同步很快。&lt;br&gt;
 缺点就是分类较为痛苦，要管理自己的 tag。&lt;/p&gt;
 &lt;h4 id=&quot;inoreader&quot;&gt;Inoreader&lt;/h4&gt;
-&lt;p&gt;RSS 阅读器。 随着微信/微博等社交公众号的推广，生活中充斥着一些片段信息，有些公众号发的内容毫无营养，极大的浪费时间，这时候关注自己想关注的就比较重要了。&lt;/p&gt;
-&lt;p&gt;个人比较喜欢 RSS 订阅的方式订阅自己感兴趣的内容，无论是博客，还是公众号，都可以通过 RSS 的方式订阅，如果没有提供 RSS，也可以通过 RSSHub 来订阅。之后找时间把我订阅的一些博客/网站整理分享出来。&lt;/p&gt;
+&lt;p id=&quot;s-55c25ee2&quot;&gt;RSS 阅读器。 随着微信/微博等社交公众号的推广，生活中充斥着一些片段信息，有些公众号发的内容毫无营养，极大的浪费时间，这时候关注自己想关注的就比较重要了。&lt;/p&gt;
+&lt;p id=&quot;s-2c357d7a&quot;&gt;个人比较喜欢 RSS 订阅的方式订阅自己感兴趣的内容，无论是博客，还是公众号，都可以通过 RSS 的方式订阅，如果没有提供 RSS，也可以通过 RSSHub 来订阅。之后找时间把我订阅的一些博客/网站整理分享出来。&lt;/p&gt;
 &lt;h4 id=&quot;记账&quot;&gt;记账&lt;/h4&gt;
-&lt;p&gt;一直想找一款账本类工具，多平台，简单易用的，但是没找到，随着第三方支付的便捷性，很多账本都没办法去自动同步，如果手动同步的话又特别麻烦，很容易遗漏。&lt;/p&gt;
-&lt;p&gt;我个人的解决方案简单粗暴：支付宝。 所有个人支出全部通过支付宝支付，利用支付宝的账单统计了解个人消费情况。&lt;/p&gt;
+&lt;p id=&quot;s-15cc6dbd&quot;&gt;一直想找一款账本类工具，多平台，简单易用的，但是没找到，随着第三方支付的便捷性，很多账本都没办法去自动同步，如果手动同步的话又特别麻烦，很容易遗漏。&lt;/p&gt;
+&lt;p id=&quot;s-d4d15d42&quot;&gt;我个人的解决方案简单粗暴：支付宝。 所有个人支出全部通过支付宝支付，利用支付宝的账单统计了解个人消费情况。&lt;/p&gt;
 &lt;h3 id=&quot;时间管理&quot;&gt;时间管理&lt;/h3&gt;
 &lt;h4 id=&quot;rescuetime&quot;&gt;RescueTime&lt;/h4&gt;
-&lt;p&gt;支持多平台，且会自动统计工作内容及相应软件使用时间，最终形成以天/周/月为单位的报告。&lt;/p&gt;
+&lt;p id=&quot;s-98436f5a&quot;&gt;支持多平台，且会自动统计工作内容及相应软件使用时间，最终形成以天/周/月为单位的报告。&lt;/p&gt;
 &lt;h4 id=&quot;manictime&quot;&gt;ManicTime&lt;/h4&gt;
-&lt;p&gt;同样支持多平台，相比于 RescueTime ，ManicTime 记录的内容更细，具体到你每天工作的起始/终止时间，中间电脑待机时间等等，每款软件的使用时间及使用频率，最终报告也会精确到每款软件的总使用时间。&lt;/p&gt;
+&lt;p id=&quot;s-63adeab3&quot;&gt;同样支持多平台，相比于 RescueTime ，ManicTime 记录的内容更细，具体到你每天工作的起始/终止时间，中间电脑待机时间等等，每款软件的使用时间及使用频率，最终报告也会精确到每款软件的总使用时间。&lt;/p&gt;
 &lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
-&lt;p&gt;把日常使用最多的软件列举了一下，基本上我每天清醒的时间都是在使用上述软件，想想还是很恐怖的。&lt;/p&gt;
-&lt;p&gt;最后的时间管理软件其实我中断使用过一段时间，那段时间我认为自己能够控制自己的工作内容分配，时间分配都在自己的计划中，应该不会出现 &lt;code&gt;时间去哪了&lt;/code&gt; 之类的问题。结果最近随着工作内容的增加，每天感觉都有做不完的事情，又不清楚自己的时间都用来做什么了，就又安装回来观察下，结果很震惊：工作分配真的变多了 ( º﹃º )&lt;/p&gt;</content:encoded><category>tools</category></item></channel></rss>
+&lt;p id=&quot;s-ecab9761&quot;&gt;把日常使用最多的软件列举了一下，基本上我每天清醒的时间都是在使用上述软件，想想还是很恐怖的。&lt;/p&gt;
+&lt;p id=&quot;s-201e0370&quot;&gt;最后的时间管理软件其实我中断使用过一段时间，那段时间我认为自己能够控制自己的工作内容分配，时间分配都在自己的计划中，应该不会出现 &lt;code&gt;时间去哪了&lt;/code&gt; 之类的问题。结果最近随着工作内容的增加，每天感觉都有做不完的事情，又不清楚自己的时间都用来做什么了，就又安装回来观察下，结果很震惊：工作分配真的变多了 ( º﹃º )&lt;/p&gt;</content:encoded><category>tools</category></item></channel></rss>
