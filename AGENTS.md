@@ -11,7 +11,7 @@
 - **内容格式**: Markdown (`.md`)，支持 MDX
 - **样式**: 原生 CSS（`src/styles/global.css`），组件内 `<style>` 块
 - **搜索**: Pagefind（构建后生成索引）
-- **Markdown 插件**: `remark-wiki-link`（双链 `[[]]` 语法，解析到 `/mentions/` 路径）、`astro-expressive-code`
+- **Markdown 插件**: `remark-wiki-link`（双链 `[[]]` 语法，解析到 `/mentions/` 路径）、`astro-expressive-code`、`src/utils/rehype-section-ids.mjs`（为正文顶层段落/引用/列表生成稳定锚点 id `#s-xxxxxxxx`，`PostLayout.astro` 注入悬停可见的 `#` 链接）
 - **数据获取**: Python 脚本 (`garminconnect` / `httpx`) 通过 `uv run` 执行
 - **部署**: GitHub Actions → `gh-pages` 分支
 

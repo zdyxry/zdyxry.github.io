@@ -75,6 +75,18 @@ const ogImage = `/og/${hugoSlug}.png`;
       title={title} 
     />
   </article>
+
+  <script>
+    // 为带锚点 id 的段落注入悬停可见的 # 链接，便于分享具体段落
+    document.querySelectorAll('.content [id^="s-"]').forEach((el) => {
+      const anchor = document.createElement('a');
+      anchor.className = 'section-anchor';
+      anchor.href = `#${el.id}`;
+      anchor.setAttribute('aria-label', '链接到此段落');
+      anchor.textContent = '#';
+      el.appendChild(anchor);
+    });
+  </script>
 </BaseLayout>
 
 <style>
@@ -260,6 +272,49 @@ const ogImage = `/og/${hugoSlug}.png`;
     border: none;
     border-top: 1px solid var(--border);
     margin: 2rem 0;
+  }
+
+  /* 段落锚点 */
+  .content :global([id^="s-"]) {
+    position: relative;
+    scroll-margin-top: 5rem;
+  }
+
+  .content :global([id^="s-"]:target) {
+    background: var(--background-secondary);
+    border-radius: 4px;
+  }
+
+  /* 窄屏下锚点留在段尾，用次要色和间距与正文链接区分 */
+  .content :global(.section-anchor) {
+    opacity: 0;
+    margin-left: 0.75em;
+    padding: 0 0.25em;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85em;
+    transition: opacity 0.15s ease;
+  }
+
+  /* 宽屏下移到段落左侧空白处（GitHub 风格），避免与正文链接混淆、误触 */
+  @media (min-width: 1100px) {
+    .content :global(.section-anchor) {
+      position: absolute;
+      /* 盒子右缘与段落左缘相接，鼠标移过去时不会失联闪烁 */
+      left: -1.4em;
+      top: 0;
+      margin-left: 0;
+      padding: 0 0.6em 0 0.2em;
+      line-height: inherit;
+    }
+  }
+
+  .content :global(p:hover > .section-anchor),
+  .content :global(blockquote:hover > .section-anchor),
+  .content :global(ul:hover > .section-anchor),
+  .content :global(ol:hover > .section-anchor),
+  .content :global(.section-anchor:hover) {
+    opacity: 1;
   }
 
   @media (max-width: 1100px) {

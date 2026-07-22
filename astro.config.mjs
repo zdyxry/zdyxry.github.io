@@ -3,6 +3,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import react from '@astrojs/react';
 import wikiLinkPlugin from 'remark-wiki-link';
+import rehypeSectionIds from './src/utils/rehype-section-ids.mjs';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -148,6 +149,10 @@ export default defineConfig({
         pageResolver: (name) => [name.toLowerCase().replace(/\s+/g, '-')],
         hrefTemplate: (permalink) => `/mentions/${permalink}`,
       }],
+    ],
+    rehypePlugins: [
+      // 为顶层段落/引用/列表生成稳定锚点 id
+      rehypeSectionIds,
     ],
     shikiConfig: {
       theme: 'github-dark',
