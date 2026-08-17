@@ -23,7 +23,7 @@
 <h3 id="通过-container-image-制作一个-raw-image">通过 Container image 制作一个 RAW image</h3>
 <p id="s-8fa541b8">RAW image 中最终不会包含 Kernel 部分，以 Nginx Container 为例。提取 nginx:latest image 中的 <code>Entrypoint</code> ，通过 <code>dd</code> 置备一个 RAW image，并格式化为 ext4 ，raw image 作为 loop 设备挂载到本地，通过 <code>docker export</code> 将 Nginx Image 拷贝到挂载点下，卸载挂载点，最终 RAW image 包含了 Nginx Container 的所有内容。这里的 RAW image 因为不包含 kernel，所以无法直接启动，只是作为后续动作的依赖。</p>
 <p id="s-4f6c36a6">Nginx Container 默认的 <code>Entrypoint</code> 是 <code>docker-entrypoint.sh</code> ，通过这个脚本来做一些参数检查动作。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>#!/bin/bash</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>#!/bin/bash</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span>echo "Lets build you a disk image!"</span></span>
 <span class="line"><span>docker pull $1</span></span>
@@ -41,7 +41,7 @@
 <span class="line"><span>echo The command $ENTRYPOINT will start this container</span></span></code></pre>
 <h3 id="使用-ginit-制作-initramfsimg">使用 ginit 制作 initramfs.img</h3>
 <p id="s-d06f8835">静态编译 ginit；下载并编译 busybox ，将 ginit 编译结果 init 放置到 <code>/</code> 路径下，通过 cpio 将 busybox 归档，使用 gzip 进行压缩。所有流程完成后，将最终得到的 initramfs.cpio.gz 拷贝到项目路径下。 initramfs 最终包含的是 busybox + ginit 。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span># syntax=docker/dockerfile:experimental</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span># syntax=docker/dockerfile:experimental</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span></span></span>
 <span class="line"><span># Build ginit as an init</span></span>
@@ -77,14 +77,14 @@
 <p id="s-ab01e845">到目前状态，我们得到了 initramfs.img ，得到了 raw image，但是还缺少 Linux Kernel 。可以直接从 Ubuntu 提供的 <a href="http://archive.ubuntu.com/ubuntu/dists/focal-updates/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/">netboot</a> 下载 <code>boot executable bzImage</code> 文件。</p>
 <p id="s-08c86123">现在所有的准备工作都进行完成了，我们可以直接通过 QEMU 来运行虚拟机，其中 Nginx 所需运行环境在 RAW Image 中，ginit 所需运行环境在 initramfs 中。</p>
 <p id="s-e296384d">前面有提到，Nginx Container 默认的 <code>Entrypoint</code> 是 <code>docker-entrypoint.sh</code>，用来做一些参数包装，所以这里我将参数改为了 <code>/usr/sbin/nginx</code> ：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>qemu-system-x86_64 -nographic \</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>qemu-system-x86_64 -nographic \</span></span>
 <span class="line"><span>  -kernel ./linux \</span></span>
 <span class="line"><span>  -append "entrypoint=/usr/sbin/nginx root=/dev/sda console=ttyS0" \</span></span>
 <span class="line"><span>  -initrd ./initramfs.cpio.gz \</span></span>
 <span class="line"><span>  -hda ./disk.img \</span></span>
 <span class="line"><span>  -m 1G</span></span></code></pre>
 <p id="s-723c477e">虚拟机 console 是 <code>ttyS0</code> ，通过终端运行可以直接查看启动日志：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>...</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>...</span></span>
 <span class="line"><span>[    1.469920] rtc_cmos 00:00: setting system clock to 2022-03-05T06:36:19 UTC (1646462179)</span></span>
 <span class="line"><span>[    1.525397] ata1.00: ATA-7: QEMU HARDDISK, 2.5+, max UDMA/100</span></span>
 <span class="line"><span>[    1.525579] ata1.00: 409600 sectors, multi 16: LBA48 </span></span>
@@ -134,7 +134,7 @@
 <span class="line"><span>INFO[0002] Waiting for command to finish...        </span></span>
 <span class="line"><span>/ # </span></span></code></pre>
 <p id="s-6234549b">其中 <code>[    1.743002] Run /init as init process</code> 中的 <code>/init</code> 已经是我们上面编译的 <code>ginit</code> ，<code>ginit</code> 运行的日志输出为：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>INFO[0000] Folder created [dev] -> [/dev]          </span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>INFO[0000] Folder created [dev] -> [/dev]          </span></span>
 <span class="line"><span>INFO[0000] Folder created [proc] -> [/proc]        </span></span>
 <span class="line"><span>INFO[0000] Folder created [sys] -> [/sys]          </span></span>
 <span class="line"><span>INFO[0000] Folder created [tmp] -> [/tmp]          </span></span>
@@ -161,7 +161,7 @@
 <span class="line"><span>INFO[0002] Starting Shell                          </span></span>
 <span class="line"><span>INFO[0002] Waiting for command to finish...        </span></span></code></pre>
 <p id="s-ab278cee">主要做了几件事情：创建必要的路径，创建对应的设备，启动一个 DHCP Client 来获取 IP 地址，挂载 RAW Image 到 /mnt 下，通过 <code>chroot</code> 运行 <code>entrypoint</code> 参数中指定的程序，在这里是 <code>/usr/sbin/nginx</code> ，最终提供一个 Shell 环境给用户。我们可以通过 <code>ps</code> 命令查看当前所运行的进程：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/ # ps -ef |grep -v '\['</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/ # ps -ef |grep -v '\['</span></span>
 <span class="line"><span>PID   USER     TIME  COMMAND</span></span>
 <span class="line"><span>    1 0         0:01 /init</span></span>
 <span class="line"><span>  178 0         0:00 nginx: master process /usr/sbin/nginx</span></span>
@@ -184,7 +184,7 @@
 <h2 id="ginit-具体实现">ginit 具体实现</h2>
 <h3 id="创建系统设备并挂载">创建系统设备并挂载</h3>
 <p id="s-beabf848">在 <code>DefaultMounts</code> 和 <code>DefaultDevices</code> 中定义了一些必须的设备如 <code>/dev/null</code>, <code>/dev/random</code>, <code>/dev/urandom</code> ，和挂载点，如 <code>/dev</code>,<code>/proc</code>, <code>/tmp</code>, <code>/sys</code> 。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>urandom := Device{</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>urandom := Device{</span></span>
 <span class="line"><span>		CreateDevice: false,</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span>		Name:  "urandom",</span></span>
@@ -193,7 +193,7 @@
 <span class="line"><span>		Major: 1,</span></span>
 <span class="line"><span>		Minor: 9,</span></span>
 <span class="line"><span>	}</span></span></code></pre>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>dev := Mount{</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>dev := Mount{</span></span>
 <span class="line"><span>		CreateMount: false,</span></span>
 <span class="line"><span>		EnableMount: false,</span></span>
 <span class="line"><span>		Name:        "dev",</span></span>
@@ -204,7 +204,7 @@
 <span class="line"><span>		Mode:        0777,</span></span>
 <span class="line"><span>	}</span></span>
 <span class="line"><span>	m.Mount = append(m.Mount, dev)</span></span></code></pre>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>	//cmd.Execute()</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>	//cmd.Execute()</span></span>
 <span class="line"><span>	m := realm.DefaultMounts()</span></span>
 <span class="line"><span>	d := realm.DefaultDevices()</span></span>
 <span class="line"><span>	dev := m.GetMount("dev")</span></span>
@@ -234,7 +234,7 @@
 <span class="line"><span>	// Mount any additional mounts</span></span>
 <span class="line"><span>	m.MountAll()</span></span></code></pre>
 <p id="s-97f24c30">在基本环境准备完成后，启动 DHCP Client，获取 IP 地址：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>log.Println("Starting DHCP client")</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>log.Println("Starting DHCP client")</span></span>
 <span class="line"><span>	go realm.DHCPClient()</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span>	// HERE IS WHERE THE MAIN CODE GOES</span></span>
@@ -251,7 +251,7 @@
 <span class="line"><span>	fmt.Print(mac)</span></span></code></pre>
 <p id="s-c55d10aa">现在系统环境准备好了，网络也准备好了，那么可以运行具体的指令了，获取指令的方式是通过解析 <code>/proc/cmdline</code> ，<code>/proc/cmdline</code> 是通过我们在创建 VM 的时候通过 <code>--append</code> 传递的：</p>
 <p id="s-de0f6843">在解析到 <code>root</code> 和 <code>entrypoint</code> 参数值后，通过 <code>Mount</code> 将 <code>root</code> 挂载到对应的挂载点，通过 <code>chroot</code> 运行 <code>entrypoint</code>。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    stuffs, err := ParseCmdLine(CmdlinePath)</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    stuffs, err := ParseCmdLine(CmdlinePath)</span></span>
 <span class="line"><span>	if err != nil {</span></span>
 <span class="line"><span>		log.Errorln(err)</span></span>
 <span class="line"><span>	}</span></span>
@@ -274,7 +274,7 @@
 <span class="line"><span></span></span>
 <span class="line"><span>	realm.Shell()</span></span></code></pre>
 <p id="s-41286cb1">所有程序运行完成后，提供一个Shell 环境给用户：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>// Shell will Start a userland shell</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>// Shell will Start a userland shell</span></span>
 <span class="line"><span>func Shell() {</span></span>
 <span class="line"><span>	// Shell stuff</span></span>
 <span class="line"><span>	log.Println("Starting Shell")</span></span>

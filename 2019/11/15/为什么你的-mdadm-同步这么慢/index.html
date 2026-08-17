@@ -13,7 +13,7 @@
 最近遇到一个问题， mdadm 在配置 RAID1 时，磁盘同步很慢。</p>
 <h2 id="现象">现象</h2>
 <p id="s-651329e4">先说下磁盘构成，一般情况下是这样：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@yiran 20:23:48 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$lsblk</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@yiran 20:23:48 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$lsblk</span></span>
 <span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">      MAJ:MIN</span><span style="color:#9ECBFF"> RM</span><span style="color:#9ECBFF">   SIZE</span><span style="color:#9ECBFF"> RO</span><span style="color:#9ECBFF"> TYPE</span><span style="color:#9ECBFF">  MOUNTPOINT</span></span>
 <span class="line"><span style="color:#B392F0">sda</span><span style="color:#9ECBFF">         8:0</span><span style="color:#79B8FF">    0</span><span style="color:#9ECBFF">  59.6G</span><span style="color:#79B8FF">  0</span><span style="color:#9ECBFF"> disk</span></span>
 <span class="line"><span style="color:#B392F0">├─sda1</span><span style="color:#9ECBFF">      8:1</span><span style="color:#79B8FF">    0</span><span style="color:#9ECBFF">   256M</span><span style="color:#79B8FF">  0</span><span style="color:#9ECBFF"> part</span><span style="color:#9ECBFF">  /boot/efi</span></span>
@@ -26,7 +26,7 @@
 <span class="line"><span style="color:#B392F0">  └─md127</span><span style="color:#9ECBFF">   9:127</span><span style="color:#79B8FF">  0</span><span style="color:#9ECBFF">    45G</span><span style="color:#79B8FF">  0</span><span style="color:#9ECBFF"> raid1</span><span style="color:#9ECBFF"> /</span></span></code></pre>
 <p id="s-1f95ace8">两块 SSD 各自分区，并将第一个分区通过 mdadm 做 RAID1，保证系统分区高可用，分区大小是 45G，但是因为是 SSD 磁盘，所以速度也不会慢到哪去。</p>
 <p id="s-836d9c3d">最近遇到的问题就是我觉得最不应该有问题的地方：同步速度很慢，非常慢，慢到离谱：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@yiran 20:28:00 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$mdadm -D /dev/md127</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@yiran 20:28:00 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$mdadm -D /dev/md127</span></span>
 <span class="line"><span style="color:#B392F0">/dev/md127:</span></span>
 <span class="line"><span style="color:#B392F0">           Version</span><span style="color:#9ECBFF"> :</span><span style="color:#79B8FF"> 1.2</span></span>
 <span class="line"><span style="color:#B392F0">     Creation</span><span style="color:#9ECBFF"> Time</span><span style="color:#9ECBFF"> :</span><span style="color:#9ECBFF"> Thu</span><span style="color:#9ECBFF"> Nov</span><span style="color:#79B8FF"> 14</span><span style="color:#9ECBFF"> 10:06:52</span><span style="color:#79B8FF"> 2019</span></span>
@@ -70,13 +70,13 @@
 <p id="s-1783c5f6">到这里没啥想法了，想到一点，系统是如何设置软 raid 同步速度的呢？</p>
 <p id="s-7a8038df">软 raid 在进行同步时，肯定会对磁盘进行大量的读写来保证磁盘数据正确性，如果是 RAID1 ，那就是完全的镜像了。如果 RAID 分区上正在进行非常重要的业务读写，但是 mdadm 又占用了比较大的读写带宽，肯定会影响到我们的业务，所以系统应该是存在一个上限值的。</p>
 <p id="s-ddfb0708">经过搜索，查到了两个系统参数：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/proc/sys/dev/raid/speed_limit_max</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/proc/sys/dev/raid/speed_limit_max</span></span>
 <span class="line"><span>/proc/sys/dev/raid/speed_limit_min</span></span></code></pre>
 <p id="s-24611fdc">看一下系统默认值，发现 speed_limit_max 是200M，也就是说我现在的速度远远达不到上限，还有其他原因。</p>
 <p id="s-cdd9514f">可惜的是，我查看了系统 /var/log/messages 和 dmesg ，都没有发现什么线索。</p>
 <h2 id="解决">解决</h2>
 <p id="s-c094b5e2">因为这个问题虽然不重要，但是比较紧急，所以就在不知道原因的情况下先修复了它，我们可以在 <code>/etc/sysctl.conf</code> 中添加这两项配置来更改相应的数值。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@yiran 20:59:34 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$cat /etc/sysctl.conf</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@yiran 20:59:34 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$cat /etc/sysctl.conf</span></span>
 <span class="line"><span style="color:#6A737D"># sysctl settings are defined through files in</span></span>
 <span class="line"><span style="color:#6A737D"># /usr/lib/sysctl.d/, /run/sysctl.d/, and /etc/sysctl.d/.</span></span>
 <span class="line"><span style="color:#6A737D">#</span></span>

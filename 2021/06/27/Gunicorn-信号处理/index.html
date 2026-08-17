@@ -12,11 +12,11 @@
 <p id="s-4cdb414b">最近在项目中使用到了 Gunicorn 的 Graceful Shutdown 功能，阅读代码学习一下 Gunicorn 的信号处理。</p>
 <h3 id="master">Master</h3>
 <p id="s-fbeef495">Gunicorn 启动入口：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>WSGIApplication("%(prog)s [OPTIONS] [APP_MODULE]").run()</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>WSGIApplication("%(prog)s [OPTIONS] [APP_MODULE]").run()</span></span>
 <span class="line"><span>    BaseApplication().run()</span></span>
 <span class="line"><span>        Arbiter(self).run()</span></span></code></pre>
 <p id="s-08c4fa4e">Master 主要控制逻辑实现在 <code>Arbiter</code> 中，包括信号处理和主循环逻辑。在调用 <code>Arbiter().run()</code> 会最终调用到 <code>Arbiter.init_signals()</code> ，在该函数中会将 Master 中定义的需要处理的信号函数进行相应的注册：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Arbiter().run():</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Arbiter().run():</span></span>
 <span class="line"><span>    Arbiter().start() </span></span>
 <span class="line"><span>        Arbiter().init_signals() # 初始化 Master 信号处理</span></span>
 <span class="line"><span>            # initialize all signals</span></span>
@@ -24,7 +24,7 @@
 <span class="line"><span>                signal.signal(s, self.signal)</span></span>
 <span class="line"><span>            signal.signal(signal.SIGCHLD, self.handle_chld)</span></span></code></pre>
 <p id="s-a6b8c599">所有定义的信号处理函数都是 <code>Aribiter().signal()</code> ，该函数将接收到的信号存放在 <code>Arbiter.SIG_QUEUE</code> 中，最多保留 5 个信号，然后触发 <code>Arbiter().wakeup()</code> ，在 <code>Arbiter().wakeup()</code> 中，向 <code>Arbiter.PIPE</code> 管道写入数据，主要作用是唤醒 Master loop。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def signal(self, sig, frame):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def signal(self, sig, frame):</span></span>
 <span class="line"><span>        if len(self.SIG_QUEUE) &#x3C; 5:</span></span>
 <span class="line"><span>            self.SIG_QUEUE.append(sig)</span></span>
 <span class="line"><span>            self.wakeup()</span></span>
@@ -39,7 +39,7 @@
 <span class="line"><span>            if e.errno not in [errno.EAGAIN, errno.EINTR]:</span></span>
 <span class="line"><span>                raise</span></span></code></pre>
 <p id="s-1a2bc94a">在 Arbiter 类中会实现相应的信号函数处理逻辑，针对 TERM 和 INT 信号处理的主要差异为是否会先执行 <code>Arbiter().stop(False)</code> ，最后都会 <code>raise StopIteration</code> 。对于 <code>HUP</code> 信号是执行自身的 <code>Arbiter().reload()</code> 逻辑。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def handle_hup(self):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def handle_hup(self):</span></span>
 <span class="line"><span>        """\</span></span>
 <span class="line"><span>        HUP handling.</span></span>
 <span class="line"><span>        - Reload configuration</span></span>
@@ -71,7 +71,7 @@
 <span class="line"><span>        self.num_workers += 1</span></span>
 <span class="line"><span>        self.manage_workers()</span></span></code></pre>
 <p id="s-6ae87619">在 Master 进行信号处理初始化动作后，进入到 Master loop 阶段：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>        try:</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>        try:</span></span>
 <span class="line"><span>            self.manage_workers()           # 启动 Worker，如果 Worker 数量不足则启动；如果数量超过预期则 kill。</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span>            while True:</span></span>
@@ -101,12 +101,12 @@
 <span class="line"><span></span></span></code></pre>
 <h3 id="worker">Worker</h3>
 <p id="s-a6b4d73c">Master 创建 Worker 时，先执行 <code>worker.init_process()</code> 用来初始化进程</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>        self.init_signals()</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>        self.init_signals()</span></span>
 <span class="line"><span>        ...</span></span>
 <span class="line"><span>        # Enter main run loop</span></span>
 <span class="line"><span>        self.booted = True</span></span>
 <span class="line"><span>        self.run()</span></span></code></pre>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def init_signals(self):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def init_signals(self):</span></span>
 <span class="line"><span>        # reset signaling</span></span>
 <span class="line"><span>        for s in self.SIGNALS:</span></span>
 <span class="line"><span>            signal.signal(s, signal.SIG_DFL)</span></span>
@@ -127,7 +127,7 @@
 <span class="line"><span>        if hasattr(signal, 'set_wakeup_fd'):</span></span>
 <span class="line"><span>            signal.set_wakeup_fd(self.PIPE[1])</span></span></code></pre>
 <p id="s-f022a17b">在 Worker 中，所有的信号处理函数都是直接触发，没有采用 Master 的 <code>SIG_QUEUE</code> 形式：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def handle_usr1(self, sig, frame):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def handle_usr1(self, sig, frame):</span></span>
 <span class="line"><span>        self.log.reopen_files()</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span>    def handle_exit(self, sig, frame):</span></span>
@@ -145,7 +145,7 @@
 <span class="line"><span>        self.cfg.worker_abort(self)</span></span>
 <span class="line"><span>        sys.exit(1)</span></span></code></pre>
 <p id="s-7152a6c5">在 Worker 的 loop 逻辑中，优先检查 <code>self.alive</code> 是否为 True，如果为 True ，则进入请求处理逻辑：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def run_for_one(self, timeout):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    def run_for_one(self, timeout):</span></span>
 <span class="line"><span>        listener = self.sockets[0]</span></span>
 <span class="line"><span>        while self.alive:</span></span>
 <span class="line"><span>            self.notify()</span></span>

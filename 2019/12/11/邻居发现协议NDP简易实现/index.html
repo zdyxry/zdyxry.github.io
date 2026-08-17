@@ -93,7 +93,7 @@
 <p id="s-8d66b145">因为我本人也没有完整阅读过相应 RFC 文档，在这里也不详细描述每个报文的具体格式及每个字段是什么意思了，直接看看怎么实现。</p>
 <h3 id="ping6--组播">ping6 &#x26; 组播</h3>
 <p id="s-202baa15">如果我们知道了一个主机的 IPv6 地址，我们可以通过 <code>ping6</code> 来检测是否联通：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
 <span class="line"><span style="color:#B392F0"> $</span><span style="color:#9ECBFF"> ping6</span><span style="color:#9ECBFF"> fe80::5054:ff:fe80:95d9%eth0</span></span>
 <span class="line"><span style="color:#B392F0">PING</span><span style="color:#9ECBFF"> fe80::5054:ff:fe80:95d9%eth0</span><span style="color:#E1E4E8">(</span><span style="color:#B392F0">fe80::5054:ff:fe80:95d9%eth0</span><span style="color:#E1E4E8">) </span><span style="color:#79B8FF">56</span><span style="color:#9ECBFF"> data</span><span style="color:#9ECBFF"> bytes</span></span>
 <span class="line"><span style="color:#B392F0">64</span><span style="color:#9ECBFF"> bytes</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> fe80::5054:ff:fe80:95d9%eth0:</span><span style="color:#9ECBFF"> icmp_seq=</span><span style="color:#79B8FF">1</span><span style="color:#9ECBFF"> ttl=</span><span style="color:#79B8FF">64</span><span style="color:#9ECBFF"> time=</span><span style="color:#79B8FF">0.045</span><span style="color:#9ECBFF"> ms</span></span>
@@ -103,7 +103,7 @@
 <span class="line"><span style="color:#B392F0">2</span><span style="color:#9ECBFF"> packets</span><span style="color:#9ECBFF"> transmitted,</span><span style="color:#79B8FF"> 2</span><span style="color:#9ECBFF"> received,</span><span style="color:#9ECBFF"> 0%</span><span style="color:#9ECBFF"> packet</span><span style="color:#9ECBFF"> loss,</span><span style="color:#9ECBFF"> time</span><span style="color:#9ECBFF"> 999ms</span></span>
 <span class="line"><span style="color:#B392F0">rtt</span><span style="color:#9ECBFF"> min/avg/max/mdev</span><span style="color:#9ECBFF"> =</span><span style="color:#9ECBFF"> 0.045/0.050/0.055/0.005</span><span style="color:#9ECBFF"> ms</span></span></code></pre>
 <p id="s-f590197a">那么有了这个 <code>ping6</code> 命令和上面提到的组播地址，我们就可以通过 <code>ping6</code> 直接 ping 组播地址就能知道那些地址可以联通了，那么应该选择哪个？应该选择 <code>FF01::1</code> ，因为我们想要实现的是获取 IPv6 地址：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
 <span class="line"><span style="color:#B392F0"> $</span><span style="color:#9ECBFF"> ping6</span><span style="color:#79B8FF"> -c1</span><span style="color:#79B8FF"> -I</span><span style="color:#9ECBFF"> eth0</span><span style="color:#9ECBFF"> 'ff02::1%eth0'</span></span>
 <span class="line"><span style="color:#B392F0">PING</span><span style="color:#9ECBFF"> ff02::1%eth0</span><span style="color:#E1E4E8">(</span><span style="color:#B392F0">ff02::1%eth0</span><span style="color:#E1E4E8">) </span><span style="color:#9ECBFF">from</span><span style="color:#9ECBFF"> fe80::5054:ff:fe80:95d9%eth0</span><span style="color:#9ECBFF"> eth0:</span><span style="color:#79B8FF"> 56</span><span style="color:#9ECBFF"> data</span><span style="color:#9ECBFF"> bytes</span></span>
 <span class="line"><span style="color:#B392F0">64</span><span style="color:#9ECBFF"> bytes</span><span style="color:#9ECBFF"> from</span><span style="color:#9ECBFF"> fe80::5054:ff:fe80:95d9%eth0:</span><span style="color:#9ECBFF"> icmp_seq=</span><span style="color:#79B8FF">1</span><span style="color:#9ECBFF"> ttl=</span><span style="color:#79B8FF">64</span><span style="color:#9ECBFF"> time=</span><span style="color:#79B8FF">0.045</span><span style="color:#9ECBFF"> ms</span></span>
@@ -113,7 +113,7 @@
 <span class="line"><span style="color:#B392F0">rtt</span><span style="color:#9ECBFF"> min/avg/max/mdev</span><span style="color:#9ECBFF"> =</span><span style="color:#9ECBFF"> 0.045/0.045/0.045/0.000</span><span style="color:#9ECBFF"> ms</span></span></code></pre>
 <p id="s-95592ea9">因为我的实验环境里节点太多，这里使用 <code>-c</code> 参数限制发送 ECHO_REQUEST 包的数量为 1。</p>
 <p id="s-cbacf3c7">在发送组播之后，如果能够联通，那么系统会记录对应的 ARP 信息，我们可以通过 <code>ip</code> 命令直接获取：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
 <span class="line"><span style="color:#B392F0"> $</span><span style="color:#9ECBFF"> ip</span><span style="color:#79B8FF"> -6</span><span style="color:#9ECBFF"> neighbor</span><span style="color:#9ECBFF"> show</span><span style="color:#9ECBFF"> dev</span><span style="color:#9ECBFF"> eth0</span><span style="color:#F97583"> |</span><span style="color:#B392F0"> head</span><span style="color:#79B8FF"> -n</span><span style="color:#79B8FF"> 5</span></span>
 <span class="line"><span style="color:#B392F0">fe80::8c6e:a0ff:fe19:f146</span><span style="color:#9ECBFF"> lladdr</span><span style="color:#9ECBFF"> 8e:6e:a0:19:f1:46</span><span style="color:#9ECBFF"> DELAY</span></span>
 <span class="line"><span style="color:#B392F0">fe80::8010:f1ff:fe02:af40</span><span style="color:#9ECBFF"> lladdr</span><span style="color:#9ECBFF"> 82:10:f1:02:af:40</span><span style="color:#9ECBFF"> DELAY</span></span>
@@ -123,7 +123,7 @@
 <p id="s-1f6a064c">这样就拿到了自己节点在二层联通的所有 IPv6 地址了。</p>
 <h4 id="nmap">Nmap</h4>
 <p id="s-7f857207">既然已经使用了 <code>ping6</code>，那么可以使用一些更高级的工具，比如 Nmap，Nmap可以检测目标主机是否在线、端口开放情况、侦测运行的服务类型及版本信息、侦测操作系统与设备类型等信息。 它通常用来评估网络系统安全。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
 <span class="line"><span style="color:#B392F0"> $</span><span style="color:#9ECBFF"> nmap</span><span style="color:#79B8FF"> -6</span><span style="color:#9ECBFF"> "--script=targets-ipv6-multicast-*"</span><span style="color:#F97583"> |</span><span style="color:#B392F0"> head</span><span style="color:#79B8FF"> -n</span><span style="color:#79B8FF"> 10</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#B392F0">Starting</span><span style="color:#9ECBFF"> Nmap</span><span style="color:#79B8FF"> 6.40</span><span style="color:#E1E4E8"> ( </span><span style="color:#9ECBFF">http://nmap.org</span><span style="color:#E1E4E8"> ) at 2019-12-12 07:22 CST</span></span>
@@ -140,7 +140,7 @@
 <p id="s-ae319a4a">往往我们的需求不只是获取到 IP 这么简单，我们现在更进一步，我们要求扫描的结果中与我们预期的版本相同，那么此时就需要与对应节点进行通信了。</p>
 <h3 id="http">HTTP</h3>
 <p id="s-7f831915">一个比较简单的实现，就是在目标节点开机的时候自动启动一个 API server，提供一个 Entrypoint，比如：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6A737D">#!/usr/bin/python</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#6A737D">#!/usr/bin/python</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> flask </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> jsonify</span></span>
 <span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> flask </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Flask</span></span>
@@ -153,12 +153,12 @@
 <span class="line"><span style="color:#F97583">if</span><span style="color:#79B8FF"> __name__</span><span style="color:#F97583"> ==</span><span style="color:#9ECBFF"> '__main__'</span><span style="color:#E1E4E8">:</span></span>
 <span class="line"><span style="color:#E1E4E8">    app.run(</span><span style="color:#FFAB70">host</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">'::'</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">port</span><span style="color:#F97583">=</span><span style="color:#79B8FF">5000</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">debug</span><span style="color:#F97583">=</span><span style="color:#79B8FF">True</span><span style="color:#E1E4E8">) </span><span style="color:#6A737D"># 要兼容 IPv6</span></span></code></pre>
 <p id="s-7ad006e9">然后我们可以在得到 IPv6 地址后，通过 curl 或者 Python urllib2 来发送对应的请求：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">root@localhost:/tmp/nnn</span></span>
 <span class="line"><span style="color:#B392F0"> $</span><span style="color:#9ECBFF"> curl</span><span style="color:#79B8FF"> -g</span><span style="color:#79B8FF"> -6</span><span style="color:#9ECBFF"> 'http://fe80::5054:ff:fe80:95d9%eth0:5000/api/v1/version'</span></span>
 <span class="line"><span style="color:#E1E4E8">{</span></span>
 <span class="line"><span style="color:#B392F0">  "version"</span><span style="color:#79B8FF">:</span><span style="color:#9ECBFF"> "v1.0.0"</span></span>
 <span class="line"><span style="color:#E1E4E8">}#</span></span></code></pre>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">>>></span><span style="color:#F97583"> import</span><span style="color:#E1E4E8"> urllib2</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">>>></span><span style="color:#F97583"> import</span><span style="color:#E1E4E8"> urllib2</span></span>
 <span class="line"><span style="color:#F97583">>>></span><span style="color:#E1E4E8"> res </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> urllib2.urlopen(</span><span style="color:#9ECBFF">"http://fe80::5054:ff:fe80:95d9</span><span style="color:#79B8FF">%e</span><span style="color:#9ECBFF">th0:5000/api/v1/version"</span><span style="color:#E1E4E8">)</span></span>
 <span class="line"><span style="color:#F97583">>>></span><span style="color:#E1E4E8"> res.read()</span></span>
 <span class="line"><span style="color:#9ECBFF">'{</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">  "version": "v1.0.0"</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">}'</span></span></code></pre>
@@ -166,7 +166,7 @@
 <h3 id="socket">Socket</h3>
 <p id="s-f589c2b1">我们可以通过 socket 通信来达到类似的效果，与 HTTP 不同的是，我们可以直接使用 socket 发送组播，来进行消息传递，这样上面的两步就可以通过一步来解决了，这里给出对应的 server 和 client 代码示例：</p>
 <h4 id="server">Server</h4>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> socket</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> socket</span></span>
 <span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> select</span></span>
 <span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> json</span></span>
 <span class="line"></span>
@@ -199,7 +199,7 @@
 <span class="line"><span style="color:#F97583">if</span><span style="color:#79B8FF"> __name__</span><span style="color:#F97583"> ==</span><span style="color:#9ECBFF"> "__main__"</span><span style="color:#E1E4E8">:</span></span>
 <span class="line"><span style="color:#E1E4E8">    server()</span></span></code></pre>
 <h4 id="client">Client</h4>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> json</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> json</span></span>
 <span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> select</span></span>
 <span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> socket</span></span>
 <span class="line"></span>

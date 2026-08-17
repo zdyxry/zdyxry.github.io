@@ -13,7 +13,7 @@
 <h2 id="k8s-leader">K8S Leader</h2>
 <p id="s-f1edadaf">看过之前 K8S 实战系列的朋友应该记得我写过一篇 <a href="https://zdyxry.github.io/2019/06/15/Kubernetes-%E5%AE%9E%E6%88%98-%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">K8S 高可用部署</a>的文章，在文章中只是讲了具体的操作步骤，没有提到 k8s 是如何保证自己多个组件之间协作的。</p>
 <p id="s-e151dac8">我们这里有一个 3 个master 节点的集群：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node70 21:01:01 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$kubectl get node</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node70 21:01:01 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$kubectl get node</span></span>
 <span class="line"><span style="color:#B392F0">NAME</span><span style="color:#9ECBFF">     STATUS</span><span style="color:#9ECBFF">   ROLES</span><span style="color:#9ECBFF">    AGE</span><span style="color:#9ECBFF">   VERSION</span></span>
 <span class="line"><span style="color:#B392F0">node70</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   64d</span><span style="color:#9ECBFF">   v1.15.0</span></span>
 <span class="line"><span style="color:#B392F0">node71</span><span style="color:#9ECBFF">   Ready</span><span style="color:#9ECBFF">    master</span><span style="color:#9ECBFF">   64d</span><span style="color:#9ECBFF">   v1.15.0</span></span>
@@ -21,7 +21,7 @@
 <p id="s-a456b1df">我们都知道 k8s 核心组件，其中 apiserver 只用于接收 api 请求，不会主动进行各种动作，所以他们在每个节点都运行并且都可以接收请求，不会造成异常；kube-proxy 也是一样，只用于做端口转发，不会主动进行动作执行。</p>
 <p id="s-dc51a5ce">但是 scheduler, controller-manager 不同，他们参与了 Pod 的调度及具体的各种资源的管控，如果同时有多个 controller-manager 来对 Pod 资源进行调度，结果太美不敢看，那么 k8s 是如何做到正确运转的呢？</p>
 <p id="s-c4da8a79">k8s 所有功能都是通过 <code>services</code> 对外暴露接口，而 <code>services</code> 对应的是具体的 <code>endpoints</code> ，那么来看下 scheduler 和 controller-manager 的 <code>endpoints</code> 是什么：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node70 21:04:46 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$kubectl -n kube-system describe endpoints kube-scheduler</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node70 21:04:46 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$kubectl -n kube-system describe endpoints kube-scheduler</span></span>
 <span class="line"><span style="color:#B392F0">Name:</span><span style="color:#9ECBFF">         kube-scheduler</span></span>
 <span class="line"><span style="color:#B392F0">Namespace:</span><span style="color:#9ECBFF">    kube-system</span></span>
 <span class="line"><span style="color:#B392F0">Labels:</span><span style="color:#F97583">       &#x3C;</span><span style="color:#9ECBFF">non</span><span style="color:#E1E4E8">e</span><span style="color:#F97583">></span></span>
@@ -41,7 +41,7 @@
 <span class="line"><span style="color:#B392F0">  ----</span><span style="color:#79B8FF">    ------</span><span style="color:#79B8FF">          ----</span><span style="color:#79B8FF">  ----</span><span style="color:#79B8FF">                     -------</span></span>
 <span class="line"><span style="color:#B392F0">  Normal</span><span style="color:#9ECBFF">  LeaderElection</span><span style="color:#9ECBFF">  22m</span><span style="color:#9ECBFF">   kube-controller-manager</span><span style="color:#9ECBFF">  node71_c8deeaea-2d66-4459-90ee-65c28563062f</span><span style="color:#9ECBFF"> became</span><span style="color:#9ECBFF"> leader</span></span></code></pre>
 <p id="s-fb1279c4">可以看到关键字 <code>control-plane.alpha.kubernetes.io/leader</code> ，这两个组件是通过 leader 选举来从集群中多个节点选择一个执行具体动作，如果我们去看 <code>/etc/kubernetes/manifests/</code> 下的配置文件，会看到这行配置：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">v1</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">v1</span></span>
 <span class="line"><span style="color:#85E89D">kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">Pod</span></span>
 <span class="line"><span style="color:#85E89D">metadata</span><span style="color:#E1E4E8">:</span></span>
 <span class="line"><span style="color:#85E89D">creationTimestamp</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">null</span></span>
@@ -74,7 +74,7 @@
 <h3 id="sidecar">SideCar</h3>
 <p id="s-99b53478">相比于代码中内嵌选主逻辑，使用 sidecar 就不用担心跨语言的问题了，使用起来也简单许多，我们现在用的这个项目实现：<a href="https://github.com/kubernetes-retired/contrib/blob/master/election/README.md">https://github.com/kubernetes-retired/contrib/blob/master/election/README.md</a></p>
 <p id="s-10a43bbd">使用方式：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">extensions/v1beta1</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">extensions/v1beta1</span></span>
 <span class="line"><span style="color:#85E89D">kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">DaemonSet</span></span>
 <span class="line"><span style="color:#85E89D">metadata</span><span style="color:#E1E4E8">:</span></span>
 <span class="line"><span style="color:#85E89D">  creationTimestamp</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">"2019-07-12T07:35:32Z"</span></span>
@@ -107,7 +107,7 @@
 <p id="s-0478e70c">在 Deployment 或 DaemonSet 中，添加 sidecar 指定端口，最终会在所有的 Pod 中选择一个 Leader 。
 在业务代码中，只需要访问端口 4444 ，即可获取当前 Pod 中 Leader 信息，目前是通过 hostname 作为唯一标示的。</p>
 <p id="s-3d832d8a">如果看了这个项目的代码，会发现它也是使用的 client go 中的实现，只是增加了一层 http server：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> getCurrentLeader</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">electionId</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">namespace</span><span style="color:#F97583"> string</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">c</span><span style="color:#B392F0"> client</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Interface</span><span style="color:#E1E4E8">) (</span><span style="color:#F97583">string</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">*</span><span style="color:#B392F0">api</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Endpoints</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> getCurrentLeader</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">electionId</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">namespace</span><span style="color:#F97583"> string</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">c</span><span style="color:#B392F0"> client</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Interface</span><span style="color:#E1E4E8">) (</span><span style="color:#F97583">string</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">*</span><span style="color:#B392F0">api</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Endpoints</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">error</span><span style="color:#E1E4E8">) {</span></span>
 <span class="line"><span style="color:#E1E4E8">	endpoints, err </span><span style="color:#F97583">:=</span><span style="color:#E1E4E8"> c.</span><span style="color:#B392F0">Endpoints</span><span style="color:#E1E4E8">(namespace).</span><span style="color:#B392F0">Get</span><span style="color:#E1E4E8">(electionId)</span></span>
 <span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> err </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> nil</span><span style="color:#E1E4E8"> {</span></span>
 <span class="line"><span style="color:#F97583">		return</span><span style="color:#9ECBFF"> ""</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">nil</span><span style="color:#E1E4E8">, err</span></span>
@@ -122,7 +122,7 @@
 <span class="line"><span style="color:#E1E4E8">	}</span></span>
 <span class="line"><span style="color:#F97583">	return</span><span style="color:#E1E4E8"> electionRecord.HolderIdentity, endpoints, err</span></span>
 <span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> main</span><span style="color:#E1E4E8">() {</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="go"><code><span class="line"><span style="color:#F97583">func</span><span style="color:#B392F0"> main</span><span style="color:#E1E4E8">() {</span></span>
 <span class="line"><span style="color:#E1E4E8">	flags.</span><span style="color:#B392F0">Parse</span><span style="color:#E1E4E8">(os.Args)</span></span>
 <span class="line"><span style="color:#B392F0">	validateFlags</span><span style="color:#E1E4E8">()</span></span>
 <span class="line"></span>
@@ -152,7 +152,7 @@
 <h2 id="是否开启选举参数">是否开启选举参数</h2>
 <p id="s-36ee47ca">那么我们说了这么多，在实际使用中是否应该开启选举参数呢？
 这里要说一下我在文章开头提到的有意思的事情，我们来看下cluster-api 的 YAML 文件：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">apps/v1</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#85E89D">apiVersion</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">apps/v1</span></span>
 <span class="line"><span style="color:#85E89D">kind</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">Deployment</span></span>
 <span class="line"><span style="color:#85E89D">metadata</span><span style="color:#E1E4E8">:</span></span>
 <span class="line"><span style="color:#79B8FF">  ...</span></span>
@@ -173,7 +173,7 @@
 <span class="line"><span style="color:#79B8FF">        ...</span></span></code></pre>
 <p id="s-4e57d28b">创建的资源类型是 Deployment，replicas 设置为1，传递了参数 <code>--enable-leader-election</code>，当时我觉得有些奇怪，replicas是1 啊，也就是说一共只有1个 Pod，为啥还要开启 Leader 选举逻辑呢？如果说是为了之后的扩容那可以理解，但是在这份配置文件里，应该完全没必要。把这段配置发给 <a href="https://liqiang.io/">liqiang同学</a> 看，他也觉得有些怪怪的。</p>
 <p id="s-04cb64a5">秉着不懂就问的精神，我去 Slack #cluster-api 中提出了我的疑问，得到了以下回复，我格式化一下：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>@cha： </span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>@cha： </span></span>
 <span class="line"><span>it's mostly set for best practice. If you scale up the system will still work. If you don't enable leader election and scale up you will have race conditions</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span></span></span>

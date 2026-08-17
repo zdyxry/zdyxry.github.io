@@ -4,7 +4,7 @@
 &lt;p id=&quot;s-6c1e52df&quot;&gt;首先,我将总结 QEMU 早期版本中已有的基本配置.
 磁盘 I/O 有两处可以被限制的方式:  每秒钟字节数(bps) 和 每秒钟操作数( IOPS) . 对于它们中的每一种限制,用户既可以进行全局配置,也可以针对读写进行单独限制. 下面列举了总共 6 个不同的参数.
 I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 blocks_set_io_throttle 命令. 下面是两种情况下的参数列举:&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{&lt;/span&gt;&lt;/span&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;-DRIVE               	BLOCK_SET_IO_THROTTLE&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;throttling.iops-total	iops                 &lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;throttling.iops-read 	iops_rd              &lt;/span&gt;&lt;/span&gt;
@@ -17,7 +17,7 @@ I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 b
 这些参数的默认值都是 0 , 表示没有任何限制.  &lt;code&gt;-drive file=hd0.qcow2,throttling.iops-total=100&lt;/code&gt;
 最基本的用法,用户可以为 QEMU 添加一个驱动用于限制 100 IOPS : &lt;code&gt;-drive filehd0.qcow2,throttling.iops-total=100&lt;/code&gt;&lt;/p&gt;
 &lt;p id=&quot;s-9444f35c&quot;&gt;我们可以使用 QMP 达到相同的配置. 在这种情况下,所有的参数都是必须配置的, 所有我们必须给无关参数配置为 0 ,参考配置:&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{ &quot;execute&quot;: &quot;block_set_io_throttle&quot;,&lt;/span&gt;&lt;/span&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{ &quot;execute&quot;: &quot;block_set_io_throttle&quot;,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;  &quot;arguments&quot;: {&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;     &quot;device&quot;: &quot;virtio0&quot;,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;     &quot;iops&quot;: 100,&lt;/span&gt;&lt;/span&gt;
@@ -32,14 +32,14 @@ I/O 限制可以使用 -dirve 参数中的 throttling ,或者使用 QMP 中的 b
 &lt;p id=&quot;s-b2d90c43&quot;&gt;在刚刚的基本配置中, 我们已经能够预防虚拟机抢占过多 I/O 资源, 偶尔允许用户超出参数限制范围可能会更有用. 通过这种方式, 我们能够拥有一个响应更快的虚拟机,用于应对更多的波峰情况,同时保持其他时间的平均限制.
 从 QEMU 2.6 开始, 可以允许用户在可配置的时间区间内进行突发 I/O. 突发 I/O 可以超过基本配置, 有两个参数可以限制他们: 突发 I/O 长度和最大允许 I/O 数量. 这两个参数可以作用于上述基本配置中的每一个参数, 这里使用 iops-total  进行举例.&lt;br&gt;
 突发 I/O 限制使用 iops-total-max 进行配置, 最大长度(单位: s) 通过 iops-total-max-length 进行配置. 如果我们想要配置一个驱动器基本配置 IOPS 为 100, 同时允许在 60s 时间区间内发生突发 I/O IOPS 为2000. 可以使用如下配置:&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{&lt;/span&gt;&lt;/span&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;-drive file=hd0.qcow2,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;throttling.iops-total=100,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;throttling.iops-total-max=2000,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;throttling.iops-total-max-length=60&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;}&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;p id=&quot;s-48f276a3&quot;&gt;或者通过 QMP 进行配置:&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{&quot;execute&quot;:&quot;block_set_io_throttle&quot;,&lt;/span&gt;&lt;/span&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;{&quot;execute&quot;:&quot;block_set_io_throttle&quot;,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt; &quot;arguments&quot;:{&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;   &quot;device&quot;:&quot;virtio0&quot;,&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;   &quot;iops&quot;:100,&lt;/span&gt;&lt;/span&gt;
@@ -66,7 +66,7 @@ iops-size默认值为 0 ,表示这个默认的 IOPS 限制不考虑每次 I/O �
 &lt;p id=&quot;s-5741fd14&quot;&gt;QEMU 中的 I/O 限制使用 Leaky Bucket 算法实现.&lt;/p&gt;
 &lt;p id=&quot;s-30ccf0be&quot;&gt;该算法使用不断漏水的桶进行类比. 入水口比作在进行的 I/O, 当桶处于满状态时, 不再允许 I/O 下发.
 想要查看 QEMU 中的 I/O 限制对应方式,可以参考如下数值:&lt;/p&gt;
-&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;iops-total=100&lt;/span&gt;&lt;/span&gt;
+&lt;pre class=&quot;astro-code github-dark&quot; style=&quot;background-color:#24292e;color:#e1e4e8; overflow-x: auto;&quot; tabindex=&quot;0&quot; data-language=&quot;plaintext&quot;&gt;&lt;code&gt;&lt;span class=&quot;line&quot;&gt;&lt;span&gt;iops-total=100&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;iops-total-max=2000&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;iops-total-max-length=60&lt;/span&gt;&lt;/span&gt;
 &lt;span class=&quot;line&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;

@@ -32,7 +32,7 @@
 </ol>
 <p id="s-f74ccdb6">简单的说就是如果你的程序是计算密集型，那么尽可能的要让 CPU 限制在同一个 NUMA node 上。
 查看 NUMA node 方式：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 10:53:43 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$numactl -H</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 10:53:43 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$numactl -H</span></span>
 <span class="line"><span style="color:#B392F0">available:</span><span style="color:#79B8FF"> 2</span><span style="color:#9ECBFF"> nodes</span><span style="color:#E1E4E8"> (0-1)</span></span>
 <span class="line"><span style="color:#B392F0">node</span><span style="color:#79B8FF"> 0</span><span style="color:#9ECBFF"> cpus:</span><span style="color:#79B8FF"> 0</span><span style="color:#79B8FF"> 2</span><span style="color:#79B8FF"> 4</span><span style="color:#79B8FF"> 6</span><span style="color:#79B8FF"> 8</span><span style="color:#79B8FF"> 10</span><span style="color:#79B8FF"> 12</span><span style="color:#79B8FF"> 14</span><span style="color:#79B8FF"> 16</span><span style="color:#79B8FF"> 18</span><span style="color:#79B8FF"> 20</span><span style="color:#79B8FF"> 22</span><span style="color:#79B8FF"> 24</span><span style="color:#79B8FF"> 26</span><span style="color:#79B8FF"> 28</span><span style="color:#79B8FF"> 30</span></span>
 <span class="line"><span style="color:#B392F0">node</span><span style="color:#79B8FF"> 0</span><span style="color:#9ECBFF"> size:</span><span style="color:#79B8FF"> 65221</span><span style="color:#9ECBFF"> MB</span></span>
@@ -49,7 +49,7 @@
 具体的 CPU 配置大家可以通过 <code>lscpu</code> ， 或者查看 <code>/proc/cpuinfo</code> 了解。</p>
 <p id="s-74b186c4">根据 NUMA 配置，我们可以选择将程序限制在 Thread 0,2,4,6,8 上。
 那么我们编辑配置文件 <code>/etc/cgconfig.conf</code></p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 11:03:45 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$cat /etc/cgconfig.conf </span><span style="color:#F97583">|</span><span style="color:#B392F0">head</span><span style="color:#79B8FF"> -n</span><span style="color:#79B8FF"> 25</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 11:03:45 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$cat /etc/cgconfig.conf </span><span style="color:#F97583">|</span><span style="color:#B392F0">head</span><span style="color:#79B8FF"> -n</span><span style="color:#79B8FF"> 25</span></span>
 <span class="line"><span style="color:#6A737D"># yiran cgroups configuration</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#B392F0">group</span><span style="color:#9ECBFF"> .</span><span style="color:#9ECBFF"> {</span></span>
@@ -77,15 +77,15 @@
 <span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
 <p id="s-645a364e">首先，我们定义了一个组，组名叫 <code>yiran</code>，我们又在 <code>yiran</code> 下创建了一个叫 <code>flask</code> 的组，限制 CPU在 <code>0,2,4</code> 上。
 接下来我们重启 cgconfig 相关服务，注意遵守重启顺序：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 11:04:45 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]systemctl restart cgconfig</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 11:04:45 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]systemctl restart cgconfig</span></span>
 <span class="line"><span style="color:#E1E4E8">[root@test 11:04:46 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]systemctl restart cgred</span></span></code></pre>
 <p id="s-dfd97849">我们可以通过 lscgroup 检测配置是否生效，或者通过查看 <code>/proc/$pid/cgroup</code> 检查。</p>
 <h3 id="内存">内存</h3>
 <p id="s-4ad39fa5">相对于 CPU，内存配置我们可以直接通过 systemd 配置，就简化很多了。
 最简单的，如果我们想立即配置一个服务的内存限制，我们可以直接执行命令：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 11:05:50 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]systemctl set-property </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8">service name</span><span style="color:#F97583">></span><span style="color:#E1E4E8"> MemoryLimit</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">500M</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[root@test 11:05:50 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]systemctl set-property </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8">service name</span><span style="color:#F97583">></span><span style="color:#E1E4E8"> MemoryLimit</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">500M</span></span></code></pre>
 <p id="s-a1714337">执行完这条命令后，系统会自动在该服务的 systemd 配置路径(<code>/etc/systemd/system/&#x3C;service name>.d/</code> 下生成文件 <code>50-MemoryLimit.conf</code> ，文件内容为：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[Slice]</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#E1E4E8">[Slice]</span></span>
 <span class="line"><span style="color:#E1E4E8">MemoryLimit</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">5368709120</span></span></code></pre>
 <p id="s-a272009f">当然我们如果直接在该路径下编写配置文件也是可以的，重启服务后生效。</p>
 <h4 id="slice-配置">Slice 配置</h4>
@@ -95,7 +95,7 @@
 <p id="s-10e9b7b0">这说明 <em>parent</em>-<em>name</em>.<code>slice</code> 是 <em>parent</em>.<code>slice</code> 的一个子 slice。这一子 slice 可以再拥有自己的子 slice，被命名为：<em>parent</em>-<em>name</em>-<em>name2</em>.<code>slice</code>，以此类推。</p>
 <p id="s-37d6292d">根 slice 的表示方式：<code>-.slice</code></p>
 <p id="s-1ad7c53c">我们在 <code>/etc/systemd/system/</code> 下创建一个组，名称还是 <code>yiran</code> ，创建 <code>flask</code> 在 <code>yiran</code> 下：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">/etc/systemd/system</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">/etc/systemd/system</span></span>
 <span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> flask.service.d</span></span>
 <span class="line"><span style="color:#B392F0">│</span><span style="color:#9ECBFF">   └──</span><span style="color:#9ECBFF"> cgroup.conf</span></span>
 <span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> system-yiran.slice</span></span>

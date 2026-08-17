@@ -45,7 +45,7 @@
 <p id="s-f0a1bc69">无。</p>
 <h2 id="使用-pydanticai-修复中文拼写错误">使用 PydanticAI 修复中文拼写错误</h2>
 <p id="s-2b6b047b">最近看到了很多次 PydanticAI ，自己实际上在代码场景下除了 Copilot，貌似没有使用 AI 解决实际的问题。正好我有一个需求场景是很适合 AI 来做：笔记中的拼写错误。于是花了些时间阅读了 PydanticAI 文档，跟着示例走了一遍，发现这个有些玄学，比如关于 Result 的示例中，预期是可以将 AI 返回的结果转换为特定的数据结构的，我预想是将笔记内容给 Agent 后，Agent 可以返回给我成一个特定的数据类型，然后我解析数据类型来更新笔记，但是实际上我试了多个 Model，都没有得到预期的结果。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> pydantic </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> BaseModel</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> pydantic </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> BaseModel</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> pydantic_ai </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Agent</span></span>
 <span class="line"></span>
@@ -60,7 +60,7 @@
 <span class="line"><span style="color:#79B8FF">print</span><span style="color:#E1E4E8">(result.data)</span></span>
 <span class="line"><span style="color:#6A737D">#> city='London' country='United Kingdom'</span></span></code></pre>
 <p id="s-3d80831e">我的笔记都是使用 Markdown 语法编写的，所以期望的是 AI 返回修复后的结果，并且能够正确的处理一些特殊格式，经过一些调试验证，最终我使用的 Prompt 如下，实际执行流程是 定义 Agent 和 System Prompt，遍历所有的笔记文件，然后将其内容读取，并添加 <code>%%%{content}%%%</code> 来传递给 Agent，将 Agent 的返回结果直接覆盖写入到笔记文件中。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>general_prompt = """</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>general_prompt = """</span></span>
 <span class="line"><span>找出内容中的中文和英文拼写错误，并将其更正。 请注意，不要更改内容的格式，例如空格，换行符等。</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span>对于英文中没有通用中文翻译的技术术语，使用英文原文。</span></span>

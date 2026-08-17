@@ -17,7 +17,7 @@
 <p id="s-b5c1f75b"><code>failed to set /sys/fs/cgroup/cpuset/zbs/cpuset.mems: Invalid argument</code>。</p>
 <h2 id="调查">调查</h2>
 <p id="s-3cdda3f2">检查下 /etc/cgconfig.conf 中的配置是否正确：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">group</span><span style="color:#9ECBFF"> .</span><span style="color:#9ECBFF"> {</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#B392F0">group</span><span style="color:#9ECBFF"> .</span><span style="color:#9ECBFF"> {</span></span>
 <span class="line"><span style="color:#B392F0">    cpuset</span><span style="color:#9ECBFF"> {</span></span>
 <span class="line"><span style="color:#B392F0">        cpuset.memory_pressure_enabled</span><span style="color:#9ECBFF"> =</span><span style="color:#9ECBFF"> "1"</span><span style="color:#E1E4E8">;</span></span>
 <span class="line"><span style="color:#E1E4E8">    }</span></span>
@@ -39,7 +39,7 @@
 <span class="line"><span style="color:#79B8FF">...</span></span></code></pre>
 <p id="s-f85baa76">配置看上去没啥问题，这里的 <code>cpuset.mems</code> 指定的是 NUMA Node ID。</p>
 <p id="s-55a7146d">那么我们就来看看 NUMA 状态，使用 <code>numactl</code> 查看节点 NUMA 信息：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node 21:53:25 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$numactl -H</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node 21:53:25 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$numactl -H</span></span>
 <span class="line"><span style="color:#B392F0">available:</span><span style="color:#79B8FF"> 2</span><span style="color:#9ECBFF"> nodes</span><span style="color:#E1E4E8"> (0-1)</span></span>
 <span class="line"><span style="color:#B392F0">node</span><span style="color:#79B8FF"> 0</span><span style="color:#9ECBFF"> cpus:</span><span style="color:#79B8FF"> 0</span><span style="color:#79B8FF"> 1</span><span style="color:#79B8FF"> 2</span><span style="color:#79B8FF"> 3</span><span style="color:#79B8FF"> 4</span><span style="color:#79B8FF"> 5</span><span style="color:#79B8FF"> 6</span><span style="color:#79B8FF"> 7</span><span style="color:#79B8FF"> 16</span><span style="color:#79B8FF"> 17</span><span style="color:#79B8FF"> 18</span><span style="color:#79B8FF"> 19</span><span style="color:#79B8FF"> 20</span><span style="color:#79B8FF"> 21</span><span style="color:#79B8FF"> 22</span><span style="color:#79B8FF"> 23</span></span>
 <span class="line"><span style="color:#B392F0">node</span><span style="color:#79B8FF"> 0</span><span style="color:#9ECBFF"> size:</span><span style="color:#79B8FF"> 0</span><span style="color:#9ECBFF"> MB</span></span>
@@ -54,7 +54,7 @@
 <p id="s-2a0345bf">发现问题了，这个节点上有2个 CPU，但是其中的一个 CPU 上对应的节点内存出现了故障，导致 node0 对应的内存是 0MB。</p>
 <h2 id="解决">解决</h2>
 <p id="s-f3ddf9f9">所以我们正确的姿势是将 <code>cpuset.mems</code> 从 <code>0-1</code> 改为 <code>1</code> ，然后重启 cgconfig。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node 22:09:43 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$systemctl status cgconfig</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="shell"><code><span class="line"><span style="color:#E1E4E8">[root@node 22:09:43 </span><span style="color:#F97583">~</span><span style="color:#E1E4E8">]$systemctl status cgconfig</span></span>
 <span class="line"><span style="color:#B392F0">●</span><span style="color:#9ECBFF"> cgconfig.service</span><span style="color:#9ECBFF"> -</span><span style="color:#9ECBFF"> Control</span><span style="color:#9ECBFF"> Group</span><span style="color:#9ECBFF"> configuration</span><span style="color:#9ECBFF"> service</span></span>
 <span class="line"><span style="color:#B392F0">   Loaded:</span><span style="color:#9ECBFF"> loaded</span><span style="color:#E1E4E8"> (/usr/lib/systemd/system/cgconfig.service; </span><span style="color:#B392F0">enabled</span><span style="color:#E1E4E8">; </span><span style="color:#B392F0">vendor</span><span style="color:#9ECBFF"> preset:</span><span style="color:#9ECBFF"> disabled</span><span style="color:#E1E4E8">)</span></span>
 <span class="line"><span style="color:#B392F0">   Active:</span><span style="color:#9ECBFF"> active</span><span style="color:#E1E4E8"> (exited) since Fri 2019-12-20 16:41:24 CST; </span><span style="color:#B392F0">5</span><span style="color:#9ECBFF"> days</span><span style="color:#9ECBFF"> ago</span></span>

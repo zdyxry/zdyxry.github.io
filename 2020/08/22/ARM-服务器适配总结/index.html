@@ -31,11 +31,11 @@
 </blockquote>
 <h3 id="kvm-module">KVM module</h3>
 <p id="s-ce379670">在 x86 上我们可以直接通过 <code>lsmod |grep kvm</code> 查看到 KVM module 情况:</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node90 19:24:30 ~]$lsmod |grep kvm</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node90 19:24:30 ~]$lsmod |grep kvm</span></span>
 <span class="line"><span>kvm_intel             188644  82 </span></span>
 <span class="line"><span>kvm                   621480  1 kvm_intel</span></span></code></pre>
 <p id="s-857ad09e">但是在 arm 上是没有加载 KVM module 的，此时想要知道 KVM 配置是否正确，可以通过 <code>dmesg</code> 中查看 KVM 相关日志：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[Wed Jul  8 13:43:11 2020] kvm [1]: IPA Size Limit: 48bits</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[Wed Jul  8 13:43:11 2020] kvm [1]: IPA Size Limit: 48bits</span></span>
 <span class="line"><span>[Wed Jul  8 13:43:11 2020] kvm [1]: GICv4 support disabled</span></span>
 <span class="line"><span>[Wed Jul  8 13:43:11 2020] kvm [1]: vgic-v2@9b020000</span></span>
 <span class="line"><span>[Wed Jul  8 13:43:11 2020] kvm [1]: GIC system register CPU interface enabled</span></span>
@@ -45,13 +45,13 @@
 <h3 id="cpu">CPU</h3>
 <p id="s-2b6c12f6">在 CentOS 中通常使用 cpuinfo 来获取 CPU 相关信息，但是发现集群中某个节点无法获取主频相关信息，通过 lscpu 也无法正确显示，开始以为是 <code>util-linux</code> 相关软件的版本不兼容导致，后续排查发现不是这个问题，于是考虑通过其他方式获取主频。</p>
 <p id="s-18ef2b21">正常 cpuinfo 输出结果如下：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Hz Advertised: 2.6000 GHz</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Hz Advertised: 2.6000 GHz</span></span>
 <span class="line"><span>Hz Actual: 2.6000 GHz</span></span>
 <span class="line"><span>Hz Advertised Raw: (2600000000, 0)</span></span>
 <span class="line"><span>Hz Actual Raw: (2600000000, 0)</span></span>
 <span class="line"><span>Arch: ARM_8</span></span></code></pre>
 <p id="s-b33661e6">如果作为他信息统计的话我们往往使用的是 <code>Hz Advertised Raw</code> 字段，我们可以通过 <code>dmidecode</code> 获取，<code>dmidecode</code> 输出结果示例如下：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node90 19:33:47 ~]$dmidecode -t 4 </span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node90 19:33:47 ~]$dmidecode -t 4 </span></span>
 <span class="line"><span>        ...</span></span>
 <span class="line"><span>        Max Speed: 4000 MHz</span></span>
 <span class="line"><span>        Current Speed: 2600 MHz</span></span>
@@ -66,7 +66,7 @@
 <p id="s-5ab36736">在 x86 架构下，支持两种 Machine Type，分别为 q35 和 i440fx(pc)，我们使用的是 i440fx，这两种类型我理解最主要的区别在于 PCI 和 PCIE 的支持，通俗描述就是 <code>兼容性</code> 更好。目前 x86 架构下的 Machine Type 我们使用的是 i440fx(pc)。但是在 ARM 架构下只支持一种 Machine Type，就是 mach-virt(virt) ，而这种架构下的大部分行为与 q35 相同，所以我们在创建虚拟机时所指定的基本参数就需要进行相应的调整。</p>
 <h3 id="boot-options">Boot Options</h3>
 <p id="s-b4cf0949">ARM 架构下虚拟机不支持 BIOS 引导，只支持 UEFI，在设置 UEFI  bootloader 时，需要使用 aarch64 版本的 edk2(EFI Development Kit II)，虽然 edk2 的 x86 下使用的是 noarch 版本，但是这里的 noarch 是假象，还是需要指定 aarch64 版本才可以。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node26 19:58:59 ~]$rpm -ql edk2.git-aarch64-0-20200515.1405.g9af1064995.noarch</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node26 19:58:59 ~]$rpm -ql edk2.git-aarch64-0-20200515.1405.g9af1064995.noarch</span></span>
 <span class="line"><span>/usr/share/edk2.git</span></span>
 <span class="line"><span>/usr/share/edk2.git/aarch64</span></span>
 <span class="line"><span>/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw</span></span>
@@ -75,13 +75,13 @@
 <span class="line"><span>/usr/share/edk2.git/aarch64/vars-template-pflash.raw</span></span>
 <span class="line"><span>/usr/share/qemu/firmware/80-uefi-a64-git.json</span></span></code></pre>
 <p id="s-86e5f8d7">在 libvirt qemu 配置文件中指定 nvram 文件路径：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node26 19:59:23 ~]$cat /etc/libvirt/qemu.conf </span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[root@node26 19:59:23 ~]$cat /etc/libvirt/qemu.conf </span></span>
 <span class="line"><span>nvram = ["/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"]</span></span></code></pre>
 <h3 id="controller">Controller</h3>
 <p id="s-281a76b7">虚拟机配置中，一个比较重要的地方是 Controller 配置，在 q35 Machine Type 中：不支持 PCI Controller，仅支持 PCI-E Controller，因此需要特殊注意；同时 USB Controller 支持 XHCI Controller，XHCI 可以同时支持 USB 1.1，2.0，3.0 设备。</p>
 <h4 id="pci-e-controller">PCI-E Controller</h4>
 <p id="s-3e8913dd">默认的 PCI 拓扑如下：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>&#x3C;controller type='pci' index='0' model='pcie-root'/></span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>&#x3C;controller type='pci' index='0' model='pcie-root'/></span></span>
 <span class="line"><span>&#x3C;controller type='pci' index='1' model='pcie-root-port'></span></span>
 <span class="line"><span>  &#x3C;model name='pcie-root-port'/></span></span>
 <span class="line"><span>  &#x3C;target chassis='1' port='0x10'/></span></span>
@@ -91,7 +91,7 @@
 <p id="s-2af7a64e">文档中提到 q35 支持 <code>pcie-to-pci-bridge</code> 控制器用于连接一些传统的 PCI 设备，但是实际测试中发现没有作用，不知道是不是我的姿势有问题。</p>
 <p id="s-84a898ce">上面提到要在虚拟机创建时预先分配 <code>pcie-root-port</code> Controller，我们需要知道 <code>pcie-root</code> 所支持的 <code>pcie-root-port</code> 数量上限是多少，没有找到相关文档，于是我去看了看 virt-manager 中是否有特殊处理，代码中没找到 <code>pcie-root-port</code> 关键字，在测试的 XML 文件中，发现最多添加了 8 个 <code>pcie-root-port</code> Controller。virt-manager 没找到，那么就去 OpenStack Nova 中找。</p>
 <p id="s-1b09773c">在 nova/virt/libvirt/driver.py 中，看到了添加 <code>pcie-root-port</code> Controller 的相关逻辑：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _guest_add_pcie_root_ports</span><span style="color:#E1E4E8">(self, guest):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _guest_add_pcie_root_ports</span><span style="color:#E1E4E8">(self, guest):</span></span>
 <span class="line"><span style="color:#9ECBFF">        """Add PCI Express root ports.</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#9ECBFF">        PCI Express machine can have as many PCIe devices as it has</span></span>
@@ -108,7 +108,7 @@
 <span class="line"><span style="color:#E1E4E8">            pcierootport </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> vconfig.LibvirtConfigGuestPCIeRootPortController()</span></span>
 <span class="line"><span style="color:#E1E4E8">            guest.add_device(pcierootport)</span></span></code></pre>
 <p id="s-897f24c7">nova 在创建虚拟机时，直接预先分配了所有的 <code>pcie-root-port</code> ，达到了 libvirt 的上限，在 nova 中时一个常量 28，并且给出了 qemu 关于 PCI-E 相关的文档说明：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    cfg.IntOpt('num_pcie_ports',</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    cfg.IntOpt('num_pcie_ports',</span></span>
 <span class="line"><span>               default=0,</span></span>
 <span class="line"><span>               min=0,</span></span>
 <span class="line"><span>               max=28,</span></span>
@@ -137,7 +137,7 @@
 <p id="s-eeb7b447">不支持 IDE 磁盘，因此需要将 CDROM 的 bus 总线设置为 SCSI。</p>
 <h3 id="cpu-model">CPU Model</h3>
 <p id="s-5f69a0f6">通常我们为了虚拟机兼容性考虑，都会将虚拟机的 CPU Model 设置的略微低一些，避免当一个集群中存在节点 CPU 代数不一致时导致虚拟机无法热迁移，通常我们在 x86 下可以通过 <code>virsh domcapabilities</code> 获取：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    &#x3C;mode name='custom' supported='yes'></span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    &#x3C;mode name='custom' supported='yes'></span></span>
 <span class="line"><span>      &#x3C;model usable='yes'>qemu64&#x3C;/model></span></span>
 <span class="line"><span>      &#x3C;model usable='yes'>qemu32&#x3C;/model></span></span>
 <span class="line"><span>      &#x3C;model usable='no'>phenom&#x3C;/model></span></span>
@@ -149,7 +149,7 @@
 <span class="line"><span>      &#x3C;model usable='no'>Haswell-IBRS&#x3C;/model></span></span>
 <span class="line"><span>    &#x3C;/mode></span></span></code></pre>
 <p id="s-d493d3bd">可以通过 <code>usable</code> 属性来判断是否可以配置，但是在 ARM 下所有的 <code>usable</code> 属性都是 unknown，强行设置后，虚拟机无法启动，在当前版本下时无法进行 CPU Model 设置的。</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    &#x3C;mode name='host-passthrough' supported='yes'/></span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    &#x3C;mode name='host-passthrough' supported='yes'/></span></span>
 <span class="line"><span>    &#x3C;mode name='host-model' supported='no'/></span></span>
 <span class="line"><span>    &#x3C;mode name='custom' supported='yes'></span></span>
 <span class="line"><span>      &#x3C;model usable='unknown'>cortex-a53&#x3C;/model></span></span>

@@ -19,7 +19,7 @@
 <p id="s-22fcd4d5">那么接下来我们根据官方示例，看看 apscheduler 是如何进行处理任务的。</p>
 <p id="s-d3c880c0">示例版本为 2.1，因为在 2.1 版本包含目前 master 分支上的主要功能，简单易懂。</p>
 <p id="s-286ed615">代码结构如下：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">yiran@zhouyirandeMacBook-Pro:~/Documents/git-repo/apscheduler</span></span>
 <span class="line"><span style="color:#B392F0">2.1</span><span style="color:#9ECBFF"> ✔</span><span style="color:#E1E4E8"> $ </span><span style="color:#9ECBFF">tree</span><span style="color:#9ECBFF"> apscheduler</span></span>
 <span class="line"><span style="color:#B392F0">apscheduler</span></span>
 <span class="line"><span style="color:#B392F0">├──</span><span style="color:#9ECBFF"> __init__.py</span></span>
@@ -45,7 +45,7 @@
 <span class="line"><span style="color:#B392F0">│  </span><span style="color:#9ECBFF"> └──</span><span style="color:#9ECBFF"> simple.py</span></span>
 <span class="line"><span style="color:#B392F0">└──</span><span style="color:#9ECBFF"> util.py</span></span></code></pre>
 <p id="s-ad2bc2f6">示例：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> datetime </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> datetime, timedelta</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> datetime </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> datetime, timedelta</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> apscheduler.scheduler </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Scheduler</span></span>
 <span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> apscheduler.jobstores.shelve_store </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> ShelveJobStore</span></span>
@@ -70,7 +70,7 @@
 <h2 id="scheduler">Scheduler</h2>
 <p id="s-f85050ce">上述示例很容易理解，首先对 <code>Scheduler</code> 实例化，然后添加 jobstore，定义一个名为 <code>alarm</code> 的 job，并指定其运行时间为当前时间 + 10s，将该 job 添加到 scheduler 中，添加 job 类型为 <code>date_job</code>，然后启动 scheduler。</p>
 <p id="s-938d5270">可以看到我们所有的操作都是通过 scheduler 方法实现的，那么我们来看下 <code>Scheduler</code> 类具体实现了哪些功能：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> Scheduler</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">object</span><span style="color:#E1E4E8">):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> Scheduler</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">object</span><span style="color:#E1E4E8">):</span></span>
 <span class="line"><span style="color:#9ECBFF">    """</span></span>
 <span class="line"><span style="color:#9ECBFF">    This class is responsible for scheduling jobs and triggering</span></span>
 <span class="line"><span style="color:#9ECBFF">    their execution.</span></span>
@@ -88,7 +88,7 @@
 <span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">._pending_jobs </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> []</span></span>
 <span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.configure(gconfig, </span><span style="color:#F97583">**</span><span style="color:#E1E4E8">options)</span></span></code></pre>
 <p id="s-f77307fd">在 <code>Scheduler</code> 构造函数中，对一些变量进行初始化，这里要注意 <code>self._wakeup</code> ，后续的一些主要功能都是通过它来实现的。接下来看看 <code>add_jobstore</code> 方法：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_jobstore</span><span style="color:#E1E4E8">(self, jobstore, alias, quiet</span><span style="color:#F97583">=</span><span style="color:#79B8FF">False</span><span style="color:#E1E4E8">):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_jobstore</span><span style="color:#E1E4E8">(self, jobstore, alias, quiet</span><span style="color:#F97583">=</span><span style="color:#79B8FF">False</span><span style="color:#E1E4E8">):</span></span>
 <span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">._jobstores_lock.acquire() </span><span style="color:#6A737D"># 请求锁</span></span>
 <span class="line"><span style="color:#F97583">        try</span><span style="color:#E1E4E8">:</span></span>
 <span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> alias </span><span style="color:#F97583">in</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">._jobstores:</span></span>
@@ -105,13 +105,13 @@
 <span class="line"><span style="color:#F97583">        if</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> quiet:</span></span>
 <span class="line"><span style="color:#79B8FF">            self</span><span style="color:#E1E4E8">._wakeup.set() </span><span style="color:#6A737D"># 将 Event 置为 True</span></span></code></pre>
 <p id="s-bb33bdd2">在 <code>add_jobstore</code> 中，将 jobstore 添加到 scheduler 中，并加载当前 jobstore 中的所有任务，接下来将具体的 job 添加到 scheduler 中：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_date_job</span><span style="color:#E1E4E8">(self, func, date, args</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">, kwargs</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">**</span><span style="color:#E1E4E8">options):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_date_job</span><span style="color:#E1E4E8">(self, func, date, args</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">, kwargs</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">**</span><span style="color:#E1E4E8">options):</span></span>
 <span class="line"><span style="color:#E1E4E8">        trigger </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> SimpleTrigger(date)</span></span>
 <span class="line"><span style="color:#F97583">        return</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.add_job(trigger, func, args, kwargs, </span><span style="color:#F97583">**</span><span style="color:#E1E4E8">options)</span></span></code></pre>
 <p id="s-02b007b1">这里的 <code>SimpleTrigger</code> 只是多种 Trigger 中的一种，根据 Trigger 类型的不同，最主要的差别在于 <code>get_next_fire_time</code> 计算方式不同。</p>
 <p id="s-97411973">如果添加的任务是 interval_job，那么对应 Trigger 为 <code>IntervalTrigger</code> ；如果添加的任务是 cron_job，那么对应的 Trigger 为 <code>CronTrigger</code>。</p>
 <p id="s-cc5b5f15">可以看到不同的任务只是 Trigger 计算方式不同，最终还是通过 <code>add_job</code> 方法，继续看：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_job</span><span style="color:#E1E4E8">(self, trigger, func, args, kwargs, jobstore</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">'default'</span><span style="color:#E1E4E8">,</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_job</span><span style="color:#E1E4E8">(self, trigger, func, args, kwargs, jobstore</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">'default'</span><span style="color:#E1E4E8">,</span></span>
 <span class="line"><span style="color:#F97583">                **</span><span style="color:#E1E4E8">options):</span></span>
 <span class="line"><span style="color:#E1E4E8">        job </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Job(trigger, func, args </span><span style="color:#F97583">or</span><span style="color:#E1E4E8"> [], kwargs </span><span style="color:#F97583">or</span><span style="color:#E1E4E8"> {},</span></span>
 <span class="line"><span style="color:#E1E4E8">                  options.pop(</span><span style="color:#9ECBFF">'misfire_grace_time'</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">self</span><span style="color:#E1E4E8">.misfire_grace_time),</span></span>
@@ -124,7 +124,7 @@
 <span class="line"><span style="color:#79B8FF">            self</span><span style="color:#E1E4E8">._real_add_job(job, jobstore, </span><span style="color:#79B8FF">True</span><span style="color:#E1E4E8">) </span><span style="color:#6A737D"># 否则添加 job 到 jobstore 中</span></span>
 <span class="line"><span style="color:#F97583">        return</span><span style="color:#E1E4E8"> job</span></span></code></pre>
 <p id="s-d75f4077">继续看 <code>_real_add_job</code> 中的实现：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _real_add_job</span><span style="color:#E1E4E8">(self, job, jobstore, wakeup):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _real_add_job</span><span style="color:#E1E4E8">(self, job, jobstore, wakeup):</span></span>
 <span class="line"><span style="color:#E1E4E8">        job.compute_next_run_time(datetime.now()) </span><span style="color:#6A737D"># 计算job 下次运行时间</span></span>
 <span class="line"><span style="color:#F97583">        if</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> job.next_run_time:</span></span>
 <span class="line"><span style="color:#F97583">            raise</span><span style="color:#79B8FF"> ValueError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Not adding job since it would never be run'</span><span style="color:#E1E4E8">)</span></span>
@@ -150,7 +150,7 @@
 <span class="line"><span style="color:#79B8FF">            self</span><span style="color:#E1E4E8">._wakeup.set() </span><span style="color:#6A737D"># # 将 Event 置为 True</span></span></code></pre>
 <p id="s-d3707bfe">在 <code>_real_add_job</code> 中我们终于看到 <code>store.add_job(job)</code> ，至于 <code>store.add_job</code> 如何实现我们之后看 <code>JobStore</code> 再说。</p>
 <p id="s-ae11ac16">现在我们已经给 scheduler 添加了 jobstore 和 job，那么看下 scheduler 是如何运行的：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> start</span><span style="color:#E1E4E8">(self):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> start</span><span style="color:#E1E4E8">(self):</span></span>
 <span class="line"><span style="color:#79B8FF">        ...</span></span>
 <span class="line"><span style="color:#6A737D">        # Schedule all pending jobs</span></span>
 <span class="line"><span style="color:#F97583">        for</span><span style="color:#E1E4E8"> job, jobstore </span><span style="color:#F97583">in</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">._pending_jobs: </span><span style="color:#6A737D"># 将 scheduler 未运行时添加的 job，即在等待队列中的 job 添加到 jobstore 中</span></span>
@@ -165,7 +165,7 @@
 <span class="line"><span style="color:#79B8FF">            self</span><span style="color:#E1E4E8">._thread.setDaemon(</span><span style="color:#79B8FF">self</span><span style="color:#E1E4E8">.daemonic)</span></span>
 <span class="line"><span style="color:#79B8FF">            self</span><span style="color:#E1E4E8">._thread.start()</span></span></code></pre>
 <p id="s-623ca247">在 scheduler 运行时，会先将所有的 job 加载到 jobstore 中，然后调用 <code>self._main_loop</code> ，如果 Standalone 为 True，则会一直阻塞知道没有 job 需要运行，看看 <code>self._main_loop</code> 做了啥：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _main_loop</span><span style="color:#E1E4E8">(self):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _main_loop</span><span style="color:#E1E4E8">(self):</span></span>
 <span class="line"><span style="color:#9ECBFF">        """Executes jobs on schedule."""</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#E1E4E8">        logger.info(</span><span style="color:#9ECBFF">'Scheduler started'</span><span style="color:#E1E4E8">)</span></span>
@@ -206,7 +206,7 @@
 <p id="s-ba000f4d">如果没有触发上述场景，则 <code>_main_loop</code> 会根据 jobs 的执行时间一直循环等待。</p>
 <h2 id="jobstore">JobStore</h2>
 <p id="s-e801ff4f">在 apscheduler 中，JobStore 只是单纯的实现了 Job 相关的方法：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> JobStore</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">object</span><span style="color:#E1E4E8">):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> JobStore</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">object</span><span style="color:#E1E4E8">):</span></span>
 <span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_job</span><span style="color:#E1E4E8">(self, job):</span></span>
 <span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> update_job</span><span style="color:#E1E4E8">(self, job):</span></span>
 <span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> remove_job</span><span style="color:#E1E4E8">(self, job):</span></span>
@@ -215,7 +215,7 @@
 <p id="s-acf55319">其中，对 job 的操作会根据 JobStore 类型的不同，而采用不同的序列化方式，比如在 <code>MongoDBJobStore</code> 中采用的是 <code>bson.binary</code>，而在其他 JobStore 比如 <code>RedisJobStore</code> 中采用的都是 <code>pickle</code>。</p>
 <h2 id="events">Events</h2>
 <p id="s-54455669">在 <code>Scheduler</code> 中，我们已经看到通过 <code>threading.Event</code> 来实现事件通知的，那么我们通知的 <code>Event</code> 都是在 <code>apscheduler.events</code> 中定义好的，比如：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> JobEvent</span><span style="color:#E1E4E8">(</span><span style="color:#B392F0">SchedulerEvent</span><span style="color:#E1E4E8">):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> JobEvent</span><span style="color:#E1E4E8">(</span><span style="color:#B392F0">SchedulerEvent</span><span style="color:#E1E4E8">):</span></span>
 <span class="line"><span style="color:#F97583">    def</span><span style="color:#79B8FF"> __init__</span><span style="color:#E1E4E8">(self, code, job, scheduled_run_time, retval</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
 <span class="line"><span style="color:#E1E4E8">                 exception</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">, traceback</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">):</span></span>
 <span class="line"><span style="color:#E1E4E8">        SchedulerEvent.</span><span style="color:#79B8FF">__init__</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">self</span><span style="color:#E1E4E8">, code)</span></span>

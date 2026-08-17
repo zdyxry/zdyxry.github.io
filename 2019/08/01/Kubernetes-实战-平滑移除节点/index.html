@@ -12,17 +12,17 @@
 <p id="s-a5aa2826">自己玩 K8S 以来，搭建的环境没有10几套，也有5，6套了，当环境测试完成后，基本上直接删除掉了，也没有想着一直维护，最近在维护一个集群的时候，想要删除一个节点，发现自己一直不知道如何删除节点，特此记录。</p>
 <h2 id="平滑移除">平滑移除</h2>
 <h3 id="获取节点列表">获取节点列表</h3>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> get</span><span style="color:#9ECBFF"> node</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> get</span><span style="color:#9ECBFF"> node</span></span></code></pre>
 <h3 id="设置不可调度">设置不可调度</h3>
 <p id="s-90bf648b">由于节点目前处于正常工作状态，集群中新建资源还是有可能创建到该节点的，所以先将节点设置为不可调度：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> cordon</span><span style="color:#E1E4E8"> $node_name</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> cordon</span><span style="color:#E1E4E8"> $node_name</span></span></code></pre>
 <h3 id="将节点上资源调度到其他节点">将节点上资源调度到其他节点</h3>
 <p id="s-d4e16c49">目前集群已经不会分配新的资源在该节点上了，但是节点还运行着现有的业务，所以我们需要将节点上的业务分配到其他节点：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> drain</span><span style="color:#E1E4E8"> $node_name</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> drain</span><span style="color:#E1E4E8"> $node_name</span></span></code></pre>
 <p id="s-c96e5d7e">注意：DaemonSet Pod 和 Static Pod 是不会在集群中其他节点重建的。</p>
 <h3 id="移除节点">移除节点</h3>
 <p id="s-c7eeef9b">当前集群中已经没有任何资源分配在节点上了，那么我们可以直接移除节点：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> delete</span><span style="color:#E1E4E8"> $node_name</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#B392F0">kubectl</span><span style="color:#9ECBFF"> delete</span><span style="color:#E1E4E8"> $node_name</span></span></code></pre>
 <p id="s-b042b1d2">至此，我们平滑移除了一个 k8s 节点。如果移除的是一个 master 节点，那么记得之后还要添加一个新的 master 节点到集群中，避免集群可靠性降低。</p>
 <h2 id="参考链接">参考链接</h2>
 <ul id="s-ae43b3f8">

@@ -12,7 +12,7 @@
 <p id="s-42516ed2">在 web 场景下，经常会碰到下载文件的需求，通常小文件我们会采用 Flask <code>send_file</code> 或者 <code>send_from_directory</code>的方式，下载，但是当下载的文件是一个大压缩文件（>1GiB）时，这种方式就显得不友好了，我们需要采用流式下载的方式返回给客户端。</p>
 <h2 id="流式下载">流式下载</h2>
 <p id="s-f3c52eaf">简单实现：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> flask </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Response</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> flask </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Response</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#B392F0">@app.route</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/download/&#x3C;file_path>"</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">methods</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">[</span><span style="color:#9ECBFF">"GET"</span><span style="color:#E1E4E8">])</span></span>
 <span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> download</span><span style="color:#E1E4E8">(file_path):</span></span>
@@ -28,7 +28,7 @@
 <span class="line"></span>
 <span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> Response(generate(), </span><span style="color:#FFAB70">content_type</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"application/octet-stream"</span><span style="color:#E1E4E8">)</span></span></code></pre>
 <p id="s-9f24a986">运行 Flask app，可以正确下载文件，但是下载只有实时速度，没有文件总大小，导致无法知道下载进度，也没有文件类型，这些我们都可以通过增加 header 字段实现：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">response </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Response(generate(), </span><span style="color:#FFAB70">mimetype</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">'application/gzip'</span><span style="color:#E1E4E8">)</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">response </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Response(generate(), </span><span style="color:#FFAB70">mimetype</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">'application/gzip'</span><span style="color:#E1E4E8">)</span></span>
 <span class="line"><span style="color:#E1E4E8">response.headers[</span><span style="color:#9ECBFF">'Content-Disposition'</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> 'attachment; filename=</span><span style="color:#79B8FF">{}</span><span style="color:#9ECBFF">.tar.gz'</span><span style="color:#E1E4E8">.format(</span><span style="color:#9ECBFF">"download_file"</span><span style="color:#E1E4E8">)</span></span>
 <span class="line"><span style="color:#E1E4E8">response.headers[</span><span style="color:#9ECBFF">'content-length'</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> os.stat(</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">(file_path)).st_size</span></span>
 <span class="line"><span style="color:#F97583">return</span><span style="color:#E1E4E8"> response</span></span></code></pre>
@@ -37,7 +37,7 @@
 <h2 id="转发流式下载">转发流式下载</h2>
 <p id="s-8e00a44d">当我们下载本地节点文件，可以通过上述方法实现，但是如果我们的产品是集群形式的，要求在集群中的任一节点均可下载集群中所有节点的指定文件，我们就需要支持将流式下载转发并实时下载，避免访问节点占用太多内存。</p>
 <p id="s-1f01a7f5">如果是单节点转发流式请求，我们可以通过 flask 的 <code>stream_with_context</code> 实现：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> flask </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> (</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> flask </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> (</span></span>
 <span class="line"><span style="color:#E1E4E8">    Flask,</span></span>
 <span class="line"><span style="color:#E1E4E8">    Response,</span></span>
 <span class="line"><span style="color:#E1E4E8">    stream_with_context</span></span>
@@ -61,7 +61,7 @@
 通过查询资料，排除了标准库中的 tarfile 和 zipfile 打包压缩方式，最终采用 zipstream（<a href="https://github.com/allanlei/python-zipstream%EF%BC%89">https://github.com/allanlei/python-zipstream）</a> 第三方库实现。</p>
 <hr>
 <p id="s-001a34da">zipstream 支持通过迭代器的方式写入文件，并可实时压缩读取，官方示例如下：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> iterable</span><span style="color:#E1E4E8">():</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> iterable</span><span style="color:#E1E4E8">():</span></span>
 <span class="line"><span style="color:#F97583">    for</span><span style="color:#E1E4E8"> _ </span><span style="color:#F97583">in</span><span style="color:#FFAB70"> xrange</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">10</span><span style="color:#E1E4E8">):</span></span>
 <span class="line"><span style="color:#F97583">        yield</span><span style="color:#F97583"> b</span><span style="color:#9ECBFF">'this is a byte string</span><span style="color:#79B8FF">\x01\n</span><span style="color:#9ECBFF">'</span></span>
 <span class="line"></span>
@@ -73,7 +73,7 @@
 <span class="line"><span style="color:#E1E4E8">        f.write(data)</span></span></code></pre>
 <hr>
 <p id="s-6bcfcc72">根据上述特性，我们结合转发单节点请求，实现同时请求多节点并实时压缩下载：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#B392F0">@app.route</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/cluster_download/&#x3C;file_path>"</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">method</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">[</span><span style="color:#9ECBFF">"GET"</span><span style="color:#E1E4E8">])</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#B392F0">@app.route</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"/cluster_download/&#x3C;file_path>"</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">method</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">[</span><span style="color:#9ECBFF">"GET"</span><span style="color:#E1E4E8">])</span></span>
 <span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> cluster_download</span><span style="color:#E1E4E8">(reqs):</span></span>
 <span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> generate</span><span style="color:#E1E4E8">(req):</span></span>
 <span class="line"><span style="color:#E1E4E8">        z </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> zipstream.ZipFile(</span><span style="color:#FFAB70">mode</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"w"</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">compression</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">zipstream.</span><span style="color:#79B8FF">ZIP_DEFLATED</span><span style="color:#E1E4E8">)</span></span>
@@ -103,7 +103,7 @@
 <p id="s-8b8865a5">当我们访问 <code>http://localhost/cluster_download/file_name</code> 时，会先去 remote_hosts 中各个节点下载该文件，并通过 <code>write_iter</code> 的方式写入到 zip 文件中，Flask Response 返回的是 zip 文件中的数据块。</p>
 <hr>
 <p id="s-80c4a30d">如果我们要在 zip 文件中增加某些运行过程中产生的数据，我们可以通过再定义一个生成器的方式：</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> generate_file</span><span style="color:#E1E4E8">(content):</span></span>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> generate_file</span><span style="color:#E1E4E8">(content):</span></span>
 <span class="line"><span style="color:#F97583">    yield</span><span style="color:#E1E4E8"> content</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#E1E4E8">z.write_iter(</span><span style="color:#9ECBFF">"running_status"</span><span style="color:#E1E4E8">, generate_file)</span></span></code></pre>
