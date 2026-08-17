@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { loadRenderers } from 'astro:container';
-import { getContainerRenderer } from '@astrojs/mdx';
+import { getContainerRenderer } from '@astrojs/mdx/container-renderer';
 import { render } from 'astro:content';
 
 export async function GET(context: APIContext) {
