@@ -41,32 +41,14 @@ export default function TravelMap({ places }: Props) {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          carto: {
-            type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-              'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-            ],
-            tileSize: 256,
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
-          },
-        },
-        layers: [
-          {
-            id: 'carto',
-            type: 'raster',
-            source: 'carto',
-          },
-        ],
-      },
+      style: 'https://tiles.openfreemap.org/styles/positron',
       center: [110, 35],
       zoom: 3,
+      attributionControl: {
+        compact: true,
+        customAttribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+      },
     });
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
