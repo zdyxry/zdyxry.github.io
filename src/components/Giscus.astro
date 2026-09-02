@@ -1,0 +1,93 @@
+---
+// Giscus Comments Component
+// 基于 GitHub Discussions，配置入口：https://giscus.app/zh-CN
+
+interface Props {
+  mapping?: 'url' | 'title' | 'pathname' | 'og:title' | 'specific' | 'number';
+  term?: string;
+  reactionsEnabled?: boolean;
+  inputPosition?: 'top' | 'bottom';
+  lang?: string;
+  loading?: 'eager' | 'lazy';
+}
+
+const {
+  mapping = 'pathname',
+  term = '',
+  reactionsEnabled = true,
+  inputPosition = 'bottom',
+  lang = 'zh-CN',
+  loading = 'lazy'
+} = Astro.props;
+---
+
+<div class="giscus-wrapper" data-giscus-wrapper></div>
+
+<script is:inline define:vars={{ mapping, term, reactionsEnabled, inputPosition, lang, loading }}>
+  // 动态注入 Giscus 脚本，以便按当前站点主题设置初始 data-theme
+  // （静态 script 标签的 data-theme 是硬编码的，暗色用户首次加载会闪亮色）
+  (function () {
+    const theme =
+      document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const script = document.createElement('script');
+    script.src = 'https://giscus.app/client.js';
+    script.setAttribute('data-repo', 'zdyxry/zdyxry.github.io');
+    script.setAttribute('data-repo-id', 'MDEwOlJlcG9zaXRvcnk3MDA0ODE1MA==');
+    script.setAttribute('data-category', 'Announcements');
+    script.setAttribute('data-category-id', 'DIC_kwDOBCzZls4DEs7K');
+    script.setAttribute('data-mapping', mapping);
+    script.setAttribute('data-term', term);
+    script.setAttribute('data-strict', '0');
+    script.setAttribute('data-reactions-enabled', reactionsEnabled ? '1' : '0');
+    script.setAttribute('data-emit-metadata', '0');
+    script.setAttribute('data-input-position', inputPosition);
+    script.setAttribute('data-theme', theme);
+    script.setAttribute('data-lang', lang);
+    script.setAttribute('data-loading', loading);
+    script.crossOrigin = 'anonymous';
+    script.async = true;
+    document.querySelector('[data-giscus-wrapper]').appendChild(script);
+  })();
+</script>
+
+<script>
+  function getGiscusTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function updateGiscusTheme() {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+    iframe.contentWindow?.postMessage(
+      {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme()
+          }
+        }
+      },
+      'https://giscus.app'
+    );
+  }
+
+  // 监听 html data-theme 变化，同步切换 Giscus 主题
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+        updateGiscusTheme();
+      }
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true });
+
+  // 页面加载完成后同步一次初始主题
+  window.addEventListener('load', updateGiscusTheme);
+</script>
+
+<style>
+  .giscus-wrapper {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
