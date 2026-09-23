@@ -580,6 +580,30 @@ class GarminDataFetcher:
         
         return 0
     
+    @staticmethod
+    def _get_moving_seconds(activity: Dict[str, Any]) -> float:
+        """获取运动时间（秒），排除暂停。
+
+        Garmin 的 ``duration`` 是「总耗时」（含暂停），``movingDuration`` 才是
+        「运动时间」。两者口径要与 Strava/高驰保持一致，避免时长与配速自相矛盾。
+        旧数据可能没有 ``movingDuration``，此时回退到 ``duration``。
+        """
+        moving = activity.get('movingDuration', 0) or 0
+        elapsed = activity.get('duration', 0) or 0
+
+        if moving > 0:
+            # 异常保护：运动时间不可能大于总耗时
+            if elapsed > 0 and moving > elapsed:
+                logger.warning(
+                    'movingDuration(%s) > duration(%s)，回退使用 duration',
+                    moving,
+                    elapsed,
+                )
+                return elapsed
+            return moving
+
+        return elapsed
+
     def _format_pace(self, speed_m_per_s: float) -> str:
         """
         将速度（米/秒）转换为配速（分钟/公里）
@@ -651,7 +675,7 @@ class GarminDataFetcher:
         for activity in activities:
             distance = activity.get('distance', 0) / 1000  # 转换为公里
             distance_meters = activity.get('distance', 0)
-            duration_seconds = activity.get('duration', 0)
+            duration_seconds = self._get_moving_seconds(activity)
             avg_hr = activity.get('averageHR', 0)
             
             # 获取最大心率

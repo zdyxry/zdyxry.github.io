@@ -329,6 +329,32 @@ class CorosDataFetcher:
             return f"{hours}小时{minutes}分钟"
         return f"{minutes}分钟"
 
+    @staticmethod
+    def _get_moving_seconds(activity: Dict[str, Any]) -> float:
+        """获取运动时间（秒），排除暂停。
+
+        COROS 的 ``totalTime`` 是「总耗时」（包含暂停/中断），而 ``workoutTime``
+        才是「运动时间」。配速字段 ``avgSpeed`` 是按运动时间计算的，如果时长、
+        VDOT、训练负荷都用 ``totalTime``，就会出现「配速 5'54\"，时长却显示 31 分钟」
+        这种自相矛盾的结果（Strava 的运动时间同样是 26:35）。
+        """
+        workout_time = activity.get("workoutTime") or 0
+        total_time = activity.get("totalTime") or 0
+
+        if workout_time > 0:
+            # 异常保护：运动时间不可能大于总耗时
+            if total_time > 0 and workout_time > total_time:
+                logger.warning(
+                    "workoutTime(%s) > totalTime(%s)，回退使用 totalTime",
+                    workout_time,
+                    total_time,
+                )
+                return total_time
+            return workout_time
+
+        # 兼容没有 workoutTime 字段的旧数据
+        return total_time
+
     def format_running_data(
         self, activities: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
@@ -351,7 +377,8 @@ class CorosDataFetcher:
         for activity in activities:
             distance = activity.get("distance", 0) / 1000  # km
             distance_meters = activity.get("distance", 0)
-            duration_seconds = activity.get("totalTime", 0)
+            # 使用运动时间（workoutTime）而非总耗时（totalTime），与 avgSpeed 口径一致
+            duration_seconds = self._get_moving_seconds(activity)
             avg_hr = activity.get("avgHr", 0)
             max_hr = activity.get("maxHr", 0) or 0
             cadence = activity.get("avgCadence", 0) or activity.get("cadence", 0) or 0
