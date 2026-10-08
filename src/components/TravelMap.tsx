@@ -93,12 +93,12 @@ export default function TravelMap({ places }: Props) {
       const color = typeColors[place.type];
       const el = document.createElement('div');
       el.className = 'travel-marker';
-      el.style.width = '8px';
-      el.style.height = '8px';
+      el.style.width = '12px';
+      el.style.height = '12px';
       el.style.borderRadius = '50%';
       el.style.background = color;
-      el.style.border = '1.5px solid var(--background, #fff)';
-      el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.25)';
+      el.style.border = '2px solid var(--background, #fff)';
+      el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)';
       el.style.cursor = 'pointer';
 
       const popup = new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
