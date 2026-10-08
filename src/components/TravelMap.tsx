@@ -39,6 +39,14 @@ export default function TravelMap({ places }: Props) {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    // MapLibre v6 resolves its worker from `import.meta.url` at runtime, which
+    // Astro/Vite does not emit. Point it at the worker bundled by the
+    // `bundle-maplibre-worker` integration. In dev the default resolution is
+    // used since the bundled file only exists after a production build.
+    if (import.meta.env.PROD) {
+      maplibregl.setWorkerUrl('/_astro/maplibre-gl-worker.js');
+    }
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://tiles.openfreemap.org/styles/positron',

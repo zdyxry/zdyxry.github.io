@@ -126,6 +126,49 @@ function pagefindIntegration() {
   };
 }
 
+// MapLibre GL JS v6 loads its web worker from a separate file resolved at
+// runtime via `import.meta.url` (new URL('./maplibre-gl-worker.mjs', ...)).
+// Astro/Vite cannot statically detect that reference, so the worker file is
+// never emitted and the request 404s, leaving the map blank (markers still
+// render since they are plain DOM). Bundle the worker into a self-contained
+// `_astro/maplibre-gl-worker.js` so the map tiles actually load.
+function bundleMaplibreWorker() {
+  return {
+    name: 'bundle-maplibre-worker',
+    hooks: {
+      'astro:build:done': async ({ dir }) => {
+        const outDir = fileURLToPath(dir);
+        const { build } = await import('esbuild');
+        const entryPoint = path.join(
+          __dirname,
+          'node_modules',
+          'maplibre-gl',
+          'dist',
+          'maplibre-gl-worker.mjs',
+        );
+        const outfile = path.join(outDir, '_astro', 'maplibre-gl-worker.js');
+
+        if (!fs.existsSync(entryPoint)) {
+          console.warn('[maplibre-worker] worker entry not found, skipping:', entryPoint);
+          return;
+        }
+
+        fs.mkdirSync(path.dirname(outfile), { recursive: true });
+        await build({
+          entryPoints: [entryPoint],
+          bundle: true,
+          format: 'esm',
+          target: 'es2020',
+          minify: true,
+          legalComments: 'none',
+          outfile,
+        });
+        console.log('Bundled MapLibre worker -> _astro/maplibre-gl-worker.js');
+      },
+    },
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://zdyxry.github.io',
@@ -141,6 +184,7 @@ export default defineConfig({
     react(),
     generateRedirectFiles(),
     simplifySitemap(),  // 将 sitemap-0.xml 重命名为 sitemap.xml
+    bundleMaplibreWorker(),  // 打包 MapLibre GL 的 web worker，修复地图空白
     pagefindIntegration(),
   ],
   markdown: {
