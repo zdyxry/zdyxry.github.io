@@ -18,7 +18,7 @@ function formatDuration(duration: string): string {
   const minMatch = duration.match(/(\d+)分钟/);
   const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
   const mins = minMatch ? parseInt(minMatch[1]) : 0;
-  
+
   if (hours > 0 && mins > 0) {
     return `${hours}h${mins}m`;
   } else if (hours > 0) {
@@ -50,18 +50,63 @@ function minutesToDuration(minutes: number): string {
   }
 }
 
-// 准备日历数据 - 展示最近12个月，从每个月1号开始
-const today = new Date();
-const currentYear = today.getFullYear();
-const currentMonth = today.getMonth();
+// 平均时长格式："41:20" 或 "1:02:30"
+function formatAvgDuration(minutes: number): string {
+  if (!minutes) return '--';
+  const totalSec = Math.round(minutes * 60);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
-// 计算起始日期：12个月前的1号（使用UTC避免时区问题）
-const startYear = currentMonth >= 11 ? currentYear : currentYear - 1;
-const startMonth = currentMonth >= 11 ? currentMonth - 11 : currentMonth + 1;
-const startOfRange = new Date(Date.UTC(startYear, startMonth, 1));
+// 总时长：小于 100 小时用 h:mm:ss / m:ss，否则用 xxx.x h
+function formatTotalDuration(minutes: number): { value: string; unit: string } {
+  if (minutes >= 6000) return { value: (minutes / 60).toFixed(1), unit: 'h' };
+  const totalSec = Math.round(minutes * 60);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0)
+    return {
+      value: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
+      unit: ''
+    };
+  return { value: `${m}:${String(s).padStart(2, '0')}`, unit: '' };
+}
 
-// 计算结束日期：本月的最后一天
-const endOfRange = new Date(Date.UTC(currentYear, currentMonth + 1, 0));
+// 秒数配速格式化：357 -> "5'57\""
+function secondsToPace(sec: number): string {
+  if (!sec || !isFinite(sec)) return '--';
+  const totalSec = Math.round(sec);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}'${String(s).padStart(2, '0')}"`;
+}
+
+function parseRunDate(dateStr: string): Date {
+  return new Date(dateStr.replace(' ', 'T'));
+}
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 数字格式化：整数加千分位，小数保留 1 位
+function fmtTick(v: number): string {
+  return Number.isInteger(v) ? v.toLocaleString('en-US') : v.toFixed(1);
+}
+
+// 距离：保留 1 位小数 + 千分位
+function fmtKm(v: number): string {
+  return v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+// 1 位小数，末尾 .0 去掉
+function fmt1(v: number): string {
+  return v.toFixed(1).replace(/\.0$/, '');
+}
 
 // 生成日期映射 - 同一天的多条记录合并
 interface DaySummary {
@@ -100,78 +145,317 @@ function getIntensity(distance: number): number {
   return 5;
 }
 
-// 生成日历网格数据 - 从起始月1号之前的周一开始（使用UTC）
-const calendarStart = new Date(startOfRange);
-const dayOfWeek = calendarStart.getUTCDay();
-const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-calendarStart.setUTCDate(calendarStart.getUTCDate() - daysToSubtract);
+// ===== 年度热力图：当年 1/1 - 12/31，周列从周一开始 =====
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = today.getMonth();
+const todayStart = new Date(currentYear, currentMonth, today.getDate());
+const dayMs = 24 * 60 * 60 * 1000;
 
-interface DayData {
+const heatStart = new Date(currentYear, 0, 1);
+const heatEnd = new Date(currentYear, 11, 31);
+const calStart = new Date(heatStart);
+calStart.setDate(heatStart.getDate() - ((heatStart.getDay() + 6) % 7));
+
+interface HeatDay {
   dateStr: string;
-  isInRange: boolean;
+  state: 'normal' | 'future' | 'outside';
   intensity: number;
   title: string;
 }
 
-interface WeekData {
-  days: DayData[];
+interface HeatWeek {
+  days: HeatDay[];
+  monthStart: boolean;
 }
 
-const weeks: WeekData[] = [];
-// 生成足够的周数来覆盖整个范围
-const totalDays = Math.ceil((endOfRange.getTime() - calendarStart.getTime()) / (1000 * 60 * 60 * 24)) + 7;
-const totalWeeks = Math.ceil(totalDays / 7);
-
-for (let w = 0; w < totalWeeks; w++) {
-  const weekDays: DayData[] = [];
+const heatWeeks: HeatWeek[] = [];
+const cursor = new Date(calStart);
+while (cursor <= heatEnd) {
+  const days: HeatDay[] = [];
+  let monthStart = false;
   for (let d = 0; d < 7; d++) {
-    const idx = w * 7 + d;
-    const currentDate = new Date(calendarStart);
-    currentDate.setUTCDate(calendarStart.getUTCDate() + idx);
-    const dateStr = currentDate.toISOString().split('T')[0];
-    const run = dateMap.get(dateStr);
-    const isInRange = currentDate >= startOfRange && currentDate <= endOfRange;
-    const intensity = getIntensity(run?.distance || 0);
-    const title = run 
-      ? `${dateStr}: ${run.distance.toFixed(1)}km, ${run.duration}${run.runs.length > 1 ? ` (${run.runs.length}次)` : ''}`
-      : dateStr;
-    
-    weekDays.push({
-      dateStr,
-      isInRange,
-      intensity,
-      title
+    const date = new Date(cursor);
+    const key = dateKey(date);
+    const run = dateMap.get(key);
+    const state: HeatDay['state'] =
+      date < heatStart || date > heatEnd ? 'outside' : date > todayStart ? 'future' : 'normal';
+    if (date >= heatStart && date <= heatEnd && date.getDate() === 1 && heatWeeks.length > 0)
+      monthStart = true;
+    days.push({
+      dateStr: key,
+      state,
+      intensity: state === 'normal' && run ? getIntensity(run.distance) : 0,
+      title: run
+        ? `${key}: ${run.distance.toFixed(1)}km, ${run.duration}${run.runs.length > 1 ? ` (${run.runs.length}次)` : ''}`
+        : key
     });
+    cursor.setDate(cursor.getDate() + 1);
   }
-  weeks.push({ days: weekDays });
+  heatWeeks.push({ days, monthStart });
 }
 
-// 获取月份标签 - 每个月1号所在的周
-const months: { label: string; weekIndex: number }[] = [];
-for (let m = 0; m < 12; m++) {
-  const monthDate = new Date(Date.UTC(startYear, startMonth + m, 1));
-  const monthLabel = `${monthDate.getUTCMonth() + 1}月`;
-  
-  // 找到该月1号所在的周
-  const daysSinceStart = Math.floor((monthDate.getTime() - calendarStart.getTime()) / (1000 * 60 * 60 * 24));
-  const weekIndex = Math.floor(daysSinceStart / 7);
-  
-  if (weekIndex >= 0 && weekIndex < weeks.length) {
-    months.push({ label: monthLabel, weekIndex });
+// 月份标签位置：该月 1 号所在周占整年的百分比（格子弹性填充整宽）
+const heatMonths: { label: string; left: number }[] = [{ label: '1月', left: 0 }];
+heatWeeks.forEach((week, idx) => {
+  if (week.monthStart) {
+    const first = week.days.find(d => d.dateStr.endsWith('-01'));
+    if (first) {
+      heatMonths.push({
+        label: `${parseInt(first.dateStr.split('-')[1], 10)}月`,
+        left: (idx / heatWeeks.length) * 100
+      });
+    }
   }
+});
+
+// ===== 周期统计（自然周 / 自然月 / 自然年 / 全部） =====
+function aggregateRuns(runs: typeof data.runs) {
+  const count = runs.length;
+  const distance = runs.reduce((s, r) => s + r.distance, 0);
+  const totalMinutes = runs.reduce((s, r) => s + durationToMinutes(r.duration), 0);
+  // 心率按时长加权
+  const hrWeighted = runs.reduce(
+    (s, r) => s + (r.heart_rate > 0 ? r.heart_rate * Math.max(durationToMinutes(r.duration), 1) : 0),
+    0
+  );
+  const hrMinutes = runs.reduce(
+    (s, r) => s + (r.heart_rate > 0 ? Math.max(durationToMinutes(r.duration), 1) : 0),
+    0
+  );
+  const powerRuns = runs.filter(r => r.avg_power > 0);
+  return {
+    count,
+    distance,
+    totalMinutes,
+    avgPace: distance > 0 ? secondsToPace((totalMinutes * 60) / distance) : '--',
+    avgHr: hrMinutes > 0 ? Math.round(hrWeighted / hrMinutes) : null,
+    elevation: runs.reduce((s, r) => s + (r.elevation_gain || 0), 0),
+    calories: runs.reduce((s, r) => s + (r.calories || 0), 0),
+    avgPower: powerRuns.length
+      ? Math.round(powerRuns.reduce((s, r) => s + r.avg_power, 0) / powerRuns.length)
+      : null,
+    avgDuration: count > 0 ? formatAvgDuration(totalMinutes / count) : '--'
+  };
 }
 
-// 统计数据
-const stats = data.stats;
+// ISO 周数
+function isoWeek(d: Date): number {
+  const date = new Date(d.getTime());
+  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  return (
+    1 +
+    Math.round(
+      ((date.getTime() - week1.getTime()) / dayMs - 3 + ((week1.getDay() + 6) % 7)) / 7
+    )
+  );
+}
 
-// 周期统计数据
-const periodStats = stats.period_stats || {};
-const periodLabels: Record<string, string> = {
-  week: '周',
-  month: '月', 
-  year: '年',
-  total: '总'
-};
+interface Bucket {
+  label: string;
+  showLabel: boolean;
+  current: boolean;
+  runs: typeof data.runs;
+}
+
+function runsBetween(start: Date, end: Date) {
+  return allRuns.filter(r => {
+    const d = parseRunDate(r.date);
+    return d >= start && d < end;
+  });
+}
+
+// 周：本周一到周日
+const weekStart = new Date(todayStart.getTime() - ((todayStart.getDay() + 6) % 7) * dayMs);
+const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const weekBuckets: Bucket[] = weekdayNames.map((label, i) => {
+  const dayStart = new Date(weekStart.getTime() + i * dayMs);
+  return {
+    label,
+    showLabel: true,
+    current: dateKey(dayStart) === dateKey(todayStart),
+    runs: runsBetween(dayStart, new Date(dayStart.getTime() + dayMs))
+  };
+});
+
+// 月：本月 1 号到月末
+const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+const monthBuckets: Bucket[] = Array.from({ length: daysInMonth }, (_, i) => {
+  const d = i + 1;
+  const dayStart = new Date(currentYear, currentMonth, d);
+  return {
+    label: String(d),
+    showLabel: i % 3 === 0,
+    current: d === today.getDate(),
+    runs: runsBetween(dayStart, new Date(dayStart.getTime() + dayMs))
+  };
+});
+
+// 年：当年 12 个月
+const yearBuckets: Bucket[] = Array.from({ length: 12 }, (_, m) => ({
+  label: `${m + 1}月`,
+  showLabel: true,
+  current: m === currentMonth,
+  runs: allRuns.filter(r => {
+    const d = parseRunDate(r.date);
+    return d.getFullYear() === currentYear && d.getMonth() === m;
+  })
+}));
+
+// 全部：按年份
+const runYears = Array.from(new Set(allRuns.map(r => parseRunDate(r.date).getFullYear()))).sort(
+  (a, b) => a - b
+);
+const totalBuckets: Bucket[] = runYears.map(y => ({
+  label: String(y).slice(2),
+  showLabel: true,
+  current: y === currentYear,
+  runs: allRuns.filter(r => parseRunDate(r.date).getFullYear() === y)
+}));
+
+const yearRuns = allRuns.filter(r => parseRunDate(r.date) >= heatStart);
+const weekRuns = allRuns.filter(r => parseRunDate(r.date) >= weekStart);
+const monthRuns = allRuns.filter(r => {
+  const d = parseRunDate(r.date);
+  return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+});
+
+const periodPanels = [
+  {
+    key: 'week',
+    label: '周',
+    periodTitle: `${currentYear} 年第 ${isoWeek(today)} 周`,
+    buckets: weekBuckets,
+    agg: aggregateRuns(weekRuns)
+  },
+  {
+    key: 'month',
+    label: '月',
+    periodTitle: `${currentYear} 年 ${currentMonth + 1} 月`,
+    buckets: monthBuckets,
+    agg: aggregateRuns(monthRuns)
+  },
+  {
+    key: 'year',
+    label: '年',
+    periodTitle: `${currentYear} 年`,
+    buckets: yearBuckets,
+    agg: aggregateRuns(yearRuns)
+  },
+  {
+    key: 'total',
+    label: '全部',
+    periodTitle: `${runYears.length} 年`,
+    buckets: totalBuckets,
+    agg: aggregateRuns(allRuns)
+  }
+];
+
+// ===== 柱状图指标 =====
+const metricDefs = [
+  {
+    key: 'distance',
+    label: '距离',
+    unit: 'km',
+    value: (b: Bucket) => b.runs.reduce((s, r) => s + r.distance, 0)
+  },
+  {
+    key: 'duration',
+    label: '时长',
+    unit: 'h',
+    value: (b: Bucket) => b.runs.reduce((s, r) => s + durationToMinutes(r.duration), 0) / 60
+  },
+  { key: 'count', label: '次数', unit: '次', value: (b: Bucket) => b.runs.length },
+  {
+    key: 'elevation',
+    label: '爬升',
+    unit: 'm',
+    value: (b: Bucket) => b.runs.reduce((s, r) => s + (r.elevation_gain || 0), 0)
+  },
+  {
+    key: 'calories',
+    label: '卡路里',
+    unit: 'kcal',
+    value: (b: Bucket) => b.runs.reduce((s, r) => s + (r.calories || 0), 0)
+  }
+];
+
+// Y 轴 nice 刻度
+function niceStep(raw: number): number {
+  if (raw <= 0 || !isFinite(raw)) return 1;
+  const exp = Math.floor(Math.log10(raw));
+  const f = raw / Math.pow(10, exp);
+  const nf = f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10;
+  return nf * Math.pow(10, exp);
+}
+
+interface MetricSeries {
+  ticks: string[];
+  gridlines: number[];
+  points: { value: number; height: number; highlight: boolean; title: string }[];
+}
+
+function buildMetricSeries(buckets: Bucket[]): Record<string, MetricSeries> {
+  const result: Record<string, MetricSeries> = {};
+  metricDefs.forEach(m => {
+    const values = buckets.map(b => m.value(b));
+    const maxV = Math.max(...values, 0);
+    const step = niceStep(maxV / 4);
+    const n = maxV > 0 ? Math.ceil(maxV / step) : 1;
+    const top = step * n;
+    result[m.key] = {
+      ticks: Array.from({ length: n + 1 }, (_, i) => {
+        const v = top - i * step;
+        return v === 0 ? '0' : `${fmtTick(Math.round(v * 10) / 10)} ${m.unit}`;
+      }),
+      gridlines: Array.from({ length: n + 1 }, (_, i) => (i / n) * 100),
+      points: buckets.map((b, i) => ({
+        value: values[i],
+        height: top > 0 ? (values[i] / top) * 100 : 0,
+        highlight: values[i] > 0 && values[i] === maxV,
+        title: `${b.label}: ${fmtTick(Math.round(values[i] * 10) / 10)} ${m.unit}`
+      }))
+    };
+  });
+  return result;
+}
+
+const chartData: Record<string, Record<string, MetricSeries>> = {};
+periodPanels.forEach(p => {
+  chartData[p.key] = buildMetricSeries(p.buckets);
+});
+
+// ===== 统计网格 =====
+const daysElapsedWeek = ((todayStart.getDay() + 6) % 7) + 1;
+const daysElapsedMonth = today.getDate();
+const monthsElapsed = currentMonth + 1;
+
+function statItems(key: string, agg: ReturnType<typeof aggregateRuns>) {
+  const distanceLabel = key === 'week' ? '周跑量' : key === 'month' ? '月跑量' : '总跑量';
+  let second: { value: string; unit: string; label: string };
+  if (key === 'week') {
+    second = { value: fmt1(agg.distance / daysElapsedWeek), unit: 'km', label: '日均' };
+  } else if (key === 'month') {
+    second = { value: fmt1(agg.distance / daysElapsedMonth), unit: 'km', label: '日均' };
+  } else if (key === 'year') {
+    second = { value: fmt1(agg.distance / monthsElapsed), unit: 'km', label: '月跑量' };
+  } else {
+    second = { value: fmt1(agg.distance / runYears.length), unit: 'km', label: '年跑量' };
+  }
+  const totalDur = formatTotalDuration(agg.totalMinutes);
+  return [
+    { value: fmtKm(agg.distance), unit: 'km', label: distanceLabel },
+    second,
+    { value: agg.avgPace, unit: '/km', label: '平均配速' },
+    { value: agg.avgHr !== null ? String(agg.avgHr) : '--', unit: 'bpm', label: '平均心率' },
+    { value: Math.round(agg.elevation).toLocaleString('en-US'), unit: 'm', label: '累计爬升' },
+    { value: Math.round(agg.calories).toLocaleString('en-US'), unit: 'kcal', label: '卡路里' },
+    { value: agg.avgPower !== null ? String(agg.avgPower) : '--', unit: 'W', label: '平均功率' },
+    { value: totalDur.value, unit: totalDur.unit, label: '总时长' },
+    { value: agg.avgDuration, unit: '', label: '平均时长' }
+  ];
+}
 
 // 心率区间标签
 const hrZoneLabels: Record<number, string> = {
@@ -206,100 +490,151 @@ const hrZoneColors: Record<number, string> = {
           <p>暂无数据。</p>
         ) : (
           <div>
-            {/* 周期统计卡片 - Tab 切换 */}
-            {periodStats && Object.keys(periodStats).length > 0 && (
-              <div class="period-stats-section" id="periodStats">
-                <div class="period-stats-card">
-                  {/* Tab 导航 */}
-                  <div class="period-tab-nav" id="periodTabNav">
-                    {(['week', 'month', 'year', 'total'] as const).map((period) => {
-                      const pStats = periodStats[period];
-                      if (!pStats) return null;
-                      const isActive = period === 'week';
-                      return (
-                        <button 
-                          class={`period-tab-btn ${isActive ? 'active' : ''}`}
-                          data-period={period}
-                        >
-                          {periodLabels[period]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Tab 内容 */}
-                  <div class="period-tab-content">
-                    {(['week', 'month', 'year', 'total'] as const).map((period) => {
-                      const pStats = periodStats[period];
-                      if (!pStats) return null;
-                      const isActive = period === 'week';
-                      return (
-                        <div 
-                          class={`period-panel ${isActive ? 'active' : ''}`}
-                          data-panel={period}
-                        >
-                          <div class="period-panel-header">
-                            <span class="period-panel-title">{periodLabels[period]}数据统计</span>
-                            <span class="period-panel-count">共计跑步 {pStats.total_activities} 次</span>
+            <section class="stats-card">
+              {/* 运动类型 Tab */}
+              <div class="sport-tabs">
+                <button type="button" class="sport-tab active">跑步</button>
+              </div>
+
+              {/* 年度热力图 */}
+              <div class="heatmap-section">
+                <div class="heatmap-header">
+                  <span class="heatmap-count">今年共跑步 {yearRuns.length} 次</span>
+                  <span class="heatmap-year">{currentYear}</span>
+                </div>
+                <div class="heatmap-card">
+                  <div class="heatmap-inner">
+                    <div class="weekday-labels">
+                      <span>一</span>
+                      <span></span>
+                      <span>三</span>
+                      <span></span>
+                      <span>五</span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    <div class="heatmap-main">
+                      <div class="heatmap-months">
+                        {heatMonths.map(m => (
+                          <span style={`left: ${m.left}%`}>{m.label}</span>
+                        ))}
+                      </div>
+                      <div class="heatmap-weeks">
+                        {heatWeeks.map(week => (
+                          <div class="heat-week">
+                            {week.days.map(day => (
+                              <div
+                                class={`heat-day s-${day.state} i-${day.intensity}`}
+                                {...(day.state !== 'outside' ? { 'data-tooltip': day.title } : {})}
+                              />
+                            ))}
                           </div>
-                          <div class="period-panel-grid">
-                            <div class="period-panel-stat">
-                              <span class="period-panel-value">{pStats.avg_vdot?.toFixed(1) ?? '--'}</span>
-                              <span class="period-panel-label">当前跑力</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 周期控制栏 */}
+              <div class="period-bar">
+                <div class="period-tabs" id="periodTabs">
+                  {periodPanels.map(p => (
+                    <button
+                      type="button"
+                      class={`period-tab ${p.key === 'year' ? 'active' : ''}`}
+                      data-period={p.key}
+                      data-title={p.periodTitle}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                  <span class="period-tab-pill" id="periodTabPill"></span>
+                </div>
+                <div class="period-title" id="periodTitle">{currentYear} 年</div>
+                <div class="metric-menu" id="metricMenu">
+                  <button type="button" class="metric-btn" id="metricBtn">
+                    <span id="metricLabel">距离</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                  </button>
+                  <div class="metric-dropdown" id="metricDropdown">
+                    {metricDefs.map(m => (
+                      <button
+                        type="button"
+                        class={`metric-option ${m.key === 'distance' ? 'active' : ''}`}
+                        data-metric={m.key}
+                        data-label={m.label}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 周期面板：柱状图 + 统计网格 */}
+              {periodPanels.map(p => {
+                const series = chartData[p.key].distance;
+                return (
+                  <div class={`period-panel ${p.key === 'year' ? 'active' : ''}`} data-panel={p.key}>
+                    <div class="chart-stats">
+                      <div class="bar-chart" data-period-chart={p.key}>
+                        <div class="chart-main">
+                          <div class="y-axis">
+                            {series.ticks.map(t => (
+                              <span class="y-tick">{t}</span>
+                            ))}
+                          </div>
+                          <div class="plot-wrap">
+                            <div class="plot-area">
+                              <div class="gridlines">
+                                {series.gridlines.map(g => (
+                                  <div class="gridline" style={`bottom: ${g}%`} />
+                                ))}
+                              </div>
+                              <div class="bar-chart-bars">
+                                {series.points.map((pt, i) => (
+                                  <div class="bar-col">
+                                    <div
+                                      class={`bar ${pt.highlight ? 'highlight' : ''}`}
+                                      style={`height: ${pt.height}%`}
+                                      title={pt.title}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div class="period-panel-stat">
-                              <span class="period-panel-value">{pStats.total_distance.toFixed(0)}</span>
-                              <span class="period-panel-label">距离(公里)</span>
-                            </div>
-                            <div class="period-panel-stat">
-                              <span class="period-panel-value">{pStats.avg_pace}</span>
-                              <span class="period-panel-label">平均配速</span>
-                            </div>
-                            <div class="period-panel-stat">
-                              <span class="period-panel-value">{pStats.total_training_load > 0 ? pStats.total_training_load.toFixed(0) : '--'}</span>
-                              <span class="period-panel-label">训练负荷</span>
-                            </div>
-                            <div class="period-panel-stat">
-                              <span class="period-panel-value">{pStats.total_duration_hours.toFixed(1)}</span>
-                              <span class="period-panel-label">总时长(小时)</span>
-                            </div>
-                            <div class="period-panel-stat">
-                              <span class="period-panel-value">{pStats.avg_heart_rate ?? '--'}</span>
-                              <span class="period-panel-label">平均心率</span>
+                            <div class="x-labels">
+                              {p.buckets.map(b => (
+                                <span class={b.current ? 'current' : ''}>
+                                  {b.showLabel ? b.label : ''}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-
-            <div class="contribution-graph">
-              <div class="calendar-wrapper">
-                <div class="calendar">
-                  <div class="month-labels">
-                    {months.map(m => (
-                      <span class="month-label" style={`left: ${(m.weekIndex / weeks.length) * 100}%`}>{m.label}</span>
-                    ))}
-                  </div>
-                  <div class="weeks">
-                    {weeks.map(week => (
-                      <div class="week">
-                        {week.days.map(day => (
-                          <div 
-                            class={`day ${day.isInRange ? '' : 'out-of-range'} intensity-${day.intensity}`}
-                            data-tooltip={day.title}
-                          />
-                        ))}
                       </div>
-                    ))}
+                      <div class="stats-panel">
+                        <div class="stats-grid">
+                          {statItems(p.key, p.agg).map(item => (
+                            <div class="stat-item">
+                              <span class="stat-item-value">
+                                {item.value}
+                                {item.unit && <span class="stat-item-unit">{item.unit}</span>}
+                              </span>
+                              <span class="stat-item-label">{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                );
+              })}
+            </section>
+
+            {/* 柱状图数据（指标切换用） */}
+            <script type="application/json" id="chartData" set:html={JSON.stringify(chartData)} />
 
             <h2 class="section-title">最近活动</h2>
             <div class="run-list" id="runList" data-all-runs={JSON.stringify(allRuns)} data-hr-zone-labels={JSON.stringify(hrZoneLabels)} data-hr-zone-colors={JSON.stringify(hrZoneColors)}>
@@ -309,7 +644,7 @@ const hrZoneColors: Record<number, string> = {
                     <div class="run-header">
                       <time class="run-date">{run.date.split(' ')[0]}</time>
                       {run.hr_zone > 0 && (
-                        <span 
+                        <span
                           class="hr-zone-badge"
                           style={`background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;`}
                         >
@@ -378,33 +713,97 @@ const hrZoneColors: Record<number, string> = {
 </BaseLayout>
 
 <script>
-  // 周期统计 Tab 切换
-  document.addEventListener('DOMContentLoaded', function() {
-    const tabNav = document.getElementById('periodTabNav');
-    if (tabNav) {
-      tabNav.addEventListener('click', function(e) {
-        const btn = e.target.closest('.period-tab-btn');
-        if (!btn) return;
-        
-        const period = btn.dataset.period;
-        if (!period) return;
-        
-        // 切换按钮状态
-        document.querySelectorAll('.period-tab-btn').forEach(b => {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        
-        // 切换面板内容
-        document.querySelectorAll('.period-panel').forEach(panel => {
-          panel.classList.remove('active');
-          if (panel.dataset.panel === period) {
-            panel.classList.add('active');
-          }
+  // 周期 Tab 切换（滑动指示块 + 面板切换）
+  const periodTabs = document.getElementById('periodTabs');
+  if (periodTabs) {
+    const pill = document.getElementById('periodTabPill');
+    const titleEl = document.getElementById('periodTitle');
+
+    function movePill(btn) {
+      if (!pill) return;
+      pill.style.left = btn.offsetLeft + 'px';
+      pill.style.width = btn.offsetWidth + 'px';
+    }
+
+    function initPill() {
+      const activeBtn = periodTabs.querySelector('.period-tab.active');
+      if (activeBtn) movePill(activeBtn);
+    }
+
+    initPill();
+    window.addEventListener('resize', initPill);
+
+    periodTabs.addEventListener('click', function(e) {
+      const btn = e.target.closest('.period-tab');
+      if (!btn) return;
+
+      periodTabs.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      movePill(btn);
+
+      if (titleEl && btn.dataset.title) {
+        titleEl.textContent = btn.dataset.title;
+      }
+
+      document.querySelectorAll('.period-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.panel === btn.dataset.period);
+      });
+    });
+  }
+
+  // 柱状图指标切换
+  const chartDataEl = document.getElementById('chartData');
+  const metricMenu = document.getElementById('metricMenu');
+  if (chartDataEl && metricMenu) {
+    const chartData = JSON.parse(chartDataEl.textContent || '{}');
+    const metricBtn = document.getElementById('metricBtn');
+    const metricLabel = document.getElementById('metricLabel');
+
+    function renderCharts(metric) {
+      document.querySelectorAll('[data-period-chart]').forEach(chart => {
+        const d = chartData[chart.dataset.periodChart]?.[metric];
+        if (!d) return;
+        const yAxis = chart.querySelector('.y-axis');
+        if (yAxis) {
+          yAxis.innerHTML = d.ticks.map(t => `<span class="y-tick">${t}</span>`).join('');
+        }
+        const gridlines = chart.querySelector('.gridlines');
+        if (gridlines) {
+          gridlines.innerHTML = d.gridlines
+            .map(g => `<div class="gridline" style="bottom: ${g}%"></div>`)
+            .join('');
+        }
+        chart.querySelectorAll('.bar').forEach((bar, i) => {
+          const p = d.points[i];
+          if (!p) return;
+          bar.style.height = p.height + '%';
+          bar.classList.toggle('highlight', p.highlight);
+          bar.title = p.title;
         });
       });
     }
-  });
+
+    metricBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      metricMenu.classList.toggle('open');
+    });
+
+    document.addEventListener('click', e => {
+      if (!metricMenu.contains(e.target)) {
+        metricMenu.classList.remove('open');
+      }
+    });
+
+    metricMenu.querySelectorAll('.metric-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        metricMenu.querySelectorAll('.metric-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        if (metricLabel && opt.dataset.label) metricLabel.textContent = opt.dataset.label;
+        metricMenu.classList.remove('open');
+        if (opt.dataset.metric) renderCharts(opt.dataset.metric);
+      });
+    });
+  }
 
   // 时长格式化函数
   function formatDuration(duration) {
@@ -412,7 +811,7 @@ const hrZoneColors: Record<number, string> = {
     const minMatch = duration.match(/(\d+)分钟/);
     const hours = hourMatch ? parseInt(hourMatch[1]) : 0;
     const mins = minMatch ? parseInt(minMatch[1]) : 0;
-    
+
     if (hours > 0 && mins > 0) {
       return `${hours}h${mins}m`;
     } else if (hours > 0) {
@@ -445,11 +844,11 @@ const hrZoneColors: Record<number, string> = {
   // 查看更多功能
   const loadMoreBtn = document.getElementById('loadMoreBtn');
   const runList = document.getElementById('runList');
-  
+
   if (loadMoreBtn && runList) {
     const allRuns = JSON.parse(runList.dataset.allRuns || '[]');
     let isExpanded = false;
-    
+
     loadMoreBtn.addEventListener('click', () => {
       if (!isExpanded) {
         // 展开显示全部
@@ -460,30 +859,30 @@ const hrZoneColors: Record<number, string> = {
           runCard.style.animation = 'fadeIn 0.3s ease';
           runCard.dataset.runIndex = 10 + idx;
           runCard.dataset.run = JSON.stringify(run);
-          
+
           const hrZoneBadge = run.hr_zone > 0 ? `
-            <span 
+            <span
               class="hr-zone-badge"
               style="background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;"
             >
               ${hrZoneLabels[run.hr_zone]}
             </span>
           ` : '';
-          
+
           const vdotStat = `
             <div class="stat vdot-stat">
               <span class="stat-value">${run.vdot ?? '-'}</span>
               <span class="stat-label">VDOT</span>
             </div>
           `;
-          
+
           const loadStat = run.training_load > 0 ? `
             <div class="stat load-stat">
               <span class="stat-value">${run.training_load}</span>
               <span class="stat-label">负荷</span>
             </div>
           ` : '';
-          
+
           runCard.innerHTML = `
             <div class="run-main">
               <div class="run-header">
@@ -512,13 +911,13 @@ const hrZoneColors: Record<number, string> = {
               ${loadStat}
             </div>
           `;
-          
+
           // 添加点击事件
           runCard.addEventListener('click', () => openModal(run));
-          
+
           runList.appendChild(runCard);
         });
-        
+
         loadMoreBtn.innerHTML = `
           <span>收起</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(180deg);"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -532,13 +931,13 @@ const hrZoneColors: Record<number, string> = {
             card.remove();
           }
         });
-        
+
         loadMoreBtn.innerHTML = `
           <span>更多</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         `;
         isExpanded = false;
-        
+
         // 滚动回列表顶部
         runList.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -553,7 +952,7 @@ const hrZoneColors: Record<number, string> = {
 
   function openModal(run) {
     if (!modal || !modalBody) return;
-    
+
     // 生成心率区间徽章
     const hrZoneBadge = run.hr_zone > 0 ? `
       <span class="detail-hr-zone" style="background-color: ${hrZoneColors[run.hr_zone]}20; color: ${hrZoneColors[run.hr_zone]}; border: 1px solid ${hrZoneColors[run.hr_zone]}40;">
@@ -578,32 +977,32 @@ const hrZoneColors: Record<number, string> = {
 
     // 生成详细统计数据
     const detailStats = [];
-    
+
     // 基础数据
     detailStats.push({
       icon: icons.distance,
       label: '距离',
       value: `${run.distance.toFixed(2)} km`
     });
-    
+
     detailStats.push({
       icon: icons.duration,
       label: '移动时间',
       value: formatDuration(run.duration)
     });
-    
+
     detailStats.push({
       icon: icons.duration,
       label: '总时间',
       value: formatDuration(run.duration)
     });
-    
+
     detailStats.push({
       icon: icons.pace,
       label: '配速',
       value: `${run.pace} /km`
     });
-    
+
     // 心率数据
     if (run.heart_rate > 0) {
       detailStats.push({
@@ -612,7 +1011,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.heart_rate)} bpm`
       });
     }
-    
+
     // 最大心率（如果有）
     if (run.max_heart_rate > 0) {
       detailStats.push({
@@ -621,7 +1020,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.max_heart_rate)} bpm`
       });
     }
-    
+
     // 步频
     if (run.cadence > 0) {
       detailStats.push({
@@ -630,7 +1029,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.cadence)} spm`
       });
     }
-    
+
     // 步幅
     if (run.stride_length > 0) {
       detailStats.push({
@@ -639,7 +1038,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.stride_length)} cm`
       });
     }
-    
+
     // 功率
     if (run.avg_power > 0) {
       detailStats.push({
@@ -648,7 +1047,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.avg_power)} w`
       });
     }
-    
+
     if (run.max_power > 0) {
       detailStats.push({
         icon: icons.power,
@@ -656,7 +1055,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.max_power)} w`
       });
     }
-    
+
     // 卡路里
     if (run.calories > 0) {
       detailStats.push({
@@ -665,7 +1064,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.calories)} kcal`
       });
     }
-    
+
     // 爬升
     if (run.elevation_gain > 0) {
       detailStats.push({
@@ -674,7 +1073,7 @@ const hrZoneColors: Record<number, string> = {
         value: `${Math.round(run.elevation_gain)} m`
       });
     }
-    
+
     // VDOT
     if (run.vdot > 0) {
       detailStats.push({
@@ -683,7 +1082,7 @@ const hrZoneColors: Record<number, string> = {
         value: run.vdot.toFixed(1)
       });
     }
-    
+
     // 训练负荷
     if (run.training_load > 0) {
       detailStats.push({
@@ -702,14 +1101,14 @@ const hrZoneColors: Record<number, string> = {
       }
       return 0;
     }
-    
+
     // 辅助函数：计算配速柱状图宽度
     // 使用非线性映射，让快慢配速差异更明显
     // 配速范围：4'00" (240s) 到 8'00" (480s)
     function getPaceBarWidth(paceStr, allPaces = []) {
       const paceSeconds = paceToSeconds(paceStr);
       if (paceSeconds === 0) return 0;
-      
+
       // 如果有多个配速，使用相对比例
       if (allPaces.length > 1) {
         const allSeconds = allPaces.map(p => paceToSeconds(p)).filter(s => s > 0);
@@ -726,20 +1125,20 @@ const hrZoneColors: Record<number, string> = {
           }
         }
       }
-      
+
       // 默认映射：4'00" = 100%, 8'00" = 20%
       const minSeconds = 240;  // 4'00"
       const maxSeconds = 480;  // 8'00"
       const ratio = (maxSeconds - paceSeconds) / (maxSeconds - minSeconds);
       return Math.max(20, Math.min(100, 20 + ratio * 80));
     }
-    
+
     // 辅助函数：根据配速获取颜色类
     // fast: < 5'30" (330s), medium: 5'30" - 7'00" (420s), slow: > 7'00"
     function getPaceBarClass(paceStr) {
       const paceSeconds = paceToSeconds(paceStr);
       if (paceSeconds === 0) return 'medium';
-      
+
       if (paceSeconds < 330) {  // < 5'30"
         return 'fast';
       } else if (paceSeconds > 420) {  // > 7'00"
@@ -754,7 +1153,7 @@ const hrZoneColors: Record<number, string> = {
     if (run.segments && run.segments.length > 0) {
       // 收集所有配速用于相对比例计算
       const allSegmentPaces = run.segments.map(s => s.pace).filter(p => p && p !== "0'00\"");
-      
+
       const segmentRows = run.segments.map((seg, idx) => {
         const zoneClass = seg.hr_zone ? `zone-${seg.hr_zone}` : '';
         const zoneLabel = seg.hr_zone ? hrZoneLabels[seg.hr_zone]?.split(' ')[0] : '';
@@ -776,7 +1175,7 @@ const hrZoneColors: Record<number, string> = {
           </tr>
         `;
       }).join('');
-      
+
       segmentsHtml = `
         <div class="detail-section">
           <h4 class="section-subtitle">分段数据</h4>
@@ -820,7 +1219,7 @@ const hrZoneColors: Record<number, string> = {
           </tr>
         `;
       }).join('');
-      
+
       lapsHtml = `
         <div class="detail-section">
           <h4 class="section-subtitle">记圈数据</h4>
@@ -854,7 +1253,7 @@ const hrZoneColors: Record<number, string> = {
           <span class="detail-type">${run.activity_type || '室外跑步'}</span>
         </div>
       </div>
-      
+
       <div class="detail-stats-grid">
         ${detailStats.map(stat => `
           <div class="detail-stat-item">
@@ -864,11 +1263,11 @@ const hrZoneColors: Record<number, string> = {
           </div>
         `).join('')}
       </div>
-      
+
       ${segmentsHtml}
       ${lapsHtml}
     `;
-    
+
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
@@ -892,7 +1291,7 @@ const hrZoneColors: Record<number, string> = {
   // 关闭弹窗事件
   modalClose?.addEventListener('click', closeModal);
   modalOverlay?.addEventListener('click', closeModal);
-  
+
   // ESC键关闭弹窗
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -921,12 +1320,6 @@ const hrZoneColors: Record<number, string> = {
     text-wrap: balance;
   }
 
-  .subtitle {
-    color: var(--text-primary);
-    margin: 0;
-    font-size: 1rem;
-  }
-
   .section-title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -936,63 +1329,338 @@ const hrZoneColors: Record<number, string> = {
     border-left: 3px solid var(--accent);
   }
 
-  /* 周期统计卡片 - Tab 样式 */
-  .period-stats-section {
-    margin: 1.5rem 0;
-  }
-
-  .period-stats-card {
+  /* ===== 统计卡片整体 ===== */
+  .stats-card {
+    --sky: #0ea5e9;
     background: var(--background);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    padding: 1rem 1.25rem 1.25rem;
+    margin: 1.5rem 0;
     overflow: hidden;
   }
 
-  /* Tab 导航 */
-  .period-tab-nav {
+  /* 运动类型 Tab */
+  .sport-tabs {
     display: flex;
-    gap: 0;
     border-bottom: 1px solid var(--border);
-    padding: 0 1rem;
-    background: var(--background-secondary);
+    margin: 0 -1.25rem;
+    padding: 0 0.75rem;
   }
 
-  .period-tab-btn {
+  .sport-tab {
+    position: relative;
     background: transparent;
     border: none;
-    color: var(--text-secondary);
-    padding: 0.875rem 1.25rem;
+    padding: 0.5rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
+    color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
     white-space: nowrap;
+    transition: color 0.2s ease;
   }
 
-  .period-tab-btn:hover {
+  .sport-tab:hover {
     color: var(--text-primary);
   }
 
-  .period-tab-btn.active {
-    color: var(--accent);
+  .sport-tab.active {
+    color: var(--sky);
   }
 
-  .period-tab-btn.active::after {
+  .sport-tab.active::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: -1px;
+    left: 0.5rem;
+    right: 0.5rem;
     height: 2px;
-    background: var(--accent);
+    border-radius: 2px;
+    background: var(--sky);
   }
 
-  /* Tab 内容 */
-  .period-tab-content {
-    padding: 1.25rem;
+  /* ===== 年度热力图（弹性填充整年，无滚动） ===== */
+  .heatmap-section {
+    margin-top: 1rem;
   }
 
+  .heatmap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .heatmap-count {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .heatmap-year {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .heatmap-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    user-select: none;
+  }
+
+  .heatmap-inner {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .weekday-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 20px;
+    flex-shrink: 0;
+  }
+
+  .weekday-labels span {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    width: 12px;
+    font-size: 10px;
+    line-height: 1;
+    color: var(--text-secondary);
+  }
+
+  .heatmap-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .heatmap-months {
+    position: relative;
+    height: 16px;
+    margin-bottom: 4px;
+  }
+
+  .heatmap-months span {
+    position: absolute;
+    font-size: 10px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .heatmap-weeks {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+  }
+
+  .heat-week {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .heat-day {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 2px;
+    background: var(--background-secondary);
+    position: relative;
+  }
+
+  .heat-day.s-outside {
+    background: transparent;
+  }
+
+  .heat-day:not(.s-outside):hover {
+    outline: 2px solid var(--sky);
+    outline-offset: 1px;
+    z-index: 10;
+  }
+
+  /* 热力图 tooltip */
+  .heat-day[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.1s ease, visibility 0.1s ease;
+    pointer-events: none;
+    box-shadow: var(--box-shadow);
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .heat-day[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* 强度配色（sky 色系） */
+  .heat-day.i-1 { background: #bae6fd; }
+  .heat-day.i-2 { background: #7dd3fc; }
+  .heat-day.i-3 { background: #38bdf8; }
+  .heat-day.i-4 { background: #0ea5e9; }
+  .heat-day.i-5 { background: #0369a1; }
+
+  :global([data-theme="dark"]) .heat-day.i-1 { background: #0c4a6e; }
+  :global([data-theme="dark"]) .heat-day.i-2 { background: #075985; }
+  :global([data-theme="dark"]) .heat-day.i-3 { background: #0369a1; }
+  :global([data-theme="dark"]) .heat-day.i-4 { background: #0ea5e9; }
+  :global([data-theme="dark"]) .heat-day.i-5 { background: #38bdf8; }
+
+  /* ===== 周期控制栏 ===== */
+  .period-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1rem 0;
+    position: relative;
+  }
+
+  .period-tabs {
+    display: flex;
+    position: relative;
+    background: var(--background-secondary);
+    border-radius: 10px;
+    padding: 4px;
+  }
+
+  .period-tab {
+    position: relative;
+    z-index: 1;
+    border: none;
+    background: transparent;
+    min-width: 48px;
+    padding: 4px 8px;
+    font-size: 0.875rem;
+    text-align: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: color 0.2s ease;
+  }
+
+  .period-tab:hover {
+    color: var(--text-primary);
+  }
+
+  .period-tab.active {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .period-tab-pill {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 0;
+    width: 0;
+    background: var(--background);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    transition: left 0.3s ease, width 0.3s ease;
+  }
+
+  .period-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  /* 指标下拉 */
+  .metric-menu {
+    position: relative;
+  }
+
+  .metric-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--background-secondary);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .metric-btn:hover {
+    background: var(--border);
+  }
+
+  .metric-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 104px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 4px;
+    z-index: 50;
+  }
+
+  .metric-menu.open .metric-dropdown {
+    display: block;
+  }
+
+  .metric-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 7px 12px;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 6px;
+    text-align: left;
+  }
+
+  .metric-option:hover {
+    background: var(--background-secondary);
+  }
+
+  .metric-option.active::after {
+    content: '✓';
+    color: #38bdf8;
+    font-weight: 600;
+  }
+
+  /* ===== 周期面板：柱状图 + 统计 ===== */
   .period-panel {
     display: none;
   }
@@ -1002,156 +1670,177 @@ const hrZoneColors: Record<number, string> = {
     animation: fadeIn 0.3s ease;
   }
 
-  .period-panel-header {
+  .chart-stats {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  /* 柱状图 */
+  .bar-chart {
+    padding-top: 0.5rem;
+    min-width: 0;
+  }
+
+  .chart-main {
     display: flex;
+    align-items: stretch;
+  }
+
+  .y-axis {
+    display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border);
+    width: 48px;
+    flex-shrink: 0;
+    height: 160px;
+    text-align: right;
+    padding-right: 8px;
   }
 
-  .period-panel-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .period-panel-count {
-    font-size: 0.75rem;
+  .y-axis :global(.y-tick) {
+    font-size: 10px;
+    line-height: 1;
     color: var(--text-secondary);
+    white-space: nowrap;
   }
 
-  .period-panel-grid {
+  .y-axis :global(.y-tick:first-child) {
+    transform: translateY(-50%);
+  }
+
+  .y-axis :global(.y-tick:last-child) {
+    transform: translateY(50%);
+  }
+
+  .plot-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .plot-area {
+    position: relative;
+    height: 160px;
+  }
+
+  :global(.gridlines) {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  :global(.gridline) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed var(--border);
+  }
+
+  .bar-chart-bars {
+    position: relative;
+    display: flex;
+    gap: 4px;
+    height: 100%;
+  }
+
+  .bar-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .bar {
+    width: 100%;
+    max-width: 36px;
+    background: #38bdf8;
+    border-radius: 4px 4px 2px 2px;
+    transition: opacity 0.2s ease;
+  }
+
+  .bar:hover {
+    opacity: 0.8;
+  }
+
+  .bar.highlight {
+    background: #f59e0b;
+  }
+
+  .x-labels {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .x-labels span {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    text-align: center;
+    font-size: 10px;
+    line-height: 14px;
+    min-height: 14px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .x-labels span.current::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #38bdf8;
+  }
+
+  /* 统计网格 */
+  .stats-panel {
+    background: var(--background-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem 0.5rem;
-    width: 100%;
+    gap: 0.875rem 0.5rem;
+    height: 100%;
+    align-content: space-between;
   }
 
-  .period-panel-stat {
+  .stat-item {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    text-align: center;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: background 0.2s ease;
+    gap: 2px;
+    min-width: 0;
   }
 
-  .period-panel-stat:hover {
-    background: var(--background-secondary);
-  }
-
-  .period-panel-stat:hover .period-panel-value {
-    color: var(--accent);
-  }
-
-  .period-panel-value {
-    font-size: 1.375rem;
-    font-weight: 700;
+  .stat-item-value {
+    font-size: 1.25rem;
+    font-weight: 600;
     line-height: 1.2;
-    white-space: nowrap;
     color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
-  .period-panel-label {
+  .stat-item-unit {
+    margin-left: 2px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+  }
+
+  .stat-item-label {
     font-size: 0.75rem;
     color: var(--text-secondary);
     white-space: nowrap;
-  }
-
-  @media (max-width: 640px) {
-    .period-tab-nav {
-      padding: 0 0.75rem;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .period-tab-btn {
-      padding: 0.75rem 1rem;
-      font-size: 0.8125rem;
-    }
-
-    .period-tab-content {
-      padding: 1rem;
-    }
-
-    .period-panel-grid {
-      gap: 1rem 0.25rem;
-    }
-
-    .period-panel-stat {
-      padding: 0.375rem;
-    }
-
-    .period-panel-value {
-      font-size: 1.125rem;
-    }
-
-    .period-panel-label {
-      font-size: 0.6875rem;
-    }
-  }
-
-  /* 统计概览卡片 */
-  .stats-overview {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
-  }
-
-  .stat-card {
-    background: var(--background-secondary);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    transition: all 0.2s ease;
-  }
-
-  .stat-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .stat-card.vdot-card {
-    background: linear-gradient(135deg, var(--background-secondary) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border-color: rgba(139, 92, 246, 0.3);
-  }
-
-  .stat-card.load-card {
-    background: linear-gradient(135deg, var(--background-secondary) 0%, rgba(59, 130, 246, 0.1) 100%);
-    border-color: rgba(59, 130, 246, 0.3);
-  }
-
-  .stat-icon {
-    font-size: 1.5rem;
-    line-height: 1;
-  }
-
-  .stat-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-
-  .stat-number {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    line-height: 1.2;
-  }
-
-  .stat-desc {
-    font-size: 0.75rem;
-    color: var(--text-primary);
   }
 
   /* 心率区间标签 */
@@ -1315,120 +2004,6 @@ const hrZoneColors: Record<number, string> = {
     text-transform: uppercase;
     letter-spacing: 0.025em;
   }
-
-  .contribution-graph {
-    margin: 1.5rem 0;
-    padding: 0.5rem;
-    background: var(--background-secondary);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    width: 100%;
-  }
-
-  .calendar-wrapper {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .calendar {
-    flex: 1;
-    overflow-x: visible;
-  }
-
-  .month-labels {
-    position: relative;
-    height: 1rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .month-label {
-    position: absolute;
-    font-size: 0.625rem;
-    color: var(--text-primary);
-    white-space: nowrap;
-  }
-
-  .weeks {
-    display: flex;
-    gap: 2px;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-  }
-
-  .week {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-  }
-
-  .day {
-    aspect-ratio: 1;
-    width: 100%;
-    border-radius: 2px;
-    background: var(--border);
-    transition: transform 0.1s ease;
-    position: relative;
-  }
-
-  .day:hover {
-    transform: scale(1.2);
-    outline: 1px solid var(--text-secondary);
-    z-index: 10;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .day {
-      transition: none;
-    }
-    .day:hover {
-      transform: none;
-    }
-  }
-
-  .day::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 4px 8px;
-    background: var(--background-secondary);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.1s ease, visibility 0.1s ease;
-    pointer-events: none;
-    box-shadow: var(--box-shadow);
-    color: var(--text-primary);
-    margin-bottom: 4px;
-  }
-
-  .day:hover::after {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .day.out-of-range {
-    background: transparent;
-  }
-
-  .day.intensity-1 { background: #bfdbfe; }
-  .day.intensity-2 { background: #93c5fd; }
-  .day.intensity-3 { background: #60a5fa; }
-  .day.intensity-4 { background: #3b82f6; }
-  .day.intensity-5 { background: #1d4ed8; }
-
-  :global([data-theme="dark"]) .day { background: var(--background-secondary); }
-  :global([data-theme="dark"]) .day.intensity-1 { background: #1e3a5f; }
-  :global([data-theme="dark"]) .day.intensity-2 { background: #1e40af; }
-  :global([data-theme="dark"]) .day.intensity-3 { background: #2563eb; }
-  :global([data-theme="dark"]) .day.intensity-4 { background: #3b82f6; }
-  :global([data-theme="dark"]) .day.intensity-5 { background: #60a5fa; }
 
   /* 详情弹窗样式 - 使用 :global 因为内容是动态插入的 */
   :global(.run-detail-modal) {
@@ -1730,17 +2305,34 @@ const hrZoneColors: Record<number, string> = {
       font-size: 1.75rem;
     }
 
-    .stats-overview {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
+    .stats-card {
+      padding: 0.75rem 1rem 1rem;
     }
 
-    .stat-card {
+    .sport-tabs {
+      margin: 0 -1rem;
+      padding: 0 0.5rem;
+    }
+
+    .heatmap-card {
       padding: 0.75rem;
     }
 
-    .stat-number {
-      font-size: 1.1rem;
+    .period-title {
+      display: none;
+    }
+
+    .chart-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .plot-area,
+    .y-axis {
+      height: 140px;
+    }
+
+    .y-axis {
+      width: 40px;
     }
 
     :global(.run-card) {
@@ -1760,10 +2352,6 @@ const hrZoneColors: Record<number, string> = {
     :global(.stat) {
       min-width: auto;
       flex: none;
-    }
-
-    .day {
-      border-radius: 1px;
     }
 
     :global(.modal-content) {
@@ -1802,8 +2390,12 @@ const hrZoneColors: Record<number, string> = {
   }
 
   @media (max-width: 480px) {
-    .stats-overview {
+    .stats-grid {
       grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-item-value {
+      font-size: 1.0625rem;
     }
 
     :global(.run-stats) {
