@@ -594,11 +594,10 @@ const hrZoneColors: Record<number, string> = {
                               </div>
                               <div class="bar-chart-bars">
                                 {series.points.map((pt, i) => (
-                                  <div class="bar-col">
+                                  <div class="bar-col" data-tooltip={pt.title}>
                                     <div
                                       class={`bar ${pt.highlight ? 'highlight' : ''}`}
                                       style={`height: ${pt.height}%`}
-                                      title={pt.title}
                                     />
                                   </div>
                                 ))}
@@ -751,6 +750,26 @@ const hrZoneColors: Record<number, string> = {
     });
   }
 
+  // 柱状图跟随鼠标的 tooltip
+  const chartTooltip = document.createElement('div');
+  chartTooltip.className = 'chart-tooltip';
+  document.body.appendChild(chartTooltip);
+
+  document.querySelectorAll('.bar-chart-bars').forEach(bars => {
+    bars.addEventListener('mousemove', e => {
+      const col = e.target.closest('.bar-col');
+      if (!col || !col.dataset.tooltip) {
+        chartTooltip.classList.remove('visible');
+        return;
+      }
+      chartTooltip.textContent = col.dataset.tooltip;
+      chartTooltip.style.left = e.clientX + 'px';
+      chartTooltip.style.top = e.clientY + 'px';
+      chartTooltip.classList.add('visible');
+    });
+    bars.addEventListener('mouseleave', () => chartTooltip.classList.remove('visible'));
+  });
+
   // 柱状图指标切换
   const chartDataEl = document.getElementById('chartData');
   const metricMenu = document.getElementById('metricMenu');
@@ -778,7 +797,7 @@ const hrZoneColors: Record<number, string> = {
           if (!p) return;
           bar.style.height = p.height + '%';
           bar.classList.toggle('highlight', p.highlight);
-          bar.title = p.title;
+          bar.closest('.bar-col')?.setAttribute('data-tooltip', p.title);
         });
       });
     }
@@ -1750,6 +1769,31 @@ const hrZoneColors: Record<number, string> = {
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    position: relative;
+  }
+
+  /* 柱状图 tooltip（JS 动态创建，跟随鼠标） */
+  :global(.chart-tooltip) {
+    position: fixed;
+    transform: translate(-50%, calc(-100% - 8px));
+    padding: 4px 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.1s ease, visibility 0.1s ease;
+    pointer-events: none;
+    box-shadow: var(--box-shadow);
+    color: var(--text-primary);
+  }
+
+  :global(.chart-tooltip.visible) {
+    opacity: 1;
+    visibility: visible;
   }
 
   .bar {
@@ -1760,7 +1804,8 @@ const hrZoneColors: Record<number, string> = {
     transition: opacity 0.2s ease;
   }
 
-  .bar:hover {
+  .bar:hover,
+  .bar-col:hover .bar {
     opacity: 0.8;
   }
 
