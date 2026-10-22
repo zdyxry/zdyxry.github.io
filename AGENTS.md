@@ -47,7 +47,7 @@ src/
 scripts/
 ├── get_garmin_data.py          # 从 Garmin Connect 拉取跑步数据
 ├── get_coros_data.py           # 从高驰 COROS 拉取跑步数据
-└── calculate_vdot_for_existing.py  # 重算历史 VDOT 和训练负荷
+└── calculate_vdot_for_existing.py  # 重算历史 VDOT 和训练负荷（保留 COROS 来源记录的 EvoLab 负荷）
 ```
 
 ## 内容与 Slug 约定
@@ -97,7 +97,7 @@ scripts/
 
 1. `scripts/get_coros_data.py` 直接调用高驰 `teamcnapi.coros.com` API
 2. 登录后分页获取活动列表，过滤 `sportType=101`（跑步）
-3. 计算 VDOT 跑力和训练负荷（算法与 Garmin 脚本一致）
+3. 计算 VDOT 跑力（Daniels 公式）；训练负荷直接采用 API 返回的 COROS EvoLab `trainingLoad`，缺失时回退本地估算公式；记录会标记 `data_source: "coros"`
 4. 输出到 `src/data/running.json`（默认合并模式，与已有数据合并）
 
 ### 环境变量

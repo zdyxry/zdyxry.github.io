@@ -391,13 +391,18 @@ class CorosDataFetcher:
             pace = self._seconds_to_pace(avg_speed)
             device = activity.get("device", "")
 
-            # 计算 VDOT 和训练负荷
+            # 计算 VDOT；训练负荷直接采用 COROS EvoLab 的 trainingLoad，
+            # 缺失时回退到本地估算公式
             vdot = self.vdot_calculator.calculate_vdot(
                 distance_meters, duration_seconds, avg_hr
             )
-            training_load = self.vdot_calculator.calculate_training_load(
-                duration_seconds, avg_hr
-            )
+            coros_load = activity.get("trainingLoad", 0) or 0
+            if coros_load > 0:
+                training_load = round(coros_load)
+            else:
+                training_load = self.vdot_calculator.calculate_training_load(
+                    duration_seconds, avg_hr
+                )
 
             # 更新统计数据
             stats["total_distance"] += distance
@@ -432,6 +437,7 @@ class CorosDataFetcher:
                 "vdot": vdot,
                 "training_load": training_load,
                 "hr_zone": hr_zone,
+                "data_source": "coros",
             }
 
             formatted_runs.append(run_data)

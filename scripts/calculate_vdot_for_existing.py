@@ -178,9 +178,12 @@ def update_running_data(input_path: str, output_path: str):
         else:
             run['vdot'] = None
         
-        # 计算训练负荷
-        training_load = calculator.calculate_training_load(duration_seconds, avg_hr)
-        run['training_load'] = training_load
+        # 计算训练负荷：COROS 来源的记录保留 API 返回的 EvoLab 负荷，不覆盖
+        if run.get('data_source') == 'coros' and run.get('training_load'):
+            training_load = run['training_load']
+        else:
+            training_load = calculator.calculate_training_load(duration_seconds, avg_hr)
+            run['training_load'] = training_load
         total_training_load += training_load
         
         # 计算心率区间
